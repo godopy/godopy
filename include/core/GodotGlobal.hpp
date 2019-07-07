@@ -26,6 +26,8 @@ public:
 	static void nativescript_init(void *handle);
 	static void nativescript_terminate(void *handle);
 
+	static void gdpython_init();
+
 	static void gdnative_profiling_add_data(const char *p_signature, uint64_t p_time);
 
 	template <class... Args>

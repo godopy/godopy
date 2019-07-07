@@ -128,7 +128,9 @@ elif env['platform'] == 'osx':
             'Only 64-bit builds are supported for the macOS target.'
         )
 
-    env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', 'x86_64'])
+    env.Append(CPPPATH='/usr/local/Cellar/python/3.7.3/Frameworks/Python.framework/Versions/3.7/include/python3.7m')
+
+    env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', 'x86_64', '-fwrapv'])
     env.Append(LINKFLAGS=[
         '-arch',
         'x86_64',

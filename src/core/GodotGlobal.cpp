@@ -4,6 +4,11 @@
 
 #include "Wrapped.hpp"
 
+#include "Directory.hpp"
+
+#include <Python.h>
+#include "GodotPython.h"
+
 static GDCALLINGCONV void *wrapper_create(void *data, const void *type_tag, godot_object *instance) {
 	godot::_Wrapped *wrapper_memory = (godot::_Wrapped *)godot::api->godot_alloc(sizeof(godot::_Wrapped));
 
@@ -32,6 +37,8 @@ const godot_gdnative_ext_nativescript_api_struct *nativescript_api = nullptr;
 const godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_1_api = nullptr;
 
 const void *gdnlib = NULL;
+
+wchar_t *pythonpath = nullptr;
 
 void Godot::print(const String &message) {
 	godot::api->godot_print((godot_string *)&message);
@@ -85,6 +92,15 @@ void Godot::gdnative_init(godot_gdnative_init_options *options) {
 		core_extension = core_extension->next;
 	}
 
+	godot_string path = godot::api->godot_string_get_base_dir(options->active_library_path);
+	godot_int size = godot::api->godot_string_length(&path);
+
+	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 11) * sizeof(wchar_t));
+	wcsncpy(pythonpath, godot::api->godot_string_wide_str(&path), size);
+	wcsncpy(pythonpath + size, L"/python37", 10);
+
+	godot::api->godot_string_destroy(&path);
+
 	// now find our extensions
 	for (int i = 0; i < godot::api->num_extensions; i++) {
 		switch (godot::api->extensions[i]->type) {
@@ -108,6 +124,11 @@ void Godot::gdnative_init(godot_gdnative_init_options *options) {
 
 void Godot::gdnative_terminate(godot_gdnative_terminate_options *options) {
 	// reserved for future use.
+	if (Py_IsInitialized()) {
+		Py_FinalizeEx();
+
+		PyMem_RawFree(pythonpath);
+	}
 }
 
 void Godot::gdnative_profiling_add_data(const char *p_signature, uint64_t p_time) {
@@ -125,6 +146,40 @@ void Godot::nativescript_init(void *handle) {
 
 	___register_types();
 	___init_method_bindings();
+}
+
+void Godot::gdpython_init() {
+	Directory d;
+	const char *c_pythonpath = Py_EncodeLocale(pythonpath, nullptr);
+
+	if (!d.dir_exists(c_pythonpath)) {
+		print("Could not initialize GodotPython:");
+		printf("Required Python standard library files are missing in \"%s\"\n\n", c_pythonpath);
+
+		return;
+	}
+
+	Py_NoSiteFlag = 1;
+	Py_IgnoreEnvironmentFlag = 1;
+
+	Py_SetProgramName(L"godot");
+	Py_SetPath(pythonpath);
+
+	PyImport_AppendInittab("GodotPython", PyInit_GodotPython);
+
+	// Initialize interpreter but skip initialization registration of signal handlers
+	Py_InitializeEx(0);
+
+	PyObject *mod = PyImport_ImportModule("GodotPython");
+
+	if (mod != nullptr) {
+		Py_DECREF(mod);
+
+		gdpython_print_banner();
+	} else {
+		print("Could not initialize GodotPython");
+		PyErr_Print();
+	}
 }
 
 void Godot::nativescript_terminate(void *handle) {
