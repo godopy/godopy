@@ -204,7 +204,7 @@ add_sources(sources, 'src/core', 'cpp')
 add_sources(sources, 'src/gen', 'cpp')
 
 library = env.StaticLibrary(
-    target='bin/' + 'libgodot-cpp.{}.{}.{}'.format(
+    target='bin/' + 'libgodot-cython.{}.{}.{}'.format(
         env['platform'],
         env['target'],
         env['bits'],

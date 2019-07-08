@@ -17,3 +17,7 @@ bin
 *.creator.user
 *.files
 *.includes
+
+# Generated files
+/godot_headers
+*__gen.pxd
