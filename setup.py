@@ -8,6 +8,6 @@ setup(
     python_requires='>=3.7',
     packages=find_packages(),
     package_data={
-        'godot-cython': ['godot/*.pxd']
+        'godot-cython': ['godot_headers/*.pxd', 'godot_cpp/*.pxd']
     }
 )

@@ -6,8 +6,8 @@
 
 #include "Directory.hpp"
 
-#include <Python.h>
-#include "GodotPython.h"
+#define PY_SSIZE_T_CLEAN
+#include "Python.h"
 
 static GDCALLINGCONV void *wrapper_create(void *data, const void *type_tag, godot_object *instance) {
 	godot::_Wrapped *wrapper_memory = (godot::_Wrapped *)godot::api->godot_alloc(sizeof(godot::_Wrapped));
@@ -148,12 +148,12 @@ void Godot::nativescript_init(void *handle) {
 	___init_method_bindings();
 }
 
-void Godot::gdpython_init() {
+void Godot::python_init() {
 	Directory d;
 	const char *c_pythonpath = Py_EncodeLocale(pythonpath, nullptr);
 
 	if (!d.dir_exists(c_pythonpath)) {
-		print("Could not initialize GodotPython:");
+		print("Could not initialize Python interpreter:");
 		printf("Required Python standard library files are missing in \"%s\"\n\n", c_pythonpath);
 
 		return;
@@ -165,21 +165,10 @@ void Godot::gdpython_init() {
 	Py_SetProgramName(L"godot");
 	Py_SetPath(pythonpath);
 
-	PyImport_AppendInittab("GodotPython", PyInit_GodotPython);
-
 	// Initialize interpreter but skip initialization registration of signal handlers
 	Py_InitializeEx(0);
 
-	PyObject *mod = PyImport_ImportModule("GodotPython");
-
-	if (mod != nullptr) {
-		Py_DECREF(mod);
-
-		gdpython_print_banner();
-	} else {
-		print("Could not initialize GodotPython");
-		PyErr_Print();
-	}
+	printf("Python %s\n\n", Py_GetVersion());
 }
 
 void Godot::nativescript_terminate(void *handle) {
