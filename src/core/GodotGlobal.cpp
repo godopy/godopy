@@ -92,12 +92,13 @@ void Godot::gdnative_init(godot_gdnative_init_options *options) {
 		core_extension = core_extension->next;
 	}
 
+	// Set Python path
 	godot_string path = godot::api->godot_string_get_base_dir(options->active_library_path);
 	godot_int size = godot::api->godot_string_length(&path);
 
-	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 11) * sizeof(wchar_t));
+	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 7) * sizeof(wchar_t));
 	wcsncpy(pythonpath, godot::api->godot_string_wide_str(&path), size);
-	wcsncpy(pythonpath + size, L"/python37", 10);
+	wcsncpy(pythonpath + size, L"/pyres", 7);
 
 	godot::api->godot_string_destroy(&path);
 
@@ -124,11 +125,6 @@ void Godot::gdnative_init(godot_gdnative_init_options *options) {
 
 void Godot::gdnative_terminate(godot_gdnative_terminate_options *options) {
 	// reserved for future use.
-	if (Py_IsInitialized()) {
-		Py_FinalizeEx();
-
-		PyMem_RawFree(pythonpath);
-	}
 }
 
 void Godot::gdnative_profiling_add_data(const char *p_signature, uint64_t p_time) {
@@ -148,8 +144,13 @@ void Godot::nativescript_init(void *handle) {
 	___init_method_bindings();
 }
 
-void Godot::python_init() {
+void Godot::nativescript_terminate(void *handle) {
+	godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::language_index);
+}
+
+void Godot::pygdnlib_init() {
 	Directory d;
+
 	const char *c_pythonpath = Py_EncodeLocale(pythonpath, nullptr);
 
 	if (!d.dir_exists(c_pythonpath)) {
@@ -163,16 +164,26 @@ void Godot::python_init() {
 	Py_IgnoreEnvironmentFlag = 1;
 
 	Py_SetProgramName(L"godot");
-	Py_SetPath(pythonpath);
+	Py_SetPythonHome(pythonpath);
 
 	// Initialize interpreter but skip initialization registration of signal handlers
 	Py_InitializeEx(0);
 
-	printf("Python %s\n\n", Py_GetVersion());
+	PyObject *mod = PyImport_ImportModule("pygdnlib");
+  if (mod != NULL) {
+    Py_DECREF(mod);
+    print("Python {0}\n", Py_GetVersion());
+  } else {
+    PyErr_Print();
+  }
 }
 
-void Godot::nativescript_terminate(void *handle) {
-	godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::language_index);
+void Godot::pygdnlib_terminate() {
+	if (Py_IsInitialized()) {
+		Py_FinalizeEx();
+
+		PyMem_RawFree(pythonpath);
+	}
 }
 
 } // namespace godot

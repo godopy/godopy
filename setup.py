@@ -1,13 +1,14 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 
-version = __import__('godot').get_version()
+version = __import__('pygdnlib').get_version()
 
 setup(
     name='godot-cython',
     version=version,
     python_requires='>=3.7',
-    packages=find_packages(),
+    packages=['pygdnlib', 'godot_cpp', 'godot_headers'],
     package_data={
-        'godot-cython': ['godot_headers/*.pxd', 'godot_cpp/*.pxd']
+        'godot_cpp': ['*.pxd'],
+        'godot_headers': ['*.pxd']
     }
 )

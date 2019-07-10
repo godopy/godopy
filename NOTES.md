@@ -15,7 +15,7 @@ touch godot_headers/__init__.py
 
 ```sh
 cd godot_headers
-autopxd -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include gdnative_api_struct.gen.h ../godot_headers/gdnative_api_struct__gen.pxd
+autopxd -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I. gdnative_api_struct.gen.h ../godot_headers/gdnative_api_struct__gen.pxd
 ```
 
 ### Edit `gdnative_api_struct__gen.pxd`
