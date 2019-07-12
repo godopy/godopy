@@ -16,7 +16,8 @@ setup(
         'autopxd2',
         'pycparser',
         'Click',
-        'Cython'
+        'Cython',
+        'Mako'
     ],
     entry_points='''
     [console_scripts]

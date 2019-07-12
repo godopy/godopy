@@ -3,16 +3,22 @@ import sys
 import json
 import click
 
-from redbaron import RedBaron
-
 from . import get_version
+
+from redbaron import RedBaron
+from mako.template import Template
 from Cython.Compiler.Main import CompilationOptions, default_options
+
+from collections import OrderedDict as odict
 
 CPPDEFS_MODULE = 'godot_cpp'
 
-api_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', 'godot_headers', 'api.json'))
+base_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+api_path = os.path.join(base_dir, 'godot_headers', 'api.json')
 with open(api_path, 'r') as f:
     gdapi = {i['name']: i for i in json.load(f)}
+
+templates_dir = os.path.join(base_dir, 'godot_cpp', 'templates')
 
 @click.group()
 def pygodot():
@@ -21,15 +27,15 @@ def pygodot():
 def compile(tree, output_dir, name, mode='py'):
     macro_prefix = ''
     directives = set()
-    cimports = {}  # TODO: Use ordered dict
-    registered_classes = {}
+    cimports = odict()
+    registered_classes = odict()
     basename = name
 
     for i, node in enumerate(tree):
         if node.type == 'import' and joinval(node.value[0]) == CPPDEFS_MODULE:
             macro_prefix = node.value[0].target or joinval(node.value[0])
             directives.add(macro_prefix)
-            # tree[i] = empty(tree[i])
+
         elif node.type in ('atomtrailers', 'assignment'):
             targets = None
             if node.type == 'assignment':
@@ -42,7 +48,6 @@ def compile(tree, output_dir, name, mode='py'):
 
             name, method, args = node.value
 
-            # print(name, method, args)
             tree[i] = empty(tree[i])
             if str(method) == 'register_class':
                 name = str(targets[0])
@@ -50,8 +55,7 @@ def compile(tree, output_dir, name, mode='py'):
 
                 base = args[1].value.to_python()
 
-                # methods = {m['name']: m for m in gdapi[base]['methods']}
-                # print(gdapi[base]['methods'])
+                assert base in gdapi, f"{base} class not found in Godot API"
                 registered_classes[name] = {
                     'name': args[0].value.to_python(),
                     'base': base
@@ -63,10 +67,11 @@ def compile(tree, output_dir, name, mode='py'):
                 cimports.setdefault(module.value.to_python(), set()).update(v.to_python() for v in symbols.value)
             elif str(method) == 'declare_attr':
                 cls = registered_classes[str(name)]
-                cls.setdefault('attrs', {})[args.value[0]] = args.value[1]
+                cls.setdefault('attrs', odict())[args.value[0]] = args.value[1]
             elif str(method) == 'register_property':
                 cls = registered_classes[str(name)]
-                cls.setdefault('props', {})[args.value[0]] = args.value[1]
+                cls.setdefault('props', odict())[args.value[0]] = args.value[1]
+
         elif node.type == 'def' and node.decorators:
             for j, dec in enumerate(node.decorators):
                 if str(dec.value.value[0]) not in directives or len(dec.value.value) != 3 or \
@@ -76,21 +81,29 @@ def compile(tree, output_dir, name, mode='py'):
                 return_type = returntype(node)
                 args = {arg.target.value: argtype(arg) for arg in node.arguments}
                 args['self'] = f'{name} *'
-                cls.setdefault('methods', {})[node.name] = {
-                    'return_type': return_type,
-                    'args': args
-                }
+                cls.setdefault('methods', odict())[node.name] = odict(return_type=return_type, args=args)
 
-                del tree[i].decorators[j] # RedBaron('@cython.cfunc\ndef dummpy(): pass')[0].decorators[0]
+                del tree[i].decorators[j]
 
-    print(cimports)
-    print(registered_classes)
+    context = {
+        'basename': basename,
+        'cimports': cimports,
+        'registered_classes': registered_classes
+    }
 
-    with open(os.path.join(output_dir, f'{name}__x.py'), 'w') as f:
-        f.write(tree.dumps())
+    print(context)
+
+    output = {
+        f'{name}__x.py': tree.dumps(),
+        f'{name}__x.pxd': Template(filename=os.path.join(templates_dir, 'x.pxd.mako')).render(**context)
+    }
+
+    for fn, code in output.items():
+        with open(os.path.join(output_dir, fn), 'w') as f:
+            f.write(code)
 
     print('\nNOT IMPLEMENTED:'),
-    print(f'Automatic generation of "{name}__x.pxd", "{name}__w.hpp" and "{name}__w.cpp" files.')
+    print(f'Automatic generation of "{basename}__w.hpp" and "{basename}__w.cpp" files.')
 
 @click.command()
 @click.argument('sourcefile', nargs=-1, type=click.File('r'))
