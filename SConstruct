@@ -128,7 +128,7 @@ elif env['platform'] == 'osx':
             'Only 64-bit builds are supported for the macOS target.'
         )
 
-    env.Append(CPPPATH='/usr/local/Cellar/python/3.7.3/Frameworks/Python.framework/Versions/3.7/include/python3.7m')
+    env.Append(CPPPATH='/usr/local/Cellar/python/3.7.4/Frameworks/Python.framework/Versions/3.7/include/python3.7m')
 
     env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', 'x86_64', '-fwrapv'])
     env.Append(LINKFLAGS=[
@@ -204,7 +204,7 @@ add_sources(sources, 'src/core', 'cpp')
 add_sources(sources, 'src/gen', 'cpp')
 
 library = env.StaticLibrary(
-    target='bin/' + 'libgodot-cython.{}.{}.{}'.format(
+    target='bin/' + 'libpygodot.{}.{}.{}'.format(
         env['platform'],
         env['target'],
         env['bits'],

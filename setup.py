@@ -1,14 +1,25 @@
 from setuptools import setup
 
-version = __import__('pygdnlib').get_version()
+version = __import__('godot').get_version()
 
 setup(
-    name='godot-cython',
+    name='pygodot',
     version=version,
     python_requires='>=3.7',
-    packages=['pygdnlib', 'godot_cpp', 'godot_headers'],
+    packages=['godot', 'godot_cpp', 'godot_headers'],
     package_data={
         'godot_cpp': ['*.pxd'],
         'godot_headers': ['*.pxd']
-    }
+    },
+    install_requires=[
+        'redbaron',
+        'autopxd2',
+        'pycparser',
+        'Click',
+        'Cython'
+    ],
+    entry_points='''
+    [console_scripts]
+    pygodot=godot.cli:pygodot
+    '''
 )

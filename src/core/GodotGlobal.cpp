@@ -169,7 +169,7 @@ void Godot::pygdnlib_init() {
 	// Initialize interpreter but skip initialization registration of signal handlers
 	Py_InitializeEx(0);
 
-	PyObject *mod = PyImport_ImportModule("pygdnlib");
+	PyObject *mod = PyImport_ImportModule("godot_cpp");
   if (mod != NULL) {
     Py_DECREF(mod);
     print("Python {0}\n", Py_GetVersion());
