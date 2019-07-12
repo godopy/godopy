@@ -24,7 +24,7 @@ templates_dir = os.path.join(base_dir, 'godot_cpp', 'templates')
 def pygodot():
     pass
 
-def compile(tree, output_dir, name, mode='py'):
+def compile(tree, output_dir, name):
     macro_prefix = ''
     directives = set()
     cimports = odict()
@@ -48,29 +48,34 @@ def compile(tree, output_dir, name, mode='py'):
 
             name, method, args = node.value
 
-            tree[i] = empty(tree[i])
-            if str(method) == 'register_class':
-                name = str(targets[0])
-                directives.add(name)
+            name = str(name)
+            method = str(method)
 
+            if method == 'register_class':
+                name = str(targets[0])
                 base = args[1].value.to_python()
 
-                assert base in gdapi, f"{base} class not found in Godot API"
+                directives.add(name)
+                assert base in gdapi, f'"{base}" class not found in Godot API'
+
                 registered_classes[name] = {
                     'name': args[0].value.to_python(),
                     'base': base
                 }
 
                 cimports.setdefault('godot_cpp.gen', set()).add(base)
-            elif str(method) == 'cimport':
+            elif method == 'cimport':
                 module, symbols = args
                 cimports.setdefault(module.value.to_python(), set()).update(v.to_python() for v in symbols.value)
-            elif str(method) == 'declare_attr':
-                cls = registered_classes[str(name)]
-                cls.setdefault('attrs', odict())[args.value[0]] = args.value[1]
-            elif str(method) == 'register_property':
-                cls = registered_classes[str(name)]
-                cls.setdefault('props', odict())[args.value[0]] = args.value[1]
+            elif method == 'declare_attr':
+                cls = registered_classes[name]
+                cls.setdefault('attrs', odict())[args.value[0].value.to_python()] = args.value[1].value.to_python()
+            elif method == 'register_property':
+                cls = registered_classes[name]
+                cls.setdefault('props', odict())[args.value[0].value.to_python()] = args.value[1].value.to_python()
+
+            # Remove godot_cpp hints
+            tree[i] = empty(tree[i])
 
         elif node.type == 'def' and node.decorators:
             for j, dec in enumerate(node.decorators):
@@ -83,6 +88,7 @@ def compile(tree, output_dir, name, mode='py'):
                 args['self'] = f'{name} *'
                 cls.setdefault('methods', odict())[node.name] = odict(return_type=return_type, args=args)
 
+                # Remove register_method decorator
                 del tree[i].decorators[j]
 
     context = {
@@ -94,8 +100,9 @@ def compile(tree, output_dir, name, mode='py'):
     print(context)
 
     output = {
-        f'{name}__x.py': tree.dumps(),
-        f'{name}__x.pxd': Template(filename=os.path.join(templates_dir, 'x.pxd.mako')).render(**context)
+        f'{basename}__impl.py': tree.dumps(),
+        f'{basename}__impl.pxd': Template(filename=os.path.join(templates_dir, 'impl.pxd.mako')).render(**context),
+        f'{basename}__wrap.hpp': Template(filename=os.path.join(templates_dir, 'wrap.hpp.mako')).render(**context)
     }
 
     for fn, code in output.items():
@@ -103,12 +110,11 @@ def compile(tree, output_dir, name, mode='py'):
             f.write(code)
 
     print('\nNOT IMPLEMENTED:'),
-    print(f'Automatic generation of "{basename}__w.hpp" and "{basename}__w.cpp" files.')
+    print(f'Automatic generation of "{basename}__wrap.cpp" files.')
 
 @click.command()
 @click.argument('sourcefile', nargs=-1, type=click.File('r'))
 @click.option('--output-dir', '-o')
-@click.option('--cpp', is_flag=True, default=True, help="Compile expanded source to C++ with Cython")
 @click.option('--version', '-V', is_flag=True)
 def compilecpp(sourcefile, **opts):
     if (opts['version']):
@@ -118,24 +124,20 @@ def compilecpp(sourcefile, **opts):
             click.echo('No source files given')
             sys.exit(1)
 
-        sources = list(reversed(sourcefile))
-        src = sources.pop()
-
-        default_output_dir, filename = os.path.split(os.path.realpath(src.name))
-        name, ext = os.path.splitext(filename)
-
         output_dir = opts.get('output_dir')
 
-        if not output_dir:
-            output_dir = default_output_dir
-        elif not os.path.isdir(output_dir):
-            click.echo(f'Output directory "{output_dir}" does not exist')
-            sys.exit(1)
+        for src in sourcefile:
+            default_output_dir, filename = os.path.split(os.path.realpath(src.name))
+            name, ext = os.path.splitext(filename)
 
-        mode = 'cpp' if opts['cpp'] else 'py'
+            if not output_dir:
+                output_dir = default_output_dir
+            elif not os.path.isdir(output_dir):
+                click.echo(f'Output directory "{output_dir}" does not exist')
+                sys.exit(1)
 
-        tree = RedBaron(src.read())
-        compile(tree, output_dir, name, mode)
+            tree = RedBaron(src.read())
+            compile(tree, output_dir, name)
 
 pygodot.add_command(compilecpp)
 
