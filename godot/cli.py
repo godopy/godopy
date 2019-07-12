@@ -7,7 +7,7 @@ from . import get_version
 
 from redbaron import RedBaron
 from mako.template import Template
-from Cython.Compiler.Main import CompilationOptions, default_options
+from Cython.Compiler.Main import CompilationOptions, default_options, compile as cython_compile
 
 from collections import OrderedDict as odict
 
@@ -97,7 +97,8 @@ def compile(tree, output_dir, name):
         'registered_classes': registered_classes
     }
 
-    print(context)
+    # from pprint import pprint
+    # pprint(context)
 
     output = {
         f'{basename}__impl.py': tree.dumps(),
@@ -109,8 +110,19 @@ def compile(tree, output_dir, name):
         with open(os.path.join(output_dir, fn), 'w') as f:
             f.write(code)
 
-    print('\nNOT IMPLEMENTED:'),
-    print(f'Automatic generation of "{basename}__wrap.cpp" files.')
+    # Compile .py/.pxd, required for the next step
+    cython_options = {}
+    cython_options.update(default_options)
+    cython_options['cplus'] = 1
+    cython_options['output_file'] = os.path.join(output_dir, f'{basename}__impl.cpp')
+    cython_options['language_level'] = 3
+    cython_compile([os.path.join(output_dir, f'{basename}__impl.py')], CompilationOptions(cython_options))
+
+    context['method_map'] = map_compiled_methods(registered_classes, output_dir, basename)
+    wrapper_code = Template(filename=os.path.join(templates_dir, 'wrap.cpp.mako')).render(**context)
+    with open(os.path.join(output_dir, f'{basename}__wrap.cpp'), 'w') as f:
+            f.write(wrapper_code)
+
 
 @click.command()
 @click.argument('sourcefile', nargs=-1, type=click.File('r'))
@@ -141,6 +153,27 @@ def compilecpp(sourcefile, **opts):
 
 pygodot.add_command(compilecpp)
 
+def map_compiled_methods(classes, output_dir, basename):
+    method_map = {}
+    for cls in classes.values():
+        for method in cls['methods']:
+            method_map[method] = None
+
+    header_chunks = []
+    with open(os.path.join(output_dir, f'{basename}__impl.h'), 'r') as f:
+        for line in f:
+            if f'{basename}__impl' in line and '__PYX_EXTERN_C' in line:
+                for chunk in line.split():
+                    if f'{basename}__impl' in chunk:
+                        header_chunks.append(chunk.split('(')[0])
+
+    for method in method_map:
+        for chunk in header_chunks:
+            if method in chunk:
+                method_map[method] = chunk
+                continue
+
+    return method_map
 
 def joinval(node):
     return '.'.join(str(v) for v in node.value)
