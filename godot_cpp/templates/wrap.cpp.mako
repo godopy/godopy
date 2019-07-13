@@ -53,7 +53,7 @@ ${spec.annotations['return']} ${cls.name}::${mname}(
 	% endfor
 ) {
 	${cls.name} *self = this;
-	${method_map[mname]}(
+	return ${method_map[mname]}(
 	% for arg in spec.args:
 		${arg}${'' if loop.last else ','}
 	% endfor
