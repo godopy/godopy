@@ -5,25 +5,39 @@
 #include "${basename}__impl.h"
 
 using namespace godot;
-% for name, cls in registered_classes.items():
+% for cls in registry.classes:
 
-void ${name}::_register_methods() {
+void ${cls.name}::_register_methods() {
 	PyImport_AppendInittab("${basename}", PyInit_${basename}__impl);
-	% for method in cls['methods']:
-		% if method != '_init':
-	register_method("${method}", &${name}::${method});
+	% for pmethod in cls.public_methods:
+		% if pmethod != '_init':
+	register_method("${pmethod}", &${cls.name}::${pmethod});
 		% endif
 	% endfor
+  % for pname, pdef in cls.props.items():
+  register_property<${cls.name}, ${pdef['type']}>("${pname}", &${cls.name}::${pname}, ${pdef['value']});
+  % endfor
+  % for pname, pdef in cls.getset_props.items():
+  register_property<${cls.name}, ${pdef['type']}>("${pname}", &${cls.name}::${pdef['setter']}, &${cls.name}::${pdef['getter']}, ${pdef['value']});
+  % endfor
+
+  % for signame, sigargs in cls.signals.items():
+  register_signal<${cls.name}>((char *)"${signame}",
+    % for key, value in sigargs.items():
+    "${key}", GODOT_VARIANT_TYPE_${value.upper()}${'' if loop.last else ','}
+    % endfor
+  );
+  % endfor
 }
 
-% for mname, mdef in cls['methods'].items():
+% for mname, spec in cls.methods.items():
 	% if mname == '_init':
 void GDExample::_init() {
 	PyObject *mod = PyImport_ImportModule("${basename}");
 
   if (mod != NULL) {
     Py_DECREF(mod);
-    ${name} *self = this;
+    ${cls.name} *self = this;
     ${method_map['_init']}(self);
   } else {
     PyErr_Print();
@@ -31,16 +45,16 @@ void GDExample::_init() {
 }
 	% else:
 
-${mdef['return_type']} ${name}::${mname}(
-	% for arg, argtype in mdef['args'].items():
+${spec.annotations['return']} ${cls.name}::${mname}(
+	% for arg in spec.args:
 		% if not loop.first:
-	${argtype} ${arg}${'' if loop.last else ','}
+	${spec.annotations[arg]} ${arg}${'' if loop.last else ','}
 		% endif
 	% endfor
 ) {
-	${name} *self = this;
+	${cls.name} *self = this;
 	${method_map[mname]}(
-	% for arg in mdef['args']:
+	% for arg in spec.args:
 		${arg}${'' if loop.last else ','}
 	% endfor
 	);
