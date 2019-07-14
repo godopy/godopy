@@ -4,11 +4,6 @@
 
 #include "Wrapped.hpp"
 
-#include "Directory.hpp"
-
-#define PY_SSIZE_T_CLEAN
-#include "Python.h"
-
 static GDCALLINGCONV void *wrapper_create(void *data, const void *type_tag, godot_object *instance) {
 	godot::_Wrapped *wrapper_memory = (godot::_Wrapped *)godot::api->godot_alloc(sizeof(godot::_Wrapped));
 
@@ -37,8 +32,6 @@ const godot_gdnative_ext_nativescript_api_struct *nativescript_api = nullptr;
 const godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_1_api = nullptr;
 
 const void *gdnlib = NULL;
-
-wchar_t *pythonpath = nullptr;
 
 void Godot::print(const String &message) {
 	godot::api->godot_print((godot_string *)&message);
@@ -146,44 +139,6 @@ void Godot::nativescript_init(void *handle) {
 
 void Godot::nativescript_terminate(void *handle) {
 	godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::language_index);
-}
-
-void Godot::pygdnlib_init() {
-	Directory d;
-
-	const char *c_pythonpath = Py_EncodeLocale(pythonpath, nullptr);
-
-	if (!d.dir_exists(c_pythonpath)) {
-		print("Could not initialize Python interpreter:");
-		printf("Required Python standard library files are missing in \"%s\"\n\n", c_pythonpath);
-
-		return;
-	}
-
-	Py_NoSiteFlag = 1;
-	Py_IgnoreEnvironmentFlag = 1;
-
-	Py_SetProgramName(L"godot");
-	Py_SetPythonHome(pythonpath);
-
-	// Initialize interpreter but skip initialization registration of signal handlers
-	Py_InitializeEx(0);
-
-	PyObject *mod = PyImport_ImportModule("godot_cpp");
-  if (mod != NULL) {
-    Py_DECREF(mod);
-    print("Python {0}\n", Py_GetVersion());
-  } else {
-    PyErr_Print();
-  }
-}
-
-void Godot::pygdnlib_terminate() {
-	if (Py_IsInitialized()) {
-		Py_FinalizeEx();
-
-		PyMem_RawFree(pythonpath);
-	}
 }
 
 } // namespace godot

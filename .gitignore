@@ -20,4 +20,3 @@ bin
 
 # Generated files
 /godot_headers
-*__gen.pxd

@@ -182,6 +182,7 @@ env.Append(CPPPATH=[
     'include',
     'include/gen',
     'include/core',
+    'include/pycore',
 ])
 
 # Generate bindings?
@@ -202,6 +203,7 @@ if env['generate_bindings']:
 sources = []
 add_sources(sources, 'src/core', 'cpp')
 add_sources(sources, 'src/gen', 'cpp')
+add_sources(sources, 'src/pycore', 'cpp')
 
 library = env.StaticLibrary(
     target='bin/' + 'libpygodot.{}.{}.{}'.format(

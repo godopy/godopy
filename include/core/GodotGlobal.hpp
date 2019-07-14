@@ -25,8 +25,6 @@ public:
 	static void gdnative_terminate(godot_gdnative_terminate_options *o);
 	static void nativescript_init(void *handle);
 	static void nativescript_terminate(void *handle);
-	static void pygdnlib_init();
-	static void pygdnlib_terminate();
 
 	static void gdnative_profiling_add_data(const char *p_signature, uint64_t p_time);
 
