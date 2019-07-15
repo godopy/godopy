@@ -24,6 +24,7 @@ namespace godot {
 
 void *_RegisterState::nativescript_handle;
 int _RegisterState::language_index;
+int _RegisterState::python_language_index;
 
 const godot_gdnative_core_api_struct *api = nullptr;
 const godot_gdnative_core_1_1_api_struct *core_1_1_api = nullptr;
@@ -132,6 +133,8 @@ void Godot::nativescript_init(void *handle) {
 	binding_funcs.free_instance_binding_data = wrapper_destroy;
 
 	godot::_RegisterState::language_index = godot::nativescript_1_1_api->godot_nativescript_register_instance_binding_data_functions(binding_funcs);
+
+	printf("C++ language index %d\n", godot::_RegisterState::language_index);
 
 	___register_types();
 	___init_method_bindings();

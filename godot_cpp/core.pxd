@@ -48,6 +48,7 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
 
     void *_RegisterState__nativescript_handle "godot::_RegisterState::nativescript_handle"
     int _RegisterState__language_index "godot::_RegisterState::language_index"
+    int _RegisterState__python_language_index "godot::_RegisterState::python_language_index"
 
 cdef extern from "Vector2.hpp" namespace "godot" nogil:
     # Vector2 is defined as struct in C++

@@ -38,7 +38,6 @@ PyMODINIT_FUNC PyInit__core(void) {
   return m;
 }
 
-// NOTE: It may be possible to join bindings by branching into Python or C++ based on *data
 static GDCALLINGCONV void *wrapper_create(void *data, const void *type_tag, godot_object *instance) {
 	// XXX: call PyObject_New directly?
 	__pygodot___Wrapped *wrapper_obj = _create_wrapper(instance, (size_t)type_tag);
@@ -118,6 +117,16 @@ void PyGodot::python_terminate() {
 	}
 }
 
+/***
+ * ORDER IS IMPORTANT!
+ * 1. PyImport_AppendInittab for "_core", "core", "gen" and all user extentions (TODO: rename core Python modules!)
+ * 2. pygodot::PyGodot::python_init();
+ * 3. PyImport_ImportModule for "core", "gen" and all user extentions
+ * 4. Only after all previous steps: pygodot::PyGodot::nativescript_init(handle);
+ * 5. Register user classes
+ *
+ * Both godot::Godot::nativescript_init and pygodot::PyGodot::nativescript_init can be used in the same program
+ ***/
 void PyGodot::nativescript_init(void *handle) {
 	godot::_RegisterState::nativescript_handle = handle;
 
@@ -127,14 +136,14 @@ void PyGodot::nativescript_init(void *handle) {
 	binding_funcs.refcount_incremented_instance_binding = wrapper_incref;
 	binding_funcs.refcount_decremented_instance_binding = wrapper_decref;
 
-	godot::_RegisterState::language_index = godot::nativescript_1_1_api->godot_nativescript_register_instance_binding_data_functions(binding_funcs);
+	godot::_RegisterState::python_language_index = godot::nativescript_1_1_api->godot_nativescript_register_instance_binding_data_functions(binding_funcs);
 
 	__register_python_types();
 	__init_python_method_bindings();
 }
 
 void PyGodot::nativescript_terminate(void *handle) {
-	godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::language_index);
+	godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::python_language_index);
 }
 
 } // namespace pygodot

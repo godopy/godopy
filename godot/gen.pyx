@@ -1,5 +1,5 @@
 from godot_headers.gdnative_api_struct__gen cimport *
-from godot_cpp.core cimport gdapi, nativescript_1_1_api, _RegisterState__language_index, Vector2
+from godot_cpp.core cimport gdapi, nativescript_1_1_api, _RegisterState__python_language_index, Vector2
 from godot_cpp.gen cimport ___godot_icall_void_Vector2, Object as _Object
 from godot.core cimport _Wrapped
 
@@ -30,8 +30,10 @@ cdef public void __init_python_method_bindings():
     __mb.__Node2D__mb_set_position = gdapi.godot_method_bind_get_method("Node2D", "set_position")
 
 cdef public void __register_python_types():
-    cdef int i = _RegisterState__language_index
+    cdef int i = _RegisterState__python_language_index
     cdef const godot_gdnative_ext_nativescript_1_1_api_struct *ns11api = nativescript_1_1_api
+
+    print("Python language index", i)
 
     ns11api.godot_nativescript_set_global_type_tag(i, "Object", <const void *>Object)
     ns11api.godot_nativescript_set_global_type_tag(i, "CanvasItem", <const void *>CanvasItem)
