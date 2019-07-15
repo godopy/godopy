@@ -1,5 +1,5 @@
 from godot_headers.gdnative_api_struct__gen cimport *
-from godot_cpp.core cimport gdapi
+from godot_cpp.Global cimport gdapi
 
 def gdprint(str fmt, *args):
     cdef msg = fmt.format(*args).encode('utf-8')

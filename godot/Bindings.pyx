@@ -1,7 +1,11 @@
 from godot_headers.gdnative_api_struct__gen cimport *
-from godot_cpp.core cimport gdapi, nativescript_1_1_api, _RegisterState__python_language_index, Vector2
-from godot_cpp.gen cimport ___godot_icall_void_Vector2, Object as _Object
-from godot.core cimport _Wrapped
+
+from godot_cpp.Global cimport gdapi, nativescript_1_1_api, _RegisterState__python_language_index
+from godot_cpp.CoreTypes cimport Vector2
+from godot_cpp.Bindings cimport Object as _Object
+from godot_cpp.__icalls cimport ___godot_icall_void_Vector2
+
+from godot.Godot cimport _Wrapped
 
 from cpython.object cimport PyObject
 

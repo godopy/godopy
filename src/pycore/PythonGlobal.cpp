@@ -119,9 +119,9 @@ void PyGodot::python_terminate() {
 
 /***
  * ORDER IS IMPORTANT!
- * 1. PyImport_AppendInittab for "_core", "core", "gen" and all user extentions (TODO: rename core Python modules!)
+ * 1. PyImport_AppendInittab for "_core", "Godot", "Bindings" and all user extentions
  * 2. pygodot::PyGodot::python_init();
- * 3. PyImport_ImportModule for "core", "gen" and all user extentions
+ * 3. PyImport_ImportModule for "Godot", "Bindings" and all user extentions
  * 4. Only after all previous steps: pygodot::PyGodot::nativescript_init(handle);
  * 5. Register user classes
  *
