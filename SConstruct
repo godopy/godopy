@@ -204,6 +204,7 @@ sources = []
 add_sources(sources, 'src/core', 'cpp')
 add_sources(sources, 'src/gen', 'cpp')
 add_sources(sources, 'src/pycore', 'cpp')
+add_sources(sources, 'godot', 'cpp')
 
 library = env.StaticLibrary(
     target='bin/' + 'libpygodot.{}.{}.{}'.format(

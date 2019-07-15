@@ -7,6 +7,9 @@ cdef extern from "Object.hpp" namespace "godot" nogil:
     cdef cppclass Object(_Wrapped):
         Variant emit_signal(const char *signal, ...) except+
 
+cdef extern from "__icalls.hpp" nogil:
+    void ___godot_icall_void_Vector2(godot_method_bind *mb, const Object *inst, const Vector2&)
+
 cdef extern from "CanvasItem.hpp" namespace "godot" nogil:
     cdef cppclass CanvasItem(Object):
         pass
