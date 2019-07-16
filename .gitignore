@@ -18,6 +18,11 @@ bin
 *.files
 *.includes
 
+# Build files
+.eggs/
+/build
+/dist
+
 # Generated files
 /godot_headers
 /godot/*.h

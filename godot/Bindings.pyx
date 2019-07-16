@@ -17,6 +17,9 @@ cdef class Object(_Wrapped):
 cdef class CanvasItem(Object):
     pass
 
+cdef class Reference(Object):
+    pass
+
 cdef class Node2D(CanvasItem):
     cdef void _set_position(Node2D self, Vector2 position):
         ___pygodot_icall_void_Vector2(__mb.__Node2D__mb_set_position, <_Wrapped>self, position)

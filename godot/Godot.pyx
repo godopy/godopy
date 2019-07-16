@@ -6,7 +6,11 @@ from cpython.object cimport PyObject
 
 __keepalive = set()
 
-def gdprint(str fmt, *args):
+def _pyprint(*objects, sep=' ', end='\n'):
+    _gdprint('{0}{1}', sep.join(str(o) for o in objects), end)
+
+# Imitate Godot's behavior
+def _gdprint(str fmt, *args):
     cdef msg = fmt.format(*args).encode('utf-8')
     cdef const char *c_msg = msg
     cdef godot_string gd_msg
@@ -15,6 +19,12 @@ def gdprint(str fmt, *args):
     gdapi.godot_string_parse_utf8(&gd_msg, c_msg)
     gdapi.godot_print(&gd_msg)
     gdapi.godot_string_destroy(&gd_msg)
+
+def register_method(object cls, str name, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
+    _register_method(cls, name, rpc_type)
+
+def register_class(object cls):
+    _register_class(cls)
 
 cdef inline cls2typetag(cls):
     cdef PyObject *_type_tag = <PyObject *>cls
@@ -48,7 +58,8 @@ cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag
 
 ### CLASS REGISTRATION ###
 
-cdef public void register_class(object cls):
+cdef public void _register_class(object cls):
+    # Add checks!
     cdef void *method_data = <PyObject *>cls
     cdef void *type_tag = method_data
 
@@ -89,7 +100,7 @@ cdef public:
 ### METHOD REGISTRATION ###
 
 # TODO: Move to C++, use templates
-cdef public void register_cmethod(object cls, str uname, cfunc_void_object_float callback,
+cdef public void _register_cmethod(object cls, str uname, cfunc_void_object_float callback,
                                   godot_method_rpc_mode rpc_type):
     cdef godot_instance_method m = [NULL, NULL, NULL]
     m.method = cmethod_wrapper
@@ -113,7 +124,7 @@ cdef godot_variant cmethod_wrapper(godot_object *instance, void *method_data, vo
     gdapi.godot_variant_new_nil(&gd_result)
     return gd_result
 
-cdef public void register_method(object cls, str uname, godot_method_rpc_mode rpc_type):
+cdef public void _register_method(object cls, str uname, godot_method_rpc_mode rpc_type):
     cdef object method = getattr(cls, uname)
     __keep_ptr(method)
 

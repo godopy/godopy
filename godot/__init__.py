@@ -1,7 +1,20 @@
 import os
+import sys
 import subprocess
 
-# TODO: Write pygdnlib version to a C header file
+ROOTDIR = os.path.abspath((os.path.join(os.path.dirname(__file__), '..', '..', '..')))
+if (os.path.isdir(ROOTDIR) and ROOTDIR.endswith('pyres')):
+    sys.path.append(ROOTDIR)
+
+try:
+    # TODO: Rename and rearrange Cython modules
+    import Godot as gdnative, Bindings as nodes
+    from Godot import _pyprint as print, _gdprint as printf
+except ImportError:
+    # not inside Godot
+    pass
+
+# TODO: Write PyGodot version to a C header file
 
 VERSION = (0, 0, 1, 'alpha', 0)
 

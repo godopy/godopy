@@ -128,6 +128,7 @@ elif env['platform'] == 'osx':
             'Only 64-bit builds are supported for the macOS target.'
         )
 
+    env.Append(LIBPATH='/usr/local/opt/python/Frameworks/Python.framework/Versions/3.7/lib/python3.7/config-3.7m-darwin')
     env.Append(CPPPATH='/usr/local/Cellar/python/3.7.4/Frameworks/Python.framework/Versions/3.7/include/python3.7m')
 
     env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', 'x86_64', '-fwrapv'])
@@ -138,6 +139,8 @@ elif env['platform'] == 'osx':
         'Cocoa',
         '-Wl,-undefined,dynamic_lookup',
     ])
+
+    env.Append(LIBS=['dl'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
@@ -207,11 +210,20 @@ add_sources(sources, 'src/gen', 'cpp')
 add_sources(sources, 'src/pycore', 'cpp')
 add_sources(sources, 'godot', 'cpp')
 
-library = env.StaticLibrary(
-    target='bin/' + 'libpygodot.{}.{}.{}'.format(
-        env['platform'],
-        env['target'],
-        env['bits'],
-    ), source=sources
+target_name = 'bin/' + 'libpygodot.{}.{}.{}'.format(
+    env['platform'],
+    env['target'],
+    env['bits'],
 )
-Default(library)
+
+gdlib_sources = []
+add_sources(gdlib_sources, 'src/pylib', 'cpp')
+
+static_library = env.StaticLibrary(target=target_name, source=sources)
+
+dl_env = env.Clone()
+
+dl_env.Append(LIBS=[static_library, 'python3.7m'])
+gdlib = dl_env.SharedLibrary(target=target_name, source=gdlib_sources)
+
+Default(gdlib)
