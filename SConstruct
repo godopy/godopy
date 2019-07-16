@@ -183,6 +183,7 @@ env.Append(CPPPATH=[
     'include/gen',
     'include/core',
     'include/pycore',
+    'include/pygen',
 ])
 
 # Generate bindings?

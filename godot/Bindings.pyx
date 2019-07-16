@@ -3,9 +3,10 @@ from godot_headers.gdnative_api_struct__gen cimport *
 from godot_cpp.Global cimport gdapi, nativescript_1_1_api, _RegisterState__python_language_index
 from godot_cpp.CoreTypes cimport Vector2
 from godot_cpp.Bindings cimport Object as _Object
-from godot_cpp.__icalls cimport ___godot_icall_void_Vector2
+
 
 from godot.Godot cimport _Wrapped
+from godot.__icalls cimport ___pygodot_icall_void_Vector2
 
 from cpython.object cimport PyObject
 
@@ -17,10 +18,14 @@ cdef class CanvasItem(Object):
     pass
 
 cdef class Node2D(CanvasItem):
-    cdef void set_position(Node2D self, Vector2 position):
-        # TODO: Use cpdef with Pythonized args
-        cdef PyObject *_this = <PyObject *>self
-        ___godot_icall_void_Vector2(__mb.__Node2D__mb_set_position, <_Object *>_this, position)
+    cdef void _set_position(Node2D self, Vector2 position):
+        ___pygodot_icall_void_Vector2(__mb.__Node2D__mb_set_position, <_Wrapped>self, position)
+
+    def set_position(self, position):  # make namedtuple
+        cdef float x, y
+        x, y = position
+        cdef Vector2 c_position = Vector2(x, y)
+        ___pygodot_icall_void_Vector2(__mb.__Node2D__mb_set_position, <_Wrapped>self, c_position)
 
 cdef class Sprite(Node2D):
     pass
