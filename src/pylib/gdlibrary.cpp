@@ -3,8 +3,7 @@
 
 /* Generic gdnlib, users may create their own */
 
-#define LOADER_MODULE "__loader__"
-#define LOADER_ENTRY_POINT "main"
+#define LOADER_ENTRY_POINT "_init_dynamic_loading"
 
 PyMODINIT_FUNC PyInit_pygodot(void);
 PyMODINIT_FUNC PyInit_gdnative(void);
@@ -36,7 +35,7 @@ extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
   PyObject *mod = NULL;
   mod = PyImport_ImportModule("gdnative"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
   mod = PyImport_ImportModule("nodes"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); // Will be used
 
   // Import custom modules here
 
@@ -46,13 +45,7 @@ extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
 
   // The rest of the function is needed to register Python modules dynamically and can be removed if
   // all required NativeScript modules are included in the binary
-  mod = PyImport_ImportModule(LOADER_MODULE);
-  if (mod == NULL) {
-    PyErr_Print();
-    fprintf(stderr, "Failed to initialize PyGodot development mode.\n\"%s\" module not found.\n", LOADER_MODULE);
-    return;
-  }
-
+  /* --- dynamic loading code --- */
   PyObject *main = PyObject_GetAttrString(mod, LOADER_ENTRY_POINT);
 
   if (main != NULL && PyCallable_Check(main)) {
@@ -65,10 +58,11 @@ extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
   } else {
     Py_XDECREF(main);
     PyErr_Print();
-    fprintf(stderr, "Failed to call \"%s.%s\"\n", LOADER_MODULE, LOADER_ENTRY_POINT);
+    fprintf(stderr, "Failed to call \"%s\"\n", LOADER_ENTRY_POINT);
   }
+  /* --- end dynamic loading code --- */
 
-  Py_DECREF(mod);
+  Py_DECREF(mod); // PyImport_ImportModule("utils");
 }
 
 extern "C" void GDN_EXPORT godot_nativescript_terminate(void *handle) {

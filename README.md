@@ -56,7 +56,7 @@ class Simple(nodes.Reference):
         gdnative.register_method(cls, 'test_method')
 ```
 
-There is one more file we need, create `gdlibrary.py`:
+Provide an entry point for NativeScript, create `gdlibrary.py`:
 ```py
 import simple
 from godot import gdnative
@@ -65,15 +65,42 @@ def nativescript_init():
     gdnative.register_class(simple.Simple)
 ```
 
-### Installing Godot resource files
+### Initializing Python environment inside the Godot project
+
+There is one more file we need, create `setup.py`:
+
+```py
+from setuptools import setup
+
+setup(
+    app=['simple.py'],
+    data_files=[],
+    options={'py2app': {}},
+    setup_requires=['py2app'],
+)
+```
+
+> This will work only on a Mac, support for Windows and Linux is coming!
+
+Create a new Godot project. For this example we will place it in a folder called `demo` inside `SimpleProject`.
+
+Generate a Python environment for your scripts and link it to the Godot project
 
 ```
-(venv) $ cd pygodot  # TODO: provide custom python packaging instead of this py2app hack
-(venv) # python setup.py py2app
-(venv) # cd ..
-(venv) $ mkdir demo
-(venv) $ touch demo/project.godot
+(venv) $ python setup.py py2app
 (venv) $ mkdir demo/bin
+(venv) $ cd demo/bin
+(venv) $ ln -s ../../dist/simple.app/Contents/Resources pygodot.resources
+(venv) $ cd ../..
+```
+
+### Installing Godot resource files
+
+Create a new Godot project. For this example we will place it in a folder called `demo` inside `SimpleProject`.
+
+Install your script as a NativeScript resource:
+
+```
 (venv) $ pygodot install demo/bin
 (venv) $ pygodot installscript demo/bin Simple
 (venv) $ cd demo/bin
@@ -82,7 +109,7 @@ def nativescript_init():
 (venv) $ godot -e
 ```
 
-Your Python script is accessible as `bin/simple.gdns` Godot resource.
+Your Python script is now ready to use from Godot, it is called `simple.gdns` inside `bin` folder.
 
 ...
 

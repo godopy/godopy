@@ -72,8 +72,6 @@ void PyGodot::set_pythonpath(godot_gdnative_init_options *options) {
 	godot_string path = api->godot_string_get_base_dir(options->active_library_path);
 	godot_int size = api->godot_string_length(&path);
 
-  api->godot_print(&path);
-
 	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 19) * sizeof(wchar_t));
 	wcsncpy(pythonpath, api->godot_string_wide_str(&path), size);
 	wcsncpy(pythonpath + size, L"/pygodot.resources", 19);

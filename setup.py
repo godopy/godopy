@@ -59,8 +59,6 @@ install_requires = [
 
 setup_requires = ['scons']
 
-loader_module = ['src/pylib/__loader__.py']
-
 setup_args = dict(
     name='pygodot',
     version=version,
@@ -73,9 +71,5 @@ setup_args = dict(
     setup_requires=setup_requires,
     entry_points=entry_points
 )
-
-if sys.platform == 'darwin':
-    setup_requires.append('py2app')
-    setup_args['app'] = loader_module
 
 setup(**setup_args)

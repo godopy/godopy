@@ -24,7 +24,8 @@ cdef inline __keep_ptr(object obj):
 cdef inline __free_ptr(void *ptr):
     # TODO: Py_DECREF
     print('[pygodot-debug] Free PyObject', <object>ptr)
-    __keepalive.remove(<object>ptr)
+    if <object>ptr in __keepalive:
+        __keepalive.remove(<object>ptr)
 
 cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag):
     cdef _Wrapped wrapper = <_Wrapped>o
