@@ -6,9 +6,10 @@
 #define LOADER_MODULE "__loader__"
 #define LOADER_ENTRY_POINT "main"
 
-PyMODINIT_FUNC PyInit__core(void);
-PyMODINIT_FUNC PyInit_Godot(void);
-PyMODINIT_FUNC PyInit_Bindings(void);
+PyMODINIT_FUNC PyInit_pygodot(void);
+PyMODINIT_FUNC PyInit_gdnative(void);
+PyMODINIT_FUNC PyInit_nodes(void);
+PyMODINIT_FUNC PyInit_utils(void);
 
 extern "C" void register_class(PyObject *);
 
@@ -22,17 +23,20 @@ extern "C" void GDN_EXPORT godot_gdnative_terminate(godot_gdnative_terminate_opt
 }
 
 extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
-  PyImport_AppendInittab("_core", PyInit__core);
-  PyImport_AppendInittab("Godot", PyInit_Godot);
-  PyImport_AppendInittab("Bindings", PyInit_Bindings);
+  PyImport_AppendInittab("pygodot", PyInit_pygodot);
+  PyImport_AppendInittab("gdnative", PyInit_gdnative);
+  PyImport_AppendInittab("nodes", PyInit_nodes);
+  PyImport_AppendInittab("utils", PyInit_utils);
 
   // Add "PyImport_AppendInittab"-s for custom modules here (which included within the binary extension)
 
   pygodot::PyGodot::python_init();
 
+  // Importing of Cython modules is required to correctly initialize them
   PyObject *mod = NULL;
-  mod = PyImport_ImportModule("Godot"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("Bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("gdnative"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("nodes"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
 
   // Import custom modules here
 
@@ -45,7 +49,7 @@ extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
   mod = PyImport_ImportModule(LOADER_MODULE);
   if (mod == NULL) {
     PyErr_Print();
-    fprintf(stderr, "Failed to initialize PyGodot development mode.\n\"%s\" module not found.", LOADER_MODULE);
+    fprintf(stderr, "Failed to initialize PyGodot development mode.\n\"%s\" module not found.\n", LOADER_MODULE);
     return;
   }
 

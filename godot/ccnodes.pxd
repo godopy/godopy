@@ -1,7 +1,7 @@
 # TODO: Generate automatically
 
-from godot_headers.gdnative_api_struct__gen cimport *
-from .CoreTypes cimport _Wrapped, Variant, Vector2, Array, String
+from .headers.gdnative_api cimport *
+from .core_types cimport _Wrapped, Variant, Vector2, Array, String
 
 cdef extern from "Object.hpp" namespace "godot" nogil:
     cdef cppclass Object(_Wrapped):

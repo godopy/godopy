@@ -1,9 +1,24 @@
-# pygodot
-Python and Cython bindings for the Godot script APIs
+# PyGodot
+
+Python and Cython bindings [Godot game engine](http://godotengine.org/).
 
 The goal of this project is to provide Python and Cython language support for the Godot extension development.
 
-This project is built on top of [godot-cpp](https://github.com/GodotNativeTools/godot-cpp).
+## Work in progress
+
+The bindings are a work in progress. A lot of planned features are missing and the existing APIs are very unstable!
+
+## Differences from godot-python
+
+Unlike [Godot Python](https://github.com/touilleMan/godot-python), this project focuses on the ability to compile
+your Godot modules to the native code and enables lower level access to the Godot C/C++ APIs.
+
+The technical side is that PyGodot is built on top of the NativeScript 1.1 API and
+the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) bindings, Godot Python does not provide
+access to these APIs.
+
+And, finally, PyGodot tries to integrate into the existing Python ecosystem and play by its rules: it works with
+PIP, virtual environments and allows to interact with external Python dependencies.
 
 Index:
 -   [**Getting Started**](#getting-started)
@@ -16,10 +31,10 @@ Index:
 ```
 $ mkdir SimpleProject
 $ cd SimpleProject
-$ python3 -m venv env
-$ source env/bin/activate
-$ git clone https://github.com/ivhilaire/pygodot # or unpack .zip from github
-(env) $ pip install -e ./pygodot
+$ python3 -m venv venv
+$ source venv/bin/activate
+(venv) $ git clone https://github.com/ivhilaire/pygodot
+(venv) $ pip install -e ./pygodot
 ```
 
 ### Creating a simple class
@@ -28,7 +43,7 @@ Create `simple.py` and add the following code
 ```py
 from godot import nodes, gdnative, print
 
-class SimpleClass(nodes.Reference):
+class Simple(nodes.Reference):
     def test_method(self):
         print('This is test!')
 
@@ -47,58 +62,34 @@ import simple
 from godot import gdnative
 
 def nativescript_init():
-    gdnative.register_class(simple.SimpleClass)
+    gdnative.register_class(simple.Simple)
 ```
 
-### Creating .gdnlib and .gdns files
+### Installing Godot resource files
 
-*TODO:* Create specialized `pygodot <cmd>` commands
 ```
-(env) $ cd pygodot
-(env) # python setup.py py2app
-(env) # cd ..
-(env) $ mkdir demo
-(env) $ touch demo/project.godot
-(env) $ mkdir demo/bin # TODO: automate gdnlib setup
-(env) $ cd demo/bin
-(env) $ ln -s ../../pygodot/bin/lib* .
-(env) $ ln -s ../../pygodot/dist/pygodot.app/Contents/Resources pyres
-(env) $ cd ..
-```
-
-Create `pygodot.gdns` under `demo/bin` and add the following code
-```toml
-[general]
-
-singleton=false
-load_once=true
-symbol_prefix="godot_"
-reloadable=false
-
-[entry]
-
-X11.64="res://bin/libpygodot.linux.debug.64.so"
-Windows.64="res://bin/libpygodot.windows.debug.64.dll"
-OSX.64="res://bin/libpygodot.osx.debug.64.dylib"
-
-[dependencies]
-
-X11.64=[]
-Windows.64=[]
-OSX.64=[]
+(venv) $ cd pygodot  # TODO: provide custom python packaging instead of this py2app hack
+(venv) # python setup.py py2app
+(venv) # cd ..
+(venv) $ mkdir demo
+(venv) $ touch demo/project.godot
+(venv) $ mkdir demo/bin
+(venv) $ pygodot install demo/bin
+(venv) $ pygodot installscript demo/bin Simple
+(venv) $ cd demo/bin
+(venv) $ ln -s ../../pygodot/dist/pygodot.app/Contents/Resources pygodot.resources
+(venv) $ cd ..
+(venv) $ godot -e
 ```
 
-Open Godot editor
-```
-(env) $ godot -e
-```
+Your Python script is accessible as `bin/simple.gdns` Godot resource.
 
-[Describe .gdns resource creation]
+...
 
 ### Implementing with gdscript
 ```gdscript
-var simpleclass = load("res://bin/simpleclass.gdns").new();
-simpleclass.test_method();
+var simple = load("res://bin/simple.gdns").new()
+simple.test_method()
 ```
 
 ## Building Native Godot Extensions
@@ -132,26 +123,19 @@ $ source env/bin/activate
 ### Updating the Godot development headers
 
 ```
-(env) $ pip install scons
-(env) $ cd pygodot
-(env) $ cp -R <path to godot build>/modules/gdnative/include ./godot_headers
-(env) $ godot --gdnative-generate-json-api godot_headers/api.json
-(env) $ pygodot genapi
+(venv) $ cd pygodot
+(venv) $ cp -R <path to godot build>/modules/gdnative/include godot/headers
+(venv) $ godot --gdnative-generate-json-api godot/headers/api.json
+(venv) $ pygodot genapi
 ```
 
 ### Compiling libraries
 
 ```
-(env) $ cython -3 --cplus -o godot/Godot.cpp godot/Godot.pyx # TODO: automate
-(env) $ cython -3 --cplus -o godot/Bindings.cpp godot/Bindings.pyx # TODO: automate
-(env) $ scons platform=<your platform> generate_bindings=yes
+(venv) $ python setup.py develop --generate_bindings 
 ```
 
-> Replace `<your platform>` with either `windows`, `linux` or `osx`.
-
-> [Add other notes]
-
-> The resulting libraries will be created in `pygodot/bin/`, take note of their names as they will be different depending on platform.
+> The resulting libraries will be created in `pygodot/`, take note of their names as they will be different depending on platform.
 
 ### To be consintued…
 

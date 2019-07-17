@@ -1,24 +1,10 @@
-from godot_headers.gdnative_api_struct__gen cimport *
-from godot_cpp.Global cimport (gdapi, nativescript_api, nativescript_1_1_api,
-    _RegisterState__nativescript_handle as handle)
+from .headers.gdnative_api cimport *
+from .globals cimport gdapi, nativescript_api, nativescript_1_1_api, _nativescript_handle as handle
+from ._core cimport _Wrapped
 
 from cpython.object cimport PyObject
 
 __keepalive = set()
-
-def _pyprint(*objects, sep=' ', end='\n'):
-    _gdprint('{0}{1}', sep.join(str(o) for o in objects), end)
-
-# Imitate Godot's behavior
-def _gdprint(str fmt, *args):
-    cdef msg = fmt.format(*args).encode('utf-8')
-    cdef const char *c_msg = msg
-    cdef godot_string gd_msg
-
-    gdapi.godot_string_new(&gd_msg)
-    gdapi.godot_string_parse_utf8(&gd_msg, c_msg)
-    gdapi.godot_print(&gd_msg)
-    gdapi.godot_string_destroy(&gd_msg)
 
 def register_method(object cls, str name, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
     _register_method(cls, name, rpc_type)
@@ -39,16 +25,6 @@ cdef inline __free_ptr(void *ptr):
     # TODO: Py_DECREF
     print('[pygodot-debug] Free PyObject', <object>ptr)
     __keepalive.remove(<object>ptr)
-
-cdef str godot_string_to_str(const godot_string *p_gdstr):
-    return <str>PyUnicode_FromWideChar(gdapi.godot_string_wide_str(p_gdstr), gdapi.godot_string_length(p_gdstr))
-
-cdef public _Wrapped _create_wrapper(godot_object *_owner, size_t _type_tag):
-    cdef _Wrapped wrapper = _Wrapped.__new__(_Wrapped)
-    wrapper._owner = _owner
-    wrapper._type_tag = _type_tag
-    print('Godot wrapper %s created' % wrapper)
-    return wrapper
 
 cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag):
     cdef _Wrapped wrapper = <_Wrapped>o

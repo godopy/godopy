@@ -2,8 +2,6 @@ import os
 import sys
 
 import godot
-import godot_cpp
-import godot_headers
 
 def main():
     godot_path = detect_godot_project(*os.path.split(__file__))

@@ -8,7 +8,7 @@ from Cython.Compiler.Main import CompilationOptions, default_options, compile as
 
 CPPDEFS_MODULE = 'godot_cpp'
 
-base_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+base_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 # api_path = os.path.join(base_dir, 'godot_headers', 'api.json')
 # with open(api_path, 'r') as f:
 #     gdapi = {i['name']: i for i in json.load(f)}

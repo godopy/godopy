@@ -3,11 +3,13 @@ logs/*
 *.egg-info
 
 # Binaries
+*.a
 *.o
 *.os
 *.so
 *.obj
 *.pyc
+*.pyd
 *.dblite
 *.pdb
 *.lib
@@ -24,6 +26,6 @@ bin
 /dist
 
 # Generated files
-/godot_headers
+/godot/headers
 /godot/*.h
 /godot/*.cpp

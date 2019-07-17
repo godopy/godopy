@@ -1,5 +1,5 @@
-from godot.Godot cimport _Wrapped
-from godot_cpp.CoreTypes cimport Vector2
+from .core_cctypes cimport Vector2
+from ._core cimport _Wrapped
 
 cdef class Object(_Wrapped):
     cdef int __CLASS_IS_SCRIPT

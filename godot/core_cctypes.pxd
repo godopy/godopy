@@ -2,7 +2,7 @@ from libc.stdint cimport uint64_t, int64_t
 from libc.stddef cimport wchar_t
 from libcpp cimport bool
 
-from godot_headers.gdnative_api_struct__gen cimport *
+from .headers.gdnative_api cimport *
 
 cdef extern from "String.hpp" namespace "godot" nogil:
     cdef cppclass String:

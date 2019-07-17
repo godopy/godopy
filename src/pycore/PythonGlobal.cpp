@@ -5,7 +5,7 @@
 
 static PyTypeObject _WrappedType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "_core._Wrapped",
+    .tp_name = "pygodot._Wrapped",
     .tp_doc = "",
     .tp_basicsize = sizeof(__pygodot___Wrapped),
     .tp_itemsize = 0,
@@ -13,10 +13,10 @@ static PyTypeObject _WrappedType = {
     .tp_new = PyType_GenericNew,
 };
 
-static PyModuleDef _coremodule = {
+static PyModuleDef pygodotmodule = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "_core",
-    .m_doc = "Core types for Godot bindings",
+    .m_name = "pygodot",
+    .m_doc = "PyGodot GDNative extension",
     .m_size = -1,
 };
 
@@ -24,12 +24,12 @@ extern "C" __pygodot___Wrapped *_create_wrapper(godot_object *, size_t);
 extern "C" void __init_python_method_bindings(void);
 extern "C" void __register_python_types(void);
 
-PyMODINIT_FUNC PyInit__core(void) {
+PyMODINIT_FUNC PyInit_pygodot(void) {
   PyObject *m;
   if (PyType_Ready(&_WrappedType) < 0)
     return NULL;
 
-  m = PyModule_Create(&_coremodule);
+  m = PyModule_Create(&pygodotmodule);
   if (m == NULL)
     return NULL;
 
@@ -74,9 +74,9 @@ void PyGodot::set_pythonpath(godot_gdnative_init_options *options) {
 
   api->godot_print(&path);
 
-	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 7) * sizeof(wchar_t));
+	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 19) * sizeof(wchar_t));
 	wcsncpy(pythonpath, api->godot_string_wide_str(&path), size);
-	wcsncpy(pythonpath + size, L"/pyres", 7);
+	wcsncpy(pythonpath + size, L"/pygodot.resources", 19);
 
 	api->godot_string_destroy(&path);
 }
