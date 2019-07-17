@@ -73,26 +73,18 @@ There is one more file we need, create `setup.py`:
 from setuptools import setup
 
 setup(
-    app=['simple.py'],
-    data_files=[],
-    options={'py2app': {}},
-    setup_requires=['py2app'],
+    plugin=['simple.py'],
 )
 ```
 
-> This will work only on a Mac, support for Windows and Linux is coming!
-
 Create a new Godot project. For this example we will place it in a folder called `demo` inside `SimpleProject`.
 
-Generate a Python environment for your scripts and link it to the Godot project
+Package Python dependencies for your scripts
 
 ```
 (venv) $ python setup.py py2app
-(venv) $ mkdir demo/bin
-(venv) $ cd demo/bin
-(venv) $ ln -s ../../dist/simple.app/Contents/Resources pygodot.resources
-(venv) $ cd ../..
 ```
+> This will work only on a Mac, support for Windows and Linux is coming!
 
 ### Installing Godot resource files
 

@@ -57,6 +57,9 @@ install_requires = [
     'Mako'
 ]
 
+if sys.platform == 'darwin':
+    install_requires.append('py2app')
+
 setup_requires = ['scons']
 
 setup_args = dict(

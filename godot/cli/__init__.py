@@ -26,11 +26,46 @@ def pygodot(ctx, version):
 
         sys.exit(0)
 
+def install_dependencies(project_root, new_lib_root, symlink, force):
+    project_files = os.listdir(project_root)
+    if 'dist' not in project_files:
+        click.echo('Please run py2app/py2exe command to collect Python dependencies')
+        return False
+
+    #### macOS-only section
+    plugin_dirs = glob.glob(os.path.join(project_root, 'dist', '*.plugin'))
+
+    if not plugin_dirs or not os.path.isdir(os.path.join(plugin_dirs[0], 'Contents', 'Resources')):
+        click.echo(f'Collected plugin was not found at "{project_root}"')
+        return False
+
+    resource_dir = os.path.join(plugin_dirs[0], 'Contents', 'Resources')
+    ### end macOS
+
+    target_resource_dir = os.path.join(new_lib_root, 'pygodot.resources')
+    print(resource_dir, target_resource_dir)
+
+    # Run only if there is no target_resource_dir or with a --force flag
+    if force and os.path.exists(target_resource_dir):
+        if not os.path.islink(target_resource_dir):
+            click.echo(f'Please remove "{target_resource_dir}" and try again')
+            return False
+        # Remove only symlinks, not full directory trees!
+        click.echo(f'Removing old destination resources "{target_resource_dir}"')
+        os.unlink(target_resource_dir)
+    if not os.path.exists(target_resource_dir):
+        if symlink:
+            os.symlink(resource_dir, target_resource_dir)
+        else:
+            shutil.copytree(resource_dir, target_resource_dir)
+    return True
+
 @pygodot.add_command
 @click.command()
 @click.argument('path', required=True, type=click.Path(exists=False))
 @click.option('--symlink', '-S', is_flag=True)
-def install(path, symlink):
+@click.option('--force', is_flag=True)
+def install(path, symlink, force):
     godot_root = ensure_godot_project_path(path)
     new_lib_root = os.path.realpath(path)
 
@@ -45,6 +80,9 @@ def install(path, symlink):
         platform = 'OSX.64'
     else:
         raise NotImplementedError('Only macOS platform is supported at the moment!')
+
+    project_root = ensure_pygodot_project_path(godot_root)
+    install_dependencies(project_root, new_lib_root, symlink, force)
 
     libname = None
     for fn in os.listdir(pygodot_lib_root):
@@ -104,13 +142,13 @@ def installscript(path, classname):
 
 
 def ensure_godot_project_path(path):
-    godot_root = os.path.realpath(detect_godot_project(path))
+    godot_root = detect_godot_project(path)
 
     if not godot_root:
         click.echo('No Godot project detected')
         sys.exit(1)
 
-    return godot_root
+    return os.path.realpath(godot_root)
 
 def detect_godot_project(dir, fn='project.godot'):
     if not dir or not fn:
@@ -129,6 +167,24 @@ def ensure_pygodot_lib_path(path):
         sys.exit(1)
 
     return os.path.realpath(libfiles.pop())
+
+def ensure_pygodot_project_path(path):
+    project_root = detect_pygodot_project(path)
+
+    if not project_root:
+        click.echo('No PyGodot project detected')
+        sys.exit(1)
+
+    return os.path.realpath(project_root)
+
+def detect_pygodot_project(dir, fn='gdlibrary.py'):
+    if not dir or not fn:
+        return
+
+    if os.path.isdir(dir) and 'gdlibrary.py' in os.listdir(dir):
+        return dir
+
+    return detect_pygodot_project(*os.path.split(dir))
 
 def resname(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
