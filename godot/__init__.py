@@ -8,8 +8,6 @@ try:
 except ImportError:
     inside_godot = False
 
-print('INSIDE GODOT', inside_godot)
-
 if inside_godot:
     from utils import _pyprint as print
 else:

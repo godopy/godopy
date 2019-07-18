@@ -64,9 +64,6 @@ install_requires = [
     'Mako'
 ]
 
-if sys.platform == 'darwin':
-    install_requires.append('py2app')
-
 setup_requires = ['scons']
 
 setup_args = dict(
@@ -75,11 +72,15 @@ setup_args = dict(
     python_requires='>=3.7',
     packages=packages,
     package_data=package_data,
-    ext_modules=[GDNativeExtension('pygodot')],
     cmdclass={'build_ext': build_ext},
     install_requires=install_requires,
     setup_requires=setup_requires,
     entry_points=entry_points
 )
+
+
+headers_def = os.path.join(os.getcwd(), 'godot', 'headers', 'gdnative_api.pxd')
+if os.path.exists(headers_def):
+    setup_args['ext_modules'] = [GDNativeExtension('pygodot')]
 
 setup(**setup_args)
