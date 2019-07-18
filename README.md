@@ -30,9 +30,12 @@ Index:
 
 The instructions below assume using git for managing your project.
 
+| **Build latest version of Godot** | [**GitHub**](https://github.com/godotengine/godot) | [**Docs**](https://godot.readthedocs.io/en/latest/development/compiling/index.html) |
+| --- | --- | --- |
+
 ```
-$ mkdir SimpleLibrary
-$ cd SimpleLibrary
+$ mkdir SimpleProject
+$ cd SimpleProject
 $ git clone https://github.com/ivhilaire/pygodot
 ```
 
@@ -44,9 +47,23 @@ $ git submodule update --init --recursive
 
 Initialize a virtual environment and install PyGodot
 ```
-$ python3 -m venv env
-$ source env/bin/activate
-(env) $ pip install -e ./pygodot  # "develop" install
+$ python3 -m venv venv
+$ source venv/bin/activate
+(venv) $ pip install -e ./pygodot  # "develop" install
+```
+
+### Updating the Godot development headers
+
+```
+(venv) $ cd pygodot
+(venv) $ cp -R <path to godot build>/modules/gdnative/include godot/headers
+(venv) $ godot --gdnative-generate-json-api godot/headers/api.json
+(venv) $ pygodot genapi
+(venv) $ pygodot genbindings
+(venv) $ python setup.py develop --generate_bindings
+(venv) $ cd ..
+(venv) $ deactivate
+$ source venv/bin/activate
 ```
 
 ### Creating a simple class
@@ -86,7 +103,7 @@ Install your script as a NativeScript resource:
 ```
 (venv) $ pygodot install demo/bin
 (venv) $ pygodot installscript demo/bin Simple
-(venv) $ godot -e
+(venv) $ godot --path demo -e
 ```
 
 Your Python script is now ready to use in Godot, it is called `simple.gdns` inside the `bin` folder.
@@ -101,27 +118,4 @@ simple.test_method()
 
 ## Building Native Godot Extensions
 
-| **Build latest version of Godot** | [**GitHub**](https://github.com/godotengine/godot) | [**Docs**](https://godot.readthedocs.io/en/latest/development/compiling/index.html) |
-| --- | --- | --- |
-
-### Updating the Godot development headers
-
-```
-(venv) $ cd pygodot
-(venv) $ cp -R <path to godot build>/modules/gdnative/include godot/headers
-(venv) $ godot --gdnative-generate-json-api godot/headers/api.json
-(venv) $ pygodot genapi
-(venv) $ pygodot genbindings
-```
-
-### Compiling libraries
-
-```
-(venv) $ python setup.py develop --generate_bindings 
-```
-
-> The resulting libraries will be created in `pygodot/`, take note of their names as they will be different depending on platform.
-
-### To be consintued…
-
-[Describe steps to build native extensions]
+...
