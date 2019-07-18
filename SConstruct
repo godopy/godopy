@@ -38,6 +38,11 @@ opts.Add(EnumVariable(
     ('default', '32', '64')
 ))
 opts.Add(BoolVariable(
+    'export',
+    'Disable development features',
+    False
+))
+opts.Add(BoolVariable(
     'use_llvm',
     'Use the LLVM compiler - only effective when targeting Linux',
     False
@@ -182,6 +187,9 @@ elif env['platform'] == 'windows':
             '-static-libgcc',
             '-static-libstdc++',
         ])
+
+if (env['export']):
+    env.Append(CPPDEFINES=['PYGODOT_EXPORT'])
 
 binpath = os.path.dirname(sys.executable)
 

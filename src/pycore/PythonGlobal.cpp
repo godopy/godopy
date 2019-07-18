@@ -72,9 +72,9 @@ void PyGodot::set_pythonpath(godot_gdnative_init_options *options) {
 	godot_string path = api->godot_string_get_base_dir(options->active_library_path);
 	godot_int size = api->godot_string_length(&path);
 
-	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 19) * sizeof(wchar_t));
+	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 14) * sizeof(wchar_t));
 	wcsncpy(pythonpath, api->godot_string_wide_str(&path), size);
-	wcsncpy(pythonpath + size, L"/pygodot.resources", 19);
+	wcsncpy(pythonpath + size, L"/_pygodot.env", 14);
 
 	api->godot_string_destroy(&path);
 }
@@ -87,10 +87,12 @@ void PyGodot::python_init() {
 		return;
 	}
 
-	const char *c_pythonpath = Py_EncodeLocale(pythonpath, nullptr);
+  Py_NoUserSiteDirectory = 1;
 
-	Py_NoSiteFlag = 1;
+#ifdef PYGODOT_EXPORT
+  Py_NoSiteFlag = 1;
 	Py_IgnoreEnvironmentFlag = 1;
+#endif
 
 	Py_SetProgramName(L"godot");
 	Py_SetPythonHome(pythonpath);

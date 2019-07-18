@@ -2,12 +2,13 @@ import os
 import sys
 from .version import get_version
 
-inside_godot = False
-
-_rootdir = os.path.abspath((os.path.join(os.path.dirname(__file__), '..', '..', '..')))
-
-if (os.path.isdir(_rootdir) and _rootdir.endswith('pygodot.resources')):
+try:
+    import gdnative
     inside_godot = True
+except ImportError:
+    inside_godot = False
+
+print('INSIDE GODOT', inside_godot)
 
 if inside_godot:
     from utils import _pyprint as print

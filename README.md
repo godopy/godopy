@@ -28,13 +28,25 @@ Index:
 
 ### Setting up a new project
 
+The instructions below assume using git for managing your project.
+
 ```
-$ mkdir SimpleProject
-$ cd SimpleProject
-$ python3 -m venv venv
-$ source venv/bin/activate
-(venv) $ git clone https://github.com/ivhilaire/pygodot
-(venv) $ pip install -e ./pygodot
+$ mkdir SimpleLibrary
+$ cd SimpleLibrary
+$ git clone https://github.com/ivhilaire/pygodot
+```
+
+If your project is an existing repository, use git submodule instead:
+```
+$ git submodule add https://github.com/ivhilaire/pygodot
+$ git submodule update --init --recursive
+```
+
+Initialize a virtual environment and install PyGodot
+```
+$ python3 -m venv env
+$ source env/bin/activate
+(env) $ pip install -e ./pygodot  # "develop" install
 ```
 
 ### Creating a simple class
@@ -56,7 +68,7 @@ class Simple(nodes.Reference):
         gdnative.register_method(cls, 'test_method')
 ```
 
-Provide an entry point for NativeScript, create `gdlibrary.py`:
+There is one more file we need, create `gdlibrary.py`:
 ```py
 import simple
 from godot import gdnative
@@ -64,27 +76,6 @@ from godot import gdnative
 def nativescript_init():
     gdnative.register_class(simple.Simple)
 ```
-
-### Initializing Python environment inside the Godot project
-
-There is one more file we need, create `setup.py`:
-
-```py
-from setuptools import setup
-
-setup(
-    plugin=['simple.py'],
-)
-```
-
-Create a new Godot project. For this example we will place it in a folder called `demo` inside `SimpleProject`.
-
-Package Python dependencies for your scripts
-
-```
-(venv) $ python setup.py py2app
-```
-> This will work only on a Mac, support for Windows and Linux is coming!
 
 ### Installing Godot resource files
 
@@ -95,9 +86,6 @@ Install your script as a NativeScript resource:
 ```
 (venv) $ pygodot install demo/bin
 (venv) $ pygodot installscript demo/bin Simple
-(venv) $ cd demo/bin
-(venv) $ ln -s ../../pygodot/dist/pygodot.app/Contents/Resources pygodot.resources
-(venv) $ cd ..
 (venv) $ godot -e
 ```
 
@@ -115,29 +103,6 @@ simple.test_method()
 
 | **Build latest version of Godot** | [**GitHub**](https://github.com/godotengine/godot) | [**Docs**](https://godot.readthedocs.io/en/latest/development/compiling/index.html) |
 | --- | --- | --- |
-
-### Setting up a new project
-
-The instructions below assume using git for managing your project.
-
-```
-$ mkdir SimpleLibrary
-$ cd SimpleLibrary
-$ git clone https://github.com/ivhilaire/pygodot
-```
-
-If your project is an existing repository, use git submodule instead:
-```
-$ git submodule add https://github.com/ivhilaire/pygodot
-$ git submodule update --init --recursive
-```
-
-Initialize the environment and install the dependencies
-```
-$ python3 -m venv env
-$ source env/bin/activate
-(env) $ pip install -e ./pygodot  # "develop" install
-```
 
 ### Updating the Godot development headers
 

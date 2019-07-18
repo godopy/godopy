@@ -16,6 +16,11 @@ if '--generate_bindings' in sys.argv:
     sys.argv.remove('--generate_bindings')
     generate_bindings = True
 
+export_build = False
+if '--export' in sys.argv:
+    sys.argv.remove('--export')
+    export_build = True
+
 class build_ext(build_python_ext):
     def run(self):
         for ext in self.extensions:
@@ -31,6 +36,8 @@ class build_ext(build_python_ext):
             args = ['scons', f'target_extension={extension_path}']
             if generate_bindings:
                 args += ['generate_bindings=yes']
+            if export_build:
+                args += ['export=yes']
             self.spawn(args)
 
 

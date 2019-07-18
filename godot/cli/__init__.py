@@ -44,7 +44,7 @@ def install_dependencies(project_root, new_lib_root, symlink, force):
     resource_dir = os.path.join(plugin_dirs[0], 'Contents', 'Resources')
     ### end macOS
 
-    target_resource_dir = os.path.join(new_lib_root, 'pygodot.resources')
+    target_resource_dir = os.path.join(new_lib_root, '_pygodot.env')
     print(resource_dir, target_resource_dir)
 
     # Run only if there is no target_resource_dir or with a --force flag
@@ -65,9 +65,10 @@ def install_dependencies(project_root, new_lib_root, symlink, force):
 @pygodot.add_command
 @click.command()
 @click.argument('path', required=True, type=click.Path(exists=False))
-@click.option('--symlink', '-S', is_flag=True)
+@click.option('--export', is_flag=True)
 @click.option('--force', is_flag=True)
-def install(path, symlink, force):
+def install(path, export, force):
+    symlink = not export
     godot_root = ensure_godot_project_path(path)
     new_lib_root = os.path.realpath(path)
 
@@ -84,7 +85,36 @@ def install(path, symlink, force):
         raise NotImplementedError('Only macOS platform is supported at the moment!')
 
     project_root = ensure_pygodot_project_path(godot_root)
-    install_dependencies(project_root, new_lib_root, symlink, force)
+    if export:
+        install_dependencies(project_root, new_lib_root, symlink, force)
+    else:
+        dst_env_dir = os.path.join(new_lib_root, '_pygodot.env')
+        dst_pylib_dir = os.path.join(dst_env_dir, 'lib', 'python3.7')
+        if not os.path.exists(dst_pylib_dir):
+            os.makedirs(dst_pylib_dir)
+        dst_sitepackages_dir = os.path.join(dst_env_dir, 'lib', 'python3.7', 'site-packages')
+        print(dst_pylib_dir, dst_sitepackages_dir)
+        src_pylib_dir = None
+        src_sitepackages_dir = None
+
+        for path in reversed(sys.path):
+            if path.endswith('python3.7'):
+                src_pylib_dir = path
+            elif path.endswith('site-packages'):
+                src_sitepackages_dir = path
+        print(src_pylib_dir, src_sitepackages_dir)
+
+        for fn in os.listdir(src_pylib_dir):
+            if fn == 'site-packages':
+                continue
+            src_path = os.path.join(src_pylib_dir, fn)
+            dst_path = os.path.join(dst_pylib_dir, fn)
+            if not os.path.exists(dst_path):
+                os.symlink(src_path, dst_path)
+
+        if not os.path.exists(dst_sitepackages_dir):
+            os.symlink(src_sitepackages_dir, dst_sitepackages_dir)
+
 
     libname = None
     for fn in os.listdir(pygodot_lib_root):
@@ -94,9 +124,10 @@ def install(path, symlink, force):
             src_path = os.path.join(pygodot_lib_root, fn)
             dst_path = os.path.join(new_lib_root, fn)
             if os.path.exists(dst_path):
-                # TODO: If the files are the same, just skip
-                click.echo(f'Removing old destination library file "{dst_path}"')
-                os.unlink(dst_path)
+                continue
+
+                # click.echo(f'Removing old destination library file "{dst_path}"')
+                # os.unlink(dst_path)
             if symlink:
                 os.symlink(src_path, dst_path)
             else:
