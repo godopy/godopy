@@ -34,14 +34,32 @@ cdef public _Wrapped _create_wrapper(godot_object *_owner, size_t _type_tag):
     print('Godot wrapper %s created' % wrapper)
     return wrapper
 
+cdef public int _nativesctipt_python_init() except -1:
+    cdef int res = _init_dynamic_loading()
+    if res != 0: return res
 
-_dynamic_loading_initialized = False
+    import gdlibrary
 
-def _init_dynamic_loading():
+    if hasattr(gdlibrary, 'nativescript_init'):
+        gdlibrary.nativescript_init()
+    return 0
+
+cdef public int _gdnative_python_singleton() except -1:
+    import gdlibrary
+
+    if not hasattr(gdlibrary, 'gdnative_singleton'):
+        raise RuntimeError("'gdnative_singleton' function is missing")
+
+    gdlibrary.gdnative_singleton()
+    return 0
+
+cdef bint _dynamic_loading_initialized = False
+
+cdef int _init_dynamic_loading() except -1:
     global _dynamic_loading_initialized
 
     if _dynamic_loading_initialized:
-        return
+        return 0
 
     cdef bytes b_home
     cdef char *c_home = Py_EncodeLocale(Py_GetPythonHome(), NULL)
@@ -78,13 +96,9 @@ def _init_dynamic_loading():
         with open(fullpath('__init__.py'), 'w'):
             pass
 
-    import gdlibrary
-
-    if not hasattr(gdlibrary, 'nativescript_init'):
-        raise RuntimeError('GDLibrary doesn\'t provide NativeScript initialization routine. PyGodot initialization aborted.')
-
     _dynamic_loading_initialized = True
-    gdlibrary.nativescript_init()
+    return 0
+    
 
 cdef str detect_godot_project(str dirname, str base):
     if not dirname or not base:

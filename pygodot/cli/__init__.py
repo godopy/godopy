@@ -67,7 +67,8 @@ def install_dependencies(project_root, new_lib_root, symlink, force):
 @click.argument('path', required=True, type=click.Path(exists=False))
 @click.option('--export', is_flag=True)
 @click.option('--force', is_flag=True)
-def install(path, export, force):
+@click.option('--singleton', is_flag=True)
+def install(path, export, force, singleton):
     symlink = not export
     godot_root = ensure_godot_project_path(path)
     new_lib_root = os.path.realpath(path)
@@ -146,7 +147,7 @@ def install(path, export, force):
 
     with open(pygodot_gdnlib, 'w', encoding='utf-8') as f:
         f.write(gdnlib_template.render(
-            singleton=False,
+            singleton=singleton,
             load_once=True,
             symbol_prefix='godot_',
             reloadable=False,

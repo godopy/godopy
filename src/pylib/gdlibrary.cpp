@@ -3,14 +3,15 @@
 
 /* Generic gdnlib, users may create their own */
 
-#define LOADER_ENTRY_POINT "_init_dynamic_loading"
-
 PyMODINIT_FUNC PyInit__pygodot(void);
 PyMODINIT_FUNC PyInit_gdnative(void);
 PyMODINIT_FUNC PyInit_nodes(void);
 PyMODINIT_FUNC PyInit_utils(void);
 
-extern "C" void register_class(PyObject *);
+// extern "C" void register_class(PyObject *);
+
+extern "C" int _nativesctipt_python_init();
+extern "C" int _gdnative_python_singleton();
 
 extern "C" void GDN_EXPORT godot_gdnative_init(godot_gdnative_init_options *o) {
   godot::Godot::gdnative_init(o);
@@ -35,7 +36,7 @@ extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
   PyObject *mod = NULL;
   mod = PyImport_ImportModule("gdnative"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
   mod = PyImport_ImportModule("nodes"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); // Will be used
+  mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
 
   // Import custom modules here
 
@@ -45,24 +46,11 @@ extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
 
   // The rest of the function is needed to register Python modules dynamically and can be removed if
   // all required NativeScript modules are included in the binary
-  /* --- dynamic loading code --- */
-  PyObject *main = PyObject_GetAttrString(mod, LOADER_ENTRY_POINT);
+  if (_nativesctipt_python_init() != 0) PyErr_Print();
+}
 
-  if (main != NULL && PyCallable_Check(main)) {
-    PyObject *arg = PyTuple_New(0);
-    PyObject *result = PyObject_CallObject(main, arg);
-    Py_XDECREF(arg);
-
-    if (result == NULL || PyErr_Occurred()) PyErr_Print();
-    Py_XDECREF(result);
-  } else {
-    Py_XDECREF(main);
-    PyErr_Print();
-    fprintf(stderr, "Failed to call \"%s\"\n", LOADER_ENTRY_POINT);
-  }
-  /* --- end dynamic loading code --- */
-
-  Py_DECREF(mod); // PyImport_ImportModule("utils");
+extern "C" void GDN_EXPORT godot_gdnative_singleton() {
+  if (_gdnative_python_singleton() != 0) PyErr_Print();
 }
 
 extern "C" void GDN_EXPORT godot_nativescript_terminate(void *handle) {
