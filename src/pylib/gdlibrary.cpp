@@ -5,7 +5,7 @@
 
 #define LOADER_ENTRY_POINT "_init_dynamic_loading"
 
-PyMODINIT_FUNC PyInit_pygodot(void);
+PyMODINIT_FUNC PyInit__pygodot(void);
 PyMODINIT_FUNC PyInit_gdnative(void);
 PyMODINIT_FUNC PyInit_nodes(void);
 PyMODINIT_FUNC PyInit_utils(void);
@@ -22,7 +22,7 @@ extern "C" void GDN_EXPORT godot_gdnative_terminate(godot_gdnative_terminate_opt
 }
 
 extern "C" void GDN_EXPORT godot_nativescript_init(void *handle) {
-  PyImport_AppendInittab("pygodot", PyInit_pygodot);
+  PyImport_AppendInittab("_pygodot", PyInit__pygodot);
   PyImport_AppendInittab("gdnative", PyInit_gdnative);
   PyImport_AppendInittab("nodes", PyInit_nodes);
   PyImport_AppendInittab("utils", PyInit_utils);

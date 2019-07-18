@@ -1,5 +1,3 @@
-import godot
-
 import inspect
 from collections import OrderedDict
 

@@ -13,7 +13,7 @@ from ..cpp_interop.compiler import compile
 from ..binding_generator import generate
 
 pygodot_lib_root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
-templates_dir = os.path.join(pygodot_lib_root, 'godot', 'cli', 'templates')
+templates_dir = os.path.join(pygodot_lib_root, 'pygodot', 'cli', 'templates')
 
 @click.group(invoke_without_command=True)
 @click.pass_context
@@ -118,9 +118,9 @@ def install(path, export, force):
 
     libname = None
     for fn in os.listdir(pygodot_lib_root):
-        if fn.startswith('pygodot.cpython-'):
+        if fn.startswith('_pygodot.cpython-'):
             libname = fn
-        if fn.startswith('pygodot.cpython-') or fn.startswith('libpygodot.cpython-'):
+        if fn.startswith('_pygodot.cpython-') or fn.startswith('lib_pygodot.cpython-'):
             src_path = os.path.join(pygodot_lib_root, fn)
             dst_path = os.path.join(new_lib_root, fn)
             if os.path.exists(dst_path):
@@ -193,7 +193,7 @@ def detect_godot_project(dir, fn='project.godot'):
     return detect_godot_project(*os.path.split(dir))
 
 def ensure_pygodot_lib_path(path):
-    libfiles = glob.glob(os.path.join(path, 'pygodot*'))
+    libfiles = glob.glob(os.path.join(path, 'pygodot.gdnlib'))
 
     if not libfiles:
         click.echo('No PyGodot library project detected')
@@ -250,7 +250,7 @@ def compilecpp(sourcefile, **opts):
 @pygodot.add_command
 @click.command()
 def genapi():
-    output_dir = os.path.join(pygodot_lib_root, 'godot', 'headers')
+    output_dir = os.path.join(pygodot_lib_root, 'pygodot', 'headers')
 
     if not os.path.isdir(output_dir):
         click.echo(f'"{output_dir}" does not exist. Something went wrong…')

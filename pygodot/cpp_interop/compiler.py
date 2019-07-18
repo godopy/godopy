@@ -13,7 +13,7 @@ base_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 # with open(api_path, 'r') as f:
 #     gdapi = {i['name']: i for i in json.load(f)}
 
-templates_dir = os.path.join(base_dir, 'godot_cpp', 'templates')
+templates_dir = os.path.join(base_dir, 'pygodot', 'cpp_interop', 'templates')
 
 def is_godot_cpp_import(node):
     return node.type == 'import' and joinval(node.value[0]) == CPPDEFS_MODULE

@@ -13,12 +13,8 @@ The bindings are a work in progress. A lot of planned features are missing and t
 Unlike [Godot Python](https://github.com/touilleMan/godot-python), this project focuses on the ability to compile
 your Godot modules to the native code and enables lower level access to the Godot C/C++ APIs.
 
-The technical side is that PyGodot is built on top of the NativeScript 1.1 API and
-the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) bindings, Godot Python does not provide
-access to these APIs.
-
-And, finally, PyGodot tries to integrate into the existing Python ecosystem and play by its rules: it works with
-PIP, virtual environments and allows to interact with external Python dependencies.
+PyGodot is built on top of the NativeScript 1.1 API and
+the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) bindings.
 
 Index:
 -   [**Getting Started**](#getting-started)
@@ -56,21 +52,19 @@ $ source venv/bin/activate
 
 ```
 (venv) $ cd pygodot
-(venv) $ cp -R <path to godot build>/modules/gdnative/include godot/headers
-(venv) $ godot --gdnative-generate-json-api godot/headers/api.json
+(venv) $ cp -R <path to godot build>/modules/gdnative/include pygodot/headers
+(venv) $ godot --gdnative-generate-json-api pygodot/headers/api.json
 (venv) $ pygodot genapi
 (venv) $ pygodot genbindings
 (venv) $ python setup.py develop --generate_bindings
 (venv) $ cd ..
-(venv) $ deactivate
-$ source venv/bin/activate
 ```
 
 ### Creating a simple class
 
 Create `simple.py` and add the following code
 ```py
-from godot import nodes, gdnative, print
+from pygodot import nodes, gdnative, print
 
 class Simple(nodes.Reference):
     def test_method(self):
@@ -88,7 +82,7 @@ class Simple(nodes.Reference):
 There is one more file we need, create `gdlibrary.py`:
 ```py
 import simple
-from godot import gdnative
+from pygodot import gdnative
 
 def nativescript_init():
     gdnative.register_class(simple.Simple)

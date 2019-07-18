@@ -11,7 +11,7 @@ PRIMITIVE_TYPES = frozenset(['int', 'bool', 'real', 'float', 'void'])
 def generate(root_dir, echo=print):
     from ..headers import api
 
-    templates_dir = os.path.join(root_dir, 'godot', 'binding_generator', 'templates')
+    templates_dir = os.path.join(root_dir, 'pygodot', 'binding_generator', 'templates')
     icalls_header_path = os.path.join(root_dir, 'include', 'pygen', '__py_icalls.hpp')
 
     icalls = set()

@@ -68,7 +68,7 @@ opts.Add(
 opts.Add(PathVariable(
     'headers_dir',
     'Path to the directory containing Godot headers',
-    'godot/headers',
+    'pygodot/headers',
     PathVariable.PathIsDir
 ))
 opts.Add(PathVariable(
@@ -213,7 +213,7 @@ json_api_file = ''
 if 'custom_api_file' in env:
     json_api_file = env['custom_api_file']
 else:
-    json_api_file = os.path.join(os.getcwd(), 'godot', 'headers', 'api.json')
+    json_api_file = os.path.join(os.getcwd(), 'pygodot', 'headers', 'api.json')
 
 if env['generate_bindings']:
     # Actually create the bindings here
@@ -228,9 +228,9 @@ add_sources(sources, 'src/gen', 'cpp')
 add_sources(sources, 'src/pycore', 'cpp')
 
 sources += [
-    env.CythonLibrary('godot/gdnative.cpp', 'godot/gdnative.pyx'),
-    env.CythonLibrary('godot/nodes.cpp', 'godot/nodes.pyx'),
-    env.CythonLibrary('godot/utils.cpp', 'godot/utils.pyx'),
+    env.CythonLibrary('pygodot/gdnative.cpp', 'pygodot/gdnative.pyx'),
+    env.CythonLibrary('pygodot/nodes.cpp', 'pygodot/nodes.pyx'),
+    env.CythonLibrary('pygodot/utils.cpp', 'pygodot/utils.pyx'),
 ]
 
 

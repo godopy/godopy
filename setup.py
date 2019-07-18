@@ -41,9 +41,9 @@ class build_ext(build_python_ext):
             self.spawn(args)
 
 
-version = __import__('godot').__version__
+version = __import__('pygodot').__version__
 
-packages = ['godot']
+packages = ['pygodot']
 package_data = {
     'godot': [
         '/*.pxd',
@@ -53,7 +53,7 @@ package_data = {
     ]
 }
 
-entry_points = {'console_scripts': 'pygodot=godot.cli:pygodot'}
+entry_points = {'console_scripts': 'pygodot=pygodot.cli:pygodot'}
 
 install_requires = [
     'redbaron',
@@ -79,8 +79,8 @@ setup_args = dict(
 )
 
 
-headers_def = os.path.join(os.getcwd(), 'godot', 'headers', 'gdnative_api.pxd')
+headers_def = os.path.join(os.getcwd(), 'pygodot', 'headers', 'gdnative_api.pxd')
 if os.path.exists(headers_def):
-    setup_args['ext_modules'] = [GDNativeExtension('pygodot')]
+    setup_args['ext_modules'] = [GDNativeExtension('_pygodot')]
 
 setup(**setup_args)

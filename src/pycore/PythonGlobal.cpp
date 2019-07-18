@@ -5,7 +5,7 @@
 
 static PyTypeObject _WrappedType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "pygodot._Wrapped",
+    .tp_name = "_pygodot._Wrapped",
     .tp_doc = "",
     .tp_basicsize = sizeof(__pygodot___Wrapped),
     .tp_itemsize = 0,
@@ -13,9 +13,10 @@ static PyTypeObject _WrappedType = {
     .tp_new = PyType_GenericNew,
 };
 
-static PyModuleDef pygodotmodule = {
+// The name should be the same as the binary's name as it makes this GDNative library also importable by Python
+static PyModuleDef _pygodotmodule = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "pygodot",
+    .m_name = "_pygodot",
     .m_doc = "PyGodot GDNative extension",
     .m_size = -1,
 };
@@ -24,12 +25,12 @@ extern "C" __pygodot___Wrapped *_create_wrapper(godot_object *, size_t);
 extern "C" void __init_python_method_bindings(void);
 extern "C" void __register_python_types(void);
 
-PyMODINIT_FUNC PyInit_pygodot(void) {
+PyMODINIT_FUNC PyInit__pygodot(void) {
   PyObject *m;
   if (PyType_Ready(&_WrappedType) < 0)
     return NULL;
 
-  m = PyModule_Create(&pygodotmodule);
+  m = PyModule_Create(&_pygodotmodule);
   if (m == NULL)
     return NULL;
 
@@ -100,7 +101,7 @@ void PyGodot::python_init() {
 	// Initialize interpreter but skip initialization registration of signal handlers
 	Py_InitializeEx(0);
 
-	PyObject *mod = PyImport_ImportModule("godot");
+	PyObject *mod = PyImport_ImportModule("pygodot");
   if (mod != NULL) {
     Py_DECREF(mod);
 
