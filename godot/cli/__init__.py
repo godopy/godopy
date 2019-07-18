@@ -2,13 +2,15 @@ import sys
 import os
 import re
 import glob
+import json
 import shutil
 
 import click
 from mako.template import Template
 
 from .pxd_writer import PxdWriter, parse as parse_c_header
-from godot.cpp_interop.compiler import compile
+from ..cpp_interop.compiler import compile
+from ..binding_generator import generate
 
 pygodot_lib_root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 templates_dir = os.path.join(pygodot_lib_root, 'godot', 'cli', 'templates')
@@ -216,10 +218,11 @@ def compilecpp(sourcefile, **opts):
 
 @pygodot.add_command
 @click.command()
-@click.option('--output-dir', '-o', default='./godot/headers')
-def genapi(output_dir):
+def genapi():
+    output_dir = os.path.join(pygodot_lib_root, 'godot', 'headers')
+
     if not os.path.isdir(output_dir):
-        click.echo(f'"{output_dir}" does not exist. Please provide existing directory with Godot header files')
+        click.echo(f'"{output_dir}" does not exist. Something went wrong…')
         sys.exit(1)
 
     click.echo('Converting\n\tgdnative_api_struct.gen.h -> gdnative_api.pxd\n'
@@ -249,7 +252,44 @@ def genapi(output_dir):
     pxd = pxd.replace('uint8_t _dont_touch_that[]', 'pass')
     pxd = pxd.replace('extern from "gdnative_api_struct.gen.h":', 'extern from "gdnative_api_struct.gen.h" nogil:')
 
-    with open('gdnative_api.pxd', 'w') as f:
+    with open('gdnative_api.pxd', 'w', encoding='utf-8') as f:
         f.write(pxd)
-    with open('__init__.py', 'w') as f:
+    with open('__init__.py', 'w', encoding='utf-8') as f:
         pass
+
+    pythonize_gdnative_api(output_dir)
+
+
+def pythonize_gdnative_api(output_dir):
+    from pprint import PrettyPrinter
+    from collections import OrderedDict
+
+    click.echo('Converting\n\tapi.json -> api.py\n'
+        f'inside "{output_dir}" directory\n')
+
+    inpath = os.path.join(output_dir, 'api.json')
+    if not os.path.exists(inpath):
+        click.echo(f'Required "api.json" file doesn\'t exist in "{output_dir}"')
+        sys.exit(1)
+
+    with open(inpath, encoding='utf-8') as fp:
+        api = json.load(fp)
+
+    pythonized = {}
+
+    for entry in api:
+        name = entry.pop('name')
+        assert name not in pythonized
+
+        pythonized[name] = entry
+        for collection in ('properties', 'signals', 'methods', 'enums'):
+            pythonized[name][collection] = {prop.pop('name'): prop for prop in entry[collection]}
+
+    pp = PrettyPrinter(indent=1, compact=True, width=120)
+    with open('api.py', 'w', encoding='utf-8') as fp:
+        fp.write('CLASSES = %s\n' % pp.pformat(pythonized))
+
+@pygodot.add_command
+@click.command()
+def genbindings():
+    generate(pygodot_lib_root, click.echo)

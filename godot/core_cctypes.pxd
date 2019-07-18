@@ -15,7 +15,6 @@ cdef extern from "String.hpp" namespace "godot" nogil:
 
         # TODO: Add all String methods by analogy with libcpp.string
 
-# cdef extern from "Variant.hpp" namespace "godot" nogil:
 cdef cppclass Variant
 
 cdef extern from "Array.hpp" namespace "godot" nogil:

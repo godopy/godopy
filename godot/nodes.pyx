@@ -19,13 +19,15 @@ cdef class Reference(Object):
 
 cdef class Node2D(CanvasItem):
     cdef void _set_position(Node2D self, Vector2 position):
-        ___pygodot_icall_void_Vector2(__mb.__Node2D__mb_set_position, <_Wrapped>self, position)
+        cdef PyObject *ptr = <PyObject *>self
+        ___pygodot_icall_void_Vector2(__mb.__Node2D__mb_set_position, (<_Wrapped>ptr)._owner, position)
 
     def set_position(self, position):  # make namedtuple
         cdef float x, y
         x, y = position
         cdef Vector2 c_position = Vector2(x, y)
-        ___pygodot_icall_void_Vector2(__mb.__Node2D__mb_set_position, <_Wrapped>self, c_position)
+        cdef PyObject *ptr = <PyObject *>self
+        ___pygodot_icall_void_Vector2(__mb.__Node2D__mb_set_position, (<_Wrapped>ptr)._owner, c_position)
 
 cdef class Sprite(Node2D):
     pass

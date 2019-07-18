@@ -101,7 +101,7 @@ Install your script as a NativeScript resource:
 (venv) $ godot -e
 ```
 
-Your Python script is now ready to use from Godot, it is called `simple.gdns` inside `bin` folder.
+Your Python script is now ready to use in Godot, it is called `simple.gdns` inside the `bin` folder.
 
 ...
 
@@ -146,6 +146,7 @@ $ source env/bin/activate
 (venv) $ cp -R <path to godot build>/modules/gdnative/include godot/headers
 (venv) $ godot --gdnative-generate-json-api godot/headers/api.json
 (venv) $ pygodot genapi
+(venv) $ pygodot genbindings
 ```
 
 ### Compiling libraries
