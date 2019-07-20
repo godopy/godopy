@@ -31,9 +31,9 @@ class build_ext(build_python_ext):
         extension_path = self.get_ext_fullpath(ext.name)
         if extension_path.startswith(cwd):
             extension_path = extension_path[len(cwd):].lstrip(os.sep)
-        print(extension_path)
-        if not self.dry_run:
-            args = ['scons', f'target_extension={extension_path}']
+
+        if not self.dry_run and 'VIRTUAL_ENV' in os.environ:
+            args = ['scons', 'target_extension=%s' % extension_path]
             if generate_bindings:
                 args += ['generate_bindings=yes']
             if export_build:
@@ -43,7 +43,7 @@ class build_ext(build_python_ext):
 
 version = __import__('pygodot').__version__
 
-packages = ['pygodot']
+packages = ['pygodot', 'godot']
 package_data = {
     'godot': [
         '/*.pxd',
@@ -64,7 +64,7 @@ install_requires = [
     'Mako'
 ]
 
-setup_requires = ['scons']
+setup_requires = ['scons', 'Cython']
 
 setup_args = dict(
     name='pygodot',
@@ -80,6 +80,7 @@ setup_args = dict(
 
 
 headers_def = os.path.join(os.getcwd(), 'pygodot', 'headers', 'gdnative_api.pxd')
+print(headers_def)
 if os.path.exists(headers_def):
     setup_args['ext_modules'] = [GDNativeExtension('_pygodot')]
 

@@ -1,5 +1,6 @@
 #include "GodotGlobal.hpp"
 #include "PythonGlobal.hpp"
+#include "pygodot/pyscript.h"
 
 #include <wchar.h>
 
@@ -54,7 +55,7 @@ static GDCALLINGCONV void wrapper_incref(void *data, void *wrapper) {
 static GDCALLINGCONV bool wrapper_decref(void *data, void *wrapper) {
 	if (wrapper)
 		Py_DECREF((PyObject *)wrapper);
-	return (bool) wrapper; // FIXME
+	return (bool) !wrapper; // FIXME
 }
 
 static GDCALLINGCONV void wrapper_destroy(void *data, void *wrapper) {
@@ -64,20 +65,97 @@ static GDCALLINGCONV void wrapper_destroy(void *data, void *wrapper) {
 
 namespace pygodot {
 
-const godot_gdnative_core_api_struct *api = nullptr;
+
+static const char *pyscript_registered_extensions[] = {"py", "pyw", NULL};
+static const char *pyscript_reserved_words[] = {"False", "None", "True", "and", "as", "assert", "break", "class",
+  "continue", "def", "del", "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is",
+  "lambda", "nonlocal", "not", "or", "pass", "raise", "return", "try", "while", "with", "yield", NULL};
+static const char *pyscript_comment_delimeters[] = {"#", NULL};
+static const char *pyscript_string_delimeters[] = {"\" \"", "' '", NULL};
+
+static const godot_pluginscript_instance_desc pyscript_instance = {
+  .init = pyscript_instance_init,
+  .finish = pyscript_instance_finish,
+
+  .set_prop = pyscript_instance_set_prop,
+  .get_prop = pyscript_instance_get_prop,
+  .call_method = pyscript_instance_call_method,
+  .notification = pyscript_instance_notification,
+
+  .get_rpc_mode = NULL,
+  .get_rset_mode = NULL,
+
+  .refcount_incremented = NULL, // pyscript_instance_refcount_incremented,
+  .refcount_decremented = NULL, // pyscript_instance_refcount_decremented
+};
+
+static const godot_pluginscript_script_desc pyscript = {
+  .init = pyscript_init,
+  .finish = pyscript_finish,
+  .instance_desc = pyscript_instance
+};
+
+static const godot_pluginscript_language_desc pyscript_language = {
+  .name = "PyScript",
+  .type = "PyScript", // Godot does not use this field at the moment, always returns "PluginScript"
+  .extension = "py",
+  .recognized_extensions = pyscript_registered_extensions,
+  .init = pyscript_language_init,
+  .finish = pyscript_language_finish,
+  .reserved_words = pyscript_reserved_words,
+  .comment_delimiters = pyscript_comment_delimeters,
+  .string_delimiters = pyscript_string_delimeters,
+  .has_named_classes = false, // XXX check
+  .supports_builtin_mode = false, // XXX check
+
+  .get_template_source_code = pyscript_get_template_source_code,
+  .validate = NULL,
+  .find_function = NULL,
+  .make_function = NULL,
+  .complete_code = NULL,
+  .auto_indent_code = NULL,
+
+  .add_global_constant = pyscript_add_global_constant,
+  .debug_get_error = NULL,
+  .debug_get_stack_level_count = NULL,
+  .debug_get_stack_level_line = NULL,
+  .debug_get_stack_level_function = NULL,
+  .debug_get_stack_level_source = NULL,
+  .debug_get_stack_level_locals = NULL,
+  .debug_get_stack_level_members = NULL,
+  .debug_get_globals = NULL,
+  .debug_parse_stack_level_expression = NULL,
+
+  .get_public_functions = NULL,
+  .get_public_constants = NULL,
+
+  .profiling_start = NULL,
+  .profiling_stop = NULL,
+  .profiling_get_accumulated_data = NULL,
+  .profiling_get_frame_data = NULL,
+  .profiling_frame = NULL,
+
+  .script_desc = pyscript
+};
+
 wchar_t *pythonpath = nullptr;
 
 void PyGodot::set_pythonpath(godot_gdnative_init_options *options) {
-	api = options->api_struct;
+	const godot_gdnative_core_api_struct *api = options->api_struct;
 
-	godot_string path = api->godot_string_get_base_dir(options->active_library_path);
-	godot_int size = api->godot_string_length(&path);
+	godot_string dir = api->godot_string_get_base_dir(options->active_library_path);
+  godot_string file = api->godot_string_get_file(options->active_library_path);
+	godot_int dirsize = api->godot_string_length(&dir);
+  godot_int filesize = api->godot_string_length(&file);
 
-	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 14) * sizeof(wchar_t));
-	wcsncpy(pythonpath, api->godot_string_wide_str(&path), size);
-	wcsncpy(pythonpath + size, L"/_pygodot.env", 14);
+	pythonpath = (wchar_t *)PyMem_RawMalloc((dirsize + 1 + filesize + 5) * sizeof(wchar_t));
+	wcsncpy(pythonpath, api->godot_string_wide_str(&dir), dirsize);
+  wcsncpy(pythonpath + dirsize, L"/", 1);
+  wcsncpy(pythonpath + dirsize + 1, api->godot_string_wide_str(&file), filesize);
+	wcsncpy(pythonpath + dirsize + 1 + filesize, L".env", 5);
 
-	api->godot_string_destroy(&path);
+	api->godot_string_destroy(&dir);
+  api->godot_string_destroy(&file);
 }
 
 void PyGodot::python_init() {
@@ -147,6 +225,10 @@ void PyGodot::nativescript_init(void *handle) {
 
 void PyGodot::nativescript_terminate(void *handle) {
 	godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::python_language_index);
+}
+
+void PyGodot::register_pyscript_language() {
+  godot::pluginscript_api->godot_pluginscript_register_language(&pyscript_language);
 }
 
 } // namespace pygodot

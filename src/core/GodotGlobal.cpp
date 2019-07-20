@@ -31,6 +31,7 @@ const godot_gdnative_core_1_1_api_struct *core_1_1_api = nullptr;
 
 const godot_gdnative_ext_nativescript_api_struct *nativescript_api = nullptr;
 const godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_1_api = nullptr;
+const godot_gdnative_ext_pluginscript_api_struct *pluginscript_api = nullptr;
 
 const void *gdnlib = NULL;
 
@@ -111,6 +112,9 @@ void Godot::gdnative_init(godot_gdnative_init_options *options) {
 
 					extension = extension->next;
 				}
+			} break;
+			case GDNATIVE_EXT_PLUGINSCRIPT: {
+				godot:pluginscript_api = (const godot_gdnative_ext_pluginscript_api_struct *)godot::api->extensions[i];
 			} break;
 			default: break;
 		}

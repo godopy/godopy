@@ -1,20 +1,16 @@
 # PyGodot
 
-Python and Cython bindings [Godot game engine](http://godotengine.org/).
-
-The goal of this project is to provide Python and Cython language support for the Godot extension development.
+Python and Cython bindings for [Godot game engine](http://godotengine.org/).
 
 ## Work in progress
 
-The bindings are a work in progress. A lot of planned features are missing and the existing APIs are very unstable!
+The bindings are a work in progress. A lot of planned features are missing and the existing APIs are unstable!
 
-## Differences from godot-python
+PyGodot is built on top of the C++ bindings to the NativeScript from
+the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) project.
 
-Unlike [Godot Python](https://github.com/touilleMan/godot-python), this project focuses on the ability to compile
-your Godot modules to the native code and enables lower level access to the Godot C/C++ APIs.
-
-PyGodot is built on top of the NativeScript 1.1 API and
-the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) bindings.
+The Cython API is based on NativeScript 1.1 and the higher-level Python API is built
+on top of the Cython API and PluginScript.
 
 Index:
 -   [**Getting Started**](#getting-started)
@@ -41,23 +37,22 @@ $ git submodule add https://github.com/ivhilaire/pygodot
 $ git submodule update --init --recursive
 ```
 
-Initialize a virtual environment and install PyGodot
+Install PyGodot and create the development environment (TODO: add links with the detailed instructions on python setup)
 ```
-$ python3 -m venv venv
-$ source venv/bin/activate
-(venv) $ pip install -e ./pygodot  # "develop" install
+$ pipenv install -e pygodot
 ```
 
-### Updating the Godot development headers
+### Copying the development headers and generating binding
 
 ```
-(venv) $ cd pygodot
-(venv) $ cp -R <path to godot build>/modules/gdnative/include pygodot/headers
-(venv) $ godot --gdnative-generate-json-api pygodot/headers/api.json
-(venv) $ pygodot genapi
-(venv) $ pygodot genbindings
-(venv) $ python setup.py develop --generate_bindings
-(venv) $ cd ..
+$ cp -R <path to godot build>/modules/gdnative/include pygodot/pygodot/headers
+$ godot --gdnative-generate-json-api pygodot/pygodot/headers/api.json
+$ pipenv run pygodot genapi
+$ pipenv run pygodot genbindings
+$ pipenv shell
+(SimpleProject) $ cd pygodot
+(SimpleProject) $ python setup.py develop --generate_bindings
+(SimpleProject) $ exit
 ```
 
 ### Creating a simple class
@@ -113,3 +108,10 @@ simple.test_method()
 ## Building Native Godot Extensions
 
 ...
+
+## FAQ
+
+### Differences from godot-python
+
+Unlike [Godot Python](https://github.com/touilleMan/godot-python), this project focuses on the ability to compile
+your Godot modules to the native code and enables lower level access to the Godot C/C++ APIs.

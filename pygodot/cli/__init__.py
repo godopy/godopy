@@ -88,34 +88,6 @@ def install(path, export, force, singleton):
     project_root = ensure_pygodot_project_path(godot_root)
     if export:
         install_dependencies(project_root, new_lib_root, symlink, force)
-    else:
-        dst_env_dir = os.path.join(new_lib_root, '_pygodot.env')
-        dst_pylib_dir = os.path.join(dst_env_dir, 'lib', 'python3.7')
-        if not os.path.exists(dst_pylib_dir):
-            os.makedirs(dst_pylib_dir)
-        dst_sitepackages_dir = os.path.join(dst_env_dir, 'lib', 'python3.7', 'site-packages')
-        print(dst_pylib_dir, dst_sitepackages_dir)
-        src_pylib_dir = None
-        src_sitepackages_dir = None
-
-        for path in reversed(sys.path):
-            if path.endswith('python3.7'):
-                src_pylib_dir = path
-            elif path.endswith('site-packages'):
-                src_sitepackages_dir = path
-        print(src_pylib_dir, src_sitepackages_dir)
-
-        for fn in os.listdir(src_pylib_dir):
-            if fn == 'site-packages':
-                continue
-            src_path = os.path.join(src_pylib_dir, fn)
-            dst_path = os.path.join(dst_pylib_dir, fn)
-            if not os.path.exists(dst_path):
-                os.symlink(src_path, dst_path)
-
-        if not os.path.exists(dst_sitepackages_dir):
-            os.symlink(src_sitepackages_dir, dst_sitepackages_dir)
-
 
     libname = None
     for fn in os.listdir(pygodot_lib_root):

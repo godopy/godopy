@@ -5,15 +5,28 @@ from libcpp cimport bool
 from .headers.gdnative_api cimport *
 
 cdef extern from "String.hpp" namespace "godot" nogil:
+    cdef cppclass CharString:
+        godot_char_string _char_string
+
+        int length()
+        const char *get_data()
+
+    # Cython's libcpp.string is a good reference
     cdef cppclass String:
+        godot_string _godot_string
+
         String() except +
         String(const char *) except +
         String(const String&) except +
 
-        String& operator= (const String&)
-        String& operator= (const char*)
+        void operator=(const String&)
+        bint operator==(const String&)
+        bint operator!=(const String&)
 
-        # TODO: Add all String methods by analogy with libcpp.string
+        const wchar_t *unicode_str()
+        char *alloc_c_string()
+        CharString utf8()
+
 
 cdef cppclass Variant
 

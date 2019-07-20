@@ -1,4 +1,4 @@
-from .headers.gdnative_api cimport godot_string, godot_object
+from .headers.gdnative_api cimport godot_string, godot_char_string, godot_object
 from .globals cimport gdapi
 from ._core cimport _Wrapped
 
@@ -12,12 +12,19 @@ cdef extern from "Python.h":
 import os
 import sys
 
-def _pyprint(*objects, sep=' ', end='\n'):
-    _gdprint(sep.join(str(o) for o in objects))
 
+def _pyprint(*objects, sep=' ', end='\n'):
+    cdef bytes msg = sep.join(str(o) for o in objects).encode('utf-8')
+    cdef const char *c_msg = msg
+    cdef godot_string gd_msg
+
+    gdapi.godot_string_new(&gd_msg)
+    gdapi.godot_string_parse_utf8(&gd_msg, c_msg)
+    gdapi.godot_print(&gd_msg)
+    gdapi.godot_string_destroy(&gd_msg)
 
 def _gdprint(str fmt, *args):
-    cdef msg = fmt.format(*args).encode('utf-8')
+    cdef bytes msg = fmt.format(*args).encode('utf-8')
     cdef const char *c_msg = msg
     cdef godot_string gd_msg
 
@@ -27,6 +34,16 @@ def _gdprint(str fmt, *args):
     gdapi.godot_string_destroy(&gd_msg)
 
 
+cdef bytes godot_string_to_bytes(const godot_string *s):
+    cdef godot_char_string chars = gdapi.godot_string_utf8(s)
+    cdef const char *cs = gdapi.godot_char_string_get_data(&chars)
+    cdef bytes bs
+    try:
+        bs = cs
+    finally:
+        gdapi.godot_char_string_destroy(&chars)
+    return bs
+
 cdef public _Wrapped _create_wrapper(godot_object *_owner, size_t _type_tag):
     cdef _Wrapped wrapper = _Wrapped.__new__(_Wrapped)
     wrapper._owner = _owner
@@ -34,23 +51,25 @@ cdef public _Wrapped _create_wrapper(godot_object *_owner, size_t _type_tag):
     print('Godot wrapper %s created' % wrapper)
     return wrapper
 
-cdef public int _nativesctipt_python_init() except -1:
-    cdef int res = _init_dynamic_loading()
-    if res != 0: return res
+
+cdef public int _nativescript_python_init() except -1:
+    if _init_dynamic_loading() != 0: return -1
 
     import gdlibrary
 
     if hasattr(gdlibrary, 'nativescript_init'):
         gdlibrary.nativescript_init()
+
     return 0
 
 cdef public int _gdnative_python_singleton() except -1:
+    if _init_dynamic_loading() != 0: return -1
+
     import gdlibrary
 
-    if not hasattr(gdlibrary, 'gdnative_singleton'):
-        raise RuntimeError("'gdnative_singleton' function is missing")
+    if hasattr(gdlibrary, 'gdnative_singleton'):
+        gdlibrary.gdnative_singleton()
 
-    gdlibrary.gdnative_singleton()
     return 0
 
 cdef bint _dynamic_loading_initialized = False
@@ -62,7 +81,7 @@ cdef int _init_dynamic_loading() except -1:
         return 0
 
     cdef bytes b_home
-    cdef char *c_home = Py_EncodeLocale(Py_GetPythonHome(), NULL)
+    cdef const char *c_home = Py_EncodeLocale(Py_GetPythonHome(), NULL)
     try:
         b_home = c_home
     finally:
