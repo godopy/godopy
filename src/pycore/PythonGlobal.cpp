@@ -95,9 +95,13 @@ static const godot_pluginscript_script_desc pyscript = {
   .instance_desc = pyscript_instance
 };
 
+static godot_bool pyscript_validate(godot_pluginscript_language_data *p_data,
+  const godot_string *p_script, int *r_line_error, int *r_col_error, godot_string *r_test_error,
+  const godot_string *p_path, godot_pool_string_array *r_functions) { return true; }
+
 static const godot_pluginscript_language_desc pyscript_language = {
-  .name = "PyScript",
-  .type = "PyScript", // Godot does not use this field at the moment, always returns "PluginScript"
+  .name = "Python",
+  .type = "Python", // Godot does not use this field at the moment, always returns "PluginScript"
   .extension = "py",
   .recognized_extensions = pyscript_registered_extensions,
   .init = pyscript_language_init,
@@ -109,7 +113,7 @@ static const godot_pluginscript_language_desc pyscript_language = {
   .supports_builtin_mode = false, // XXX check
 
   .get_template_source_code = pyscript_get_template_source_code,
-  .validate = NULL,
+  .validate = pyscript_validate,
   .find_function = NULL,
   .make_function = NULL,
   .complete_code = NULL,

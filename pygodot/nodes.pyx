@@ -11,6 +11,9 @@ cdef class Object(_Wrapped):
     def __cinit__(self):
         self.__CLASS_IS_SCRIPT = 0
 
+cdef class Node(Object):
+    pass
+
 cdef class CanvasItem(Object):
     pass
 
@@ -47,6 +50,7 @@ cdef public void __register_python_types():
     print("Python language index", i)
 
     ns11api.godot_nativescript_set_global_type_tag(i, "Object", <const void *>Object)
+    ns11api.godot_nativescript_set_global_type_tag(i, "Node", <const void *>Node)
     ns11api.godot_nativescript_set_global_type_tag(i, "CanvasItem", <const void *>CanvasItem)
     ns11api.godot_nativescript_set_global_type_tag(i, "Node2D", <const void *>Node2D)
     ns11api.godot_nativescript_set_global_type_tag(i, "Sprite", <const void *>Sprite)

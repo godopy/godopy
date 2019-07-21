@@ -74,12 +74,7 @@ cdef public int _gdnative_python_singleton() except -1:
 
 cdef bint _dynamic_loading_initialized = False
 
-cdef int _init_dynamic_loading() except -1:
-    global _dynamic_loading_initialized
-
-    if _dynamic_loading_initialized:
-        return 0
-
+cdef str godot_project_dir():
     cdef bytes b_home
     cdef const char *c_home = Py_EncodeLocale(Py_GetPythonHome(), NULL)
     try:
@@ -90,7 +85,15 @@ cdef int _init_dynamic_loading() except -1:
     home = b_home.decode('utf-8')
 
     dirname, base = os.path.split(home)
-    godot_path = detect_godot_project(dirname, base)
+    return _detect_godot_project(dirname, base)
+
+cdef int _init_dynamic_loading() except -1:
+    global _dynamic_loading_initialized
+
+    if _dynamic_loading_initialized:
+        return 0
+
+    godot_path = godot_project_dir()
     _pyprint('GODOT PROJECT PATH:', godot_path)
 
     if not godot_path:
@@ -98,7 +101,7 @@ cdef int _init_dynamic_loading() except -1:
 
     project_path, godot_project_name = os.path.split(godot_path)
 
-    _pyprint('PYGODOT PROJECT PATH:', project_path)
+    # _pyprint('PYGODOT PROJECT PATH:', project_path)
 
     def fullpath(*args):
         return os.path.join(project_path, *args)
@@ -111,15 +114,15 @@ cdef int _init_dynamic_loading() except -1:
 
     sys.path.insert(0, project_path)
 
-    if not file_exists('__init__.py'):
-        with open(fullpath('__init__.py'), 'w'):
-            pass
+    # if not file_exists('__init__.py'):
+    #     with open(fullpath('__init__.py'), 'w'):
+    #         pass
 
     _dynamic_loading_initialized = True
     return 0
     
 
-cdef str detect_godot_project(str dirname, str base):
+cdef str _detect_godot_project(str dirname, str base):
     if not dirname or not base:
         return ''
 
@@ -127,4 +130,4 @@ cdef str detect_godot_project(str dirname, str base):
         return dirname
 
     dirname, base = os.path.split(dirname)
-    return detect_godot_project(dirname, base)
+    return _detect_godot_project(dirname, base)

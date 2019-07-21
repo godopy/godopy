@@ -3,7 +3,7 @@ import sys
 from .version import get_version
 
 try:
-    import gdnative
+    __import__('nodes')
     inside_godot = True
 except ImportError:
     inside_godot = False

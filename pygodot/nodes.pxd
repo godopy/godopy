@@ -4,6 +4,9 @@ from ._core cimport _Wrapped
 cdef class Object(_Wrapped):
     cdef int __CLASS_IS_SCRIPT
 
+cdef class Node(Object):
+    pass
+
 cdef class CanvasItem(Object):
     pass
 

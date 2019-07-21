@@ -1,13 +1,14 @@
 from .headers.gdnative_api cimport *
 from .globals cimport gdapi, nativescript_api, nativescript_1_1_api, _nativescript_handle as handle
 from ._core cimport _Wrapped
+from . cimport nodes
 
-from cpython.object cimport PyObject
+from cpython.object cimport PyObject, PyTypeObject
 
 __keepalive = set()
 
-def register_method(object cls, str name, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
-    _register_method(cls, name, rpc_type)
+def register_method(cls, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
+    _register_method(cls, method.__name__, rpc_type)
 
 def register_class(object cls):
     _register_class(cls)
@@ -18,12 +19,12 @@ cdef inline cls2typetag(cls):
 
 cdef inline __keep_ptr(object obj):
     # TODO: Py_INCREF
-    print('[pygodot-debug] Create PyObject', obj)
+    print('[PyNS] Create PyObject', obj)
     __keepalive.add(obj)
 
 cdef inline __free_ptr(void *ptr):
     # TODO: Py_DECREF
-    print('[pygodot-debug] Free PyObject', <object>ptr)
+    print('[PyNS] Free PyObject', <object>ptr)
     if <object>ptr in __keepalive:
         __keepalive.remove(<object>ptr)
 
@@ -32,10 +33,38 @@ cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag
     wrapper._owner = _owner
     wrapper._type_tag = _type_tag
 
+### Initializer
+cdef class PyGodotGlobal(nodes.Node):
+    """\
+    Ensures that NativeScript bindings are initialized
+    """
+    cdef void _ready(self):
+        print("GLOBAL READY!")
 
-### CLASS REGISTRATION ###
+    @classmethod
+    def _register_methods(cls):
+        # XXX: Inline optimized register_method
+        cdef godot_instance_method method = [PyGodotGlobal_ready_wrapper, NULL, NULL]
+        cdef godot_method_attributes attrs = [GODOT_METHOD_RPC_MODE_DISABLED]
 
-cdef public void _register_class(object cls):
+        nativescript_api.godot_nativescript_register_method(handle, "PyGodotGlobal", "_ready", attrs, method)
+
+cdef godot_variant PyGodotGlobal_ready_wrapper(godot_object *o, void *md, void *p_instance, int n,
+                                               godot_variant **args) nogil:
+    # XXX: Hand-coded wrapper
+    with gil:
+        instance = <PyGodotGlobal>p_instance
+        instance._ready()
+
+    cdef godot_variant ret
+    gdapi.godot_variant_new_nil(&ret)
+    return ret
+
+cdef public object _clsdef_PyGodotGlobal = PyGodotGlobal
+
+### Class Registration
+
+cdef public int _register_class(object cls) except -1:
     # Add checks!
     cdef void *method_data = <PyObject *>cls
     cdef void *type_tag = method_data
@@ -55,6 +84,7 @@ cdef public void _register_class(object cls):
     nativescript_1_1_api.godot_nativescript_set_type_tag(handle, <const char *>name, type_tag)
 
     cls._register_methods()
+    return 0
 
 cdef void *_instance_func(godot_object *instance, void *method_data) nogil:
     with gil:
@@ -74,7 +104,7 @@ cdef public:
     ctypedef void (*cfunc_void_object_float)(object, float)
 
 
-### METHOD REGISTRATION ###
+### Method registration
 
 # TODO: Move to C++, use templates
 cdef public void _register_cmethod(object cls, str uname, cfunc_void_object_float callback,
@@ -89,6 +119,7 @@ cdef public void _register_cmethod(object cls, str uname, cfunc_void_object_floa
 
     nativescript_api.godot_nativescript_register_method(handle, <const char *>classname, <const char *>name, attrs, m)
 
+
 cdef godot_variant cmethod_wrapper(godot_object *instance, void *method_data, void *user_data,
                                    int num_args, godot_variant **args) nogil:
     cdef cfunc_void_object_float method = <cfunc_void_object_float>method_data
@@ -100,6 +131,7 @@ cdef godot_variant cmethod_wrapper(godot_object *instance, void *method_data, vo
     cdef godot_variant gd_result
     gdapi.godot_variant_new_nil(&gd_result)
     return gd_result
+
 
 cdef public void _register_method(object cls, str uname, godot_method_rpc_mode rpc_type):
     cdef object method = getattr(cls, uname)
