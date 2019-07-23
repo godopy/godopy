@@ -1,16 +1,18 @@
-from .headers.gdnative_api cimport *
+from godot_headers.gdnative_api cimport *
 from .globals cimport gdapi, nativescript_api, nativescript_1_1_api, _nativescript_handle as handle
 from ._core cimport _Wrapped
-from . cimport nodes
+from . cimport cnodes
+
+# from pygodot.utils import _pyprint as print
 
 from cpython.object cimport PyObject, PyTypeObject
 
 __keepalive = set()
 
-def register_method(cls, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
-    _register_method(cls, method.__name__, rpc_type)
+cpdef object register_method(object cls, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
+    _register_method(cls, method, rpc_type)
 
-def register_class(object cls):
+cpdef object register_class(object cls):
     _register_class(cls)
 
 cdef inline cls2typetag(cls):
@@ -34,7 +36,7 @@ cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag
     wrapper._type_tag = _type_tag
 
 ### Initializer
-cdef class PyGodotGlobal(nodes.Node):
+cdef class PyGodotGlobal(cnodes.Node):
     """\
     Ensures that NativeScript bindings are initialized
     """
@@ -106,43 +108,14 @@ cdef public:
 
 ### Method registration
 
-# TODO: Move to C++, use templates
-cdef public void _register_cmethod(object cls, str uname, cfunc_void_object_float callback,
-                                  godot_method_rpc_mode rpc_type):
-    cdef godot_instance_method m = [NULL, NULL, NULL]
-    m.method = cmethod_wrapper
-    m.method_data = <void *>callback  # C function pointer
-
-    cdef godot_method_attributes attrs = [rpc_type]
-    cdef bytes name = uname.encode('utf-8')
-    cdef bytes classname = cls.__name__.encode('utf-8')
-
-    nativescript_api.godot_nativescript_register_method(handle, <const char *>classname, <const char *>name, attrs, m)
-
-
-cdef godot_variant cmethod_wrapper(godot_object *instance, void *method_data, void *user_data,
-                                   int num_args, godot_variant **args) nogil:
-    cdef cfunc_void_object_float method = <cfunc_void_object_float>method_data
-
-    with gil:
-        python_instance = <object>user_data
-        method(python_instance, <float>gdapi.godot_variant_as_real(args[0]))
-
-    cdef godot_variant gd_result
-    gdapi.godot_variant_new_nil(&gd_result)
-    return gd_result
-
-
-cdef public void _register_method(object cls, str uname, godot_method_rpc_mode rpc_type):
-    cdef object method = getattr(cls, uname)
+cdef public object _register_method(object cls, object method, godot_method_rpc_mode rpc_type):
+    cdef str uname = method.__name__
     __keep_ptr(method)
 
-    cdef PyObject *ptr = <PyObject *>method
-    cdef void *method_data = <void *>ptr
-
     cdef godot_instance_method m = [NULL, NULL, NULL]
+
     m.method = _method_wrapper
-    m.method_data = method_data
+    m.method_data = <void *><PyObject *>method
     m.free_func = &_method_destroy
 
     cdef godot_method_attributes attrs = [rpc_type]
@@ -151,9 +124,11 @@ cdef public void _register_method(object cls, str uname, godot_method_rpc_mode r
 
     nativescript_api.godot_nativescript_register_method(handle, <const char *>classname, <const char *>name, attrs, m)
 
+
 cdef void _method_destroy(void *method_data) nogil:
     with gil:
         __free_ptr(method_data)
+
 
 cdef list parse_args(int num_args, godot_variant **args):
     cdef godot_variant_type t;
@@ -170,6 +145,7 @@ cdef list parse_args(int num_args, godot_variant **args):
 
     return pyargs
 
+
 cdef godot_variant convert_result(object result):
     cdef godot_variant gd_result
 
@@ -180,10 +156,11 @@ cdef godot_variant convert_result(object result):
 
     return gd_result
 
+
 cdef godot_variant _method_wrapper(godot_object *instance, void *method_data, void *user_data,
                                          int num_args, godot_variant **args) nogil:
     with gil:
         python_instance = <object>user_data
         method = <object>method_data
 
-        return convert_result(method(python_instance, *parse_args(num_args, args)))
+        return convert_result(method.__call__(python_instance, *parse_args(num_args, args)))

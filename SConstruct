@@ -62,7 +62,7 @@ opts.Add(
 opts.Add(PathVariable(
     'headers_dir',
     'Path to the directory containing Godot headers',
-    'pygodot/headers',
+    'godot_headers',
     PathVariable.PathIsDir
 ))
 opts.Add(PathVariable(
@@ -207,7 +207,7 @@ json_api_file = ''
 if 'custom_api_file' in env:
     json_api_file = env['custom_api_file']
 else:
-    json_api_file = os.path.join(os.getcwd(), 'pygodot', 'headers', 'api.json')
+    json_api_file = os.path.join(os.getcwd(), 'godot_headers', 'api.json')
 
 if env['generate_bindings']:
     # Actually create the bindings here

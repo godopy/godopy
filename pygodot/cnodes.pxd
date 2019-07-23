@@ -1,4 +1,4 @@
-from .core_cctypes cimport Vector2
+from .cctypes cimport Vector2
 from ._core cimport _Wrapped
 
 cdef class Object(_Wrapped):
@@ -10,8 +10,11 @@ cdef class Node(Object):
 cdef class CanvasItem(Object):
     pass
 
+cdef class Reference(Object):
+    pass
+
 cdef class Node2D(CanvasItem):
-    cdef void _set_position(Node2D self, Vector2 position)
+    cdef void set_position(Node2D self, Vector2 position)
 
 cdef class Sprite(Node2D):
     pass

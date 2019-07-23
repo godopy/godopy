@@ -1,4 +1,4 @@
-from .headers.gdnative_api cimport godot_string, godot_char_string, godot_object
+from godot_headers.gdnative_api cimport godot_string, godot_char_string, godot_object
 from .globals cimport gdapi
 from ._core cimport _Wrapped
 

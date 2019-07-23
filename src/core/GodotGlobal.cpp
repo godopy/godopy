@@ -34,6 +34,7 @@ const godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_1_api = nul
 const godot_gdnative_ext_pluginscript_api_struct *pluginscript_api = nullptr;
 
 const void *gdnlib = NULL;
+bool in_editor;
 
 void Godot::print(const String &message) {
 	godot::api->godot_print((godot_string *)&message);
@@ -77,6 +78,7 @@ void ___init_method_bindings();
 void Godot::gdnative_init(godot_gdnative_init_options *options) {
 	godot::api = options->api_struct;
 	godot::gdnlib = options->gd_native_library;
+	godot::in_editor = options->in_editor;
 
 	const godot_gdnative_api_struct *core_extension = godot::api->next;
 

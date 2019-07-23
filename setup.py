@@ -7,9 +7,11 @@ from setuptools.command.build_ext import build_ext as build_python_ext
 if not hasattr(sys, 'version_info') or sys.version_info < (3, 7):
     raise SystemExit("PyGodot requires Python version 3.7 or above.")
 
+
 class GDNativeExtension(Extension):
     def __init__(self, name):
         super().__init__(name, sources=[])
+
 
 generate_bindings = False
 if '--generate_bindings' in sys.argv:
@@ -20,6 +22,7 @@ export_build = False
 if '--export' in sys.argv:
     sys.argv.remove('--export')
     export_build = True
+
 
 class build_ext(build_python_ext):
     def run(self):
@@ -32,6 +35,7 @@ class build_ext(build_python_ext):
         if extension_path.startswith(cwd):
             extension_path = extension_path[len(cwd):].lstrip(os.sep)
 
+        # Build only when the virtualenv is active
         if not self.dry_run and 'VIRTUAL_ENV' in os.environ:
             args = ['scons', 'target_extension=%s' % extension_path]
             if generate_bindings:
@@ -43,14 +47,16 @@ class build_ext(build_python_ext):
 
 version = __import__('pygodot').__version__
 
-packages = ['pygodot', 'godot']
+packages = ['pygodot', 'godot', 'godot_headers']
 package_data = {
     'godot': [
         '/*.pxd',
-        'headers/*.pxd',
-        'cli/templates/*.mako',
+        # TODO: Compile all templates
+        'templates/*.mako',
+        'build/templates/*.mako',
         'cpp_interop/templates/*.mako'
-    ]
+    ],
+    'godot_headers': ['/*.pxd']
 }
 
 entry_points = {'console_scripts': 'pygodot=pygodot.cli:pygodot'}
@@ -79,7 +85,7 @@ setup_args = dict(
 )
 
 
-headers_def = os.path.join(os.getcwd(), 'pygodot', 'headers', 'gdnative_api.pxd')
+headers_def = os.path.join(os.getcwd(), 'godot_headers', 'gdnative_api.pxd')
 print(headers_def)
 if os.path.exists(headers_def):
     setup_args['ext_modules'] = [GDNativeExtension('_pygodot')]

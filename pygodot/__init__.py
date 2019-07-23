@@ -1,9 +1,7 @@
-import os
-import sys
 from .version import get_version
 
 try:
-    __import__('nodes')
+    __import__('cnodes')
     inside_godot = True
 except ImportError:
     inside_godot = False
@@ -14,6 +12,7 @@ else:
     class dummy_nodes:
         def __init__(self):
             self.Reference = type('Reference', (object,), {})
+
     class dummy_gdnative:
         def register_class(self, cls): pass
         def register_method(self, cls, method): pass

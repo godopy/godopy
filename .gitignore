@@ -26,6 +26,6 @@ bin
 /dist
 
 # Generated files
-/pygodot/headers
+/godot_headers
 /pygodot/*.h
 /pygodot/*.cpp

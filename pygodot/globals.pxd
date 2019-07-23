@@ -1,5 +1,5 @@
-from .headers.gdnative_api cimport *
-from .core_cctypes cimport String
+from godot_headers.gdnative_api cimport *
+from .cctypes cimport String
 
 cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
     godot_gdnative_core_api_struct *gdapi "godot::api"
@@ -7,6 +7,7 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
     godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_1_api
 
     void *gdnlib
+    bint in_editor
 
     cdef cppclass Godot:
         @staticmethod
