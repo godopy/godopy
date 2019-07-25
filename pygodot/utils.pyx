@@ -1,4 +1,4 @@
-from godot_headers.gdnative_api cimport godot_string, godot_char_string, godot_object
+from godot_headers.gdnative_api cimport *
 from .globals cimport gdapi
 from ._core cimport _Wrapped
 
@@ -52,7 +52,7 @@ cdef public _Wrapped _create_wrapper(godot_object *_owner, size_t _type_tag):
     return wrapper
 
 
-cdef public int _nativescript_python_init() except -1:
+cdef public int _generic_pygodot_nativescript_init(godot_gdnative_init_options options) except -1:
     if _init_dynamic_loading() != 0: return -1
 
     import gdlibrary
@@ -60,9 +60,10 @@ cdef public int _nativescript_python_init() except -1:
     if hasattr(gdlibrary, 'nativescript_init'):
         gdlibrary.nativescript_init()
 
-    return 0
+    return GODOT_OK
 
-cdef public int _gdnative_python_singleton() except -1:
+
+cdef public int _generic_pygodot_gdnative_singleton() except -1:
     if _init_dynamic_loading() != 0: return -1
 
     import gdlibrary
@@ -70,9 +71,11 @@ cdef public int _gdnative_python_singleton() except -1:
     if hasattr(gdlibrary, 'gdnative_singleton'):
         gdlibrary.gdnative_singleton()
 
-    return 0
+    return GODOT_OK
+
 
 cdef bint _dynamic_loading_initialized = False
+
 
 cdef str godot_project_dir():
     cdef bytes b_home
@@ -86,6 +89,7 @@ cdef str godot_project_dir():
 
     dirname, base = os.path.split(home)
     return _detect_godot_project(dirname, base)
+
 
 cdef int _init_dynamic_loading() except -1:
     global _dynamic_loading_initialized
@@ -101,8 +105,6 @@ cdef int _init_dynamic_loading() except -1:
 
     project_path, godot_project_name = os.path.split(godot_path)
 
-    # _pyprint('PYGODOT PROJECT PATH:', project_path)
-
     def fullpath(*args):
         return os.path.join(project_path, *args)
 
@@ -113,10 +115,6 @@ cdef int _init_dynamic_loading() except -1:
         raise RuntimeError('No "gdlibrary.py" found. PyGodot initialization aborted.')
 
     sys.path.insert(0, project_path)
-
-    # if not file_exists('__init__.py'):
-    #     with open(fullpath('__init__.py'), 'w'):
-    #         pass
 
     _dynamic_loading_initialized = True
     return 0

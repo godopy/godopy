@@ -1,17 +1,17 @@
+/* Default generic gdnlib, may be replaced by custom builds */
+
 #include <PyGodot.hpp>
 #include "pygodot/gdnative.h"
 #include "pygodot/cnodes.h"
 #include "pygodot/nodes.h"
 #include "pygodot/utils.h"
 
-#include <array>
-
-/* Default generic gdnlib, may be replaced by custom builds */
-
 static bool _pygodot_is_initialized = false;
-static bool _gdnative_is_initialized = false;
+static godot_gdnative_init_options _cached_options;
 
-const wchar_t *shelloutput(const char* cmd) {
+#ifndef PYGODOT_EXPORT
+#include <array>
+const std::string shelloutput(const char* cmd) {
   std::array<char, 1024> buffer;
   std::string result;
   std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
@@ -26,18 +26,29 @@ const wchar_t *shelloutput(const char* cmd) {
     return !std::isspace(ch);
   }).base(), result.end());
 
-  return Py_DecodeLocale(result.c_str(), NULL);
+  return result;
 }
+#endif
+
 
 static void _ensure_pygodot_is_initialized() {
   if (_pygodot_is_initialized) return;
 
 #ifndef PYGODOT_EXPORT
-  // TODO: Check Python version first
-  // Copy active Python path for development
-  const wchar_t *dev_python_path = shelloutput("python -c \"print(':'.join(__import__('sys').path))\"");
-  Py_SetPath(dev_python_path);
-  PyMem_RawFree((void *)dev_python_path);
+  static bool use_pipenv = (system("python -c 'import pygodot;_=print' &> /dev/null") != 0);
+
+  if (system(use_pipenv ? "pipenv run python -c 'import pygodot;_=print' &> /dev/null" :
+                                     "python -c 'import pygodot;_=print' &> /dev/null") != 0) {
+    throw std::runtime_error("unusable Python environment");
+  }
+
+  // Copy the correct Python paths for development
+  const std::string dev_python_path = use_pipenv ?
+    shelloutput("pipenv run python -c \"print(':'.join(__import__('sys').path))\"") :
+    shelloutput("python -c \"print(':'.join(__import__('sys').path))\"") ;
+  const wchar_t *w_dev_python_path = Py_DecodeLocale(dev_python_path.c_str(), NULL);
+  Py_SetPath(w_dev_python_path);
+  PyMem_RawFree((void *)w_dev_python_path);
 #endif
 
   PyImport_AppendInittab("_pygodot", PyInit__pygodot);
@@ -55,7 +66,6 @@ static void _ensure_pygodot_is_initialized() {
   mod = PyImport_ImportModule("nodes"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
   mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
   mod = PyImport_ImportModule("gdnative"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("pyscript"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
 
   _pygodot_is_initialized = true;
 }
@@ -63,6 +73,8 @@ static void _ensure_pygodot_is_initialized() {
 extern "C" void GDN_EXPORT pygodot_gdnative_init(godot_gdnative_init_options *o) {
     godot::Godot::gdnative_init(o);
     pygodot::PyGodot::set_pythonpath(o);
+
+    _cached_options = *o;
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_terminate(godot_gdnative_terminate_options *o) {
@@ -71,19 +83,15 @@ extern "C" void GDN_EXPORT pygodot_gdnative_terminate(godot_gdnative_terminate_o
 }
 
 extern "C" void GDN_EXPORT pygodot_nativescript_init(void *handle) {
-  printf("NS INIT\n");
   _ensure_pygodot_is_initialized();
   pygodot::PyGodot::nativescript_init(handle);
 
-  if (_nativescript_python_init() != 0) return PyErr_Print(); // TODO: add Godot error handling
-
-  if (_register_class(_clsdef_PyGodotGlobal) != 0) PyErr_Print(); // TODO: add Godot error handling
-  // Register custom NativeScript classes here
+  if (_generic_pygodot_nativescript_init(_cached_options) != GODOT_OK) PyErr_Print(); // TODO: add Godot error handling
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_singleton() {
   _ensure_pygodot_is_initialized();
-  if (_gdnative_python_singleton() != 0) PyErr_Print(); // TODO: add Godot error handling
+  if (_generic_pygodot_gdnative_singleton() != GODOT_OK) PyErr_Print(); // TODO: add Godot error handling
 }
 
 extern "C" void GDN_EXPORT pygodot_nativescript_terminate(void *handle) {

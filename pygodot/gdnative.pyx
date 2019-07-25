@@ -35,17 +35,13 @@ cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag
     wrapper._owner = _owner
     wrapper._type_tag = _type_tag
 
-### Initializer
+### Initializer (not used, for future reference)
 cdef class PyGodotGlobal(cnodes.Node):
-    """\
-    Ensures that NativeScript bindings are initialized
-    """
     cdef void _ready(self):
         print("GLOBAL READY!")
 
     @classmethod
     def _register_methods(cls):
-        # XXX: Inline optimized register_method
         cdef godot_instance_method method = [PyGodotGlobal_ready_wrapper, NULL, NULL]
         cdef godot_method_attributes attrs = [GODOT_METHOD_RPC_MODE_DISABLED]
 
@@ -53,7 +49,6 @@ cdef class PyGodotGlobal(cnodes.Node):
 
 cdef godot_variant PyGodotGlobal_ready_wrapper(godot_object *o, void *md, void *p_instance, int n,
                                                godot_variant **args) nogil:
-    # XXX: Hand-coded wrapper
     with gil:
         instance = <PyGodotGlobal>p_instance
         instance._ready()

@@ -43,15 +43,11 @@ static void _ensure_pygodot_is_initialized() {
   if (_pygodot_is_initialized) return;
 
 #ifndef PYGODOT_EXPORT
-  static bool use_pipenv = (system("python -c 'import pygodot; can_i_have_a = print  # function, please?'") != 0);
-  if (use_pipenv) {
-    if (system("pipenv run python -c 'import pygodot; can_i_have_a = print  # function, please?'") != 0) {
-      throw std::runtime_error("unusable Python environment");
-    }
-  } else {
-    if (system("python -c 'import pygodot; can_i_have_a = print  # function, please?'") != 0) {
-      throw std::runtime_error("unusable Python environment");
-    }
+  static bool use_pipenv = (system("python -c 'import pygodot;_=print' &> /dev/null") != 0);
+
+  if (system(use_pipenv ? "pipenv run python -c 'import pygodot;_=print' &> /dev/null" :
+                                     "python -c 'import pygodot;_=print' &> /dev/null") != 0) {
+    throw std::runtime_error("unusable Python environment");
   }
 
   // Copy the correct Python paths for development

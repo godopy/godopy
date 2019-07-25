@@ -7,7 +7,7 @@ the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) project.
 
 ### Prerequisites
 
-[**Build latest version of Godot**](https://godot.readthedocs.io/en/latest/development/compiling/index.html) |
+[**Build latest version of Godot**](https://godot.readthedocs.io/en/latest/development/compiling/index.html)
 
 [**Make sure you’ve got Python & pip**](https://docs.python-guide.org/dev/virtualenvs/#make-sure-you-ve-got-python-pip)
 
@@ -54,8 +54,7 @@ $ pipenv shell
 Now it’s time to build an actual extension. We’ll start by creating an empty Godot project
 in which we’ll place a few files.
 
-Open Godot and create a new project. For this example, we will place it in a folder called `demo` inside
-our PyGodot project’s folder structure.
+Open Godot and create a new project. For this example, we will place it in a folder called `demo` inside our PyGodot project’s folder structure.
 
 In our demo project, we’ll create a scene containing a Node2D called “Main” and we’ll save it as `main.tscn`.
 We’ll come back to that later.
@@ -72,22 +71,34 @@ $ touch _demo/__init__.py
 
 This will turn our `_demo` folder into a Python [package](https://docs.python.org/3/glossary.html#term-regular-package).
 
-In the `_demo` folder, we’ll start with creating our Cython file for the GDNative node we’ll be creating.
-We will name it `gdexample.pyx`:
+In the `_demo` folder, we’ll start with creating our Cython declaration file for the GDNative node we’ll be creating.
+We will name it `gdexample.pxd`:
+```pyx
+from pygodot.cnodes cimport Sprite
 
-```cython
-from pygodot import gdnative
-from pygodot cimport cnodes
 
-from libc.math cimport cos, sin
-
-cdef class GDExample(cnodes.Sprite):
+cdef class GDExample(Sprite):
     cdef float time_passed
 
+    cpdef _process(GDExample self, float delta)
+```
+> Note the `cdef` declarations and that `cimport` is not the same as `import`
+
+...
+
+Let’s implement our functions by creating our `gdexample.pyx` file::
+```pyx
+from libc.math cimport cos, sin
+from pygodot.cnodes cimport Sprite
+from pygodot.cctypes cimport Vector2
+
+from pygodot.gdnative cimport register_method
+
+cdef class GDExample(Sprite):
     def __cinit__(self):
         self.time_passed = 0.0
 
-    cdef _process(self, float delta):
+    cpdef _process(self, float delta):
         self.time_passed += delta
 
         cdef Vector2 new_position = Vector2(
@@ -97,15 +108,33 @@ cdef class GDExample(cnodes.Sprite):
 
     @classmethod
     def _register_methods(cls):
-        gdnative.register_method(cls, cls._process)
+        register_method(cls, cls._process)
 ```
-> Note the `cdef` declarations and that `cimport` is different from `import`
 
-TODO: Explain what just happened :)
+Note that `Vector2` is a native C++ type.
+
 
 ...
 
-There is one more file we need, create `setup.py` in the root directory:
+There is one more Cython file we need, we'll name it `gdlibrary.pyx`.  Our GDNative plugin can contain
+multiple NativeScripts, each with their own `.pxd` and `.pyx` file like we’ve implemented
+`GDExample` up above. What we need now is a small bit of code that tells Godot about all the NativeScripts in our GDNative plugin.
+
+```pyx
+from godot_headers.gdnative_api cimport *
+
+from pygodot.gdnative cimport register_class
+from .gdexample cimport GDExample
+
+cdef public int _pygodot_nativescript_init(godot_gdnative_init_options options) except -1:
+    register_class(GDExample)
+
+    return GODOT_OK
+```
+
+### Building the extension
+
+Create the `setup.py` file in the root directory:
 ```py
 from setuptools import setup
 from pygodot.build import GodotProject, get_cmdclass
@@ -125,8 +154,7 @@ setup(
 )
 ```
 
-### Building the extension
-
+Now we can execute the setup script and build our GDNative extensions:
 ```
 $ pipenv shell
 $ python setup.py develop

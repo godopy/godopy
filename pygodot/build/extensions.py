@@ -14,6 +14,7 @@ from ..version import get_version
 
 class ExtType(enum.Enum):
     PROJECT = enum.auto()
+    GENERIC_LIBRARY = enum.auto()
     LIBRARY = enum.auto()
     NATIVESCRIPT = enum.auto()
 
@@ -23,6 +24,12 @@ pygodot_lib_root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'
 templates_dir = os.path.join(pygodot_lib_root, 'pygodot', 'build', 'templates')
 
 
+class GenericGDNativeLibrary(Extension):
+    def __init__(self, name):
+        self._gdnative_type = ExtType.GENERIC_LIBRARY
+        super().__init__(name, sources=[])
+
+
 class GDNativeLibrary(Extension):
     def __init__(self, name, source):
         self._gdnative_type = ExtType.LIBRARY
@@ -30,16 +37,17 @@ class GDNativeLibrary(Extension):
 
 
 class NativeScript(Extension):
-    def __init__(self, name, *, sources, classname=None):
+    def __init__(self, name, *, sources=None, classname=None):
         self._gdnative_type = ExtType.NATIVESCRIPT
         self._nativescript_classname = classname
-        super().__init__(name, sources)
+        super().__init__(name, sources=(sources or []))
 
 
 # TODO: Check reserved names (_pygodot, pygodot, cnodes, nodes, utils, gdnative, pyscript + python builtins)!
 class gdnative_build_ext(build_ext):
     godot_project = None
     gdnative_library_path = None
+    generic_setup = False
 
     build_context = {
         '__version__': get_version(),
@@ -63,6 +71,40 @@ class gdnative_build_ext(build_ext):
                   ('"res://%s"' if self.godot_project else '"%s"') % ext.name)
             getattr(self, 'collect_godot_%s_data' % ext._gdnative_type.name.lower())(ext)
 
+        if self.generic_setup:
+            self.run_generic()
+        else:
+            self.run_cpp_build()
+
+        for res_path, content in self.godot_resources.items():
+            self.write_target_file(os.path.join(self.godot_project.name, res_path), content,
+                                   pretty_path='res://%s' % res_path)
+
+    def run_generic(self):
+        source = os.path.join(self.build_context['pygodot_bindings_path'], self.build_context['pygodot_library_name'])
+        target = self.build_context['target']
+
+        print(source)
+        assert os.path.exists(source)
+        print(target, os.path.exists(target), os.path.islink(target))
+
+        if os.path.islink(target) and os.readlink(target) == source and not self.force:
+            print('skip linking "%s"' % make_relative_path(target))
+            return
+
+        # Remove if the target is not a correct symlink
+        if (os.path.exists(target) or os.path.islink(target)) and not self.dry_run:
+            os.unlink(target)
+
+        target_dir = os.path.dirname(target)
+        if not os.path.exists(target_dir) and not self.dry_run:
+            os.makedirs(target_dir)
+
+        print('linking "%s"' % make_relative_path(target))
+        if not self.dry_run:
+            os.symlink(source, target)
+
+    def run_cpp_build(self):
         cpp_lib_template = Template(filename=os.path.join(templates_dir, 'gdlibrary.cpp.mako'))
         self.write_target_file(self.build_context['cpp_library_path'], cpp_lib_template.render(**self.build_context))
 
@@ -73,10 +115,6 @@ class gdnative_build_ext(build_ext):
 
         if not self.dry_run:
             self.spawn(['scons'])
-
-        for res_path, content in self.godot_resources.items():
-            self.write_target_file(os.path.join(self.godot_project.name, res_path), content,
-                                   pretty_path='res://%s' % res_path)
 
     def write_target_file(self, path, content, pretty_path=None):
         if pretty_path is None:
@@ -102,6 +140,50 @@ class gdnative_build_ext(build_ext):
 
     def collect_godot_project_data(self, ext):
         self.godot_project = ext
+
+    def collect_godot_generic_library_data(self, ext):
+        if self.godot_project is None:
+            sys.stderr.write("Can't build a GDNative library without a Godot project.\n\n")
+            sys.exit(1)
+
+        if self.gdnative_library_path is not None:
+            sys.stderr.write("Can't build multiple GDNative libraries.\n")
+            sys.exit(1)
+
+        if sys.platform == 'darwin':
+            platform = 'OSX.64'
+        else:
+            sys.stderr.write("Can't build for '%s' platform yet.\n" % sys.platform)
+            sys.exit(1)
+
+        ext_name = self.godot_project.get_setuptools_name(ext.name, validate='.gdnlib')
+        ext_path = self.get_ext_fullpath(ext_name)
+        godot_root = ensure_godot_project_path(ext_path)
+
+        dst_dir, dst_fullname = os.path.split(ext_path)
+        dst_name_parts = dst_fullname.split('.')
+        src_name = '.'.join(['_pygodot', *dst_name_parts[1:]])  # differs from non-generic name, has extension
+
+        binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform.lower(), dst_fullname)
+
+        self.build_context['pygodot_library_name'] = src_name
+        self.build_context['target'] = binext_path
+
+        dst_name = dst_name_parts[0]
+        gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name + '.gdnlib'))
+        self.gdnative_library_path = gdnlib_respath
+        self.generic_setup = True
+
+        context = dict(
+            singleton=False,
+            load_once=True,
+            symbol_prefix='pygodot_',
+            reloadable=False,
+            libraries={platform: make_resource_path(godot_root, binext_path)},
+            dependencies={platform: ''}
+        )
+
+        self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
 
     def collect_godot_library_data(self, ext):
         if self.godot_project is None:
@@ -139,6 +221,7 @@ class gdnative_build_ext(build_ext):
         dst_name = dst_name_parts[0]
         gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name + '.gdnlib'))
         self.gdnative_library_path = gdnlib_respath
+        self.generic_setup = False
 
         context = dict(
             singleton=False,
