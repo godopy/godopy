@@ -47,7 +47,7 @@ class build_ext(build_python_ext):
 
 version = __import__('pygodot').__version__
 
-packages = ['pygodot', 'godot', 'godot_headers']
+packages = ['pygodot', 'godot_headers']
 package_data = {
     'godot': [
         '/*.pxd',
