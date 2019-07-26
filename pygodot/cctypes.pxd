@@ -3,6 +3,9 @@ from libc.stddef cimport wchar_t
 
 from godot_headers.gdnative_api cimport *
 
+cdef extern from "Defs.hpp":
+    ctypedef float real_t
+
 
 cdef extern from "Defs.hpp" namespace "godot":
     cdef enum Error:
@@ -58,19 +61,15 @@ cdef extern from "Defs.hpp" namespace "godot":
         ERR_OMFG_THIS_IS_VERY_VERY_BAD  # Shit happens, has never been used, though
         ERR_WTF = ERR_OMFG_THIS_IS_VERY_VERY_BAD  # Short version of the above
 
-# TODO: Add ERR/WARN macros to globals.pxd
 
-cdef extern from * namespace "godot":
+cdef extern from "AABB.hpp" namespace "godot" nogil:
     cdef cppclass Vector3
     cdef cppclass String
 
-ctypedef float real_t
-
-
-cdef extern from "AABB.hpp" namespace "godot" nogil:
     cdef cppclass AABB:
         Vector3 position
         Vector3 size
+
         real_t get_area()
         bint has_no_surface()
         const Vector3 &get_position
@@ -92,14 +91,36 @@ cdef extern from "AABB.hpp" namespace "godot" nogil:
         bint intersects_ray(const Vector3 &from_, const Vector3 &dir, Vector3 *clip=nullptr, Vector3 *normal=nullptr)
         bint smits_inersects_ray(const Vector3 &from_, const Vector3 &dir, real_t t0, real_t t1)
 
-        # TODO: complete
+        bint intersects_convex_shape(const Plane *plane, int plane_count)
+        bint intersects_plane(const Plane&)
+        bint has_point(const Vector3&)
+        Vector3 get_support(const Vector3&)
+
+        Vector3 get_longest_axis()
+        int get_longest_axis_index()
+        real_t get_longest_axis_size()
+
+        Vector3 get_shortest_axis()
+        int get_shortest_axis_index()
+        real_t get_shortest_axis_size()
+
+        AABB grow(real_t by)
+        void grow_by(real_t amount)
+
+        void get_edge(int edge, Vector3 &from_, Vector3 &to)
+        Vector3 get_endpoint(int point)
+
+        AABB expand(const Vector3 &vector)
+        void project_range_in_plane(const Plane &plane, real_t &min, real_t &max)
+        void expand_to(const Vector3 &vector)
 
         # String operator String()
 
         AABB() except +
         AABB(const Vector3 &pos, const Vector3 &size) except+
 
-cdef extern from * namespace "godot":
+
+cdef extern from "Array.hpp" namespace "godot" nogil:
     cdef cppclass Variant
     cdef cppclass PoolByteArray
     cdef cppclass PoolIntArray
@@ -111,8 +132,6 @@ cdef extern from * namespace "godot":
 
     cdef cppclass Object
 
-
-cdef extern from "Array.hpp" namespace "godot" nogil:
     cdef cppclass Array:
         Array() except+
         Array(const Array &other) except+
@@ -157,12 +176,10 @@ cdef extern from "Array.hpp" namespace "godot" nogil:
         void sort_custom(Object *obj, const String &func)
 
 
-cdef extern from * namespace "godot":
+cdef extern from "Basis.hpp" namespace "godot" nogil:
     cdef cppclass Basis
     cdef cppclass Quat
 
-
-cdef extern from "Basis.hpp" namespace "godot" nogil:
     cdef cppclass ColumnVector3[column]:
         enum Axis:
             AXIS_X
@@ -173,12 +190,24 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         const real_t& operator[](int axis)
         real_t& operator[](int axis)
 
-        # ColumnVector3[column]& operator+=(const Vector3 &v)
-        Vector3 operator+(const Vector3 &v)
-        # ColumnVector3[column]& operator-=(const Vector3 &v)
-        Vector3 operator-(const Vector3 &v)
+        # ColumnVector3[column]& operator+=(const Vector3&)
+        Vector3 operator+(const Vector3&)
+        # ColumnVector3[column]& operator-=(const Vector3&)
+        Vector3 operator-(const Vector3&)
+        # *=
+        Vector3 operator*(const Vector3&)
+        # /=
+        Vector3 operator/(const Vector3&)
+        # *= scalar
+        Vector3 operator*(real_t)
+        # /= scalar
+        Vector3 operator/(real_t)
+        Vector3 operator-()
 
-        # TODO: Add all operators
+        bint operator==(const Vector3&)
+        bint operator!=(const Vector3&)
+        bint operator<(const Vector3&)
+        bint operator<=(const Vector3&)
 
         Vector3 abs()
         Vector3 ceil()
@@ -200,12 +229,12 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         int min_axis()
         void normalize()
         Vector3 normalized()
-        Vector3 reflect(Vector3 &by_)
+        Vector3 reflect(Vector3 &by)
         Vector3 rotated(const Vector3 &axis, real_t phi)
         void rotate(const Vector3 &axis, real_t phi)
-        Vector3 slide(const Vector3 &by_)
+        Vector3 slide(const Vector3 &by)
         void snap(real_t val)
-        Vector3 snapped(const float by_)
+        Vector3 snapped(const float by)
 
         # String operator String()
 
@@ -245,8 +274,36 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         Basis rotated(const Vector3 &axis, real_t phi)
         void scale(const Vector3 &scale)
         Basis scaled(const Vector3 &scale)
+        Vector3 get_scale()
 
-        # TODO
+        Vector3 get_euler_xyz()
+        void set_euler_xyz(const Vector3 &euler)
+        void set_euler_yxz(const Vector3 &euler)
+        Vector3 get_euler_yxz()
+        Vector3 get_euler()
+        void set_euler(const Vector3 &euler)
+
+        real_t tdotx(const Vector3&)
+        real_t tdoty(const Vector3&)
+        real_t tdotz(const Vector3&)
+
+        bint operator==(const Basis&)
+        bint operator!=(const Basis&)
+
+        Vector3 xform(const Vector3 &vector)
+        Vector3 xform_inv(const Vector3 &vector)
+
+        # *=
+        Basis operator*(const Basis&)
+        # +=
+        Basis operator+(const Basis&)
+        # -=
+        Basis operator-(const Basis&)
+        # *= scalar
+        Basis operator*(real_t val)
+
+        int get_orthogonal_index()
+        void set_orthogonal_index(int index)
 
         # String operator String()
 
@@ -266,10 +323,8 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
 
 
 cdef extern from "Color.hpp" namespace "godot" nogil:
-    # Color is defined as struct in C++
-    cdef cppclass Color:
+    cdef cppclass Color:  # C++ struct
         float r, g, b
-        float components[4]  # struct r,g,b,a and components[4] are in union
 
         bint operator==(const Color&)
         bint operator!=(const Color&)
@@ -360,6 +415,7 @@ cdef extern from "Plane.hpp" namespace "godot" nogil:
     cdef cppclass Plane:
         Vector3 normal
         real_t d
+
         set_normal(const Vector3&)
         Vector3 get_normal()
         void normalize()
@@ -425,6 +481,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         uint8_t operator[](const int idx)
         int size()
 
+
     cdef cppclass PoolIntArray:
         cppclass Read:
             const int *ptr()
@@ -449,6 +506,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         void set(const int idx, const int data)
         int operator[](const int idx)
         int size()
+
 
     cdef cppclass PoolRealArray:
         cppclass Read:
@@ -475,6 +533,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         real_t operator[](const int idx)
         int size()
 
+
     cdef cppclass PoolStringArray:
         cppclass Read:
             const String *ptr()
@@ -499,6 +558,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         void set(const int idx, const String &data)
         const String operator[](const int idx)
         int size()
+
 
     cdef cppclass PoolVector2Array:
         cppclass Read:
@@ -525,6 +585,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector2 operator[](const int idx)
         int size()
 
+
     cdef cppclass PoolVector3Array:
         cppclass Read:
             const Vector3 *ptr()
@@ -549,6 +610,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         void set(const int idx, const Vector3 &data)
         const Vector3 operator[](const int idx)
         int size()
+
 
     cdef cppclass PoolColorArray:
         cppclass Read:
@@ -580,11 +642,48 @@ cdef extern from "Quat.hpp" namespace "godot" nogil:
     cdef cppclass Quat:
         real_t x, y, z, w
 
-        # TODO: methods
+        real_t length_squared()
+        real_t length()
+        void normalize()
+        Quat normalized()
+        Quat inverse()
+        void set_euler_xyz(const Vector3 &euler)
+        Vector3 get_euler_xyz()
+        void set_euler_yxz(const Vector3 &euler)
+        Vector3 get_euler_yxz()
+
+        void set_euler(const Vector3 &euler)
+        Vector3 get_euler()
+
+        real_t dot(const Quat&)
+        Quat slerp(const Quat &q, const real_t &t)
+        Quat slerpni(const Quat &q, const real_t &t)
+        Quat cubic_slerp(const Quat &q, const Quat &prep, const Quat &postq, const real_t &t)
+
+        void get_axis_and_angle(Vector3 &axis, real_t &angle)
+
+        # *=
+        Quat operator*(const Quat&)
+        Quat operator*(const Vector3&)
+
+        Vector3 xform(const Vector3 &v)
+
+        # +=
+        # -=
+        # *=
+        # -=
+        Quat operator+(const Quat&)
+        Quat operator-(const Quat&)
+        Quat operator-()
+        Quat operator*(const real_t&)
+        Quat operator/(const real_t&)
+
+        bint operator==(const Quat&)
+        bint operator!=(const Quat&)
 
         # String operator String()
-        void set(real_t, real_t, real_t, real_t)
-        Quat(real_t, real_t, real_t, real_t) except +
+        void set(real_t x, real_t y, real_t z, real_t w)
+        Quat(real_t x, real_t y, real_t z, real_t w) except +
         Quat(const Vector3 &axis, const real_t &angle) except +
         Quat(const Vector3 &v0, const Vector3 &v1) except +
         Quat() except +
@@ -598,7 +697,32 @@ cdef extern from "Rect2.hpp" namespace "godot" nogil:
         Point2 position
         Size2 size
 
-        # TODO: methods
+        const Vector2 &get_position()
+        void set_position(const Vector2 &position)
+        const Vector2 &get_size()
+        void set_size(const Vector2 &size)
+
+        real_t get_area()
+        bint intersects(const Rect2 &rect)
+
+        real_t distance_to(const Vector2 &point)
+        bint intersects_transformed(const Transform2D &xform, const Rect2 &rect)
+        bint intersects_segment(const Point2 &from_, const Point2 &to,
+                                Point2 *position=nullptr, Point2 *normal=nullptr)
+        bint encloses(const Rect2 &rect)
+        bint has_no_area()
+        Rect2 clip(const Rect2 &rect)
+        Rect2 merge(const Rect2 &rect)
+        bint has_point(const Point2 &point)
+        bint no_area()
+
+        bint operator==(const Rect2&)
+        bint operator!=(const Rect2&)
+
+        Rect2 grow(real_t by)
+        Rect2 expand(Vector2 &vector)
+        Rect2 expand_to(Vector2 &vector)
+
         # String operator String()
         Rect2() except +
         Rect2(real_t x, real_t y, real_t width, real_t height) except +
@@ -625,7 +749,7 @@ cdef extern from "Ref.hpp" namespace "godot" nogil:
         Ref(const Ref[T]&) except +
         # Ref[T_Other](const Ref[T_Other]&) except +
         Ref(T*) except +
-        Ref(Variant&) except +
+        Ref(const Variant&) except +
 
         void unref()
         void instance() except +
@@ -932,7 +1056,7 @@ cdef extern from "Variant.hpp" namespace "godot" nogil:
 
             VARIANT_MAX
 
-        enum Operator "godot::Variant::Operator":
+        enum Operator:
             # Comparation
             OP_EQUAL
             OP_NOT_EQUAL
@@ -1156,7 +1280,7 @@ cdef extern from "Vector3.hpp" namespace "godot" nogil:
         Vector3 rotated(const Vector3 &axis, const real_t phi)
         void rotate(const Vector3 &axis, const real_t phi)
         void snap(real_t val)
-        Vector3 snapped(const float by_)
+        Vector3 snapped(const float by)
 
         # String operator String()
 

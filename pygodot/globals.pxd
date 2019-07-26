@@ -1,7 +1,20 @@
 from godot_headers.gdnative_api cimport *
 from .cctypes cimport String
 
-# TODO: Add ERR/WARN macros!
+
+cdef extern from "Defs.hpp":
+    cdef void WARN_PRINT(const char *msg)
+    cdef const char *WARN_PRINTS(const char *msg)
+    cdef void ERR_PRINT(const char *msg)
+    cdef const char *ERR_PRINTS(const char *msg)
+    cdef void FATAL_PRINT(const char *msg)
+    cdef void ERR_FAIL_INDEX(int index, int size)
+    cdef void CRASH_BAD_INDEX(int index, int size)
+    cdef void ERR_FAIL_NULL(void *param)
+    cdef void ERR_FAIL_COND(bint cond)
+    cdef void CRASH_COND(bint cond)
+    cdef void CRASH_NOW()
+
 
 cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
     godot_gdnative_core_api_struct *gdapi "godot::api"
