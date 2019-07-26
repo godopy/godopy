@@ -71,7 +71,7 @@ $ touch _demo/__init__.py
 
 This will turn our `_demo` folder into a Python [package](https://docs.python.org/3/glossary.html#term-regular-package).
 
-In the `_demo` folder, we’ll start with creating our Cython declaration file for the GDNative node we’ll be creating.
+In the `_demo` folder, we’ll start with creating our Cython definition file for the GDNative node we’ll be creating.
 We will name it `gdexample.pxd`:
 ```pyx
 from pygodot.cnodes cimport Sprite
@@ -86,7 +86,7 @@ cdef class GDExample(Sprite):
 
 ...
 
-Let’s implement our functions by creating our `gdexample.pyx` file::
+Let’s implement our functions by creating our `gdexample.pyx` file:
 ```pyx
 from libc.math cimport cos, sin
 from pygodot.cnodes cimport Sprite

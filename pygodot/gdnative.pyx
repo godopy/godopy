@@ -129,6 +129,7 @@ cdef list parse_args(int num_args, godot_variant **args):
     cdef godot_variant_type t;
     pyargs = []
 
+    cdef int i
     for i in range(num_args):
         t = gdapi.godot_variant_get_type(args[i])
 

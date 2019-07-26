@@ -1,6 +1,5 @@
 import sys
 import os
-import re
 import glob
 import json
 import shutil
@@ -84,12 +83,6 @@ def detect_godot_project(dir, fn='project.godot'):
     return detect_godot_project(*os.path.split(dir))
 
 
-# Not used. ClassName -> class_name conversion
-def resname(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
-
-
 @pygodot.add_command
 @click.command()
 @click.argument('sourcefile', nargs=-1, type=click.File('r'))
@@ -152,39 +145,9 @@ def genapi():
 
     with open('gdnative_api.pxd', 'w', encoding='utf-8') as f:
         f.write(pxd)
+
     with open('__init__.py', 'w', encoding='utf-8') as f:
         pass
-
-    pythonize_gdnative_api(output_dir)
-
-
-def pythonize_gdnative_api(output_dir):
-    from pprint import PrettyPrinter
-
-    click.echo('Converting\n\tapi.json -> api.py\n'
-               f'inside "{output_dir}" directory\n')
-
-    inpath = os.path.join(output_dir, 'api.json')
-    if not os.path.exists(inpath):
-        click.echo(f'Required "api.json" file doesn\'t exist in "{output_dir}"')
-        sys.exit(1)
-
-    with open(inpath, encoding='utf-8') as fp:
-        api = json.load(fp)
-
-    pythonized = {}
-
-    for entry in api:
-        name = entry.pop('name')
-        assert name not in pythonized
-
-        pythonized[name] = entry
-        for collection in ('properties', 'signals', 'methods', 'enums'):
-            pythonized[name][collection] = {prop.pop('name'): prop for prop in entry[collection]}
-
-    pp = PrettyPrinter(indent=1, compact=True, width=120)
-    with open('api.py', 'w', encoding='utf-8') as fp:
-        fp.write('CLASSES = %s\n' % pp.pformat(pythonized))
 
 
 @pygodot.add_command
