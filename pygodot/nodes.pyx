@@ -1,7 +1,7 @@
 from godot_headers.gdnative_api cimport godot_gdnative_ext_nativescript_1_1_api_struct
 from .globals cimport gdapi, nativescript_1_1_api, _python_language_index
 from . cimport cnodes
-from .cctypes cimport Vector2
+from .cpp.core_types cimport Vector2
 
 
 class Object(cnodes.Object):

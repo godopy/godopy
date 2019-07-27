@@ -22,12 +22,13 @@ from pygodot.cpp.${included_package}.${python_module_name(included)} cimport ${i
 % endfor
 
 
-cdef extern from "${class_name}.hpp" namespace "godot" nogil:
-    % for decl, _ in forwards:
+% for decl, _ in forwards:
+cdef extern from "${decl}.hpp" namespace "godot" nogil:
     cdef cppclass ${decl}
 
-    % endfor
 
+% endfor
+cdef extern from "${class_name}.hpp" namespace "godot" nogil:
     cdef cppclass ${class_name}(${class_def['base_class'] or '_Wrapped'}):
 % for enum in class_def['enums']:
         enum ${enum['name'].lstrip('_')}:
@@ -44,7 +45,11 @@ cdef extern from "${class_name}.hpp" namespace "godot" nogil:
 % for method_name, return_type, args, signature in methods:
         ${return_type}${escape_real_method_name(method_name)}(${signature})
 % endfor
-% if class_def['instanciable']:
+% if class_def['singleton']:
+
+        @staticmethod
+        ${class_name} *get_singleton()
+% elif class_def['instanciable']:
 
         ${class_name}() except +
 % elif not class_def['enums'] and not class_def['constants'] and not methods:

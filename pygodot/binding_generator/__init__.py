@@ -95,7 +95,7 @@ def generate(root_dir, echo=print):
     cpp_package_template = Template(filename=os.path.join(templates_dir, 'ccp_package.pxd.mako'))
 
     for cpp_package, _types in (('nodes', node_types), ('resources', resource_types), ('engine', engine_types)):
-        cpp_path = os.path.join(root_dir, 'pygodot', 'cpp', cpp_package, '__init__.py')
+        cpp_path = os.path.join(root_dir, 'pygodot', 'cpp', cpp_package, '__init__.pxd')
         cpp_source = cpp_package_template.render(
             package=cpp_package,
             classes=[c for c in class_contexts if c[0] in _types]
@@ -207,7 +207,7 @@ def generate_class_context(class_name, class_def, used_types, node_types, resour
     if class_def['base_class']:
         base_class = class_def['base_class']
         assert base_class not in CORE_TYPES
-        forwards.add((base_class, detect_package(base_class)))
+        includes.add((base_class, detect_package(base_class)))
 
     prepared_methods = []
 
@@ -224,7 +224,8 @@ def generate_class_context(class_name, class_def, used_types, node_types, resour
             arg_name = escape_cpp(arg['name'])
             arg_default = None
 
-            if arg['has_default_value'] or has_default_argument:
+            # Cython would pass NULL for default String args, skip them
+            if (arg['has_default_value'] and arg['type'] != 'String') or has_default_argument:
                 arg_default = escape_default_arg(arg['type'], arg['default_value'])
                 has_default_argument = True
 
