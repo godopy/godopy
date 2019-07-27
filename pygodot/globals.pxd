@@ -1,5 +1,5 @@
 from godot_headers.gdnative_api cimport *
-from .cctypes cimport String
+from .cpp.core_types cimport String
 
 
 cdef extern from "Defs.hpp":

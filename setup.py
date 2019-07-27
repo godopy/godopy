@@ -51,6 +51,10 @@ packages = ['pygodot', 'godot_headers']
 package_data = {
     'godot': [
         '/*.pxd',
+        'cpp/*.pxd',
+        'cpp/engine/*.pxd',
+        'cpp/nodes/*,pxd',
+        'cpp/resources/*.pxd',
         # TODO: Compile all templates
         'templates/*.mako',
         'build/templates/*.mako',
@@ -62,7 +66,6 @@ package_data = {
 entry_points = {'console_scripts': 'pygodot=pygodot.cli:pygodot'}
 
 install_requires = [
-    'redbaron',
     'autopxd2',
     'pycparser',
     'Click',

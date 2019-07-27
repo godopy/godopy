@@ -1,6 +1,6 @@
 from godot_headers.gdnative_api cimport *
 from .globals cimport gdapi
-from .cctypes cimport Vector2
+from .cpp.core_types cimport Vector2
 
 from ._core cimport _Wrapped
 from .__icalls cimport ___pygodot_icall_void_Vector2

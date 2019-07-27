@@ -1,4 +1,4 @@
-from .cctypes cimport Vector2
+from .cpp.core_types cimport Vector2
 from ._core cimport _Wrapped
 
 cdef class Object(_Wrapped):

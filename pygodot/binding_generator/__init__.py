@@ -12,7 +12,7 @@ CORE_TYPES = frozenset([
 
 PRIMITIVE_TYPES = frozenset(['int', 'bool', 'real', 'float', 'void'])
 
-CYTHON_ESCAPES = {
+CPP_ESCAPES = {
     'class':    '_class',
     'char':     '_char',
     'short':    '_short',
@@ -26,11 +26,16 @@ CYTHON_ESCAPES = {
     'new':      'new_',
     'operator': '_operator',
     'typename': '_typename',
-    'from':     'from_',
-    'def':      '_def',
-    'cdef':     '_cdef',
-    'extern':   '_extern'
 }
+
+CYTHON_ONLY_ESCAPES = {
+    'from':     'from_',
+    'pass':     'pass_',
+    'raise':    'raise_',
+    'global':   'global_',
+}
+
+CYTHON_ESCAPES = {**CPP_ESCAPES, **CYTHON_ONLY_ESCAPES}
 
 reference_types = set()
 
@@ -39,14 +44,37 @@ def generate(root_dir, echo=print):
     with open(os.path.join(root_dir, 'godot_headers', 'api.json'), encoding='utf-8') as fp:
         classes = json.load(fp)
 
-    for class_def in classes:
-        if class_def['is_reference']:
-            reference_types.add(strip_name(class_def['name']))
+    for c in classes:
+        if c['is_reference']:
+            reference_types.add(strip_name(c['name']))
+
+    node_types = set(['Node', 'TreeItem'])
+    resource_types = set(['Resource', 'TriangleMesh'])
+    engine_types = set()
+
+    for i in range(8):
+        for c in classes:
+            if strip_name(c['base_class']) not in node_types:
+                continue
+            class_name = strip_name(c['name'])
+            node_types.add(class_name)
+
+    for i in range(8):
+        for c in classes:
+            if strip_name(c['base_class']) not in resource_types:
+                continue
+            class_name = strip_name(c['name'])
+            resource_types.add(class_name)
+
+    for c in classes:
+        class_name = strip_name(c['name'])
+        if class_name not in node_types and class_name not in resource_types:
+            engine_types.add(class_name)
+
+    print(len(node_types), len(resource_types), len(engine_types))
 
     templates_dir = os.path.join(root_dir, 'pygodot', 'binding_generator', 'templates')
     icalls_header_path = os.path.join(root_dir, 'include', 'pygen', '__py_icalls.hpp')
-
-    icalls = set()
 
     class_contexts = []
 
@@ -54,9 +82,51 @@ def generate(root_dir, echo=print):
         used_types = _get_used_types(class_def)
         class_name = class_def.pop('name').lstrip('_')
 
-        class_contexts.append(generate_class_context(class_name, class_def, used_types))
+        class_contexts.append(generate_class_context(class_name, class_def, used_types, node_types, resource_types))
 
-        for method in class_def['methods']:
+    prepared_icalls = generate_icalls_context(classes)
+
+    icalls_header_template = Template(filename=os.path.join(templates_dir, '__py_icalls.hpp.mako'))
+    icalls_header = icalls_header_template.render(icalls=prepared_icalls)
+
+    with open(icalls_header_path, 'w', encoding='utf-8') as fp:
+        fp.write(icalls_header)
+
+    cpp_package_template = Template(filename=os.path.join(templates_dir, 'ccp_package.pxd.mako'))
+
+    for cpp_package, _types in (('nodes', node_types), ('resources', resource_types), ('engine', engine_types)):
+        cpp_path = os.path.join(root_dir, 'pygodot', 'cpp', cpp_package, '__init__.py')
+        cpp_source = cpp_package_template.render(
+            package=cpp_package,
+            classes=[c for c in class_contexts if c[0] in _types]
+        )
+        with open(cpp_path, 'w', encoding='utf-8') as fp:
+            fp.write(cpp_source)
+
+        for class_name, class_def, includes, forwards, prepared_methods in class_contexts:
+            if class_name not in _types:
+                continue
+            mod_name = '%s.pxd' % python_module_name(class_name)
+            ccnode_path = os.path.join(root_dir, 'pygodot', 'cpp', cpp_package, mod_name)
+            ccnode_template = Template(filename=os.path.join(templates_dir, 'cpp_binding.pxd.mako'))
+            ccnode_source = ccnode_template.render(
+                class_name=class_name,
+                class_def=class_def,
+                includes=includes,
+                forwards=forwards,
+                methods=prepared_methods,
+                package=cpp_package
+            )
+
+            with open(ccnode_path, 'w', encoding='utf-8') as fp:
+                fp.write(ccnode_source)
+
+
+def generate_icalls_context(classes):
+    icalls = set()
+
+    for c in classes:
+        for method in c['methods']:
             if method['has_varargs']:
                 continue
             args = tuple(get_icall_type_name(arg['type']) for arg in method['arguments'])
@@ -89,31 +159,12 @@ def generate(root_dir, echo=print):
 
         prepared_icalls.append((ret_type, args, ''.join(sig), ret_type != 'void'))
 
-    icalls_header_template = Template(filename=os.path.join(templates_dir, '__py_icalls.hpp.mako'))
-    icalls_header = icalls_header_template.render(icalls=prepared_icalls)
-
-    with open(icalls_header_path, 'w', encoding='utf-8') as fp:
-        fp.write(icalls_header)
-
-    ccnodes_package_path = os.path.join(root_dir, 'pygodot', 'ccnodes', '__init__.pxd')
-    ccnodes_package_template = Template(filename=os.path.join(templates_dir, 'ccnodes.pxd.mako'))
-    ccnodes_package_source = ccnodes_package_template.render(classes=class_contexts)
-    with open(ccnodes_package_path, 'w', encoding='utf-8') as fp:
-        fp.write(ccnodes_package_source)
-
-    for class_name, class_def, includes, prepared_methods in class_contexts:
-        ccnode_path = os.path.join(root_dir, 'pygodot', 'ccnodes', '%s.pxd' % python_module_name(class_name))
-        ccnode_template = Template(filename=os.path.join(templates_dir, 'ccnode.pxd.mako'))
-        ccnode_source = ccnode_template.render(class_name=class_name, class_def=class_def,
-                                               includes=includes, methods=prepared_methods)
-
-        with open(ccnode_path, 'w', encoding='utf-8') as fp:
-            fp.write(ccnode_source)
+    return prepared_icalls
 
 
 def make_gdnative_type(t):
     if is_enum(t):
-        return remove_nested_type_prefix(remove_enum_prefix(t)) + ' '
+        return '%s ' % remove_enum_prefix(t).replace('::', '.')
     elif is_class_type(t):
         if is_reference_type(t):
             return 'Ref[%s] ' % strip_name(t)
@@ -127,15 +178,36 @@ def make_gdnative_type(t):
         return '%s ' % strip_name(t)
 
 
-def generate_class_context(class_name, class_def, used_types):
-    includes = []
+def generate_class_context(class_name, class_def, used_types, node_types, resource_types):
+    includes = set()
+    forwards = set()
+
+    def detect_package(name):
+        if name in node_types:
+            return 'nodes'
+        elif name in resource_types:
+            return 'resources'
+        return 'engine'
 
     for used_type in used_types:
         if is_enum(used_type) and is_nested_type(used_type):
             used_name = remove_enum_prefix(extract_nested_type(used_type))
-            imported_name = remove_nested_type_prefix(remove_enum_prefix(used_type))
-            if used_name != class_name and (used_name, imported_name) not in includes:
-                includes.append((used_name, imported_name))
+            # imported_name = remove_nested_type_prefix(remove_enum_prefix(used_type))
+            package = detect_package(used_name)
+
+            if used_name != class_name:
+                forwards.add((used_name, package))
+        else:
+            used_name = remove_enum_prefix(used_type)
+
+            if used_name not in CORE_TYPES and used_name != class_name:
+                package = detect_package(used_name)
+                forwards.add((used_name, package))
+
+    if class_def['base_class']:
+        base_class = class_def['base_class']
+        assert base_class not in CORE_TYPES
+        forwards.add((base_class, detect_package(base_class)))
 
     prepared_methods = []
 
@@ -169,7 +241,7 @@ def generate_class_context(class_name, class_def, used_types):
 
         prepared_methods.append((method_name, return_type, prepared_args, ', '.join(sigs)))
 
-    return class_name, class_def, includes, prepared_methods
+    return class_name, class_def, includes, forwards, prepared_methods
 
 
 def escape_default_arg(_type, default_value):
@@ -266,7 +338,7 @@ def remove_nested_type_prefix(name):
 
 
 def remove_enum_prefix(name):
-    return name[5:].lstrip('_')
+    return re.sub(r'^enum\.', '', name).lstrip('_')
 
 
 def is_nested_type(name, type=''):

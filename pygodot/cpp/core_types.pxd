@@ -1291,3 +1291,5 @@ cdef extern from "Wrapped.hpp" namespace "godot" nogil:
     cdef cppclass _Wrapped:
         godot_object *_owner
         size_t _type_tag
+
+        _Wrapped() except +

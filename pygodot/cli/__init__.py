@@ -1,13 +1,11 @@
 import sys
 import os
 import glob
-import json
 import shutil
 
 import click
 
 from .pxd_writer import PxdWriter, parse as parse_c_header
-from ..cpp_interop.compiler import compile
 from ..binding_generator import generate
 
 pygodot_lib_root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -81,30 +79,6 @@ def detect_godot_project(dir, fn='project.godot'):
         return dir
 
     return detect_godot_project(*os.path.split(dir))
-
-
-@pygodot.add_command
-@click.command()
-@click.argument('sourcefile', nargs=-1, type=click.File('r'))
-@click.option('--output-dir', '-o')
-def compilecpp(sourcefile, **opts):
-    if not len(sourcefile):
-        click.echo('No source files given')
-        sys.exit(1)
-
-    output_dir = opts.get('output_dir')
-
-    for src in sourcefile:
-        default_output_dir, filename = os.path.split(os.path.realpath(src.name))
-        name, ext = os.path.splitext(filename)
-
-        if not output_dir:
-            output_dir = default_output_dir
-        elif not os.path.isdir(output_dir):
-            click.echo(f'Output directory "{output_dir}" does not exist')
-            sys.exit(1)
-
-        compile(src.read(), output_dir, name)
 
 
 @pygodot.add_command
