@@ -10,7 +10,7 @@ from pygodot._core cimport _Wrapped
 
 cdef struct __method_bindings:
 % for class_name, class_def, includes, forwards, methods in classes:
-    % for method_name, return_type, pxd_signature, signature, args in methods:
+    % for method_name, return_type, pxd_signature, signature, args, return_stmt in methods:
     godot_method_bind *__${class_name}__mb_${method_name}
     % endfor
 % endfor
@@ -28,7 +28,7 @@ cdef public const void *_Python${class_name}Ptr = <const void *>${class_name}
 
 cdef public void __init_python_method_bindings():
 % for class_name, class_def, includes, forwards, methods in classes:
-    % for method_name, return_type, pxd_signature, signature, args in methods:
+    % for method_name, return_type, pxd_signature, signature, args, return_stmt in methods:
     __mb.__${class_name}__mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method_name}")
     % endfor
 % endfor

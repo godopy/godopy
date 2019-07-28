@@ -14,12 +14,6 @@
             return '%s "%s" ' % (name, reversed_escapes[name])
         else:
             return name
-
-    def clean_return_type(type):
-        if '.' in type:
-            # enums
-            return 'int '
-        return type
 %>
 from godot_headers.gdnative_api cimport *
 from pygodot.bindings.cpp.core_types cimport *
@@ -41,7 +35,7 @@ cdef extern from "${class_name}.hpp" namespace "godot" nogil:
 
 % endfor
 % for method_name, return_type, pxd_signature, signature, args in methods:
-        ${clean_return_type(return_type)}${escape_real_method_name(method_name)}(${signature})
+        ${return_type}${escape_real_method_name(method_name)}(${signature})
 % endfor
 % if class_def['singleton']:
 

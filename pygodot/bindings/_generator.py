@@ -91,24 +91,20 @@ def main(root_dir, echo=print):
     print('Resource classes:', len(resource_types))
     print('Engine classes:', len(engine_types))
 
-    class_contexts = []
-
-    for class_def in classes:
-        used_types = _get_used_types(class_def)
-        class_name = strip_name(class_def['name'])
-        class_contexts.append(generate_class_context(class_name, class_def, used_types, node_types, resource_types))
-
-    write_icall_definitions(generate_icalls_context(classes), root_dir)
-
+    # C++ bindings
     cpp_bindings_template = Template(filename=os.path.join(bindings_dir, 'templates', '_cpp_bindings.pxd.mako'))
     cpp_path = os.path.join(bindings_dir, '_cpp_bindings.pxd')
-
-    cpp_source = cpp_bindings_template.render(classes=class_contexts)
+    cpp_source = cpp_bindings_template.render(classes=[generate_cppclass_context(c) for c in classes])
     with open(cpp_path, 'w', encoding='utf-8') as fp:
         fp.write(cpp_source)
 
     for module, _types in (('nodes', node_types), ('resources', resource_types), ('engine', engine_types)):
         write_cpp_definitions(module, _types, class_names)
+
+    # Cython bindings
+    write_cython_icall_definitions(generate_icalls_context(classes), root_dir)
+
+    class_contexts = [generate_class_context(c) for c in classes]
 
     cython_bindings_pxd = (
         os.path.join(bindings_dir, '_cython_bindings.pxd'),
@@ -128,6 +124,7 @@ def main(root_dir, echo=print):
     for module, _types in (('nodes', node_types), ('resources', resource_types), ('engine', engine_types)):
         write_cython_definitions(module, _types, class_names)
 
+    # Python bindings
     python_bindings_template = Template(filename=os.path.join(bindings_dir, 'templates', '_python_bindings.pyx.mako'))
     python_path = os.path.join(bindings_dir, '_python_bindings.pyx')
 
@@ -169,7 +166,7 @@ def write_cpp_definitions(cpp_module, _types, class_names):
         fp.write(cpp_source)
 
 
-def write_icall_definitions(prepared_icalls, root_dir):
+def write_cython_icall_definitions(prepared_icalls, root_dir):
     icalls_header_path = os.path.join(root_dir, 'include', 'pygen', '__cython_icalls.hpp')
     icalls_pxd_path = os.path.join(bindings_dir, 'cython', '__icalls.pxd')
 
@@ -206,90 +203,102 @@ def generate_icalls_context(classes):
 
     for ret_type, args in icalls:
         methodkeys = icall2methodkeys[ret_type, args]
+        icall_name = get_icall_name(ret_type, args)
+
         for key in methodkeys:
-            icall_names[key] = get_icall_name(ret_type, args)
+            icall_names[key] = icall_name
 
-        sig = [
-            get_icall_return_type(ret_type), ' ',
-            get_icall_name(ret_type, args), '(',
-            'godot_method_bind *mb, ', 'godot_object *o'
-        ]
-        for i, arg in enumerate(args):
-            sig.append(', const ')
-            if is_core_type(arg):
-                sig.append('godot::' + arg + '& ')
-            elif arg == 'int':
-                sig.append('int64_t ')
-            elif arg == 'float':
-                sig.append('double ')
-            elif is_primitive(arg):
-                sig.append(arg + ' ')
-            else:
-                sig.append('godot_object *')
+        sig = [get_icall_return_type(ret_type), icall_name, '(', 'godot_method_bind *mb, ', 'godot_object *o',
+               *create_icall_arguments(args), ')']
 
-            sig.append(f'arg{i}')
+        pxd_sig = [get_icall_pxd_return_type(ret_type), icall_name, '(', 'godot_method_bind*, ',
+                   'godot_object*', *create_icall_arguments(args, is_pxd=True), ')']
 
-        sig.append(')')
-
-        signature = ''.join(sig)
-        prepared_icalls.append((ret_type, args, signature, ret_type != 'void'))
+        prepared_icalls.append((ret_type, args, ''.join(sig), ''.join(pxd_sig)))
 
     return prepared_icalls
 
 
-def make_gdnative_type(t):
-    if is_enum(t):
-        return '%s ' % remove_enum_prefix(t).replace('::', '.')
-    elif is_class_type(t):
-        if is_reference_type(t):
-            return 'Ref[%s] ' % strip_name(t)
+def create_icall_arguments(args, is_pxd=False):
+    sig = []
+
+    for i, arg in enumerate(args):
+        prefix = ' '
+        sig.append(', const ')
+        if is_core_type(arg):
+            prefix = ''
+            if is_pxd:
+                sig.append(arg + '&')
+            else:
+                sig.append(arg + ' &')
+        elif arg == 'int':
+            sig.append('int64_t')
+        elif arg == 'float':
+            sig.append('double')
+        elif is_primitive(arg):
+            sig.append(arg)
         else:
-            return '%s *' % strip_name(t)
-    else:
-        if t == 'int':
-            return 'int64_t '
-        if t == 'float' or t == 'real':
-            return 'real_t '
-        return '%s ' % strip_name(t)
+            prefix = ''
+            if is_pxd:
+                sig.append('godot_object*')  # argument.owner
+            else:
+                sig.append('godot_object *')  # argument.owner
+
+        if not is_pxd:
+            sig.append(prefix + 'arg%s' % i)
+
+    return sig
 
 
-def generate_class_context(class_name, class_def, used_types, node_types, resource_types):
-    includes = set()
-    forwards = set()
+def get_icall_return_type(t):
+    if is_class_type(t):
+        return 'PyObject *'
+    elif t == 'int':
+        return 'int64_t '
+    elif t == 'float' or t == 'real':
+        return 'double '
 
-    def detect_package(name):
-        if name in node_types:
-            return 'nodes'
-        elif name in resource_types:
-            return 'resources'
-        return 'engine'
+    return t + ' '
 
-    for used_type in used_types:
-        if is_enum(used_type) and is_nested_type(used_type):
-            used_name = remove_enum_prefix(extract_nested_type(used_type))
-            # imported_name = remove_nested_type_prefix(remove_enum_prefix(used_type))
-            package = detect_package(used_name)
 
-            if used_name != class_name:
-                forwards.add((used_name, package))
-        else:
-            used_name = remove_enum_prefix(used_type)
+def get_icall_pxd_return_type(t):
+    if is_class_type(t):
+        return 'object '
+    elif t == 'int ':
+        return 'int64_t'
+    elif t == 'float' or t == 'real':
+        return 'double '
 
-            if used_name not in CORE_TYPES and used_name != class_name:
-                package = detect_package(used_name)
-                forwards.add((used_name, package))
+    return t + ' '
 
-    if class_def['base_class']:
-        base_class = class_def['base_class']
-        assert base_class not in CORE_TYPES
-        includes.add((base_class, detect_package(base_class)))
+
+def get_icall_name(ret_type, args):
+    name = "___pygodot_icall_"
+    name += strip_name(ret_type)
+    for arg in args:
+        name += "_" + strip_name(arg)
+
+    return name
+
+
+def get_icall_type_name(name):
+    if name.startswith('enum'):
+        return 'int'
+    if is_class_type(name):
+        return 'Object'
+    return name
+
+
+def generate_class_context(class_def):
+    class_name = strip_name(class_def['name'])
+    includes, forwards = detect_used_classes(class_def)
 
     prepared_methods = []
 
     for method in class_def['methods']:
         method_name = method['name']
         method_name = escape_cpp(method_name)
-        return_type = make_gdnative_type(method['return_type'])
+        return_type = make_cython_gdnative_type(method['return_type'], is_virtual=method['is_virtual'], is_return=True)
 
         args = []
         sigs = []
@@ -297,7 +306,7 @@ def generate_class_context(class_name, class_def, used_types, node_types, resour
         has_default_argument = False
 
         for arg in method['arguments']:
-            arg_type = make_gdnative_type(arg['type'])
+            arg_type = make_cython_gdnative_type(arg['type'])
             arg_name = escape_cpp(arg['name'])
 
             arg_default = None
@@ -307,6 +316,87 @@ def generate_class_context(class_name, class_def, used_types, node_types, resour
             # if (arg['has_default_value'] and arg['type'] != 'String') or has_default_argument:
             #     arg_default = escape_default_arg(arg['type'], arg['default_value'])
             #     has_default_argument = True
+
+            if arg_default is not None:
+                pxd_sig = '%s%s=*' % (arg_type, arg_name)
+                sig = '%s%s=%s' % (arg_type, arg_name, arg_default)
+            else:
+                pxd_sig = sig = '%s%s' % (arg_type, arg_name)
+
+            args.append((arg_type, arg_name, arg))
+
+            pxd_sigs.append(pxd_sig)
+            sigs.append(sig)
+
+        if method["has_varargs"]:
+            pxd_sigs.append('...')
+            sigs.append('...')
+
+        return_stmt = 'return '
+        if is_enum(method['return_type']):
+            return_stmt = 'return <%s>' % return_type.rstrip()
+        elif method['return_type'] == 'void':
+            return_stmt = ''
+        # elif is_class_type(method['return_type']):
+        #    return_stmt = 'return <object>'
+
+        prepared_methods.append((method_name, return_type, ', '.join(pxd_sigs), ', '.join(sigs), args, return_stmt))
+
+    return class_name, class_def, includes, forwards, prepared_methods
+
+
+def make_cython_gdnative_type(t, is_virtual=False, is_return=False):
+    prefix = '' if is_return else 'const '
+    if is_enum(t):
+        enum_name = remove_enum_prefix(t).replace('::', '')
+        return '%s ' % enum_name
+    elif is_class_type(t):
+        # if is_reference_type(t):
+        #    return 'Ref[%s] ' % strip_name(t)
+        # else:
+        return '%s ' % strip_name(t)
+
+    if t == 'int':
+        return prefix + 'int64_t '
+    if t == 'float' or t == 'real':
+        return prefix + 'real_t '
+
+    if is_virtual:
+        # Python runtime exceptions should not be forgotten!
+        if t == 'void':
+            return 'object '
+        elif t == 'bool':
+            return 'int '
+
+    return prefix + '%s ' % strip_name(t)
+
+
+def generate_cppclass_context(class_def):
+    class_name = strip_name(class_def['name'])
+    includes, forwards = detect_used_classes(class_def)
+
+    prepared_methods = []
+
+    for method in class_def['methods']:
+        method_name = method['name']
+        method_name = escape_cpp(method_name)
+        return_type = make_cpp_gdnative_type(method['return_type'])
+
+        args = []
+        sigs = []
+        pxd_sigs = []
+        has_default_argument = False
+
+        for arg in method['arguments']:
+            arg_type = make_cpp_gdnative_type(arg['type'])
+            arg_name = escape_cpp(arg['name'])
+
+            arg_default = None
+
+            # Cython would pass NULL for default String args in C++ class methods, skip them
+            if (arg['has_default_value'] and arg['type'] != 'String') or has_default_argument:
+                arg_default = escape_cpp_default_arg(arg['type'], arg['default_value'])
+                has_default_argument = True
 
             if arg_default is not None:
                 pxd_sig = 'const %s%s=*' % (arg_type, arg_name)
@@ -328,7 +418,23 @@ def generate_class_context(class_name, class_def, used_types, node_types, resour
     return class_name, class_def, includes, forwards, prepared_methods
 
 
-def escape_default_arg(_type, default_value):
+def make_cpp_gdnative_type(t):
+    if is_enum(t):
+        return 'int '  # '%s ' % remove_enum_prefix(t).replace('::', '.')
+    elif is_class_type(t):
+        if is_reference_type(t):
+            return 'Ref[%s] ' % strip_name(t)
+        else:
+            return '%s *' % strip_name(t)
+    else:
+        if t == 'int':
+            return 'int64_t '
+        if t == 'float' or t == 'real':
+            return 'real_t '
+        return '%s ' % strip_name(t)
+
+
+def escape_cpp_default_arg(_type, default_value):
     if _type == 'Color':
         return 'Color(%s)' % default_value
     elif _type in ('bool', 'int'):
@@ -351,34 +457,31 @@ def escape_default_arg(_type, default_value):
     return default_value
 
 
-def get_icall_return_type(t):
-    if is_class_type(t):
-        return '__pygodot___Wrapped *'
-    elif t == 'int':
-        return 'int64_t'
-    elif t == 'float' or t == 'real':
-        return 'double'
-    elif is_primitive(t):
-        return t
-    else:
-        return f'godot::{t}'
+def detect_used_classes(class_def):
+    class_name = strip_name(class_def['name'])
+    used_types = _get_used_types(class_def)
 
+    includes = set()
+    forwards = set()
 
-def get_icall_name(ret_type, args):
-    name = "___pygodot_icall_"
-    name += strip_name(ret_type)
-    for arg in args:
-        name += "_" + strip_name(arg)
+    for used_type in used_types:
+        if is_enum(used_type) and is_nested_type(used_type):
+            used_name = remove_enum_prefix(extract_nested_type(used_type))
+            # imported_name = remove_nested_type_prefix(remove_enum_prefix(used_type))
 
-    return name
+            if used_name != class_name:
+                forwards.add(used_name)
+        else:
+            used_name = remove_enum_prefix(used_type)
 
+            if used_name not in CORE_TYPES and used_name != class_name:
+                forwards.add(used_name)
 
-def get_icall_type_name(name):
-    if name.startswith('enum'):
-        return 'int'
-    if is_class_type(name):
-        return 'Object'
-    return name
+    if class_def['base_class']:
+        base_class = class_def['base_class']
+        includes.add(base_class)
+
+    return includes, forwards
 
 
 def _get_used_types(cls):
@@ -441,7 +544,7 @@ def escape_cpp(name):
 
 
 def collect_dependent_types(forwards, includes, class_name, base_class):
-    dependent_types = set(decl for decl, _ in forwards) | set(decl for decl, _ in includes)
+    dependent_types = set(forwards) | set(includes)
     dependent_types.add(class_name)
     if base_class:
         dependent_types.add(base_class)
@@ -454,42 +557,14 @@ ARGUMENT_TYPE_FIXES = {
 }
 
 
-def clean_signature(signature, forwards, includes, class_name, base_class):
-    dependent_types = collect_dependent_types(forwards, includes, class_name, base_class)
+def clean_signature(signature, class_name):
     ret = signature
-
-    for cname in dependent_types:
-        # Pass arguments as Python objects
-
-        # `const Node *from_node=NULL` -> `Node from_node=None`
-        ret = re.sub(r'const %s \*(\w+)\=NULL' % cname, r'%s \1=None' % cname, ret)
-
-        ret = re.sub(r'const %s \*' % cname, '%s ' % cname, ret)
-        ret = re.sub(r'const %s \*' % cname, '%s ' % cname, ret)
-
-        # `const Ref[Texture] texture=NULL` -> `Texture texture=None`
-        ret = re.sub(r'const Ref\[%s\] (\w+)\=NULL' % cname, r'%s \1=None' % cname, ret)
-        ret = re.sub(r'const Ref\[%s\] ' % cname, '%s ' % cname, ret)
-
-        ret = re.sub(r'const String (\w+)=\"(.*)\"', r'const String \1=<const String><const char *>"\2"', ret)
-        ret = re.sub(r'const ([A-Z]\w+) (\w+)=NULL', r'const \1 \2=<const \1>NULL', ret)
-        ret = re.sub(r'const ([A-Z]\w+) (\w+)=0', r'const \1 \2=<const \1>0', ret)
 
     # Inherited class methods can't change its arument types
     if class_name in ARGUMENT_TYPE_FIXES:
         orig, fixed = ARGUMENT_TYPE_FIXES[class_name]
         ret = ret.replace(orig, fixed)
 
-    return ret
-
-
-def clean_return_type(name, forwards, includes, class_name, base_class):
-    dependent_types = collect_dependent_types(forwards, includes, class_name, base_class)
-    ret = name.replace('.', '')  # enums
-    ret = re.sub(r'Ref\[(.+)\]', r'\1', ret)
-    for cname in dependent_types:
-        # Return a Python object
-        ret = re.sub(r'%s \*' % cname, '%s ' % cname, ret)
     return ret
 
 
