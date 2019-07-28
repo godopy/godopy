@@ -188,7 +188,7 @@ if (env['export']):
 binpath = os.path.dirname(sys.executable)
 
 env.Append(BUILDERS={
-    'CythonLibrary': Builder(action='%s/cython -3 --cplus -o $TARGET $SOURCE' % binpath)
+    'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)
 })
 
 env.Append(CPPPATH=[
@@ -216,9 +216,24 @@ if env['generate_bindings']:
     binding_generator.generate_bindings(json_api_file)
 
 # Sources to compile
-cython_sources = [env.CythonLibrary(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('pygodot/*.pyx')]
-sources = [*cython_sources, *Glob('src/core/*.cpp'), *Glob('src/gen/*.cpp'), *Glob('src/pycore/*.cpp')]
-gdlib_sources = [*cython_sources, 'src/pylib/gdlibrary.cpp']
+cython_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp)
+                  for fp in Glob('pygodot/*.pyx')]
+cython_binding_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp)
+                          for fp in Glob('pygodot/bindings/*.pyx')]
+sources = [
+    *cython_sources,
+    *cython_binding_sources,
+    *Glob('src/core/*.cpp'),
+    *Glob('src/gen/*.cpp'),
+    *Glob('src/pycore/*.cpp')
+]
+
+gdlib_sources = [
+    # Ensure Cython modules are (re-)compiled
+    *cython_sources,
+    *cython_binding_sources,
+    'src/pylib/gdlibrary.cpp'
+]
 
 static_target_name = 'bin/libpygodot.%(platform)s.%(target)s.%(bits)s' % env
 

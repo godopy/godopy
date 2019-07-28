@@ -1,7 +1,7 @@
 from godot_headers.gdnative_api cimport *
 from .globals cimport gdapi, nativescript_api, nativescript_1_1_api, _nativescript_handle as handle
 from ._core cimport _Wrapped
-from . cimport cnodes
+from .bindings.cython cimport nodes
 
 # from pygodot.utils import _pyprint as print
 
@@ -9,11 +9,14 @@ from cpython.object cimport PyObject, PyTypeObject
 
 __keepalive = set()
 
+
 cpdef object register_method(object cls, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
     _register_method(cls, method, rpc_type)
 
+
 cpdef object register_class(object cls):
     _register_class(cls)
+
 
 cdef inline cls2typetag(cls):
     cdef PyObject *_type_tag = <PyObject *>cls
@@ -36,7 +39,7 @@ cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag
     wrapper._type_tag = _type_tag
 
 ### Initializer (not used, for future reference)
-cdef class PyGodotGlobal(cnodes.Node):
+cdef class PyGodotGlobal(nodes.Node):
     cdef void _ready(self):
         print("GLOBAL READY!")
 

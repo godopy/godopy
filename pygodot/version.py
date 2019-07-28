@@ -3,6 +3,7 @@ import subprocess
 
 VERSION = (0, 0, 1, 'alpha', 0)
 
+
 def githead_sha():
     from . import inside_godot
 
@@ -19,6 +20,7 @@ def githead_sha():
     )
     sha = git_revparse.communicate()[0]
     return sha[:8]
+
 
 def get_version():
     main = '.'.join(str(x) for x in VERSION[:3])

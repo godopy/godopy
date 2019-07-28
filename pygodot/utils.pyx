@@ -5,12 +5,13 @@ from ._core cimport _Wrapped
 from libc.stddef cimport wchar_t
 from cpython.mem cimport PyMem_Free
 
+import os
+import sys
+
+
 cdef extern from "Python.h":
     cdef wchar_t *Py_GetPythonHome()
     cdef char *Py_EncodeLocale(const wchar_t *text, size_t *error_pos)
-
-import os
-import sys
 
 
 def _pyprint(*objects, sep=' ', end='\n'):
@@ -22,6 +23,7 @@ def _pyprint(*objects, sep=' ', end='\n'):
     gdapi.godot_string_parse_utf8(&gd_msg, c_msg)
     gdapi.godot_print(&gd_msg)
     gdapi.godot_string_destroy(&gd_msg)
+
 
 def _gdprint(str fmt, *args):
     cdef bytes msg = fmt.format(*args).encode('utf-8')
@@ -43,6 +45,7 @@ cdef bytes godot_string_to_bytes(const godot_string *s):
     finally:
         gdapi.godot_char_string_destroy(&chars)
     return bs
+
 
 cdef public _Wrapped _create_wrapper(godot_object *_owner, size_t _type_tag):
     cdef _Wrapped wrapper = _Wrapped.__new__(_Wrapped)
@@ -118,7 +121,7 @@ cdef int _init_dynamic_loading() except -1:
 
     _dynamic_loading_initialized = True
     return 0
-    
+
 
 cdef str _detect_godot_project(str dirname, str base):
     if not dirname or not base:

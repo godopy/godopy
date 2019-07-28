@@ -9,15 +9,14 @@ except ImportError:
 if inside_godot:
     from utils import _pyprint as print
 else:
-    class dummy_nodes:
-        def __init__(self):
-            self.Reference = type('Reference', (object,), {})
+    class dummy_bindings:
+        pass
 
     class dummy_gdnative:
         def register_class(self, cls): pass
         def register_method(self, cls, method): pass
 
-    nodes = dummy_nodes()
+    bindings = dummy_bindings()
     gdnative = dummy_gdnative()
     print = print
 

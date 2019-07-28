@@ -24,6 +24,7 @@ namespace godot {
 
 void *_RegisterState::nativescript_handle;
 int _RegisterState::language_index;
+int _RegisterState::cython_language_index;
 int _RegisterState::python_language_index;
 
 const godot_gdnative_core_api_struct *api = nullptr;

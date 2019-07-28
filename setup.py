@@ -51,14 +51,13 @@ packages = ['pygodot', 'godot_headers']
 package_data = {
     'godot': [
         '/*.pxd',
-        'cpp/*.pxd',
-        'cpp/engine/*.pxd',
-        'cpp/nodes/*,pxd',
-        'cpp/resources/*.pxd',
-        # TODO: Compile all templates
+        'bindings/*.pxd',
+        'bindings/core/*.pxd',
+        'bindings/cpp/*.pxd',
+
         'templates/*.mako',
-        'build/templates/*.mako',
-        'cpp_interop/templates/*.mako'
+        # TODO: Compile build templates and remove runtime dependency on Mako
+        'build/templates/*.mako'
     ],
     'godot_headers': ['/*.pxd']
 }

@@ -24,7 +24,7 @@ public:
 	static void python_init();
 	static void python_terminate();
 
-  static void nativescript_init(void *handle);
+  static void nativescript_init(void *handle, bool init_cython=true);
   static void nativescript_terminate(void *handle);
 };
 

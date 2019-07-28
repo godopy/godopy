@@ -93,7 +93,7 @@ elif env['platform'] == 'windows':
 binpath = os.path.dirname(sys.executable)
 
 env.Append(BUILDERS={
-    'CythonSource': Builder(action='%s/cython -3 --cplus -o $TARGET $SOURCE' % binpath)
+    'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)
 })
 
 # make sure our binding library is properly includes

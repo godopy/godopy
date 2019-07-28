@@ -1020,7 +1020,7 @@ cdef extern from "Variant.hpp" namespace "godot" nogil:
         enum Type:
             NIL
 
-            # Atmomic types
+            # Atomic types
             BOOL
             INT
             REAL
@@ -1029,7 +1029,7 @@ cdef extern from "Variant.hpp" namespace "godot" nogil:
             # Math types
             VECTOR2  # 5
             RECT2
-            VECTOR2
+            VECTOR3
             TRANSFORM2D
             PLANE
             QUAT  # 10

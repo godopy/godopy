@@ -1,0 +1,16 @@
+/_cpp_bindings.pxd
+/_cython_bindings.*
+/_python_bindings.*
+
+/engine.py
+/nodes.py
+/resources.py
+
+/cpp/engine.pxd
+/cpp/nodes.pxd
+/cpp/resources.pxd
+
+/cython/__icalls.pxd
+/cython/engine.pxd
+/cython/nodes.pxd
+/cython/resources.pxd

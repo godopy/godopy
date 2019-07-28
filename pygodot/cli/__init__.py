@@ -6,7 +6,7 @@ import shutil
 import click
 
 from .pxd_writer import PxdWriter, parse as parse_c_header
-from ..binding_generator import generate
+from ..bindings._generator import main as generate
 
 pygodot_lib_root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 

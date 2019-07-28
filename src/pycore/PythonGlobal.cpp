@@ -23,6 +23,8 @@ static PyModuleDef _pygodotmodule = {
 
 // TODO: #include these defs
 extern "C" __pygodot___Wrapped *_create_wrapper(godot_object *, size_t);
+extern "C" void __init_cython_method_bindings(void);
+extern "C" void __register_cython_types(void);
 extern "C" void __init_python_method_bindings(void);
 extern "C" void __register_python_types(void);
 
@@ -125,7 +127,7 @@ void PyGodot::python_terminate() {
 	}
 }
 
-void PyGodot::nativescript_init(void *handle) {
+void PyGodot::nativescript_init(void *handle, bool init_cython) {
 	godot::_RegisterState::nativescript_handle = handle;
 
 	godot_instance_binding_functions binding_funcs = {};
@@ -134,7 +136,13 @@ void PyGodot::nativescript_init(void *handle) {
 	binding_funcs.refcount_incremented_instance_binding = wrapper_incref;
 	binding_funcs.refcount_decremented_instance_binding = wrapper_decref;
 
+  godot::_RegisterState::cython_language_index = godot::nativescript_1_1_api->godot_nativescript_register_instance_binding_data_functions(binding_funcs);
 	godot::_RegisterState::python_language_index = godot::nativescript_1_1_api->godot_nativescript_register_instance_binding_data_functions(binding_funcs);
+
+  if (init_cython) {
+    __register_cython_types();
+    __init_cython_method_bindings();
+  }
 
 	__register_python_types();
 	__init_python_method_bindings();

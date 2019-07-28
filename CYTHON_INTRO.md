@@ -89,16 +89,18 @@ cdef class GDExample(Sprite):
 Let’s implement our functions by creating our `gdexample.pyx` file:
 ```pyx
 from libc.math cimport cos, sin
-from pygodot.cnodes cimport Sprite
-from pygodot.cctypes cimport Vector2
+
+from pygodot.bindings.cython cimport nodes
+from pygodot.bindings.cpp.core_types cimport Vector2
 
 from pygodot.gdnative cimport register_method
 
-cdef class GDExample(Sprite):
+
+cdef class GDExample(nodes.Sprite):
     def __cinit__(self):
         self.time_passed = 0.0
 
-    cpdef _process(self, float delta):
+    cpdef void _process(self, float delta):
         self.time_passed += delta
 
         cdef Vector2 new_position = Vector2(

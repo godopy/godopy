@@ -1,5 +1,5 @@
 from godot_headers.gdnative_api cimport *
-from .cpp.core_types cimport String
+from .bindings.cpp.core_types cimport String
 
 
 cdef extern from "Defs.hpp":
@@ -20,6 +20,7 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
     godot_gdnative_core_api_struct *gdapi "godot::api"
     godot_gdnative_ext_nativescript_api_struct *nativescript_api
     godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_1_api
+    godot_gdnative_ext_pluginscript_api_struct *pluginscript_api
 
     void *gdnlib
     bint in_editor
@@ -36,4 +37,5 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
 
     void *_nativescript_handle "godot::_RegisterState::nativescript_handle"
     int _language_index "godot::_RegisterState::language_index"
+    int _cython_language_index "godot::_RegisterState::cython_language_index"
     int _python_language_index "godot::_RegisterState::python_language_index"

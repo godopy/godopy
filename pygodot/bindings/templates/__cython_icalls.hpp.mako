@@ -7,7 +7,7 @@
 #include <pycore/PythonGlobal.hpp>
 #include <core/CoreTypes.hpp>
 <%!
-  from pygodot.binding_generator import is_class_type, get_icall_return_type
+  from pygodot.bindings._generator import is_class_type, get_icall_return_type
 %>
 % for ret, args, sig, nonvoid in icalls:
 static inline ${sig} {

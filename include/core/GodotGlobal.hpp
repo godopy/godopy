@@ -39,6 +39,7 @@ public:
 struct _RegisterState {
 	static void *nativescript_handle;
 	static int language_index;
+	static int cython_language_index;
 	static int python_language_index;
 };
 
