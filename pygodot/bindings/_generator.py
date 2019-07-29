@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import struct
+import hashlib
 from collections import defaultdict
 
 from mako.template import Template
@@ -33,11 +35,12 @@ CPP_ESCAPES = {
 CYTHON_ONLY_ESCAPES = {
     'from':     'from_',
     'with':     'with_',
-    'in':     'in_',
+    'in':       'in_',
     'pass':     'pass_',
     'raise':    'raise_',
     'global':   'global_',
     'import':   'import_',
+    'object':   'object_',
     'get_singleton': '_get_singleton',  # Some API methods are in conflict with auto-generated get_singleton() methods
     'set_singleton': '_set_singleton',  # for consistency
 }
@@ -45,6 +48,7 @@ CYTHON_ONLY_ESCAPES = {
 CYTHON_ESCAPES = {**CPP_ESCAPES, **CYTHON_ONLY_ESCAPES}
 
 reference_types = set()
+
 icall_names = {}
 
 bindings_dir = os.path.abspath(os.path.dirname(__file__))
@@ -196,7 +200,7 @@ def generate_icalls_context(classes):
             ret = get_icall_type_name(method['return_type'])
             icalls.add((ret, args))
 
-            key = '#'.join([strip_name(c['name']), escape_cpp(method['name'])])
+            key = '#'.join([strip_name(c['name']), escape_cython(method['name'])])
             icall2methodkeys.setdefault((ret, args), []).append(key)
 
     prepared_icalls = []
@@ -297,7 +301,7 @@ def generate_class_context(class_def):
 
     for method in class_def['methods']:
         method_name = method['name']
-        method_name = escape_cpp(method_name)
+        method_name = escape_cython(method_name)
         return_type = make_cython_gdnative_type(method['return_type'], is_virtual=method['is_virtual'], is_return=True)
 
         args = []
@@ -306,15 +310,14 @@ def generate_class_context(class_def):
         has_default_argument = False
 
         for arg in method['arguments']:
-            arg_type = make_cython_gdnative_type(arg['type'])
-            arg_name = escape_cpp(arg['name'])
+            has_default = arg['has_default_value'] or has_default_argument
+            arg_type = make_cython_gdnative_type(arg['type'], has_default=has_default)
+            arg_name = escape_cython(arg['name'])
 
             arg_default = None
 
-            # TODO: reenable default args, requires special handling for differnet types
-            # Cython would pass NULL for default String args in C++ class methods, skip them
-            # if (arg['has_default_value'] and arg['type'] != 'String') or has_default_argument:
-            #     arg_default = escape_default_arg(arg['type'], arg['default_value'])
+            # if has_default:
+            #     arg_default = escape_cython_default_arg(arg['type'], arg['default_value'])
             #     has_default_argument = True
 
             if arg_default is not None:
@@ -328,32 +331,81 @@ def generate_class_context(class_def):
             pxd_sigs.append(pxd_sig)
             sigs.append(sig)
 
-        if method["has_varargs"]:
-            pxd_sigs.append('...')
-            sigs.append('...')
+        if method['has_varargs']:
+            pxd_sigs.append('tuple __var_args')
+            sigs.append('tuple __var_args')
 
         return_stmt = 'return '
         if is_enum(method['return_type']):
             return_stmt = 'return <%s>' % return_type.rstrip()
         elif method['return_type'] == 'void':
             return_stmt = ''
-        # elif is_class_type(method['return_type']):
-        #    return_stmt = 'return <object>'
 
-        prepared_methods.append((method_name, return_type, ', '.join(pxd_sigs), ', '.join(sigs), args, return_stmt))
+        prepared_methods.append((method_name, method, return_type, ', '.join(pxd_sigs), ', '.join(sigs),
+                                 args, return_stmt))
 
     return class_name, class_def, includes, forwards, prepared_methods
 
 
-def make_cython_gdnative_type(t, is_virtual=False, is_return=False):
-    prefix = '' if is_return else 'const '
+# 58 character alphabet used
+alphabet = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+
+# Not used
+def make_sha1_suffix(value):
+    hash = hashlib.sha1(value.encode('utf-8'))
+    # Base58-encode first 4 bytes of SHA1 hash
+    i, = struct.unpack('!L', hash.digest()[:4])
+    string = b""
+    while i:
+        i, idx = divmod(i, 58)
+        string = alphabet[idx:idx+1] + string
+    return string.decode('utf-8')
+
+
+def escape_cython_default_arg(_type, default_value):
+    if _type == 'Color':
+        return 'Color(%s)' % default_value
+    elif _type in ('bool', 'int'):
+        return default_value
+    elif _type in ('Array', 'Dictionary', 'PoolVector2Array', 'PoolStringArray', 'PoolVector3Array', 'PoolColorArray',
+                   'PoolIntArray', 'PoolRealArray', 'Transform', 'Transform2D', 'RID'):
+        return '%s()' % _type
+    elif _type in ('Vector2', 'Vector3', 'Rect2'):
+        return '%s%s' % (_type, default_value)
+    elif _type == 'Variant':
+        if default_value == 'Null':
+            return 'Variant()'
+        else:
+            return '<const Variant>%s' % default_value
+    elif _type == 'String':
+        return '<String><const char *>"%s"' % default_value
+    elif default_value == 'Null' or default_value == '[Object:null]':
+        if is_class_type(_type):
+            return 'None'
+        else:
+            return 'NULL'
+
+    return default_value
+
+
+def cython_nonempty_comparison(_type):
+    if is_class_type(_type):
+        return 'is not None'
+    if _type in ('bool', 'int'):
+        return '!= 0'
+    elif _type == 'String':
+        return '!= <const String><const char *>""'
+
+    return '!= NULL'
+
+
+def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=False):
+    prefix = '' if is_return or has_default else 'const '
     if is_enum(t):
         enum_name = remove_enum_prefix(t).replace('::', '')
         return '%s ' % enum_name
     elif is_class_type(t):
-        # if is_reference_type(t):
-        #    return 'Ref[%s] ' % strip_name(t)
-        # else:
         return '%s ' % strip_name(t)
 
     if t == 'int':
@@ -379,7 +431,7 @@ def generate_cppclass_context(class_def):
 
     for method in class_def['methods']:
         method_name = method['name']
-        method_name = escape_cpp(method_name)
+        method_name = escape_cython(method_name)
         return_type = make_cpp_gdnative_type(method['return_type'])
 
         args = []
@@ -389,12 +441,11 @@ def generate_cppclass_context(class_def):
 
         for arg in method['arguments']:
             arg_type = make_cpp_gdnative_type(arg['type'])
-            arg_name = escape_cpp(arg['name'])
+            arg_name = escape_cython(arg['name'])
 
             arg_default = None
 
-            # Cython would pass NULL for default String args in C++ class methods, skip them
-            if (arg['has_default_value'] and arg['type'] != 'String') or has_default_argument:
+            if arg['has_default_value'] or has_default_argument:
                 arg_default = escape_cpp_default_arg(arg['type'], arg['default_value'])
                 has_default_argument = True
 
@@ -439,19 +490,16 @@ def escape_cpp_default_arg(_type, default_value):
         return 'Color(%s)' % default_value
     elif _type in ('bool', 'int'):
         return default_value
-    elif _type in ('Array', 'PoolVector2Array', 'PoolStringArray', 'PoolVector3Array', 'PoolColorArray',
+    elif _type in ('Array', 'Dictionary', 'PoolVector2Array', 'PoolStringArray', 'PoolVector3Array', 'PoolColorArray',
                    'PoolIntArray', 'PoolRealArray', 'Transform', 'Transform2D', 'RID'):
         return '%s()' % _type
     elif _type in ('Vector2', 'Vector3', 'Rect2'):
-        return '%s %s' % (_type, default_value)
+        return '%s%s' % (_type, default_value)
     elif _type == 'Variant':
         return 'Variant()' if default_value == 'Null' else default_value
     elif _type == 'String':
-        return '"%s"' % default_value
-
+        return '<String><const char *>"%s"' % default_value
     elif default_value == 'Null' or default_value == '[Object:null]':
-        return 'NULL'
-    elif _type == 'Dictionary' and default_value == '{}':
         return 'NULL'
 
     return default_value
@@ -536,7 +584,7 @@ def is_enum(name):
     return name.startswith('enum.')
 
 
-def escape_cpp(name):
+def escape_cython(name):
     if name in CYTHON_ESCAPES:
         return CYTHON_ESCAPES[name]
 

@@ -324,7 +324,7 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
 
 cdef extern from "Color.hpp" namespace "godot" nogil:
     cdef cppclass Color:  # C++ struct
-        float r, g, b
+        float r, g, b, a
 
         bint operator==(const Color&)
         bint operator!=(const Color&)
@@ -363,7 +363,8 @@ cdef extern from "Color.hpp" namespace "godot" nogil:
         bint operator<(const Color&)
 
         Color()
-        Color(float, float, float, float alpha=1.0)
+        Color(float, float, float)
+        Color(float, float, float, float)
 
 
 cdef extern from "Dictionary.hpp" namespace "godot" nogil:
