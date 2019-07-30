@@ -7,7 +7,7 @@
 #include <pycore/PythonGlobal.hpp>
 #include <core/CoreTypes.hpp>
 <%!
-    from pygodot.bindings._generator import is_class_type, get_icall_return_type
+    from pygodot.cli.binding_generator import is_class_type, get_icall_return_type
 
     def arg_elem(index, arg):
         t = '(void *)arg%d' if is_class_type(arg) else '(void *)&arg%d'

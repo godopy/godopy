@@ -20,29 +20,29 @@ The instructions below assume using git for managing your project.
 ```
 $ mkdir gdnative-cython-example
 $ cd gdnative-cython-example
-$ git clone https://github.com/ivhilaire/pygodot PyGodot
+$ git clone https://github.com/ivhilaire/pygodot
 ```
 
 If your project is an existing repository, use git submodule instead:
 ```
-$ git submodule add https://github.com/ivhilaire/pygodot PyGodot
+$ git submodule add https://github.com/ivhilaire/pygodot
 $ git submodule update --init --recursive
 ```
 
 Install PyGodot and create the development environment
 ```
-$ pipenv install -e PyGodot
+$ pipenv install -e pygodot
 ```
 
 ### Copying the development headers and building the bindings
 
 ```
-$ cp -R <path to the Godot source folder>/modules/gdnative/include PyGodot/godot_headers
-$ godot --gdnative-generate-json-api PyGodot/godot_headers/api.json
+$ cp -R <path to the Godot source folder>/modules/gdnative/include pygodot/godot_headers
+$ godot --gdnative-generate-json-api pygodot/godot_headers/api.json
 $ pipenv run pygodot genapi
 $ pipenv run pygodot genbindings
 $ pipenv shell
-(SimpleProject) $ cd PyGodot
+(SimpleProject) $ cd pygodot
 (SimpleProject) $ python setup.py develop --generate_bindings
 (SimpleProject) $ exit
 ```
@@ -74,10 +74,10 @@ This will turn our `_demo` folder into a Python [package](https://docs.python.or
 In the `_demo` folder, we’ll start with creating our Cython definition file for the GDNative node we’ll be creating.
 We will name it `gdexample.pxd`:
 ```pyx
-from pygodot.cnodes cimport Sprite
+from godot.bindings.cython cimport nodes
 
 
-cdef class GDExample(Sprite):
+cdef class GDExample(nodes.Sprite):
     cdef float time_passed
 
     cpdef _process(GDExample self, float delta)
@@ -90,10 +90,10 @@ Let’s implement our functions by creating our `gdexample.pyx` file:
 ```pyx
 from libc.math cimport cos, sin
 
-from pygodot.bindings.cython cimport nodes
-from pygodot.bindings.cpp.core_types cimport Vector2
+from godot.bindings.cython cimport nodes
+from godot.cpp.core_types cimport Vector2, String
 
-from pygodot.gdnative cimport register_method
+from godot.nativescript cimport register_method
 
 
 cdef class GDExample(nodes.Sprite):
@@ -123,15 +123,13 @@ multiple NativeScripts, each with their own `.pxd` and `.pyx` file like we’ve 
 `GDExample` up above. What we need now is a small bit of code that tells Godot about all the NativeScripts in our GDNative plugin.
 
 ```pyx
-from godot_headers.gdnative_api cimport *
+from godot.nativescript cimport register_class
 
-from pygodot.gdnative cimport register_class
-from .gdexample cimport GDExample
+from . cimport gdexample
 
-cdef public int _pygodot_nativescript_init(godot_gdnative_init_options options) except -1:
-    register_class(GDExample)
 
-    return GODOT_OK
+cdef public _pygodot_nativescript_init():
+    register_class(gdexample.GDExample)
 ```
 
 ### Building the extension

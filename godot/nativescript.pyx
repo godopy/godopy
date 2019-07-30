@@ -1,13 +1,30 @@
 from godot_headers.gdnative_api cimport *
+
 from .globals cimport gdapi, nativescript_api, nativescript_1_1_api, _nativescript_handle as handle
-from ._core cimport _Wrapped
-from .bindings.cython cimport nodes
 
-# from pygodot.utils import _pyprint as print
+from cpython.object cimport PyObject
+from .bindings._core cimport _Wrapped
 
-from cpython.object cimport PyObject, PyTypeObject
+from pygodot.utils cimport _init_dynamic_loading
 
 __keepalive = set()
+
+
+cdef public _Wrapped _create_wrapper(godot_object *_owner, size_t _type_tag):
+    cdef _Wrapped wrapper = _Wrapped.__new__(_Wrapped)
+    wrapper._owner = _owner
+    wrapper._type_tag = _type_tag
+    print('Godot wrapper %s created' % wrapper)
+    return wrapper
+
+
+cdef public int _generic_pygodot_nativescript_init(godot_gdnative_init_options options) except -1:
+    if _init_dynamic_loading() != 0: return -1
+
+    import gdlibrary
+
+    if hasattr(gdlibrary, 'nativescript_init'):
+        gdlibrary.nativescript_init()
 
 
 cpdef object register_method(object cls, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
@@ -22,10 +39,12 @@ cdef inline cls2typetag(cls):
     cdef PyObject *_type_tag = <PyObject *>cls
     return <size_t>_type_tag
 
+
 cdef inline __keep_ptr(object obj):
     # TODO: Py_INCREF
     print('[PyNS] Create PyObject', obj)
     __keepalive.add(obj)
+
 
 cdef inline __free_ptr(void *ptr):
     # TODO: Py_DECREF
@@ -33,36 +52,39 @@ cdef inline __free_ptr(void *ptr):
     if <object>ptr in __keepalive:
         __keepalive.remove(<object>ptr)
 
+
 cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag):
     cdef _Wrapped wrapper = <_Wrapped>o
     wrapper._owner = _owner
     wrapper._type_tag = _type_tag
 
+
 ### Initializer (not used, for future reference)
-cdef class PyGodotGlobal(nodes.Node):
-    cdef void _ready(self):
-        print("GLOBAL READY!")
+# cdef class PyGodotGlobal(nodes.Node):
+#     cdef _ready(self):
+#         print("GLOBAL READY!")
 
-    @classmethod
-    def _register_methods(cls):
-        cdef godot_instance_method method = [PyGodotGlobal_ready_wrapper, NULL, NULL]
-        cdef godot_method_attributes attrs = [GODOT_METHOD_RPC_MODE_DISABLED]
+#     @classmethod
+#     def _register_methods(cls):
+#         cdef godot_instance_method method = [PyGodotGlobal_ready_wrapper, NULL, NULL]
+#         cdef godot_method_attributes attrs = [GODOT_METHOD_RPC_MODE_DISABLED]
 
-        nativescript_api.godot_nativescript_register_method(handle, "PyGodotGlobal", "_ready", attrs, method)
+#         nativescript_api.godot_nativescript_register_method(handle, "PyGodotGlobal", "_ready", attrs, method)
 
-cdef godot_variant PyGodotGlobal_ready_wrapper(godot_object *o, void *md, void *p_instance, int n,
-                                               godot_variant **args) nogil:
-    with gil:
-        instance = <PyGodotGlobal>p_instance
-        instance._ready()
+# cdef godot_variant PyGodotGlobal_ready_wrapper(godot_object *o, void *md, void *p_instance, int n,
+#                                                godot_variant **args) nogil:
+#     with gil:
+#         instance = <PyGodotGlobal>p_instance
+#         instance._ready()
 
-    cdef godot_variant ret
-    gdapi.godot_variant_new_nil(&ret)
-    return ret
+#     cdef godot_variant ret
+#     gdapi.godot_variant_new_nil(&ret)
+#     return ret
 
-cdef public object _clsdef_PyGodotGlobal = PyGodotGlobal
+# cdef public object _clsdef_PyGodotGlobal = PyGodotGlobal
 
 ### Class Registration
+
 
 cdef public int _register_class(object cls) except -1:
     # Add checks!
@@ -86,6 +108,7 @@ cdef public int _register_class(object cls) except -1:
     cls._register_methods()
     return 0
 
+
 cdef void *_instance_func(godot_object *instance, void *method_data) nogil:
     with gil:
         cls = <object>method_data
@@ -96,12 +119,14 @@ cdef void *_instance_func(godot_object *instance, void *method_data) nogil:
         __keep_ptr(obj)
         return <PyObject *>obj
 
+
 cdef void _destroy_func(godot_object *instance, void *method_data, void *user_data) nogil:
     with gil:
         __free_ptr(user_data)
 
-cdef public:
-    ctypedef void (*cfunc_void_object_float)(object, float)
+
+# cdef public:
+#     ctypedef void (*cfunc_void_object_float)(object, float)
 
 
 ### Method registration

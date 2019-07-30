@@ -48,13 +48,13 @@ CYTHON_ONLY_ESCAPES = {
 CYTHON_ESCAPES = {**CPP_ESCAPES, **CYTHON_ONLY_ESCAPES}
 
 reference_types = set()
-
 icall_names = {}
 
-bindings_dir = os.path.abspath(os.path.dirname(__file__))
+root_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
+bindings_dir = os.path.join(root_dir, 'godot', 'bindings')
 
 
-def main(root_dir, echo=print):
+def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo=print):
     with open(os.path.join(root_dir, 'godot_headers', 'api.json'), encoding='utf-8') as fp:
         classes = json.load(fp)
 
@@ -87,63 +87,76 @@ def main(root_dir, echo=print):
 
     classes.sort(key=lambda c: c['weight'], reverse=True)
 
-    node_types = set(['Node', 'TreeItem', *clsdict['Node']['child_classes']])
-    resource_types = set(['Resource', 'TriangleMesh', *clsdict['Resource']['child_classes']])
-    engine_types = set([strip_name(c['name']) for c in classes]) - node_types - resource_types
+    tools_types = set(strip_name(c['name']) for c in classes if c['api_type'] == 'tools')
+    node_types = set(['Node', 'TreeItem', *clsdict['Node']['child_classes']]) - tools_types
+    resource_types = set(['Resource', 'TriangleMesh', *clsdict['Resource']['child_classes']]) - tools_types
+    core_api_types = set(strip_name(c['name']) for c in classes) - tools_types - node_types - resource_types
 
     print('Node classes:', len(node_types))
     print('Resource classes:', len(resource_types))
-    print('Engine classes:', len(engine_types))
+    print('Core API classes:', len(core_api_types))
+    print('Tools classes:', len(tools_types))
 
-    # C++ bindings
-    cpp_bindings_template = Template(filename=os.path.join(bindings_dir, 'templates', '_cpp_bindings.pxd.mako'))
-    cpp_path = os.path.join(bindings_dir, '_cpp_bindings.pxd')
-    cpp_source = cpp_bindings_template.render(classes=[generate_cppclass_context(c) for c in classes])
-    with open(cpp_path, 'w', encoding='utf-8') as fp:
-        fp.write(cpp_source)
-
-    for module, _types in (('nodes', node_types), ('resources', resource_types), ('engine', engine_types)):
-        write_cpp_definitions(module, _types, class_names)
-
-    # Cython bindings
-    write_cython_icall_definitions(generate_icalls_context(classes), root_dir)
-
-    class_contexts = [generate_class_context(c) for c in classes]
-
-    cython_bindings_pxd = (
-        os.path.join(bindings_dir, '_cython_bindings.pxd'),
-        Template(filename=os.path.join(bindings_dir, 'templates', '_cython_bindings.pxd.mako'))
+    module_data = (
+        ('nodes', node_types),
+        ('resources', resource_types),
+        ('core', core_api_types),
+        ('tools', tools_types)
     )
 
-    cython_bindings_pyx = (
-        os.path.join(bindings_dir, '_cython_bindings.pyx'),
-        Template(filename=os.path.join(bindings_dir, 'templates', '_cython_bindings.pyx.mako'))
-    )
+    if generate_cpp:
+        # C++ bindings
+        cpp_bindings_template = Template(filename=os.path.join(bindings_dir, 'templates', '_cpp_bindings.pxd.mako'))
+        cpp_path = os.path.join(bindings_dir, '_cpp_bindings.pxd')
+        cpp_source = cpp_bindings_template.render(classes=[generate_cppclass_context(c) for c in classes])
+        with open(cpp_path, 'w', encoding='utf-8') as fp:
+            fp.write(cpp_source)
 
-    for path, template in (cython_bindings_pxd, cython_bindings_pyx):
-        source = template.render(classes=class_contexts, icall_names=icall_names)
-        with open(path, 'w', encoding='utf-8') as fp:
-            fp.write(source)
+        for module, _types in module_data:
+            write_cpp_definitions(module, _types, class_names)
 
-    for module, _types in (('nodes', node_types), ('resources', resource_types), ('engine', engine_types)):
-        write_cython_definitions(module, _types, class_names)
+    if generate_cython or generate_python:
+        class_contexts = [generate_class_context(c) for c in classes]
 
-    # Python bindings
-    python_bindings_template = Template(filename=os.path.join(bindings_dir, 'templates', '_python_bindings.pyx.mako'))
-    python_path = os.path.join(bindings_dir, '_python_bindings.pyx')
+    if generate_cython:
+        # Cython bindings
+        write_cython_icall_definitions(generate_icalls_context(classes), root_dir)
 
-    python_source = python_bindings_template.render(classes=class_contexts)
-    with open(python_path, 'w', encoding='utf-8') as fp:
-        fp.write(python_source)
+        cython_bindings_pxd = (
+            os.path.join(bindings_dir, '_cython_bindings.pxd'),
+            Template(filename=os.path.join(bindings_dir, 'templates', '_cython_bindings.pxd.mako'))
+        )
 
-    for module, _types in (('nodes', node_types), ('resources', resource_types), ('engine', engine_types)):
-        write_python_definitions(module, _types, class_names)
+        cython_bindings_pyx = (
+            os.path.join(bindings_dir, '_cython_bindings.pyx'),
+            Template(filename=os.path.join(bindings_dir, 'templates', '_cython_bindings.pyx.mako'))
+        )
+
+        for path, template in (cython_bindings_pxd, cython_bindings_pyx):
+            source = template.render(classes=class_contexts, icall_names=icall_names)
+            with open(path, 'w', encoding='utf-8') as fp:
+                fp.write(source)
+
+        for module, _types in module_data:
+            write_cython_definitions(module, _types, class_names)
+
+    if generate_python:
+        # Python bindings
+        python_bindings_template = Template(filename=os.path.join(bindings_dir, 'templates', '_python_bindings.pyx.mako'))
+        python_path = os.path.join(bindings_dir, '_python_bindings.pyx')
+
+        python_source = python_bindings_template.render(classes=class_contexts)
+        with open(python_path, 'w', encoding='utf-8') as fp:
+            fp.write(python_source)
+
+        for module, _types in module_data:
+            write_python_definitions(module, _types, class_names)
 
 
 def write_python_definitions(python_module, _types, class_names):
     python_package_template = Template(filename=os.path.join(bindings_dir, 'templates', 'python_module.py.mako'))
 
-    python_path = os.path.join(bindings_dir, '%s.py' % python_module)
+    python_path = os.path.join(bindings_dir, 'python', '%s.py' % python_module)
     python_source = python_package_template.render(class_names=[cn for cn in class_names if cn in _types])
 
     with open(python_path, 'w', encoding='utf-8') as fp:

@@ -47,28 +47,29 @@ class build_ext(build_python_ext):
 
 version = __import__('pygodot').__version__
 
-packages = ['pygodot', 'godot_headers']
+packages = ['godot', 'godot_headers', 'pygodot']
 package_data = {
     'godot': [
         '/*.pxd',
+        'cpp/*.pxd',
         'bindings/*.pxd',
-        'bindings/core/*.pxd',
-        'bindings/cpp/*.pxd',
-
-        'templates/*.mako',
+        'bindings/cpp/*.pxd'
+        'bindings/cython/*.pxd'
+    ],
+    'godot_headers': ['/*.pxd'],
+    'pygodot': [
         # TODO: Compile build templates and remove runtime dependency on Mako
         'build/templates/*.mako'
-    ],
-    'godot_headers': ['/*.pxd']
+    ]
 }
 
-entry_points = {'console_scripts': 'pygodot=pygodot.cli:pygodot'}
+entry_points = {'console_scripts': ['pygodot=pygodot.cli:pygodot', 'bindgen=pygodot.cli:binding_generator']}
 
 install_requires = [
     'autopxd2',
     'pycparser',
-    'Click',
     'Cython',
+    'Click',
     'Mako'
 ]
 
@@ -88,7 +89,7 @@ setup_args = dict(
 
 
 headers_def = os.path.join(os.getcwd(), 'godot_headers', 'gdnative_api.pxd')
-print(headers_def)
+
 if os.path.exists(headers_def):
     setup_args['ext_modules'] = [GDNativeExtension('_pygodot')]
 

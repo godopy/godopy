@@ -29,3 +29,5 @@ bin
 /godot_headers
 /pygodot/*.h
 /pygodot/*.cpp
+/godot/*.h
+/godot/*.cpp

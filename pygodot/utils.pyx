@@ -1,6 +1,6 @@
 from godot_headers.gdnative_api cimport *
-from .globals cimport gdapi
-from ._core cimport _Wrapped
+from godot.globals cimport gdapi
+from godot.bindings._core cimport _Wrapped
 
 from libc.stddef cimport wchar_t
 from cpython.mem cimport PyMem_Free
@@ -14,28 +14,6 @@ cdef extern from "Python.h":
     cdef char *Py_EncodeLocale(const wchar_t *text, size_t *error_pos)
 
 
-def _pyprint(*objects, sep=' ', end='\n'):
-    cdef bytes msg = sep.join(str(o) for o in objects).encode('utf-8')
-    cdef const char *c_msg = msg
-    cdef godot_string gd_msg
-
-    gdapi.godot_string_new(&gd_msg)
-    gdapi.godot_string_parse_utf8(&gd_msg, c_msg)
-    gdapi.godot_print(&gd_msg)
-    gdapi.godot_string_destroy(&gd_msg)
-
-
-def _gdprint(str fmt, *args):
-    cdef bytes msg = fmt.format(*args).encode('utf-8')
-    cdef const char *c_msg = msg
-    cdef godot_string gd_msg
-
-    gdapi.godot_string_new(&gd_msg)
-    gdapi.godot_string_parse_utf8(&gd_msg, c_msg)
-    gdapi.godot_print(&gd_msg)
-    gdapi.godot_string_destroy(&gd_msg)
-
-
 cdef bytes godot_string_to_bytes(const godot_string *s):
     cdef godot_char_string chars = gdapi.godot_string_utf8(s)
     cdef const char *cs = gdapi.godot_char_string_get_data(&chars)
@@ -45,36 +23,6 @@ cdef bytes godot_string_to_bytes(const godot_string *s):
     finally:
         gdapi.godot_char_string_destroy(&chars)
     return bs
-
-
-cdef public _Wrapped _create_wrapper(godot_object *_owner, size_t _type_tag):
-    cdef _Wrapped wrapper = _Wrapped.__new__(_Wrapped)
-    wrapper._owner = _owner
-    wrapper._type_tag = _type_tag
-    print('Godot wrapper %s created' % wrapper)
-    return wrapper
-
-
-cdef public int _generic_pygodot_nativescript_init(godot_gdnative_init_options options) except -1:
-    if _init_dynamic_loading() != 0: return -1
-
-    import gdlibrary
-
-    if hasattr(gdlibrary, 'nativescript_init'):
-        gdlibrary.nativescript_init()
-
-    return GODOT_OK
-
-
-cdef public int _generic_pygodot_gdnative_singleton() except -1:
-    if _init_dynamic_loading() != 0: return -1
-
-    import gdlibrary
-
-    if hasattr(gdlibrary, 'gdnative_singleton'):
-        gdlibrary.gdnative_singleton()
-
-    return GODOT_OK
 
 
 cdef bint _dynamic_loading_initialized = False
@@ -101,7 +49,7 @@ cdef int _init_dynamic_loading() except -1:
         return 0
 
     godot_path = godot_project_dir()
-    _pyprint('GODOT PROJECT PATH:', godot_path)
+    print('GODOT PROJECT PATH:', godot_path)
 
     if not godot_path:
         raise RuntimeError('Could not detect the Godot project. Please check the location of the PyGodot library.')

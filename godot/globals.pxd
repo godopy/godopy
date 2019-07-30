@@ -1,5 +1,10 @@
-from godot_headers.gdnative_api cimport *
-from .bindings.cpp.core_types cimport String
+from godot_headers.gdnative_api cimport (
+    godot_gdnative_core_api_struct,
+    godot_gdnative_ext_nativescript_api_struct,
+    godot_gdnative_ext_nativescript_1_1_api_struct,
+    godot_gdnative_ext_pluginscript_api_struct
+)
+from .cpp.core_types cimport String
 
 
 cdef extern from "Defs.hpp":
@@ -23,17 +28,13 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
     godot_gdnative_ext_pluginscript_api_struct *pluginscript_api
 
     void *gdnlib
-    bint in_editor
 
     cdef cppclass Godot:
         @staticmethod
         void print(String &message)
 
         @staticmethod
-        void print(const char *message)
-
-        @staticmethod
-        void print(const char *fmt, ...)
+        void print(const String &fmt, ...)
 
     void *_nativescript_handle "godot::_RegisterState::nativescript_handle"
     int _language_index "godot::_RegisterState::language_index"

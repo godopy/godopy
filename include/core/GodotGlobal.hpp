@@ -14,7 +14,6 @@ extern "C" const godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_
 extern "C" const godot_gdnative_ext_pluginscript_api_struct *pluginscript_api;
 
 extern "C" const void *gdnlib;
-extern "C" bool in_editor;
 
 class Godot {
 

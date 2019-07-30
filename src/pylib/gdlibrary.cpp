@@ -2,11 +2,11 @@
 
 #include <PyGodot.hpp>
 
-#include "pygodot/gdnative.h"
+#include "godot/bindings/_cython_bindings.h"
+#include "godot/bindings/_python_bindings.h"
+#include "godot/nativescript.h"
+#include "godot/gdnative.h"
 #include "pygodot/utils.h"
-
-#include "pygodot/bindings/_cython_bindings.h"
-#include "pygodot/bindings/_python_bindings.h"
 
 static bool _pygodot_is_initialized = false;
 static godot_gdnative_init_options _cached_options;
@@ -58,6 +58,7 @@ static void _ensure_pygodot_is_initialized() {
   PyImport_AppendInittab("_cython_bindings", PyInit__cython_bindings);
   PyImport_AppendInittab("_python_bindings", PyInit__python_bindings);
   PyImport_AppendInittab("utils", PyInit_utils);
+  PyImport_AppendInittab("nativescript", PyInit_nativescript);
   PyImport_AppendInittab("gdnative", PyInit_gdnative);
 
   pygodot::PyGodot::python_init();
@@ -69,6 +70,7 @@ static void _ensure_pygodot_is_initialized() {
   mod = PyImport_ImportModule("_cython_bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
   mod = PyImport_ImportModule("_python_bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
   mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("nativescript"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
   mod = PyImport_ImportModule("gdnative"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
 
   _pygodot_is_initialized = true;

@@ -1,13 +1,8 @@
 # Pure Python API
 
-There is a plan to make Python scripts editable by the Godot editor, but this feature is not implemented yet.
+**DOES NOT WORK YET**
 
-As it is now, pure Python scripts must be wrapped in NativeScript nodes. This has the advantage of
-a [looser coupling](https://en.m.wikipedia.org/wiki/Loose_coupling) of your Python modules to the main game code.
-Another advantage is the (optional) ability to compile your pure Python modules to the native code and
-optimize them as much as your projects need.
-
-The pure Python API is differs from the Cython API with the following ways:
+The pure Python API is differs from the Cython API in the following ways:
 * Compilation is not required
 * Python wrappers should be used in place of native C++ classes
 * GDNative library file must be called exactly `gdlibrary.py` and located above the Godot project directory
