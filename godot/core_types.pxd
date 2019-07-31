@@ -4,4 +4,15 @@ include "core/defs.pxi"
 
 cdef class _Wrapped:
     cdef godot_object *_owner
-    cdef void *_type_tag
+    cdef size_t _type_tag
+
+cdef class _PyWrapped(_Wrapped):
+    pass
+
+cdef dict CythonTagDB
+cdef dict PythonTagDB
+
+cdef register_cython_type(type cls)
+cdef register_python_type(type cls)
+cdef register_global_cython_type(type cls, str api_name)
+cdef register_global_python_type(type cls, str api_name)

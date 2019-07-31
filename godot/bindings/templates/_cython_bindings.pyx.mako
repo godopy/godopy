@@ -11,12 +11,12 @@
         return arg[1]
 %>
 from godot_headers.gdnative_api cimport godot_object, godot_variant
-from ..globals cimport gdapi, nativescript_1_1_api, _cython_language_index
+from ..globals cimport gdapi, nativescript_1_1_api as ns11api, _cython_language_index
 
 # Avoid c-importing "_Wrapped" and "Object"
 from ..cpp.core_types cimport real_t, ${', '.join(CORE_TYPES)}
 
-from ..core_types cimport _Wrapped
+from ..core_types cimport _Wrapped, register_global_cython_type
 from .cython.__icalls cimport *
 % for class_name, class_def, includes, forwards, methods in classes:
 
@@ -84,7 +84,7 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
         cdef godot_object *ret = <godot_object *>__result
         if not ret:
             raise RuntimeError('${class_name}.${method_name}() call failed')
-        return <${class_name}>nativescript_1_1_api.godot_nativescript_get_instance_binding_data(_cython_language_index, ret)
+        return <${class_name}>ns11api.godot_nativescript_get_instance_binding_data(_cython_language_index, ret)
 
             % elif method['return_type'] != 'void':
         ${return_stmt}__result
@@ -104,7 +104,7 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
 
     @staticmethod
     cdef ${class_name} _new():
-        return <${class_name}>nativescript_1_1_api.godot_nativescript_get_instance_binding_data(_cython_language_index, gdapi.godot_get_class_constructor("${class_def['name']}")())
+        return <${class_name}>ns11api.godot_nativescript_get_instance_binding_data(_cython_language_index, gdapi.godot_get_class_constructor("${class_def['name']}")())
     % endif
 
     @staticmethod
@@ -125,8 +125,6 @@ cdef __init_method_bindings():
 
 
 cdef __register_types():
-    print("Cython language index", _cython_language_index)
-
 % for class_name, class_def, includes, forwards, methods in classes:
-    nativescript_1_1_api.godot_nativescript_set_global_type_tag(_cython_language_index, "${class_def['name']}", <const void *>${class_name})
+    register_global_cython_type(${class_name}, ${repr(class_def['name'])})
 % endfor
