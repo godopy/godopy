@@ -18,9 +18,6 @@ from ..cpp.core_types cimport real_t, ${', '.join(CORE_TYPES)}
 
 from ..core_types cimport _Wrapped
 from .cython.__icalls cimport *
-
-
-cdef __method_bindings __mb
 % for class_name, class_def, includes, forwards, methods in classes:
 
 
@@ -28,61 +25,12 @@ cdef __method_bindings __mb
 cdef object __${class_name}___singleton = None
 
 % endif
+% if methods:
+cdef __${class_name}__method_bindings __${class_name}__mb
+
+% endif
 cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
-% for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
-    cdef ${return_type}${method_name}(self${', ' if signature else ''}${clean_signature(signature, class_name)}):
-    % if method['has_varargs']:
-        % if args:
-        cdef Variant __given_args[${len(args)}]
-        % endif
-        % for i, (arg_type, arg_name, arg) in enumerate(args):
-        ## XXX: C++ bindings do this: gdapi.godot_variant_new_nil(<godot_variant *>&__given_args[${i}]); __given_args[${i}] = ${arg_name};
-        if ${arg_name} ${cython_nonempty_comparison(arg['type'])}:
-            __given_args[${i}] = <Variant>${arg_name}
-        else:
-            gdapi.godot_variant_new_nil(<godot_variant *>&__given_args[${i}])
-        % endfor
-
-        cdef godot_variant **__args = <godot_variant **>gdapi.godot_alloc(sizeof(godot_variant *) * (len(__var_args) + ${len(args)}))
-        % for i, (arg_type, arg_name, arg) in enumerate(args):
-        __args[${i}] = <godot_variant *>&__given_args[${i}]
-        % endfor
-
-        cdef int i
-        cdef Variant __arg
-        for i in range(len(__var_args)):
-            ## FIXME
-            __arg = <Variant>__var_args[i]
-            __args[i + ${len(args)}] = <godot_variant *>&__arg
-
-        cdef godot_variant __cresult = gdapi.godot_method_bind_call(__mb.__${class_name}__mb_${method_name}, self._owner, <const godot_variant **>__args, (len(__var_args) + ${len(args)}), NULL)
-        ## FIXME
-        cdef Variant *__result_ptr = <Variant *>&__cresult
-        cdef Variant __result = __result_ptr[0]
-
-        % for i, (arg_type, arg_name, arg) in enumerate(args):
-        gdapi.godot_variant_destroy(<godot_variant *>&__given_args[${i}])
-        % endfor
-        ## XXX: Godot should free __args in godot_method_bind_call
-
-        % if is_class_type(method['return_type']):
-        cdef godot_object *ret = <godot_object *>__result
-        if not ret:
-            raise RuntimeError('${class_name}.${method_name}() call failed')
-        return <${class_name}>nativescript_1_1_api.godot_nativescript_get_instance_binding_data(_cython_language_index, ret)
-
-        % elif method['return_type'] != 'void':
-        ${return_stmt}__result
-        % endif
-    % else:
-        ${return_stmt}${icall_names[class_name + '#' + method_name]}(__mb.__${class_name}__mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''})
-    % endif
-
-% endfor
-% if class_def['singleton']:
-    def __cinit__(self):
-        self._owner = gdapi.godot_global_get_singleton(<char *>"${class_name}")
-
+    % if class_def['singleton']:
     @staticmethod
     cdef object get_singleton():
         global __${class_name}___singleton
@@ -92,18 +40,87 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
 
         return __${class_name}___singleton
 
-% elif not methods:
-        pass
+    % endif
+    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
+    cdef ${return_type}${method_name}(self${', ' if signature else ''}${clean_signature(signature, class_name)}):
+        % if method_name == 'free':
+        ## [copied from godot-cpp] dirty hack because Object::free is marked virtual but doesn't actually exist...
+        gdapi.godot_object_destroy(self._owner)
+        % elif method['has_varargs']:
+            % if args:
+        cdef Variant __given_args[${len(args)}]
+            % endif
+            % for i, (arg_type, arg_name, arg) in enumerate(args):
+        ## XXX: C++ bindings do this: gdapi.godot_variant_new_nil(<godot_variant *>&__given_args[${i}]); __given_args[${i}] = ${arg_name};
+        if ${arg_name} ${cython_nonempty_comparison(arg['type'])}:
+            __given_args[${i}] = <Variant>${arg_name}
+        else:
+            gdapi.godot_variant_new_nil(<godot_variant *>&__given_args[${i}])
+            % endfor
 
-% endif
+        cdef godot_variant **__args = <godot_variant **>gdapi.godot_alloc(sizeof(godot_variant *) * (len(__var_args) + ${len(args)}))
+            % for i, (arg_type, arg_name, arg) in enumerate(args):
+        __args[${i}] = <godot_variant *>&__given_args[${i}]
+            % endfor
+
+        cdef int i
+        cdef Variant __arg
+        for i in range(len(__var_args)):
+            ## FIXME
+            __arg = <Variant>__var_args[i]
+            __args[i + ${len(args)}] = <godot_variant *>&__arg
+
+        cdef godot_variant __cresult = gdapi.godot_method_bind_call(__${class_name}__mb.mb_${method_name}, self._owner, <const godot_variant **>__args, (len(__var_args) + ${len(args)}), NULL)
+        ## FIXME
+        cdef Variant *__result_ptr = <Variant *>&__cresult
+        cdef Variant __result = __result_ptr[0]
+
+            % for i, (arg_type, arg_name, arg) in enumerate(args):
+        gdapi.godot_variant_destroy(<godot_variant *>&__given_args[${i}])
+            % endfor
+        ## XXX: Godot should free __args in godot_method_bind_call
+
+            % if is_class_type(method['return_type']):
+        cdef godot_object *ret = <godot_object *>__result
+        if not ret:
+            raise RuntimeError('${class_name}.${method_name}() call failed')
+        return <${class_name}>nativescript_1_1_api.godot_nativescript_get_instance_binding_data(_cython_language_index, ret)
+
+            % elif method['return_type'] != 'void':
+        ${return_stmt}__result
+            % endif
+        % else:
+        ## not has_varargs
+        ${return_stmt}${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''})
+        % endif
+
+    % endfor
+    % if class_def['singleton']:
+
+    def __cinit__(self):
+        self._owner = gdapi.godot_global_get_singleton(<char *>"${class_name}")
+    % endif
+    % if class_def['instanciable']:
+
+    @staticmethod
+    cdef ${class_name} _new():
+        return <${class_name}>nativescript_1_1_api.godot_nativescript_get_instance_binding_data(_cython_language_index, gdapi.godot_get_class_constructor("${class_def['name']}")())
+    % endif
+
+    @staticmethod
+    cdef __init_method_bindings():
+    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
+        __${class_name}__mb.mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method_name}")
+    % endfor
+    % if not methods:
+        pass
+    % endif
 % endfor
 
 
 cdef __init_method_bindings():
 % for class_name, class_def, includes, forwards, methods in classes:
-    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
-    __mb.__${class_name}__mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method_name}")
-    % endfor
+    ${class_name}.__init_method_bindings()
 % endfor
 
 

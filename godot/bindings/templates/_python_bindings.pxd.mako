@@ -6,13 +6,12 @@ from godot_headers.gdnative_api cimport godot_method_bind
 
 cdef __register_types()
 cdef __init_method_bindings()
-
-
-cdef struct __method_bindings:
 % for class_name, class_def, includes, forwards, methods in classes:
-    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
-    godot_method_bind *__${class_name}__mb_${method_name}
-    % endfor
+
+  % if methods:
+cdef struct __${class_name}__method_bindings:
+        % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
+    godot_method_bind *mb_${method_name}
+        % endfor
+    % endif
 % endfor
-
-

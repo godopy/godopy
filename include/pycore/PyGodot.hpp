@@ -5,11 +5,25 @@
 
 #include "Godot.hpp"
 
+// godot namespace is used because of ERR_FAIL_NULL macros
+namespace godot {
+
+inline const char *__get_python_class_name(PyTypeObject *cls) {
+  ERR_FAIL_NULL_V(cls, NULL);
+  PyObject *u_class_name = PyObject_GetAttrString((PyObject *)cls, "__name__"); ERR_FAIL_NULL_V(u_class_name, NULL);
+  PyObject *b_class_name = PyUnicode_AsUTF8String(u_class_name); ERR_FAIL_NULL_V(b_class_name, NULL);
+  const char *class_name = (const char *)PyBytes_AsString(b_class_name); ERR_FAIL_NULL_V(class_name, NULL);
+
+  return class_name;
+}
+
+} // namespace godot
+
 namespace pygodot {
 
 typedef godot_variant (*__godot_wrapper_method)(godot_object *, void *, void *, int, godot_variant **);
 
-// Adaptation of C++ template magic from Godot.hpp to Cython functions
+// Adaptation of C++ templates from Godot.hpp to Cython functions
 
 // Self is `UserDefinedClass *`, R is a return type (PyObject * by default)
 template <class Self, class R, class... As>
@@ -23,7 +37,7 @@ struct _WrappedMethod {
   }
 };
 
-// void functions are not used in the PyGodot APIs because they can't check for Python errors
+// void functions are not used in PyGodot APIs because they can't check for Python errors
 template <class Self, class... As>
 struct _WrappedMethod<Self, void, As...> {
   void (*f)(Self, As...);
@@ -65,7 +79,7 @@ __godot_wrapper_method ___get_wrapper_function(R (*f)(Self, As...)) {
 
 
 template <class M>
-void _register_method(const char *class_name, const char *name, M method_ptr, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED) {
+void register_method(PyTypeObject *cls, const char *name, M method_ptr, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED) {
   godot_instance_method method = {};
   method.method_data = ___make_wrapper_function(method_ptr);
   method.free_func = godot::api->godot_free;
@@ -74,22 +88,11 @@ void _register_method(const char *class_name, const char *name, M method_ptr, go
   godot_method_attributes attr = {};
   attr.rpc_type = rpc_type;
 
-  godot::nativescript_api->godot_nativescript_register_method(godot::_RegisterState::nativescript_handle, class_name, name, attr, method);
+  godot::nativescript_api->godot_nativescript_register_method(godot::_RegisterState::nativescript_handle, godot::__get_python_class_name(cls), name, attr, method);
 }
 
 } // namespace pygodot
 
-// godot namespace is used because of ERR_FAIL_NULL macros
-namespace godot {
 
-template <class M>
-void register_method(PyTypeObject *cls, const char *name, M method_ptr, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED) {
-  PyObject *u_class_name = PyObject_GetAttrString((PyObject *)cls, "__name__"); ERR_FAIL_NULL(u_class_name);
-  PyObject *b_class_name = PyUnicode_AsUTF8String(u_class_name); ERR_FAIL_NULL(b_class_name);
-  const char *class_name = (const char *)PyBytes_AsString(b_class_name); ERR_FAIL_NULL(class_name);
-  pygodot::_register_method(class_name, name, method_ptr, rpc_type);
-}
-
-} // namespace godot
 
 #endif // PYGODOT_HPP

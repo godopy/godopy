@@ -6,17 +6,6 @@
 
 #include <gdnative_api_struct.gen.h>
 
-/*
-PyMODINIT_FUNC PyInit__pygodot(void);
-
-// Cython ignores C++ namespaces for Python types
-typedef struct {
-  PyObject_HEAD
-  godot_object *_owner;
-  size_t _type_tag;
-} __pygodot___Wrapped;
-*/
-
 namespace pygodot {
 
 class PyGodot {

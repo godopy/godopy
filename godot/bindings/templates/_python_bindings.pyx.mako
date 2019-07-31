@@ -4,21 +4,28 @@ from ..globals cimport gdapi, nativescript_1_1_api, _python_language_index
 from ..core_types cimport _Wrapped
 
 
-cdef __method_bindings __mb
 % for class_name, class_def, includes, forwards, methods in classes:
+% if methods:
 
+cdef __${class_name}__method_bindings __${class_name}__mb
 
+% endif
 cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
-    pass
+    @staticmethod
+    def __init_method_bindings():
+    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
+        __${class_name}__mb.mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method_name}")
+    % endfor
+    % if not methods:
+        pass
+    % endif
 
 % endfor
 
 
 cdef __init_method_bindings():
 % for class_name, class_def, includes, forwards, methods in classes:
-    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
-    __mb.__${class_name}__mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method_name}")
-    % endfor
+    ${class_name}.__init_method_bindings()
 % endfor
 
 
