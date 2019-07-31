@@ -177,23 +177,29 @@ cdef void _destroy_func(godot_object *instance, void *method_data, void *user_da
 #     ctypedef void (*cfunc_void_object_float)(object, float)
 
 
-cdef test_method_call(type cls, object instance, object method):
-    method(instance, 5)
+cdef test_method_call(type cls, object instance, fusedmethod method):
+    if fusedmethod is Method__float:
+        method(instance, 5)
 
 
-# Important note: passing cdefs as objects forces them to be wrapped in Cython-generated defs!
-cpdef register_method(type cls, str name, object method=None,
-                      godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
-    if method is None:
-        method = getattr(cls, method)
-
-    __keep_ptr(method)
-
+# Note: passing cdefs as objects forces them to be wrapped in Cython-generated defs!
+cdef register_method(type cls, str name, fusedmethod method,
+                     godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
     cdef godot_instance_method m = [NULL, NULL, NULL]
 
-    m.method = _method_wrapper
+    if fusedmethod is MethodNoArgs:
+        m.method = __none__method_wrapper
+    elif fusedmethod is Method__float:
+        m.method = __none__float__method_wrapper
+    # elif fusedmethod is object:
+    #     if method is None:
+    #         method = getattr(cls, method)
+    #     __keep_ptr(method)
+    #     m.method = _object_method_wrapper
+    #     m.free_func = &_method_destroy
+
+
     m.method_data = <void *>method
-    m.free_func = &_method_destroy
 
     cdef godot_method_attributes attrs = [rpc_type]
     cdef bytes _name = name.encode('utf-8')
@@ -203,43 +209,67 @@ cpdef register_method(type cls, str name, object method=None,
                                                         <const char *>_name, attrs, m)
 
 
+cdef inline godot_variant _variant_nil() nogil:
+    cdef godot_variant ret
+    gdapi.godot_variant_new_nil(&ret)
+    return ret
+
+
+cdef godot_variant __none__method_wrapper(godot_object *_, void *M, void *O, int N, godot_variant **A) nogil:
+    with gil:
+        (<MethodNoArgs>M)(<object>O)
+
+    return _variant_nil()
+
+
+cdef godot_variant __none__float__method_wrapper(godot_object *_, void *M, void *O, int N, godot_variant **A) nogil:
+    with gil:
+        (<Method__float>M)(
+            <object>O,
+            <const float>gdapi.godot_variant_as_real(A[0])
+        )
+
+    return _variant_nil()
+
+
+# cdef godot_variant _object_method_wrapper(godot_object *o, void *md, void *ud, int na, godot_variant **args) nogil:
+#     with gil:
+#         python_instance = <object>ud
+#         method = <object>md
+
+#         method(python_instance)
+
+#     return _variant_nil()
+
+
 cdef void _method_destroy(void *method_data) nogil:
     with gil:
         __free_ptr(method_data)
 
 
-cdef list parse_args(int num_args, godot_variant **args):
-    cdef godot_variant_type t;
-    pyargs = []
+# cdef list parse_args(int num_args, godot_variant **args):
+#     cdef godot_variant_type t;
+#     pyargs = []
 
-    cdef int i
-    for i in range(num_args):
-        t = gdapi.godot_variant_get_type(args[i])
+#     cdef int i
+#     for i in range(num_args):
+#         t = gdapi.godot_variant_get_type(args[i])
 
-        # TODO: all other possible conversions
-        if t == GODOT_VARIANT_TYPE_REAL:
-            pyargs.append(<float>gdapi.godot_variant_as_real(args[i]))
-        else:
-            pyargs.append(None)
+#         # TODO: all other possible conversions
+#         if t == GODOT_VARIANT_TYPE_REAL:
+#             pyargs.append(<float>gdapi.godot_variant_as_real(args[i]))
+#         else:
+#             pyargs.append(None)
 
-    return pyargs
-
-
-cdef godot_variant convert_result(object result):
-    cdef godot_variant gd_result
-
-    if False:
-        pass # TODO
-    else:
-        gdapi.godot_variant_new_nil(&gd_result)
-
-    return gd_result
+#     return pyargs
 
 
-cdef godot_variant _method_wrapper(godot_object *instance, void *method_data, void *user_data,
-                                   int num_args, godot_variant **args) nogil:
-    with gil:
-        python_instance = <object>user_data
-        method = <object>method_data
+# cdef godot_variant convert_result(object result):
+#     cdef godot_variant gd_result
 
-        return convert_result(method(python_instance, *parse_args(num_args, args)))
+#     if False:
+#         pass # TODO
+#     else:
+#         gdapi.godot_variant_new_nil(&gd_result)
+
+#     return gd_result
