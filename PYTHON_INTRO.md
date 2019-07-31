@@ -87,7 +87,7 @@ setup(
     packages=['_demo'],
     ext_modules=[
         GodotProject('demo', shadow='_demo', binary_path='.bin'),
-        GenericGDNativeLibrary('bin/gdexample.gdnlib'),
+        GenericGDNativeLibrary('bin/_gdexample.gdnlib'),
         NativeScript('gdexample.gdns', classname='GDExample')
     ],
     cmdclass=get_cmdclass()

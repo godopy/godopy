@@ -3,67 +3,8 @@
 
 #include <wchar.h>
 
-static PyTypeObject _WrappedType = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "_pygodot._Wrapped",
-    .tp_doc = "",
-    .tp_basicsize = sizeof(__pygodot___Wrapped),
-    .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
-    .tp_new = PyType_GenericNew,
-};
-
-// The name should be the same as the binary's name as it makes this GDNative library also importable by Python
-static PyModuleDef _pygodotmodule = {
-    PyModuleDef_HEAD_INIT,
-    .m_name = "_pygodot",
-    .m_doc = "PyGodot GDNative extension",
-    .m_size = -1,
-};
-
-// TODO: #include these defs
-extern "C" __pygodot___Wrapped *_create_wrapper(godot_object *, size_t);
-extern "C" void __init_cython_method_bindings(void);
-extern "C" void __register_cython_types(void);
-extern "C" void __init_python_method_bindings(void);
-extern "C" void __register_python_types(void);
-
-PyMODINIT_FUNC PyInit__pygodot(void) {
-  PyObject *m;
-  if (PyType_Ready(&_WrappedType) < 0)
-    return NULL;
-
-  m = PyModule_Create(&_pygodotmodule);
-  if (m == NULL)
-    return NULL;
-
-  Py_INCREF(&_WrappedType);
-  PyModule_AddObject(m, "_Wrapped", (PyObject *) &_WrappedType);
-  return m;
-}
-
-static GDCALLINGCONV void *wrapper_create(void *data, const void *type_tag, godot_object *instance) {
-	// XXX: call PyObject_New directly?
-	__pygodot___Wrapped *wrapper_obj = _create_wrapper(instance, (size_t)type_tag);
-
-	return (void *)wrapper_obj;
-}
-
-static GDCALLINGCONV void wrapper_incref(void *data, void *wrapper) {
-	if (wrapper)
-		Py_INCREF((PyObject *)wrapper);
-}
-
-static GDCALLINGCONV bool wrapper_decref(void *data, void *wrapper) {
-	if (wrapper)
-		Py_DECREF((PyObject *)wrapper);
-	return (bool) !wrapper; // FIXME
-}
-
-static GDCALLINGCONV void wrapper_destroy(void *data, void *wrapper) {
-	if (wrapper)
-		Py_DECREF((PyObject *)wrapper);
-}
+extern "C" PyObject *cython_nativescript_init();
+extern "C" PyObject *python_nativescript_init();
 
 namespace pygodot {
 
@@ -127,25 +68,22 @@ void PyGodot::python_terminate() {
 	}
 }
 
-void PyGodot::nativescript_init(void *handle, bool init_cython) {
+void PyGodot::nativescript_init(void *handle, bool init_cython, bool init_python) {
 	godot::_RegisterState::nativescript_handle = handle;
 
-	godot_instance_binding_functions binding_funcs = {};
-	binding_funcs.alloc_instance_binding_data = wrapper_create;
-	binding_funcs.free_instance_binding_data = wrapper_destroy;
-	binding_funcs.refcount_incremented_instance_binding = wrapper_incref;
-	binding_funcs.refcount_decremented_instance_binding = wrapper_decref;
-
-  godot::_RegisterState::cython_language_index = godot::nativescript_1_1_api->godot_nativescript_register_instance_binding_data_functions(binding_funcs);
-	godot::_RegisterState::python_language_index = godot::nativescript_1_1_api->godot_nativescript_register_instance_binding_data_functions(binding_funcs);
-
   if (init_cython) {
-    __register_cython_types();
-    __init_cython_method_bindings();
+    if (cython_nativescript_init() == NULL) {
+      PyErr_Print();
+      return;
+    }
   }
 
-	__register_python_types();
-	__init_python_method_bindings();
+  if (init_python) {
+    if (python_nativescript_init() == NULL) {
+      PyErr_Print();
+      return;
+    }
+  }
 }
 
 void PyGodot::nativescript_terminate(void *handle) {

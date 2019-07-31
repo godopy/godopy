@@ -1,0 +1,136 @@
+cdef enum GodotError:
+    GODOT_OK
+    GODOT_FAILED  # Generic fail error
+    GODOT_ERR_UNAVAILABLE  # What is requested is unsupported/unavailable
+    GODOT_ERR_UNCONFIGURED  # The object being used hasnt been properly set up yet
+    GODOT_ERR_UNAUTHORIZED  # Missing credentials for requested resource
+    GODOT_ERR_PARAMETER_RANGE_ERROR  # Parameter given out of range (5)
+    GODOT_ERR_OUT_OF_MEMORY  # Out of memory
+    GODOT_ERR_FILE_NOT_FOUND
+    GODOT_ERR_FILE_BAD_DRIVE
+    GODOT_ERR_FILE_BAD_PATH
+    GODOT_ERR_FILE_NO_PERMISSION  # 10
+    GODOT_ERR_FILE_ALREADY_IN_USE
+    GODOT_ERR_FILE_CANT_OPEN
+    GODOT_ERR_FILE_CANT_WRITE
+    GODOT_ERR_FILE_CANT_READ
+    GODOT_ERR_FILE_UNRECOGNIZED  # 15
+    GODOT_ERR_FILE_CORRUPT
+    GODOT_ERR_FILE_MISSING_DEPENDENCIES
+    GODOT_ERR_FILE_EOF
+    GODOT_ERR_CANT_OPEN  # Can't open a resource/socket/file
+    GODOT_ERR_CANT_CREATE  # 20
+    GODOT_ERR_QUERY_FAILED
+    GODOT_ERR_ALREADY_IN_USE
+    GODOT_ERR_LOCKED  # Resource is locked
+    GODOT_ERR_TIMEOUT,
+    GODOT_ERR_CANT_CONNECT  # 25
+    GODOT_ERR_CANT_RESOLVE
+    GODOT_ERR_CONNECTION_ERROR
+    GODOT_ERR_CANT_AQUIRE_RESOURCE
+    GODOT_ERR_CANT_FORK
+    GODOT_ERR_INVALID_DATA  # Data passed is invalid   (30)
+    GODOT_ERR_INVALID_PARAMETER  # Parameter passed is invalid
+    GODOT_ERR_ALREADY_EXISTS  # When adding, item already exists
+    GODOT_ERR_DOES_NOT_EXIST  # When retrieving/erasing, it item does not exist
+    GODOT_ERR_DATABASE_CANT_READ  # Database is full
+    GODOT_ERR_DATABASE_CANT_WRITE  # Database is full  (35)
+    GODOT_ERR_COMPILATION_FAILED
+    GODOT_ERR_METHOD_NOT_FOUND
+    GODOT_ERR_LINK_FAILED
+    GODOT_ERR_SCRIPT_FAILED
+    GODOT_ERR_CYCLIC_LINK  # 40
+    GODOT_ERR_INVALID_DECLARATION
+    GODOT_ERR_DUPLICATE_SYMBOL
+    GODOT_ERR_PARSE_ERROR
+    GODOT_ERR_BUSY
+    GODOT_ERR_SKIP  # 45
+    GODOT_ERR_HELP  # User requested help!!
+    GODOT_ERR_BUG  # A bug in the software certainly happened, due to a double check failing or unexpected behavior.
+    GODOT_ERR_PRINTER_ON_FIRE  # The parallel port printer is engulfed in flames
+    GODOT_ERR_OMFG_THIS_IS_VERY_VERY_BAD  # Shit happens, has never been used, though
+    GODOT_ERR_WTF = GODOT_ERR_OMFG_THIS_IS_VERY_VERY_BAD  # Short version of the above
+
+
+cdef enum VariantType:
+    VARIANT_NIL
+
+    # Atomic types
+    VARIANT_BOOL
+    VARIANT_INT
+    VARIANT_REAL
+    VARIANT_STRING
+
+    # Math types
+    VARIANT_VECTOR2  # 5
+    VARIANT_RECT2
+    VARIANT_VECTOR3
+    VARIANT_TRANSFORM2D
+    VARIANT_PLANE
+    VARIANT_QUAT  # 10
+    VARIANT_RECT3
+    VARIANT_BASIS
+    VARIANT_TRANSFORM
+
+    # Misc types
+    VARIANT_COLOR
+    VARIANT_NODE_PATH  # 15
+    VARIANT__RID
+    VARIANT_OBJECT
+    VARIANT_DICTIONARY
+    VARIANT_ARRAY
+
+    # Arrays
+    VARIANT_POOL_BYTE_ARRAY  # 20
+    VARIANT_POOL_INT_ARRAY
+    VARIANT_POOL_REAL_ARRAY
+    VARIANT_POOL_STRING_ARRAY
+    VARIANT_POOL_VECTOR2_ARRAY
+    VARIANT_POOL_VECTOR3_ARRAY  # 25
+    VARIANT_POOL_COLOR_ARRAY
+
+    VARIANT_VARIANT_MAX
+
+
+cdef enum VariantOperator:
+    # Comparation
+    VARIANT_OP_EQUAL
+    VARIANT_OP_NOT_EQUAL
+    VARIANT_OP_LESS
+    VARIANT_OP_LESS_EQUAL
+    VARIANT_OP_GREATER
+    VARIANT_OP_GREATER_EQUAL
+
+    # Mathematic
+    VARIANT_OP_ADD
+    VARIANT_OP_SUBSTRACT
+    VARIANT_OP_MULTIPLY
+    VARIANT_OP_DIVIDE
+    VARIANT_OP_NEGATE
+    VARIANT_OP_POSITIVE
+    VARIANT_OP_MODULE
+    VARIANT_OP_STRING_CONCAT
+
+    # Bitwise
+    VARIANT_OP_SHIFT_LEFT
+    VARIANT_OP_SHIFT_RIGHT
+    VARIANT_OP_BIT_AND
+    VARIANT_OP_BIT_OR
+    VARIANT_OP_BIT_XOR
+    VARIANT_OP_BIT_NEGATE
+
+    # Logic
+    VARIANT_OP_AND
+    VARIANT_OP_OR
+    VARIANT_OP_XOR
+    VARIANT_OP_NOT
+
+    # Containment
+    VARIANT_OP_IN
+    VARIANT_OP_MAX
+
+
+cdef enum Vector3Axis:
+    VECTOR3_AXIS_X
+    VECTOR3_AXIS_Y
+    VECTOR3_AXIS_Z

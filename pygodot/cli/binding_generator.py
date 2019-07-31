@@ -142,13 +142,20 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
 
     if generate_python:
         # Python bindings
-        python_bindings_template = Template(filename=os.path.join(bindings_dir, 'templates', '_python_bindings.pyx.mako'))
-        python_path = os.path.join(bindings_dir, '_python_bindings.pyx')
+        python_bindings_pxd = (
+            os.path.join(bindings_dir, '_python_bindings.pxd'),
+            Template(filename=os.path.join(bindings_dir, 'templates', '_python_bindings.pxd.mako'))
+        )
 
-        python_source = python_bindings_template.render(classes=class_contexts)
-        with open(python_path, 'w', encoding='utf-8') as fp:
-            fp.write(python_source)
+        python_bindings_pyx = (
+            os.path.join(bindings_dir, '_python_bindings.pyx'),
+            Template(filename=os.path.join(bindings_dir, 'templates', '_python_bindings.pyx.mako'))
+        )
 
+        for path, template in (python_bindings_pxd, python_bindings_pyx):
+            source = template.render(classes=class_contexts, icall_names=icall_names)
+            with open(path, 'w', encoding='utf-8') as fp:
+                fp.write(source)
         for module, _types in module_data:
             write_python_definitions(module, _types, class_names)
 

@@ -168,6 +168,7 @@ class gdnative_build_ext(build_ext):
 
         self.build_context['pygodot_library_name'] = src_name
         self.build_context['target'] = binext_path
+        self.build_context['library_name'] = '_pygodot'
 
         dst_name = dst_name_parts[0]
         gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name + '.gdnlib'))
@@ -219,6 +220,7 @@ class gdnative_build_ext(build_ext):
         self.build_context['target'] = make_relative_path(binext_path)
 
         dst_name = dst_name_parts[0]
+        self.build_context['library_name'] = dst_name
         gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name + '.gdnlib'))
         self.gdnative_library_path = gdnlib_respath
         self.generic_setup = False
@@ -248,6 +250,9 @@ class gdnative_build_ext(build_ext):
         dst_name_parts = dst_fullname.split('.')
         dst_name = dst_name_parts[0]
         gdns_path = os.path.join(dst_dir, dst_name + '.gdns')
+
+        if dst_name == self.build_context['library_name']:
+            raise NameError("'%s' name is already used. Please select a different name\n" % dst_name)
 
         classname = ext._nativescript_classname or dst_name
         context = dict(gdnlib_resource=self.gdnative_library_path, classname=classname)

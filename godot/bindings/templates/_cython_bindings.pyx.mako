@@ -10,16 +10,13 @@
             return '%s._owner' % arg[1]
         return arg[1]
 %>
-from godot_headers.gdnative_api cimport (
-    godot_object, godot_variant, godot_method_bind, godot_gdnative_ext_nativescript_1_1_api_struct
-)
+from godot_headers.gdnative_api cimport godot_object, godot_variant
 from ..globals cimport gdapi, nativescript_1_1_api, _cython_language_index
-
-from cpython.object cimport PyObject
-from ._core cimport _Wrapped
 
 # Avoid c-importing "_Wrapped" and "Object"
 from ..cpp.core_types cimport real_t, ${', '.join(CORE_TYPES)}
+
+from ..core_types cimport _Wrapped
 from .cython.__icalls cimport *
 
 
@@ -103,7 +100,7 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
 % endfor
 
 
-cdef public void __init_cython_method_bindings():
+cdef __init_method_bindings():
 % for class_name, class_def, includes, forwards, methods in classes:
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
     __mb.__${class_name}__mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method_name}")
@@ -111,12 +108,9 @@ cdef public void __init_cython_method_bindings():
 % endfor
 
 
-cdef public void __register_cython_types():
-    cdef int i = _cython_language_index
-    cdef const godot_gdnative_ext_nativescript_1_1_api_struct *ns11api = nativescript_1_1_api
-
-    print("Cython language index", i)
+cdef __register_types():
+    print("Cython language index", _cython_language_index)
 
 % for class_name, class_def, includes, forwards, methods in classes:
-    ns11api.godot_nativescript_set_global_type_tag(i, "${class_def['name']}", <const void *>${class_name})
+    nativescript_1_1_api.godot_nativescript_set_global_type_tag(_cython_language_index, "${class_def['name']}", <const void *>${class_name})
 % endfor
