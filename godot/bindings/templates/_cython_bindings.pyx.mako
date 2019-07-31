@@ -82,7 +82,6 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
 % if class_def['singleton']:
     def __cinit__(self):
         self._owner = gdapi.godot_global_get_singleton(<char *>"${class_name}")
-        print("Init ${class_name} singleton 0x%x" % <size_t>self._owner)
 
     @staticmethod
     cdef object get_singleton():

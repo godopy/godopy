@@ -28,6 +28,9 @@ public:
 
   static void nativescript_init(void *handle, bool init_cython=true, bool init_python=true);
   static void nativescript_terminate(void *handle);
+
+  static void set_cython_language_index(int language_index);
+  static void set_python_language_index(int language_index);
 };
 
 } // namespace pygodot

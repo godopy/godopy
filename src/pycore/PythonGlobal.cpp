@@ -90,4 +90,12 @@ void PyGodot::nativescript_terminate(void *handle) {
 	godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::python_language_index);
 }
 
+void PyGodot::set_cython_language_index(int language_index) {
+  godot::_RegisterState::cython_language_index = language_index;
+}
+
+void PyGodot::set_python_language_index(int language_index) {
+  godot::_RegisterState::python_language_index = language_index;
+}
+
 } // namespace pygodot

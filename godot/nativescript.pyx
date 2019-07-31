@@ -1,10 +1,6 @@
 from godot_headers.gdnative_api cimport *
 
-from .globals cimport (
-    Godot, gdapi, nativescript_api, nativescript_1_1_api,
-    _nativescript_handle,
-    _cython_language_index, _python_language_index
-)
+from .globals cimport PyGodot, gdapi, nativescript_api, nativescript_1_1_api, _nativescript_handle
 from .cpp.core_types cimport String
 from .core_types cimport _Wrapped
 from .bindings cimport _cython_bindings, _python_bindings
@@ -21,7 +17,7 @@ cdef void *_wrapper_create(void *data, const void *type_tag, godot_object *insta
     with gil:
         wrapper = _Wrapped()  # To skip __init__, call _Wrapped.__new__(_Wrapped)
         (<_Wrapped>wrapper)._owner = instance
-        (<_Wrapped>wrapper)._type_tag = <size_t>type_tag
+        (<_Wrapped>wrapper)._type_tag = <void *>type_tag
         print('Godot wrapper %s created: inst 0x%x, #0x%x' % (wrapper, <size_t>instance, <size_t>type_tag))
 
     return <void *>wrapper
@@ -51,8 +47,10 @@ cdef public cython_nativescript_init():
         NULL   # void (*free_func)(void *)
     ]
 
-    _cython_language_index = \
+    cdef int language_index = \
         nativescript_1_1_api.godot_nativescript_register_instance_binding_data_functions(binding_funcs)
+
+    PyGodot.set_cython_language_index(language_index)
 
     _cython_bindings.__register_types()
     _cython_bindings.__init_method_bindings()
@@ -68,8 +66,10 @@ cdef public python_nativescript_init():
         NULL   # void (*free_func)(void *)
     ]
 
-    _python_language_index = \
+    cdef int language_index = \
         nativescript_1_1_api.godot_nativescript_register_instance_binding_data_functions(binding_funcs)
+
+    PyGodot.set_python_language_index(language_index)
 
     _python_bindings.__register_types()
     _python_bindings.__init_method_bindings()
@@ -106,71 +106,21 @@ cpdef register_class(type cls):
     cls._register_methods()
 
 
-cdef inline cls2typetag(cls):
-    cdef PyObject *_type_tag = <PyObject *>cls
-    return <size_t>_type_tag
-
-
-cdef inline __keep_ptr(object obj):
-    print('[ns-refs] incref', obj)
-    Py_INCREF(obj)
-
-
-cdef inline __free_ptr(void *ptr):
-    print('[ns-refs] decref', <object>ptr)
-    Py_DECREF(<object>ptr)
-
-
-cdef inline set_wrapper_tags(PyObject *o, godot_object *_owner, size_t _type_tag):
-    cdef _Wrapped wrapper = <_Wrapped>o
-    wrapper._owner = _owner
-    wrapper._type_tag = _type_tag
-
-
-### Initializer (not used, for future reference)
-# cdef class PyGodotGlobal(nodes.Node):
-#     cdef _ready(self):
-#         print("GLOBAL READY!")
-
-#     @classmethod
-#     def _register_methods(cls):
-#         cdef godot_instance_method method = [PyGodotGlobal_ready_wrapper, NULL, NULL]
-#         cdef godot_method_attributes attrs = [GODOT_METHOD_RPC_MODE_DISABLED]
-
-#         nativescript_api.godot_nativescript_register_method(handle, "PyGodotGlobal", "_ready", attrs, method)
-
-# cdef godot_variant PyGodotGlobal_ready_wrapper(godot_object *o, void *md, void *p_instance, int n,
-#                                                godot_variant **args) nogil:
-#     with gil:
-#         instance = <PyGodotGlobal>p_instance
-#         instance._ready()
-
-#     cdef godot_variant ret
-#     gdapi.godot_variant_new_nil(&ret)
-#     return ret
-
-# cdef public object _clsdef_PyGodotGlobal = PyGodotGlobal
-
-### Class Registration
-
-
 cdef void *_instance_func(godot_object *instance, void *method_data) nogil:
     with gil:
         cls = <type>method_data
         obj = cls()
+        (<_Wrapped>obj)._owner = instance
+        (<_Wrapped>obj)._type_tag = <void *>cls
 
-        set_wrapper_tags(<PyObject *>obj, instance, cls2typetag(cls))
-
-        __keep_ptr(obj)
+        Py_INCREF(obj)
         return <void *>obj
 
 
 cdef void _destroy_func(godot_object *instance, void *method_data, void *user_data) nogil:
-    with gil:
-        __free_ptr(user_data)
+    if user_data:
+        with gil: Py_DECREF(<object>user_data)
 
-
-### Method registration
 
 # Example of a public C function pointer declaration:
 # cdef public:
@@ -180,96 +130,3 @@ cdef void _destroy_func(godot_object *instance, void *method_data, void *user_da
 cdef test_method_call(type cls, object instance, fusedmethod method):
     if fusedmethod is Method__float:
         method(instance, 5)
-
-
-# Note: passing cdefs as objects forces them to be wrapped in Cython-generated defs!
-cdef register_method(type cls, str name, fusedmethod method,
-                     godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
-    cdef godot_instance_method m = [NULL, NULL, NULL]
-
-    if fusedmethod is MethodNoArgs:
-        m.method = __none__method_wrapper
-    elif fusedmethod is Method__float:
-        m.method = __none__float__method_wrapper
-    # elif fusedmethod is object:
-    #     if method is None:
-    #         method = getattr(cls, method)
-    #     __keep_ptr(method)
-    #     m.method = _object_method_wrapper
-    #     m.free_func = &_method_destroy
-
-
-    m.method_data = <void *>method
-
-    cdef godot_method_attributes attrs = [rpc_type]
-    cdef bytes _name = name.encode('utf-8')
-    cdef bytes class_name = cls.__name__.encode('utf-8')
-
-    nativescript_api.godot_nativescript_register_method(_nativescript_handle, <const char *>class_name,
-                                                        <const char *>_name, attrs, m)
-
-
-cdef inline godot_variant _variant_nil() nogil:
-    cdef godot_variant ret
-    gdapi.godot_variant_new_nil(&ret)
-    return ret
-
-
-cdef godot_variant __none__method_wrapper(godot_object *_, void *M, void *O, int N, godot_variant **A) nogil:
-    with gil:
-        (<MethodNoArgs>M)(<object>O)
-
-    return _variant_nil()
-
-
-cdef godot_variant __none__float__method_wrapper(godot_object *_, void *M, void *O, int N, godot_variant **A) nogil:
-    with gil:
-        (<Method__float>M)(
-            <object>O,
-            <const float>gdapi.godot_variant_as_real(A[0])
-        )
-
-    return _variant_nil()
-
-
-# cdef godot_variant _object_method_wrapper(godot_object *o, void *md, void *ud, int na, godot_variant **args) nogil:
-#     with gil:
-#         python_instance = <object>ud
-#         method = <object>md
-
-#         method(python_instance)
-
-#     return _variant_nil()
-
-
-cdef void _method_destroy(void *method_data) nogil:
-    with gil:
-        __free_ptr(method_data)
-
-
-# cdef list parse_args(int num_args, godot_variant **args):
-#     cdef godot_variant_type t;
-#     pyargs = []
-
-#     cdef int i
-#     for i in range(num_args):
-#         t = gdapi.godot_variant_get_type(args[i])
-
-#         # TODO: all other possible conversions
-#         if t == GODOT_VARIANT_TYPE_REAL:
-#             pyargs.append(<float>gdapi.godot_variant_as_real(args[i]))
-#         else:
-#             pyargs.append(None)
-
-#     return pyargs
-
-
-# cdef godot_variant convert_result(object result):
-#     cdef godot_variant gd_result
-
-#     if False:
-#         pass # TODO
-#     else:
-#         gdapi.godot_variant_new_nil(&gd_result)
-
-#     return gd_result

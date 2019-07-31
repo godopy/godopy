@@ -40,3 +40,12 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
     int _language_index "godot::_RegisterState::language_index"
     int _cython_language_index "godot::_RegisterState::cython_language_index"
     int _python_language_index "godot::_RegisterState::python_language_index"
+
+
+cdef extern from "PythonGlobal.hpp" namespace "pygodot":
+    cdef cppclass PyGodot:
+        @staticmethod
+        void set_cython_language_index(int)
+
+        @staticmethod
+        void set_python_language_index(int)

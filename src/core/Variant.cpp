@@ -159,6 +159,15 @@ Variant::Variant(const PoolColorArray &p_color_array) {
 	godot::api->godot_variant_new_pool_color_array(&_godot_variant, (godot_pool_color_array *)&p_color_array);
 }
 
+Variant::Variant(const PyObject *p_python_object) {
+	// TODO: Everything
+
+	Py_XDECREF(p_python_object);
+
+	// if (p_python_object == Py_None)
+	godot::api->godot_variant_new_nil(&_godot_variant);
+}
+
 Variant &Variant::operator=(const Variant &v) {
 	godot::api->godot_variant_new_copy(&_godot_variant, &v._godot_variant);
 	return *this;
@@ -298,6 +307,12 @@ Variant::operator PoolColorArray() const {
 }
 Variant::operator godot_object *() const {
 	return godot::api->godot_variant_as_object(&_godot_variant);
+}
+
+Variant::operator PyObject *() const {
+	// TODO: All types
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 Variant::Type Variant::get_type() const {

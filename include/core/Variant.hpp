@@ -22,6 +22,9 @@
 
 #include <iostream>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 namespace godot {
 
 class Dictionary;
@@ -193,6 +196,8 @@ public:
 
 	Variant(const PoolColorArray &p_color_array);
 
+	Variant(const PyObject *p_python_object);
+
 	Variant &operator=(const Variant &v);
 
 	operator bool() const;
@@ -238,6 +243,8 @@ public:
 	operator PoolVector2Array() const;
 	operator PoolVector3Array() const;
 	operator PoolColorArray() const;
+
+	operator PyObject *() const;
 
 	Type get_type() const;
 

@@ -4,4 +4,4 @@ include "core/defs.pxi"
 
 cdef class _Wrapped:
     cdef godot_object *_owner
-    cdef size_t _type_tag
+    cdef void *_type_tag
