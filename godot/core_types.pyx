@@ -1,3 +1,5 @@
+from godot_headers.gdnative_api cimport godot_object
+
 from .globals cimport (
     gdapi,
     nativescript_1_1_api as ns11api,
@@ -14,6 +16,8 @@ cdef class _PyWrapped:
 
 cdef dict CythonTagDB = {}
 cdef dict PythonTagDB = {}
+cdef dict __instance_map = {}
+
 
 cdef register_cython_type(type cls):
     cdef size_t type_tag = <size_t><void *>cls
@@ -51,3 +55,7 @@ cdef register_global_python_type(type cls, str api_name):
     PythonTagDB[type_tag] = cls
 
     # cls.__godot_api_name__ = api_name
+
+
+cdef get_instance_from_owner(godot_object *instance):
+    return __instance_map[<size_t>instance]

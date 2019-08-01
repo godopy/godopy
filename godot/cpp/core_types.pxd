@@ -1132,7 +1132,7 @@ cdef extern from "Variant.hpp" namespace "godot" nogil:
         Variant(const PoolVector2Array&) except +
         Variant(const PoolVector3Array&) except +
         Variant(const PoolColorArray&) except +
-        Variant(const PyObject*) except +
+        Variant(object) except +
 
         # Variant &operator=(const Variant &v)
         bool operator bool()
@@ -1176,6 +1176,8 @@ cdef extern from "Variant.hpp" namespace "godot" nogil:
         # PoolVector2Array operator PoolVector2Array()
         # PoolVector3Array operator PoolVector3Array()
         # PoolColorArray operator PoolColorArray()
+
+        # object operator object()
 
         Type get_type()
         Variant call(const String &method, const Variant **args, const int arg_count)

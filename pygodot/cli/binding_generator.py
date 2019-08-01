@@ -45,6 +45,11 @@ CYTHON_ONLY_ESCAPES = {
     'set_singleton': '_set_singleton',  # for consistency
 }
 
+SPECIAL_ESCAPES = {
+    # 'new': '__call__',
+    # 'free': '__del__'
+}
+
 CYTHON_ESCAPES = {**CPP_ESCAPES, **CYTHON_ONLY_ESCAPES}
 
 reference_types = set()
@@ -214,36 +219,43 @@ def generate_icalls_context(classes):
 
     for c in classes:
         for method in c['methods']:
-            if method['has_varargs']:
-                continue
             args = tuple(get_icall_type_name(arg['type']) for arg in method['arguments'])
+            var_arg = None
+            if method['has_varargs']:
+                var_arg = '__var_args'
             ret = get_icall_type_name(method['return_type'])
-            icalls.add((ret, args))
+            icalls.add((ret, args, var_arg))
 
             key = '#'.join([strip_name(c['name']), escape_cython(method['name'])])
-            icall2methodkeys.setdefault((ret, args), []).append(key)
+            icall2methodkeys.setdefault((ret, args, var_arg), []).append(key)
 
     prepared_icalls = []
 
-    for ret_type, args in icalls:
-        methodkeys = icall2methodkeys[ret_type, args]
-        icall_name = get_icall_name(ret_type, args)
+    for ret_type, args, var_arg in icalls:
+        methodkeys = icall2methodkeys[ret_type, args, var_arg]
+        icall_name = get_icall_name(ret_type, args, var_arg)
 
         for key in methodkeys:
             icall_names[key] = icall_name
 
-        sig = [get_icall_return_type(ret_type), icall_name, '(', 'godot_method_bind *mb, ', 'godot_object *o',
-               *create_icall_arguments(args), ')']
+        sig = [
+            get_icall_return_type(ret_type, has_varargs=var_arg), icall_name,
+            '(', 'godot_method_bind *mb, ', 'godot_object *o',
+            *create_icall_arguments(args, var_arg), ')'
+        ]
 
-        pxd_sig = [get_icall_pxd_return_type(ret_type), icall_name, '(', 'godot_method_bind*, ',
-                   'godot_object*', *create_icall_arguments(args, is_pxd=True), ')']
+        pxd_sig = [
+            get_icall_pxd_return_type(ret_type, has_varargs=var_arg), icall_name,
+            '(', 'godot_method_bind*, ', 'godot_object*',
+            *create_icall_arguments(args, var_arg, is_pxd=True), ')'
+        ]
 
-        prepared_icalls.append((ret_type, args, ''.join(sig), ''.join(pxd_sig)))
+        prepared_icalls.append((ret_type, args, var_arg, ''.join(sig), ''.join(pxd_sig)))
 
     return prepared_icalls
 
 
-def create_icall_arguments(args, is_pxd=False):
+def create_icall_arguments(args, var_arg, is_pxd=False):
     sig = []
 
     for i, arg in enumerate(args):
@@ -271,12 +283,18 @@ def create_icall_arguments(args, is_pxd=False):
         if not is_pxd:
             sig.append(prefix + 'arg%s' % i)
 
+    if var_arg:
+        if is_pxd:
+            sig.append(', tuple')
+        else:
+            sig.append(', PyObject *__var_args')
+
     return sig
 
 
-def get_icall_return_type(t):
+def get_icall_return_type(t, has_varargs=False):
     if is_class_type(t):
-        return 'PyObject *'
+        return 'Variant ' if has_varargs else 'PyObject *'
     elif t == 'int':
         return 'int64_t '
     elif t == 'float' or t == 'real':
@@ -285,9 +303,9 @@ def get_icall_return_type(t):
     return t + ' '
 
 
-def get_icall_pxd_return_type(t):
+def get_icall_pxd_return_type(t, has_varargs=False):
     if is_class_type(t):
-        return 'object '
+        return 'Variant ' if has_varargs else 'object '
     elif t == 'int ':
         return 'int64_t'
     elif t == 'float' or t == 'real':
@@ -296,11 +314,14 @@ def get_icall_pxd_return_type(t):
     return t + ' '
 
 
-def get_icall_name(ret_type, args):
+def get_icall_name(ret_type, args, var_arg):
     name = "___pygodot_icall_"
     name += strip_name(ret_type)
     for arg in args:
         name += "_" + strip_name(arg)
+
+    if var_arg:
+        name += var_arg
 
     return name
 
@@ -352,8 +373,8 @@ def generate_class_context(class_def):
             sigs.append(sig)
 
         if method['has_varargs']:
-            pxd_sigs.append('tuple __var_args')
-            sigs.append('tuple __var_args')
+            pxd_sigs.append('tuple __var_args=*')
+            sigs.append('tuple __var_args=()')
 
         return_stmt = 'return '
         if is_enum(method['return_type']):
@@ -451,7 +472,7 @@ def generate_cppclass_context(class_def):
 
     for method in class_def['methods']:
         method_name = method['name']
-        method_name = escape_cython(method_name)
+        method_name = escape_cpp(method_name)
         return_type = make_cpp_gdnative_type(method['return_type'])
 
         args = []
@@ -461,7 +482,7 @@ def generate_cppclass_context(class_def):
 
         for arg in method['arguments']:
             arg_type = make_cpp_gdnative_type(arg['type'])
-            arg_name = escape_cython(arg['name'])
+            arg_name = escape_cpp(arg['name'])
 
             arg_default = None
 
@@ -604,7 +625,17 @@ def is_enum(name):
     return name.startswith('enum.')
 
 
+def escape_cpp(name):
+    if name in CYTHON_ESCAPES:
+        return CYTHON_ESCAPES[name]
+
+    return name
+
+
 def escape_cython(name):
+    if name in SPECIAL_ESCAPES:
+        return SPECIAL_ESCAPES[name]
+
     if name in CYTHON_ESCAPES:
         return CYTHON_ESCAPES[name]
 

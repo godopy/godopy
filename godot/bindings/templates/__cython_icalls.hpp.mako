@@ -12,25 +12,58 @@
     def arg_elem(index, arg):
         t = '(void *)arg%d' if is_class_type(arg) else '(void *)&arg%d'
         return t % index
+
+    def given_arg_elem(index, arg):
+        return '(Variant)arg%d' % index
 %>
 namespace godot {
-% for ret, args, sig, pxd_sig in icalls:
+% for ret, args, has_varargs, sig, pxd_sig in icalls:
 
 static inline ${sig} {
+  % if has_varargs:
+  % if args:
+  const Variant __given_args[] = {${', '.join(given_arg_elem(i, arg) for i, arg in enumerate(args))}};
+  % endif
+  ## TODO: Use Godot arrays instead of Python tuples
+  int __size = PyTuple_GET_SIZE(__var_args);
+  godot_variant **__args = (godot_variant **) alloca(sizeof(godot_variant *) * (__size + ${len(args)}));
+  % for i, arg in enumerate(args):
+  __args[${i}] = (godot_variant *) &__given_args[${i}];
+  % endfor
+
+  for (int i = 0; i < __size; i++) {
+    Variant item = PyTuple_GET_ITEM(__var_args, i);
+    __args[i + ${len(args)}] = (godot_variant *)&item;
+  }
+
+  Variant __result;
+  printf("making vararg call, %d\n", __size);
+  *(godot_variant *) &__result = godot::api->godot_method_bind_call(mb, o, (const godot_variant **) __args, __size, nullptr);
+  printf("call made\n");
+  % for i, arg in enumerate(args):
+  godot::api->godot_variant_destroy((godot_variant *) &__given_args[${i}]);
+  % endfor
+  % if ret != 'void':
+  return __result;
+  % endif ## != void
+  % else: ## no varargs
   % if ret != 'void':
   ${'godot_object *ret = NULL' if is_class_type(ret) else get_icall_return_type(ret) + 'ret'};
   % endif
+
   const void *args[${'' if args else '1'}] = {${', '.join(arg_elem(i, arg) for i, arg in enumerate(args))}};
   godot::api->godot_method_bind_ptrcall(mb, o, args, ${'&ret' if ret != 'void' else 'NULL'});
+
   % if ret != 'void':
-    % if is_class_type(ret):
+  % if is_class_type(ret):
   if (ret)
     return (PyObject *)godot::nativescript_1_1_api->godot_nativescript_get_instance_binding_data(godot::_RegisterState::cython_language_index, ret);
   return (PyObject *)ret;
-    % else:
+  % else:
   return ret;
-    % endif
-  % endif
+  % endif ## is_call_type
+  % endif ## ret != void
+  % endif ## has_varargs
 }
 % endfor
 }

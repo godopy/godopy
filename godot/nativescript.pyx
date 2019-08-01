@@ -4,7 +4,11 @@ from .globals cimport (
     PyGodot, gdapi, nativescript_api as nsapi, nativescript_1_1_api as ns11api, _nativescript_handle as handle
 )
 from .cpp.core_types cimport String, Variant as CVariant
-from .core_types cimport _Wrapped, _PyWrapped, CythonTagDB, PythonTagDB, register_cython_type, register_python_type
+from .core_types cimport (
+    _Wrapped, _PyWrapped,
+    CythonTagDB, PythonTagDB, __instance_map,
+    register_cython_type, register_python_type
+)
 from .bindings cimport _cython_bindings, _python_bindings
 
 from libcpp cimport nullptr
@@ -23,6 +27,8 @@ cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, 
         (<_PyWrapped>obj)._owner = instance
     else:
         (<_Wrapped>obj)._owner = instance
+
+    __instance_map[<size_t>instance] = obj
 
     print('instance %s (%s) created: %s, %s' % (obj,
           hex(<size_t><void *>obj), hex(<size_t>instance), hex(<size_t>type_tag)))
@@ -52,6 +58,11 @@ cdef void *_python_wrapper_create(void *data, const void *type_tag, godot_object
         return _instance_create(<size_t>type_tag, instance, _PyWrapped, PythonTagDB)
 
 cdef void _wrapper_destroy(void *data, void *wrapper) nogil:
+    cdef size_t _owner;
+    with gil:
+        _owner = <size_t>(<_Wrapped>wrapper)._owner
+        if _owner in __instance_map:
+            del __instance_map[_owner]
     __decref_python_pointer(wrapper)
 
 cdef void _wrapper_incref(void *data, void *wrapper) nogil:
@@ -158,6 +169,10 @@ cdef void *_python_instance_func(godot_object *instance, void *method_data) nogi
 
 
 cdef void _destroy_func(godot_object *instance, void *method_data, void *user_data) nogil:
+    cdef size_t _owner = <size_t>instance
+    with gil:
+        if _owner in __instance_map:
+            del __instance_map[_owner]
     __decref_python_pointer(user_data)
 
 
