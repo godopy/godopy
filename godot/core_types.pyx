@@ -9,7 +9,7 @@ from .globals cimport (
 cdef class _Wrapped:
     pass
 
-cdef class _PyWrapped(_Wrapped):
+cdef class _PyWrapped:
     pass
 
 cdef dict CythonTagDB = {}
@@ -32,9 +32,6 @@ cdef register_python_type(type cls):
 
     PythonTagDB[type_tag] = cls
 
-    cls.__godot_api_name__ = cls.__name__
-    cls.__type_tag__ = type_tag
-
 
 cdef register_global_cython_type(type cls, str api_name):
     cdef bytes _api_name = api_name.encode('utf-8')
@@ -54,4 +51,3 @@ cdef register_global_python_type(type cls, str api_name):
     PythonTagDB[type_tag] = cls
 
     # cls.__godot_api_name__ = api_name
-    # cls.__type_tag__ = type_tag

@@ -18,6 +18,8 @@ from ..cpp.core_types cimport real_t, ${', '.join(CORE_TYPES)}
 
 from ..core_types cimport _Wrapped, register_global_cython_type
 from .cython.__icalls cimport *
+
+from cpython.ref cimport Py_DECREF
 % for class_name, class_def, includes, forwards, methods in classes:
 
 
@@ -36,9 +38,32 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
         global __${class_name}___singleton
 
         if __${class_name}___singleton is None:
-            __${class_name}___singleton = ${class_name}()
+            __${class_name}___singleton = ${class_name}.__new__(${class_name})
 
         return __${class_name}___singleton
+
+    % endif
+    def __cinit__(self):
+    % if class_def['singleton']:
+        self._owner = gdapi.godot_global_get_singleton(<char *>"${class_name}")
+    % else:
+        self._owner = NULL
+    % endif
+
+    % if class_def['instanciable']:
+    def __init__(self):
+        # Ensure ${class_name}() call will create a correct wrapper object
+        cdef ${class_name} delegate = ${class_name}._new()
+        self._owner = delegate._owner
+        Py_DECREF(delegate)
+
+    @staticmethod
+    cdef ${class_name} _new():
+        return <${class_name}>ns11api.godot_nativescript_get_instance_binding_data(_cython_language_index, gdapi.godot_get_class_constructor("${class_def['name']}")())
+
+    % else:
+    def __init__(self):
+        raise RuntimeError('${class_name} is not instanciable')
 
     % endif
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
@@ -95,17 +120,6 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
         % endif
 
     % endfor
-    % if class_def['singleton']:
-
-    def __cinit__(self):
-        self._owner = gdapi.godot_global_get_singleton(<char *>"${class_name}")
-    % endif
-    % if class_def['instanciable']:
-
-    @staticmethod
-    cdef ${class_name} _new():
-        return <${class_name}>ns11api.godot_nativescript_get_instance_binding_data(_cython_language_index, gdapi.godot_get_class_constructor("${class_def['name']}")())
-    % endif
 
     @staticmethod
     cdef __init_method_bindings():

@@ -87,20 +87,11 @@ def api():
 
 @binding_generator.add_command
 @click.command()
-def cpp():
-    generate(generate_cpp=True, generate_cython=False, generate_python=False, echo=click.echo)
-
-
-@binding_generator.add_command
-@click.command()
-def cython():
-    generate(generate_cpp=False, generate_cython=True, generate_python=False, echo=click.echo)
-
-
-@binding_generator.add_command
-@click.command()
-def python():
-    generate(generate_cpp=False, generate_cython=False, generate_python=True, echo=click.echo)
+@click.option('--cpp/--no-cpp', default=True)
+@click.option('--cython/--no-cython', default=True)
+@click.option('--python/--no-python', default=True)
+def classes(cpp, cython, python):
+    generate(generate_cpp=cpp, generate_cython=cython, generate_python=python, echo=click.echo)
 
 
 # Not used

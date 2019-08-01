@@ -39,8 +39,8 @@ $ pipenv install -e pygodot
 ```
 $ cp -R <path to the Godot source folder>/modules/gdnative/include pygodot/godot_headers
 $ godot --gdnative-generate-json-api pygodot/godot_headers/api.json
-$ pipenv run pygodot genapi
-$ pipenv run pygodot genbindings
+$ pipenv run bindgen api
+$ pipenv run bindgen classes
 $ pipenv shell
 (SimpleProject) $ cd pygodot
 (SimpleProject) $ python setup.py develop --generate_bindings

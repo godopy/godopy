@@ -77,9 +77,8 @@ __godot_wrapper_method ___get_wrapper_function(R (*f)(Self, As...)) {
   return (__godot_wrapper_method)&__wrapped_method<Self, R, As...>;
 }
 
-
 template <class M>
-void register_method(PyTypeObject *cls, const char *name, M method_ptr, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED) {
+PyObject *register_method(PyTypeObject *cls, const char *name, M method_ptr, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED) {
   godot_instance_method method = {};
   method.method_data = ___make_wrapper_function(method_ptr);
   method.free_func = godot::api->godot_free;
@@ -89,10 +88,11 @@ void register_method(PyTypeObject *cls, const char *name, M method_ptr, godot_me
   attr.rpc_type = rpc_type;
 
   godot::nativescript_api->godot_nativescript_register_method(godot::_RegisterState::nativescript_handle, godot::__get_python_class_name(cls), name, attr, method);
+
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 } // namespace pygodot
-
-
 
 #endif // PYGODOT_HPP
