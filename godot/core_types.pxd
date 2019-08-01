@@ -4,9 +4,11 @@ include "core/defs.pxi"
 
 cdef class _Wrapped:
     cdef godot_object *_owner
+    cdef bint ___CLASS_IS_SCRIPT
 
 cdef class _PyWrapped:
     cdef godot_object *_owner
+    cdef bint ___CLASS_IS_SCRIPT
 
 cdef dict CythonTagDB
 cdef dict PythonTagDB

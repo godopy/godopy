@@ -23,15 +23,17 @@ cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, 
     cdef type cls = TagDB[type_tag]
     cdef obj = cls.__new__(cls)  # Don't call __init__
 
-    if root_base is _PyWrapped:
-        (<_PyWrapped>obj)._owner = instance
-    else:
-        (<_Wrapped>obj)._owner = instance
-
     __instance_map[<size_t>instance] = obj
 
-    print('instance %s (%s) created: %s, %s' % (obj,
-          hex(<size_t><void *>obj), hex(<size_t>instance), hex(<size_t>type_tag)))
+    if root_base is _PyWrapped:
+        (<_PyWrapped>obj)._owner = instance
+        (<_PyWrapped>obj).___CLASS_IS_SCRIPT = True
+    else:
+        (<_Wrapped>obj)._owner = instance
+        (<_Wrapped>obj).___CLASS_IS_SCRIPT = True
+
+    if hasattr(obj, '_init'):
+        obj._init()
 
     # Cython manages refs automatically and decrements created objects on function exit,
     # therefore INCREF is required to keep the object alive.

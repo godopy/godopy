@@ -45,10 +45,15 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
     % endif
     def __cinit__(self):
     % if class_def['singleton']:
-        self._owner = gdapi.godot_global_get_singleton(<char *>"${class_name}")
+        self._owner = gdapi.godot_global_get_singleton("${class_name}")
+    % else:
+    % if class_def['base_class']:
+        pass
     % else:
         self._owner = NULL
-    % endif
+        self.___CLASS_IS_SCRIPT = False
+    % endif  ## base_class/else
+    % endif  ## singleton/else
 
     % if class_def['instanciable']:
     def __init__(self):
