@@ -13,7 +13,7 @@ cdef __${class_name}__method_bindings __${class_name}__mb
 cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
     @staticmethod
     def __init_method_bindings():
-    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
+    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
         __${class_name}__mb.mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method['name']}")
     % endfor
     % if not methods:

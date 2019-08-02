@@ -46,8 +46,8 @@ CYTHON_ONLY_ESCAPES = {
 }
 
 SPECIAL_ESCAPES = {
-    # 'new': '__call__',
-    # 'free': '__del__'
+    'new': '__call__',
+    'free': '__del__'
 }
 
 CYTHON_ESCAPES = {**CPP_ESCAPES, **CYTHON_ONLY_ESCAPES}
@@ -228,6 +228,9 @@ def generate_icalls_context(classes):
 
             key = '#'.join([strip_name(c['name']), escape_cython(method['name'])])
             icall2methodkeys.setdefault((ret, args, var_arg), []).append(key)
+            if method['name'] in SPECIAL_ESCAPES:
+                key2 = '#'.join([strip_name(c['name']), SPECIAL_ESCAPES[method['name']]])
+                icall2methodkeys[ret, args, var_arg].append(key2)
 
     prepared_icalls = []
 
@@ -348,6 +351,7 @@ def generate_class_context(class_def):
         args = []
         sigs = []
         pxd_sigs = []
+        init_args = []
         has_default_argument = False
 
         for arg in method['arguments']:
@@ -356,10 +360,14 @@ def generate_class_context(class_def):
             arg_name = escape_cython(arg['name'])
 
             arg_default = None
-
-            # if has_default:
-            #     arg_default = escape_cython_default_arg(arg['type'], arg['default_value'])
-            #     has_default_argument = True
+            arg_init = None
+            if has_default:
+                arg_default, arg_init = escape_cython_default_arg(arg['type'], arg['default_value'])
+                has_default_argument = True
+                if arg_init:
+                    real_arg_name = arg_name
+                    arg_name = '_' + real_arg_name
+                    init_args.append((arg_type, real_arg_name, arg_name, arg_init))
 
             if arg_default is not None:
                 pxd_sig = '%s%s=*' % (arg_type, arg_name)
@@ -367,7 +375,7 @@ def generate_class_context(class_def):
             else:
                 pxd_sig = sig = '%s%s' % (arg_type, arg_name)
 
-            args.append((arg_type, arg_name, arg))
+            args.append((arg_type, arg_name, arg, arg_init))
 
             pxd_sigs.append(pxd_sig)
             sigs.append(sig)
@@ -382,14 +390,22 @@ def generate_class_context(class_def):
         elif method['return_type'] == 'void':
             return_stmt = ''
 
-        prepared_methods.append((method_name, method, return_type, ', '.join(pxd_sigs), ', '.join(sigs),
-                                 args, return_stmt))
+        prepared_methods.append((
+            method_name, method, return_type,
+            ', '.join(pxd_sigs), ', '.join(sigs),
+            args, return_stmt, init_args
+        ))
+        if method['name'] in SPECIAL_ESCAPES:
+            prepared_methods.append((
+                SPECIAL_ESCAPES[method['name']], method, return_type,
+                ', '.join(pxd_sigs), ', '.join(sigs),
+                args, return_stmt, init_args
+            ))
 
     return class_name, class_def, includes, forwards, prepared_methods
 
 
-# 58 character alphabet used
-alphabet = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+__B58_ALPHABET = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 
 
 # Not used
@@ -400,45 +416,46 @@ def make_sha1_suffix(value):
     string = b""
     while i:
         i, idx = divmod(i, 58)
-        string = alphabet[idx:idx+1] + string
+        string = __B58_ALPHABET[idx:idx+1] + string
     return string.decode('utf-8')
 
 
 def escape_cython_default_arg(_type, default_value):
     if _type == 'Color':
-        return 'Color(%s)' % default_value
+        return 'NULL', 'Color(%s)' % default_value
     elif _type in ('bool', 'int'):
-        return default_value
+        return default_value, None
     elif _type in ('Array', 'Dictionary', 'PoolVector2Array', 'PoolStringArray', 'PoolVector3Array', 'PoolColorArray',
                    'PoolIntArray', 'PoolRealArray', 'Transform', 'Transform2D', 'RID'):
-        return '%s()' % _type
+        return 'NULL', '%s()' % _type
     elif _type in ('Vector2', 'Vector3', 'Rect2'):
-        return '%s%s' % (_type, default_value)
+        return 'NULL', '%s%s' % (_type, default_value)
     elif _type == 'Variant':
         if default_value == 'Null':
-            return 'Variant()'
+            return 'NULL', 'Variant()'
         else:
-            return '<const Variant>%s' % default_value
+            return 'NULL', '(<Variant>%s)' % default_value
     elif _type == 'String':
-        return '<String><const char *>"%s"' % default_value
+        # return 'NULL', 'String(%r)' % default_value
+        return repr(default_value), None
     elif default_value == 'Null' or default_value == '[Object:null]':
         if is_class_type(_type):
-            return 'None'
+            return 'None', None
         else:
-            return 'NULL'
+            return 'NULL', None
 
-    return default_value
+    return default_value, None
 
 
-def cython_nonempty_comparison(_type):
-    if is_class_type(_type):
-        return 'is not None'
-    if _type in ('bool', 'int'):
-        return '!= 0'
-    elif _type == 'String':
-        return '!= <const String><const char *>""'
+# def cython_nonempty_comparison(_type):
+#     if is_class_type(_type):
+#         return 'is not None'
+#     if _type in ('bool', 'int'):
+#         return '!= 0'
+#     elif _type == 'String':
+#         return '!= String()'
 
-    return '!= NULL'
+#     return '!= NULL'
 
 
 def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=False):
@@ -448,6 +465,10 @@ def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=
         return '%s ' % enum_name
     elif is_class_type(t):
         return '%s ' % strip_name(t)
+    elif t == 'String':
+        return 'str '
+    elif has_default and is_core_type(t):
+        return prefix + '%s *' % strip_name(t)
 
     if t == 'int':
         return prefix + 'int64_t '
@@ -455,11 +476,11 @@ def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=
         return prefix + 'real_t '
 
     if is_virtual:
-        # Python runtime exceptions should not be forgotten!
+        # For Python runtime exceptions
         if t == 'void':
             return 'object '
         elif t == 'bool':
-            return 'int '
+            return 'bint '
 
     return prefix + '%s ' % strip_name(t)
 
@@ -633,9 +654,6 @@ def escape_cpp(name):
 
 
 def escape_cython(name):
-    if name in SPECIAL_ESCAPES:
-        return SPECIAL_ESCAPES[name]
-
     if name in CYTHON_ESCAPES:
         return CYTHON_ESCAPES[name]
 

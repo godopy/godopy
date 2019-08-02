@@ -3,6 +3,9 @@
 
 #include <gdnative/string.h>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 namespace godot {
 
 class NodePath;
@@ -35,6 +38,7 @@ public:
 	String(const wchar_t *contents);
 	String(const wchar_t c);
 	String(const String &other);
+	String(const PyObject *pystring);
 
 	~String();
 
@@ -67,6 +71,8 @@ public:
 	char *alloc_c_string() const;
 	CharString utf8() const;
 	CharString ascii(bool p_extended = false) const;
+	PyObject *py_str() const;
+	PyObject *py_bytes() const;
 
 	bool begins_with(String &s) const;
 	bool begins_with_char_array(const char *p_char_array) const;

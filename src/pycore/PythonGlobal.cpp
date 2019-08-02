@@ -4,7 +4,9 @@
 #include <wchar.h>
 
 extern "C" PyObject *cython_nativescript_init();
+extern "C" PyObject *cython_nativescript_terminate();
 extern "C" PyObject *python_nativescript_init();
+extern "C" PyObject *python_nativescript_terminate();
 
 namespace pygodot {
 
@@ -13,6 +15,7 @@ wchar_t *pythonpath = nullptr;
 void PyGodot::set_pythonpath(godot_gdnative_init_options *options) {
 	const godot_gdnative_core_api_struct *api = options->api_struct;
 
+  // TODO: Use C++ String class
 	godot_string dir = api->godot_string_get_base_dir(options->active_library_path);
   godot_string file = api->godot_string_get_file(options->active_library_path);
 	godot_int dirsize = api->godot_string_length(&dir);
@@ -73,20 +76,30 @@ void PyGodot::nativescript_init(void *handle, bool init_cython, bool init_python
 
   if (init_cython) {
     if (cython_nativescript_init() == NULL) {
-      PyErr_Print();
+      if (PyErr_Occurred()) PyErr_Print();
       return;
     }
   }
 
   if (init_python) {
     if (python_nativescript_init() == NULL) {
-      PyErr_Print();
+      if (PyErr_Occurred()) PyErr_Print();
       return;
     }
   }
 }
 
-void PyGodot::nativescript_terminate(void *handle) {
+void PyGodot::nativescript_terminate(void *handle, bool terminate_cython, bool terminate_python) {
+  if (terminate_cython) {
+    if (cython_nativescript_terminate() == NULL) {
+      if (PyErr_Occurred()) PyErr_Print();
+    }
+  }
+  if (terminate_python) {
+    if (python_nativescript_terminate() == NULL) {
+      if (PyErr_Occurred()) PyErr_Print();
+    }
+  }
 	godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::python_language_index);
 }
 

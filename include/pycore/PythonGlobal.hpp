@@ -16,7 +16,7 @@ public:
 	static void python_terminate();
 
   static void nativescript_init(void *handle, bool init_cython=true, bool init_python=true);
-  static void nativescript_terminate(void *handle);
+  static void nativescript_terminate(void *handle, bool terminate_cython=true, bool terminate_python=true);
 
   static void set_cython_language_index(int language_index);
   static void set_python_language_index(int language_index);

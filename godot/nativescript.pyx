@@ -98,6 +98,10 @@ cdef public cython_nativescript_init():
     _cython_bindings.__init_method_bindings()
 
 
+cdef public cython_nativescript_terminate():
+    pass
+
+
 cdef public python_nativescript_init():
     cdef godot_instance_binding_functions binding_funcs = [
         &_python_wrapper_create,
@@ -114,6 +118,10 @@ cdef public python_nativescript_init():
 
     _python_bindings.__register_types()
     _python_bindings.__init_method_bindings()
+
+
+cdef public python_nativescript_terminate():
+    pass
 
 
 cdef public generic_nativescript_init():
@@ -188,14 +196,13 @@ cdef register_property(type cls, const char *name, object default_value,
                        godot_property_usage_flags usage=GODOT_PROPERTY_USAGE_DEFAULT,
                        godot_property_hint hint=GODOT_PROPERTY_HINT_NONE,
                        str hint_string=''):
+    cdef String _hint_string = String(hint_string)
     cdef Variant def_val = <Variant>default_value
+
     usage = <godot_property_usage_flags>(<int>usage | GODOT_PROPERTY_USAGE_SCRIPT_VARIABLE)
 
     if def_val.get_type() == <Variant.Type>VARIANT_OBJECT:
         pass  # TODO: Set resource hints!
-
-    cdef String __hint_string = <String><const char *>hint_string
-    cdef godot_string *_hint_string = <godot_string *>&__hint_string
 
     cdef godot_property_attributes attr = {}
 
@@ -208,7 +215,7 @@ cdef register_property(type cls, const char *name, object default_value,
     attr.hint = hint
     attr.rset_type = rpc_mode
     attr.usage = usage
-    attr.hint_string = deref(_hint_string)
+    attr.hint_string = deref(<godot_string *>&_hint_string)
 
     cdef str property_data = name
     Py_INCREF(property_data)

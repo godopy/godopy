@@ -10,7 +10,7 @@ cdef __init_method_bindings()
 
   % if methods:
 cdef struct __${class_name}__method_bindings:
-        % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
+        % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
     godot_method_bind *mb_${method_name}
         % endfor
     % endif

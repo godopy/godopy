@@ -775,19 +775,16 @@ cdef extern from "RID.hpp" namespace "godot" nogil:
 
 cdef extern from "String.hpp" namespace "godot" nogil:
     cdef cppclass CharString:
-        # godot_char_string _char_string
-
         int length()
         const char *get_data()
 
     cdef cppclass String:
-        # godot_string _godot_string
-
         String() except +
         String(const char *) except +
         String(const wchar_t *) except +
         String(const wchar_t) except +
         String(const String&) except +
+        String(object) except +
 
         @staticmethod
         String num(double num, int decimals=-1)
@@ -831,6 +828,8 @@ cdef extern from "String.hpp" namespace "godot" nogil:
         char *alloc_c_string()
         CharString utf8()
         CharString ascii(bint extended=False)
+        str py_str()
+        bytes py_bytes()
 
         bint begins_with(String&)
         bint begins_with_char_array(const char*)

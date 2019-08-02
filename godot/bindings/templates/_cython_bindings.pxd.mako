@@ -22,7 +22,7 @@ cdef __init_method_bindings()
 
     % if methods:
 cdef struct __${class_name}__method_bindings:
-        % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
+        % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
     godot_method_bind *mb_${method_name}
         % endfor
     % endif
@@ -41,8 +41,8 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
     cdef ${class_name} _new()
     % endif
 
-    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
-    % if method['name'] not in SPECIAL_ESCAPES:
+    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
+    % if method_name not in SPECIAL_ESCAPES.values():
     cdef ${return_type}${method_name}(self${', ' if pxd_signature else ''}${clean_signature(pxd_signature, class_name)})
     % endif
     % endfor

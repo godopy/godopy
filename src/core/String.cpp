@@ -94,6 +94,25 @@ String::String(const String &other) {
 	godot::api->godot_string_new_copy(&_godot_string, &other._godot_string);
 }
 
+String::String(const PyObject *pystring) {
+	godot::api->godot_string_new(&_godot_string);
+
+	/* NOTE:
+	 * Since Python 3.3, Py_UNICODE is just a wchar_t typedef.
+	 * Old wchar_t compatibility restrictions don't apply anymore.
+	 */
+
+	if (PyUnicode_Check(pystring)) {
+		Py_ssize_t size;
+		const wchar_t *contents = PyUnicode_AsWideCharString((PyObject *)pystring, &size);
+		godot::api->godot_string_new_with_wide_string(&_godot_string, contents, size);
+	} else if (PyBytes_Check(pystring)) {
+		const char *contents = PyBytes_AsString((PyObject *)pystring);
+		printf("got bytes: %s\n", contents);
+		godot::api->godot_string_parse_utf8(&_godot_string, contents);
+	}
+}
+
 String::~String() {
 	godot::api->godot_string_destroy(&_godot_string);
 }
@@ -197,6 +216,20 @@ CharString String::ascii(bool p_extended) const {
 	else
 		ret._char_string = godot::api->godot_string_ascii(&_godot_string);
 
+	return ret;
+}
+
+PyObject *String::py_str() const {
+	PyObject *ret = PyUnicode_FromWideChar(unicode_str(), length());
+
+	Py_XINCREF(ret);
+	return ret;
+}
+
+PyObject *String::py_bytes() const {
+	PyObject *ret = PyBytes_FromString(utf8().get_data());
+
+	Py_XINCREF(ret);
 	return ret;
 }
 

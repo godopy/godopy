@@ -2,13 +2,21 @@
 <%!
     from pygodot.cli.binding_generator import (
         python_module_name, is_class_type, CORE_TYPES, SPECIAL_ESCAPES,
-        remove_nested_type_prefix, clean_signature, cython_nonempty_comparison
+        remove_nested_type_prefix, clean_signature
     )
 
     def make_arg(arg):
+        if arg[3] is not None:
+            assert arg[1].startswith('_')
+            return arg[1][1:]
         if is_class_type(arg[2]['type']):
             return '%s._owner' % arg[1]
+        if arg[2]['type'] == 'String':
+            return 'String(%s)' % arg[1]
         return arg[1]
+
+    def make_default_arg_type(arg_type):
+        return arg_type.rstrip('*').rstrip().replace('const ', '')
 %>
 from godot_headers.gdnative_api cimport godot_object, godot_variant
 from ..globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _cython_language_index
@@ -20,6 +28,8 @@ from ..core_types cimport _Wrapped, register_global_cython_type, get_instance_fr
 from .cython.__icalls cimport *
 
 from cpython.ref cimport Py_DECREF
+
+from cython.operator cimport dereference as deref
 % for class_name, class_def, includes, forwards, methods in classes:
 
 
@@ -71,13 +81,16 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
         raise RuntimeError('${class_name} is not instanciable')
 
     % endif
-    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
-    % if method['name'] in SPECIAL_ESCAPES:
+    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
+    % if method_name in SPECIAL_ESCAPES.values():
     def ${method_name}(self, ${clean_signature(signature, class_name)}):
     % else:
     cdef ${return_type}${method_name}(self${', ' if signature else ''}${clean_signature(signature, class_name)}):
     % endif
-    % if method_name == 'free':
+    % for arg_type, arg_name, arg_escape, arg_init in init_args:
+        cdef ${make_default_arg_type(arg_type)} ${arg_name} = deref(${arg_escape}) if ${arg_escape} else ${arg_init}
+    % endfor
+    % if method_name in ('free', '__del__'):
         ## [copied from godot-cpp] dirty hack because Object::free is marked virtual but doesn't actually exist...
         gdapi.godot_object_destroy(self._owner)
         self._owner = NULL
@@ -90,14 +103,14 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
         % endif
     % else:
         ## not has_varargs
-        ${return_stmt}${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''})
+        ${return_stmt}${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''})${'.py_str()' if method['return_type'] == 'String' else ''}
     % endif
 
     % endfor
 
     @staticmethod
     cdef __init_method_bindings():
-    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt in methods:
+    % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
         __${class_name}__mb.mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method['name']}")
     % endfor
     % if not methods:
