@@ -9,6 +9,9 @@
 
 #include <iostream>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 namespace godot {
 
 Variant::Variant() {
@@ -160,12 +163,42 @@ Variant::Variant(const PoolColorArray &p_color_array) {
 }
 
 Variant::Variant(const PyObject *p_python_object) {
-	// TODO: Everything
 
-	Py_XDECREF(p_python_object);
+	if (p_python_object == Py_None) {
+		// Py_XDECREF(p_python_object); // XXX
+		godot::api->godot_variant_new_nil(&_godot_variant);
 
-	// if (p_python_object == Py_None)
-	godot::api->godot_variant_new_nil(&_godot_variant);
+	} else if (PyBool_Check(p_python_object)) {
+
+		godot::api->godot_variant_new_bool(&_godot_variant, PyLong_AsLong((PyObject *)p_python_object));
+
+	} else if (PyLong_Check(p_python_object)) {
+
+		godot::api->godot_variant_new_int(&_godot_variant, PyLong_AsLong((PyObject *)p_python_object));
+
+	} else if (PyFloat_Check(p_python_object)) {
+		const double p_double = PyFloat_AsDouble((PyObject *)p_python_object);
+
+		godot::api->godot_variant_new_real(&_godot_variant, p_double);
+
+	} else if (PyBytes_Check(p_python_object)) {
+
+		String s = String(PyBytes_AsString((PyObject *)p_python_object));
+		godot::api->godot_variant_new_string(&_godot_variant, (godot_string *)&s);
+
+	} else if (PyUnicode_Check(p_python_object)) {
+		// PyUnicode_READY ?
+		const char *data = PyUnicode_AsUTF8((PyObject *)p_python_object);
+		String s = String(data);
+		godot::api->godot_variant_new_string(&_godot_variant, (godot_string *)&s);
+	}
+	// TODO: dict -> Dictionary, other iterables -> Array, array.Array -> PoolArray*, numpy.array -> PoolArray*
+	// Python wrappers of Godot types -> wrapped types
+
+	else {
+		// Py_XDECREF(p_python_object); // XXX
+		godot::api->godot_variant_new_nil(&_godot_variant);
+	}
 }
 
 Variant &Variant::operator=(const Variant &v) {
@@ -310,9 +343,38 @@ Variant::operator godot_object *() const {
 }
 
 Variant::operator PyObject *() const {
-	// TODO: All types
-	Py_INCREF(Py_None);
-	return Py_None;
+	PyObject *obj;
+
+	switch (get_type()) {
+		case NIL:
+			obj = Py_None;
+			break;
+
+		case BOOL:
+			obj = booleanize() ? Py_True : Py_False;
+			break;
+
+		case INT:
+			obj = PyLong_FromSsize_t(godot::api->godot_variant_as_int(&_godot_variant));
+			break;
+
+		case REAL:
+			obj = PyFloat_FromDouble(godot::api->godot_variant_as_real(&_godot_variant));
+			break;
+
+		case STRING: {
+			String s = *this;
+			obj = PyUnicode_DecodeUTF8(s.utf8().get_data(), s.length(), NULL);
+		}
+		// TODO: Add more convertions
+
+		default:
+			// Warning?
+			obj = Py_None;
+	}
+
+	Py_INCREF(obj);
+	return obj;
 }
 
 Variant::Type Variant::get_type() const {

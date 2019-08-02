@@ -1,13 +1,17 @@
+# cython: c_string_encoding=utf-8
 from godot_headers.gdnative_api cimport *
 
 from .globals cimport (
-    PyGodot, gdapi, nativescript_api as nsapi, nativescript_1_1_api as ns11api, _nativescript_handle as handle
+    Godot, PyGodot,
+    gdapi, nativescript_api as nsapi, nativescript_1_1_api as ns11api,
+    _nativescript_handle as handle
 )
-from .cpp.core_types cimport String, Variant as CVariant
+from .cpp.core_types cimport String, Variant
 from .core_types cimport (
     _Wrapped, _PyWrapped,
     CythonTagDB, PythonTagDB, __instance_map,
-    register_cython_type, register_python_type
+    register_cython_type, register_python_type,
+    VARIANT_OBJECT, VARIANT_NIL
 )
 from .bindings cimport _cython_bindings, _python_bindings
 
@@ -18,6 +22,7 @@ from cpython.ref cimport Py_INCREF, Py_DECREF
 
 from pygodot.utils cimport _init_dynamic_loading
 
+from cython.operator cimport dereference as deref
 
 cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, dict TagDB) except NULL:
     cdef type cls = TagDB[type_tag]
@@ -178,16 +183,71 @@ cdef void _destroy_func(godot_object *instance, void *method_data, void *user_da
     __decref_python_pointer(user_data)
 
 
-# Example of a public C function pointer declaration:
-# cdef public:
-#     ctypedef void (*cfunc_void_object_float)(object, float)
+cdef register_property(type cls, const char *name, object default_value,
+                       godot_method_rpc_mode rpc_mode=GODOT_METHOD_RPC_MODE_DISABLED,
+                       godot_property_usage_flags usage=GODOT_PROPERTY_USAGE_DEFAULT,
+                       godot_property_hint hint=GODOT_PROPERTY_HINT_NONE,
+                       str hint_string=''):
+    cdef Variant def_val = <Variant>default_value
+    usage = <godot_property_usage_flags>(<int>usage | GODOT_PROPERTY_USAGE_SCRIPT_VARIABLE)
+
+    if def_val.get_type() == <Variant.Type>VARIANT_OBJECT:
+        pass  # TODO: Set resource hints!
+
+    cdef String __hint_string = <String><const char *>hint_string
+    cdef godot_string *_hint_string = <godot_string *>&__hint_string
+
+    cdef godot_property_attributes attr = {}
+
+    if def_val.get_type() == <Variant.Type>VARIANT_NIL:
+        attr.type = <Variant.Type>VARIANT_OBJECT
+    else:
+        attr.type = def_val.get_type()
+        attr.default_value = deref(<godot_variant *>&def_val)
+
+    attr.hint = hint
+    attr.rset_type = rpc_mode
+    attr.usage = usage
+    attr.hint_string = deref(_hint_string)
+
+    cdef str property_data = name
+    Py_INCREF(property_data)
+
+    cdef godot_property_set_func set_func = {}
+    set_func.method_data = <void *>property_data
+    set_func.set_func = _property_setter
+    set_func.free_func = _python_method_free
+
+    cdef godot_property_get_func get_func = {}
+    get_func.method_data = <void *>property_data
+    get_func.get_func = _property_getter
+
+    cdef bytes class_name = cls.__name__.encode('utf-8')
+
+    nsapi.godot_nativescript_register_property(handle, <const char *>class_name, name, &attr, set_func, get_func)
 
 
-cdef test_method_call(type cls, object instance, fusedmethod method):
-    if fusedmethod is Method__float:
-        method(instance, 5)
+cdef godot_variant _property_getter(godot_object *object, void *method_data, void *self_data) nogil:
+    cdef Variant result
 
-# ctypedef godot_variant (*__godot_wrapper_method)(godot_object *, void *, void *, int, godot_variant **) nogil;
+    with gil:
+        self = <object>self_data
+        prop_name = <str>method_data
+        # Variant casts from PyObject* are defined in `Variant::Variant(const PyObject*)` C++ constructor
+        result = <Variant>getattr(self, prop_name)
+
+    return deref(<godot_variant *>&result)
+
+
+cdef void _property_setter(godot_object *object, void *method_data, void *self_data, godot_variant *value) nogil:
+    cdef Variant _value = deref(<Variant *>value)
+    with gil:
+        self = <object>self_data
+        prop_name = <str>method_data
+
+        # PyObject * casts are defined in `Variant::operator PyObject *() const` C++ method
+        setattr(self, prop_name, <object>_value)
+
 
 cdef _register_python_method(type cls, const char *name, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
     Py_INCREF(method)
@@ -206,39 +266,26 @@ cdef _register_python_method(type cls, const char *name, object method, godot_me
 
 cdef tuple __parse_args(int num_args, godot_variant **args):
     cdef Py_ssize_t i
-    cdef godot_variant_type t
     cdef tuple __args = PyTuple_New(num_args)
-    cdef object arg
 
     for i in range(num_args):
-        arg = None
-        t = gdapi.godot_variant_get_type(args[i])
-
-        if t == GODOT_VARIANT_TYPE_REAL:
-            arg = <float>gdapi.godot_variant_as_real(args[i])
-        elif t == GODOT_VARIANT_TYPE_INT:
-            arg = <int>gdapi.godot_variant_as_int(args[i])
-        elif t == GODOT_VARIANT_TYPE_BOOL:
-            arg = <bool>gdapi.godot_variant_as_bool(args[i])
-
-        Py_INCREF(arg)
-        PyTuple_SetItem(__args, i, arg)
+        # PyObject * casts are defined in `Variant::operator PyObject *() const` C++ method
+        PyTuple_SetItem(__args, i, <object>args[i])
 
     return __args
 
 
 cdef godot_variant _python_method_wrapper(godot_object *instance, void *method_data, void *self_data, int num_args, godot_variant **args) nogil:
-    cdef CVariant result
+    cdef Variant result
 
     with gil:
         self = <object>self_data
         method = <object>method_data
 
         # Variant casts from PyObject* are defined in Variant::Variant(const PyObject*) constructor
-        result = <CVariant>method(self, *__parse_args(num_args, args))
+        result = <Variant>method(self, *__parse_args(num_args, args))
 
-    cdef godot_variant *ret = <godot_variant *>&result
-    return ret[0]
+    return deref(<godot_variant *>&result)
 
 
 cdef void _python_method_free(void *method_data) nogil:
