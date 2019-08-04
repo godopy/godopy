@@ -31,15 +31,22 @@ class GenericGDNativeLibrary(Extension):
 
 
 class GDNativeLibrary(Extension):
-    def __init__(self, name, source):
+    def __init__(self, name, source, extra_sources=None):
         self._gdnative_type = ExtType.LIBRARY
-        super().__init__(name, sources=[source])
+
+        sources = [source]
+
+        if extra_sources is not None:
+            for src in extra_sources:
+                sources.append(src)
+
+        super().__init__(name, sources=sources)
 
 
 class NativeScript(Extension):
-    def __init__(self, name, *, sources=None, classname=None):
+    def __init__(self, name, *, sources=None, class_name=None):
         self._gdnative_type = ExtType.NATIVESCRIPT
-        self._nativescript_classname = classname
+        self._nativescript_classname = class_name
         super().__init__(name, sources=(sources or []))
 
 
@@ -235,7 +242,7 @@ class gdnative_build_ext(build_ext):
         )
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
-        self.collect_pyx_sources(ext.sources)
+        self.collect_sources(ext.sources)
 
     def collect_godot_nativescript_data(self, ext):
         if not self.gdnative_library_path:
@@ -258,15 +265,21 @@ class gdnative_build_ext(build_ext):
         context = dict(gdnlib_resource=self.gdnative_library_path, classname=classname)
 
         self.make_godot_resource('gdns.mako', make_resource_path(godot_root, gdns_path), context)
-        self.collect_pyx_sources(ext.sources)
+        self.collect_sources(ext.sources)
 
     def make_godot_resource(self, template_filename, path, context):
         template = Template(filename=os.path.join(templates_dir, template_filename))
         self.godot_resources[path] = template.render(**context)
 
-    def collect_pyx_sources(self, sources):
-        for inner_source in sources:
-            source = os.path.join(self.godot_project.shadow_name, inner_source)
+    def collect_sources(self, sources):
+        cpp_sources = []
+
+        for pyx_source in sources:
+            if pyx_source.endswith('.cpp'):
+                cpp_sources.append(pyx_source)
+                continue
+
+            source = os.path.join(self.godot_project.shadow_name, pyx_source)
             target = source.replace('.pyx', '.cpp')
             target_dir, target_name = os.path.split(target)
 
@@ -274,6 +287,10 @@ class gdnative_build_ext(build_ext):
             varname, _ = os.path.splitext(target_name)
 
             self.build_context['pyx_sources'].append((varname, target, source))
+
+        for cpp_source in cpp_sources:
+            source = os.path.join(self.godot_project.shadow_name, cpp_source)
+            self.build_context['cpp_sources'].append(make_relative_path(source))
 
 
 def ensure_godot_project_path(path):

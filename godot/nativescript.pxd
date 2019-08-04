@@ -10,6 +10,10 @@ ctypedef fused methods_registration_function:
     _regfunc_static
     _regfunc_classobj
 
+cdef extern from "Godot.hpp" namespace "godot":
+    void register_cpp_class "godot::register_class" [T] ()
+
+
 cpdef register_class(type cls)
 cdef _register_class(type cls, methods_registration_function registration_func)
 

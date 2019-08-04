@@ -6,15 +6,15 @@ from .extensions import ExtType, gdnative_build_ext
 
 
 class GodotProject(Extension):
-    def __init__(self, name, shadow=None, *, binary_path='.bin'):
-        if shadow is None:
-            shadow = '_' + name
+    def __init__(self, name, source=None, *, binary_path='.bin'):
+        if source is None:
+            source = '_' + name
 
         if binary_path[0] != '.':
             sys.stderr.write("Binary paths should start with a \".\".\n")
             sys.exit(1)
 
-        self.shadow_name = shadow
+        self.shadow_name = source
         self.binary_path = binary_path
         self._gdnative_type = ExtType.PROJECT
         super().__init__(name, sources=[])

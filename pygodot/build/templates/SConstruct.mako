@@ -118,7 +118,7 @@ sources = [
     _gencpp_${varname},
 % endfor
 % for src in cpp_sources:
-    ${repr(src)}
+    ${repr(src)},
 % endfor
 ]
 
