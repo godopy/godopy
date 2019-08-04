@@ -226,11 +226,17 @@ def generate_icalls_context(classes):
             ret = get_icall_type_name(method['return_type'])
             icalls.add((ret, args, var_arg))
 
-            key = '#'.join([strip_name(c['name']), escape_cython(method['name'])])
+            method_name = escape_cython(method['name'])
+            # vararg methods have two version, `cdef` version is '_'-prefixed
+            key = '#'.join([strip_name(c['name']), '_%s' % method_name if method['has_varargs'] else method_name])
             icall2methodkeys.setdefault((ret, args, var_arg), []).append(key)
+
             if method['name'] in SPECIAL_ESCAPES:
-                key2 = '#'.join([strip_name(c['name']), SPECIAL_ESCAPES[method['name']]])
-                icall2methodkeys[ret, args, var_arg].append(key2)
+                key_special = '#'.join([strip_name(c['name']), SPECIAL_ESCAPES[method['name']]])
+                icall2methodkeys[ret, args, var_arg].append(key_special)
+            elif method['has_varargs']:
+                key_vararg = '#'.join([strip_name(c['name']), method_name])
+                icall2methodkeys[ret, args, var_arg].append(key_vararg)
 
     prepared_icalls = []
 
@@ -350,6 +356,7 @@ def generate_class_context(class_def):
 
         args = []
         sigs = []
+        def_sigs = []
         pxd_sigs = []
         init_args = []
         has_default_argument = False
@@ -379,10 +386,12 @@ def generate_class_context(class_def):
 
             pxd_sigs.append(pxd_sig)
             sigs.append(sig)
+            def_sigs.append(sig)
 
         if method['has_varargs']:
             pxd_sigs.append('tuple __var_args=*')
             sigs.append('tuple __var_args=()')
+            def_sigs.append('*__var_args')
 
         return_stmt = 'return '
         if is_enum(method['return_type']):
@@ -390,16 +399,25 @@ def generate_class_context(class_def):
         elif method['return_type'] == 'void':
             return_stmt = ''
 
+        defmethod = {k: v for k, v in method.items()}
+        method['__func_type'] = 'cdef'
+        defmethod['__func_type'] = 'def'
         prepared_methods.append((
-            method_name, method, return_type,
+            '_%s' % method_name if method['has_varargs'] else method_name, method, return_type,
             ', '.join(pxd_sigs), ', '.join(sigs),
             args, return_stmt, init_args
         ))
         if method['name'] in SPECIAL_ESCAPES:
             prepared_methods.append((
-                SPECIAL_ESCAPES[method['name']], method, return_type,
-                ', '.join(pxd_sigs), ', '.join(sigs),
+                SPECIAL_ESCAPES[method['name']], defmethod, return_type,
+                '<no-pxd>', ', '.join(def_sigs),
                 args, return_stmt, init_args
+            ))
+        elif method['has_varargs']:
+            prepared_methods.append((
+                method_name, defmethod, return_type,
+                '<no-pxd>', ', '.join(def_sigs),
+                args, return_stmt.replace('return ', 'return <object>'), init_args
             ))
 
     return class_name, class_def, includes, forwards, prepared_methods

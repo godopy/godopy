@@ -9,6 +9,10 @@
 
 #include <iostream>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+#include "godot/core_types.h"
+
 namespace godot {
 
 Variant::Variant() {
@@ -180,11 +184,24 @@ Variant::Variant(const PyObject *p_python_object) {
 		godot::api->godot_variant_new_string(&_godot_variant, (godot_string *)&s);
 
 	}
-
 	// TODO: dict -> Dictionary, other iterables -> Array, array.Array -> PoolArray*, numpy.array -> PoolArray*
-	// Python wrappers of Godot types -> wrapped types
 
-	else {
+	else if (Py_TYPE(p_python_object) == PyGodotType_GodotVector2) {
+		godot_vector2 *p = _python_to_vector2((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_vector2(&_godot_variant, p);
+		} else {
+			godot::api->godot_variant_new_nil(&_godot_variant);
+		}
+
+
+		// TODO: Other Python wrappers
+
+	} else if (PyObject_IsInstance((PyObject *)p_python_object, (PyObject *)PyGodotType__Wrapped)) {
+		godot_object *p = _python_to_godot_object((PyObject *)p_python_object);
+		godot::api->godot_variant_new_object(&_godot_variant, p);
+
+	} else {
 		// Py_XDECREF(p_python_object); // XXX
 		godot::api->godot_variant_new_nil(&_godot_variant);
 	}

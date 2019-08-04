@@ -27,3 +27,5 @@ cdef register_property(
     type cls, const char *name, object default_value, godot_method_rpc_mode rpc_mode=*,
     godot_property_usage_flags usage=*, godot_property_hint hint=*, str hint_string=*
 )
+
+cdef register_signal(type cls, str name, object args=*)

@@ -3,6 +3,10 @@
 
 #include "Vector2.hpp"
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotTransform2D *_python_transform2d_wrapper;
+
 namespace godot {
 
 typedef Vector2 Size2;
@@ -85,6 +89,8 @@ struct Transform2D {
 	Vector2 xform_inv(const Vector2 &p_vec) const;
 	Rect2 xform(const Rect2 &p_vec) const;
 	Rect2 xform_inv(const Rect2 &p_vec) const;
+
+	PyObject *pythonize();
 
 	operator String() const;
 

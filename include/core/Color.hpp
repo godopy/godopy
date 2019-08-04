@@ -7,6 +7,10 @@
 
 #include "String.hpp"
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotColor *_python_color_wrapper;
+
 namespace godot {
 
 struct Color {
@@ -96,6 +100,8 @@ public:
 	String to_html(bool p_alpha = true) const;
 
 	bool operator<(const Color &p_color) const; //used in set keys
+
+	 PyObject *pythonize();
 
 	operator String() const;
 

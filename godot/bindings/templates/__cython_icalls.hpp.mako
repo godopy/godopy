@@ -4,6 +4,7 @@
 #include <gdnative_api_struct.gen.h>
 #include <stdint.h>
 
+#include <core/GodotGlobal.hpp>
 #include <pycore/PythonGlobal.hpp>
 #include <core/CoreTypes.hpp>
 <%!
@@ -24,22 +25,21 @@ static inline ${sig} {
   % if args:
   const Variant __given_args[] = {${', '.join(given_arg_elem(i, arg) for i, arg in enumerate(args))}};
   % endif
-  ## TODO: Use Godot arrays instead of Python tuples
-  int __size = PyTuple_GET_SIZE(__var_args);
-  godot_variant **__args = (godot_variant **) alloca(sizeof(godot_variant *) * (__size + ${len(args)}));
+
+  size_t __size = PyTuple_GET_SIZE(__var_args);
+  godot_variant **__args = (godot_variant **) godot::api->godot_alloc(sizeof(godot_variant *) * (__size + ${len(args)}));
   % for i, arg in enumerate(args):
   __args[${i}] = (godot_variant *) &__given_args[${i}];
   % endfor
 
-  for (int i = 0; i < __size; i++) {
-    Variant item = PyTuple_GET_ITEM(__var_args, i);
-    __args[i + ${len(args)}] = (godot_variant *)&item;
+  for (size_t i = 0; i < __size; i++) {
+    Variant _item = Variant((const PyObject *)PyTuple_GET_ITEM(__var_args, i));
+    __args[i + ${len(args)}] = (godot_variant *)&_item;
+    Godot::print("vararg item {0}", *(Variant *)__args[i + ${len(args)}]);
   }
 
   Variant __result;
-  printf("making vararg call, %d\n", __size);
-  *(godot_variant *) &__result = godot::api->godot_method_bind_call(mb, o, (const godot_variant **) __args, __size, nullptr);
-  printf("call made\n");
+  *(godot_variant *) &__result = godot::api->godot_method_bind_call(mb, o, (const godot_variant **) __args, __size + ${len(args)}, nullptr);
   % for i, arg in enumerate(args):
   godot::api->godot_variant_destroy((godot_variant *) &__given_args[${i}]);
   % endfor
@@ -48,7 +48,7 @@ static inline ${sig} {
   % endif ## != void
   % else: ## no varargs
   % if ret != 'void':
-  ${'godot_object *ret = NULL' if is_class_type(ret) else get_icall_return_type(ret) + 'ret'};
+  ${'PyObject *ret = NULL' if is_class_type(ret) else get_icall_return_type(ret) + 'ret'};
   % endif
 
   const void *args[${'' if args else '1'}] = {${', '.join(arg_elem(i, arg) for i, arg in enumerate(args))}};
@@ -58,7 +58,7 @@ static inline ${sig} {
   % if is_class_type(ret):
   if (ret)
     return (PyObject *)godot::nativescript_1_1_api->godot_nativescript_get_instance_binding_data(godot::_RegisterState::cython_language_index, ret);
-  return (PyObject *)ret;
+  return ret;
   % else:
   return ret;
   % endif ## is_call_type

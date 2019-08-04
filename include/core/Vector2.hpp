@@ -7,6 +7,10 @@
 
 #include <cmath>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotVector2 *_python_vector2_wrapper;
+
 namespace godot {
 
 class String;
@@ -215,6 +219,8 @@ struct Vector2 {
 	}
 
 	inline real_t aspect() const { return width / height; }
+
+	PyObject *pythonize();
 
 	operator String() const;
 };

@@ -11,11 +11,12 @@ from .core_types cimport (
     _Wrapped, _PyWrapped,
     CythonTagDB, PythonTagDB, __instance_map,
     register_cython_type, register_python_type,
-    VARIANT_OBJECT, VARIANT_NIL
+    VARIANT_OBJECT, VARIANT_NIL, SignalArgument
 )
 from .bindings cimport _cython_bindings, _python_bindings
 
 from libcpp cimport nullptr
+from libc.string cimport memset
 from cpython.object cimport PyObject, PyTypeObject
 from cpython.tuple cimport PyTuple_New, PyTuple_SetItem
 from cpython.ref cimport Py_INCREF, Py_DECREF
@@ -30,15 +31,13 @@ cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, 
 
     __instance_map[<size_t>instance] = obj
 
-    if root_base is _PyWrapped:
-        (<_PyWrapped>obj)._owner = instance
-        (<_PyWrapped>obj).___CLASS_IS_SCRIPT = True
-    else:
-        (<_Wrapped>obj)._owner = instance
-        (<_Wrapped>obj).___CLASS_IS_SCRIPT = True
+    (<_Wrapped>obj)._owner = instance
+    (<_Wrapped>obj).___CLASS_IS_SCRIPT = True
 
     if hasattr(obj, '_init'):
         obj._init()
+
+    print('instance created', obj)
 
     # Cython manages refs automatically and decrements created objects on function exit,
     # therefore INCREF is required to keep the object alive.
@@ -156,6 +155,10 @@ cdef _register_class(type cls, methods_registration_function registration_func):
     cdef bytes name = cls.__name__.encode('utf-8')
     cdef bytes base = cls.__bases__[0].__name__.encode('utf-8')
 
+    print('register class', name, base)
+
+    # TODO: Set custom __init__ that woould call NativeScript.new and capture the _owner pointer from that
+
     nsapi.godot_nativescript_register_class(handle, <const char *>name, <const char *>base, create, destroy)
 
     if is_python:
@@ -191,6 +194,69 @@ cdef void _destroy_func(godot_object *instance, void *method_data, void *user_da
     __decref_python_pointer(user_data)
 
 
+cdef register_signal(type cls, str name, object args=()):
+    cdef String _name = String(name)
+
+    cdef godot_signal signal = [
+        deref(<godot_string *>&_name),
+        len(args),             # .num_args
+        NULL,                  # .args
+        0,                     # .num_default_args
+        <godot_variant *>NULL  # .default_args
+    ]
+
+    if args:
+        signal.args = <godot_signal_argument *>gdapi.godot_alloc(sizeof(godot_signal_argument) * signal.num_args)
+        memset(<void *>signal.args, 0, sizeof(godot_signal_argument) * signal.num_args)
+
+    for i, arg in enumerate(args):
+        _set_signal_argument(&signal.args[i], arg)
+
+    cdef bytes class_name = cls.__name__.encode('utf-8')
+    nsapi.godot_nativescript_register_signal(handle, <const char *>class_name, &signal)
+
+    for i, arg in enumerate(args):
+        gdapi.godot_string_destroy(&signal.args[i].name)
+
+        if arg.hint_string:
+           gdapi.godot_string_destroy(&signal.args[i].hint_string)
+
+    if args:
+        gdapi.godot_free(signal.args)
+
+
+cdef inline _set_signal_argument(godot_signal_argument *sigarg, object _arg):
+    cdef SignalArgument arg = _arg
+    cdef String _name
+    cdef String _hint_string
+    cdef Variant _def_val
+
+    _name = <String>arg.name
+    gdapi.godot_string_new_copy(&sigarg.name, <godot_string *>&_name)
+
+    print('set arg', arg.name, arg.type, VARIANT_OBJECT)
+    sigarg.type = arg.type
+
+    if arg.hint_string:
+        _hint_string = String(arg.hint_string)
+        gdapi.godot_string_new_copy(&sigarg.hint_string, <godot_string *>&_hint_string)
+
+    # arg.usage = <godot_property_usage_flags>(<int>arg.usage | GODOT_PROPERTY_USAGE_SCRIPT_VARIABLE)
+
+    sigarg.hint = arg.hint
+    sigarg.usage = arg.usage
+
+    cdef bint has_default_value = arg.default_value is not None
+
+    if arg.type == VARIANT_OBJECT:
+        # None is a valid default value for Objects
+        has_default_value = arg.default_value != -1
+
+    if has_default_value:
+        _def_val = <Variant>arg.default_value
+        sigarg.default_value = deref(<godot_variant *>&_def_val)
+
+
 cdef register_property(type cls, const char *name, object default_value,
                        godot_method_rpc_mode rpc_mode=GODOT_METHOD_RPC_MODE_DISABLED,
                        godot_property_usage_flags usage=GODOT_PROPERTY_USAGE_DEFAULT,
@@ -204,28 +270,24 @@ cdef register_property(type cls, const char *name, object default_value,
     if def_val.get_type() == <Variant.Type>VARIANT_OBJECT:
         pass  # TODO: Set resource hints!
 
-    cdef godot_property_attributes attr = {}
-
-    if def_val.get_type() == <Variant.Type>VARIANT_NIL:
-        attr.type = <Variant.Type>VARIANT_OBJECT
-    else:
-        attr.type = def_val.get_type()
-        attr.default_value = deref(<godot_variant *>&def_val)
-
-    attr.hint = hint
-    attr.rset_type = rpc_mode
-    attr.usage = usage
-    attr.hint_string = deref(<godot_string *>&_hint_string)
+    cdef godot_property_attributes attr = [
+        rpc_mode,
+        def_val.get_type() if def_val.get_type() != <Variant.Type>VARIANT_NIL else VARIANT_OBJECT,
+        hint,
+        deref(<godot_string *>&_hint_string),
+        usage,
+        deref(<godot_variant *>&def_val)
+    ]
 
     cdef str property_data = name
     Py_INCREF(property_data)
 
-    cdef godot_property_set_func set_func = {}
+    cdef godot_property_set_func set_func = [NULL, NULL, NULL]
     set_func.method_data = <void *>property_data
     set_func.set_func = _property_setter
     set_func.free_func = _python_method_free
 
-    cdef godot_property_get_func get_func = {}
+    cdef godot_property_get_func get_func = [NULL, NULL, NULL]
     get_func.method_data = <void *>property_data
     get_func.get_func = _property_getter
 

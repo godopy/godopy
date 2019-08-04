@@ -5,6 +5,10 @@
 
 #include <gdnative/node_path.h>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotNodePath *_python_nodepath_wrapper;
+
 namespace godot {
 
 class NodePath {
@@ -34,6 +38,8 @@ public:
 	NodePath get_as_property_path() const;
 
 	String get_concatenated_subnames() const;
+
+	PyObject *pythonize();
 
 	operator String() const;
 

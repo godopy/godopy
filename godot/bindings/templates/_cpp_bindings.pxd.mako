@@ -21,7 +21,7 @@ from ..cpp.core_types cimport *
 
 
 cdef extern from "${class_name}.hpp" namespace "godot" nogil:
-    cdef cppclass ${class_name}(${class_def['base_class'] or '_Wrapped'}):
+    cdef cppclass ${class_name}(${class_def['base_class'] or '__cpp_internal_Wrapped'}):
 % for enum in class_def['enums']:
         enum ${enum['name'].lstrip('_')}:
     % for value_name, value in enum['values'].items():

@@ -9,6 +9,10 @@
 
 #include <cmath>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotVector3 *_python_vector3_wrapper;
+
 namespace godot {
 
 class Basis;
@@ -261,6 +265,8 @@ struct Vector3 {
 		v.snap(by);
 		return v;
 	}
+
+	PyObject *pythonize();
 
 	operator String() const;
 };

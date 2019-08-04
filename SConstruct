@@ -222,6 +222,7 @@ cython_extra_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp)
                         for fp in Glob('pygodot/*.pyx')]
 cython_binding_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp)
                           for fp in Glob('godot/bindings/*.pyx')]
+
 sources = [
     *cython_sources,
     *cython_extra_sources,

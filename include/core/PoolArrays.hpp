@@ -11,6 +11,18 @@
 
 #include <gdnative/pool_arrays.h>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+/*
+typedef struct __pyx_obj_5godot_10core_types_GodotPoolByteArray *_python_poolbytearray_wrapper;
+typedef struct __pyx_obj_5godot_10core_types_GodotPoolIntArray *_python_poolintarray_wrapper;
+typedef struct __pyx_obj_5godot_10core_types_GodotPoolRealArray *_python_poolrealarray_wrapper;
+typedef struct __pyx_obj_5godot_10core_types_GodotPoolStringArray *_python_poolstringarray_wrapper;
+typedef struct __pyx_obj_5godot_10core_types_GodotPoolVector2Array *_python_poolvector2array_wrapper;
+typedef struct __pyx_obj_5godot_10core_types_GodotPoolVector3Array *_python_poolvector3array_wrapper;
+typedef struct __pyx_obj_5godot_10core_types_GodotPoolColorArray *_python_poolcolorarray_wrapper;
+*/
+
 namespace godot {
 
 class Array;
@@ -110,6 +122,8 @@ public:
 
 	int size() const;
 
+	PyObject *pythonize();
+
 	~PoolByteArray();
 };
 
@@ -206,6 +220,8 @@ public:
 	int operator[](const int idx);
 
 	int size() const;
+
+	PyObject *pythonize();
 
 	~PoolIntArray();
 };
@@ -304,6 +320,8 @@ public:
 
 	int size() const;
 
+	PyObject *pythonize();
+
 	~PoolRealArray();
 };
 
@@ -400,6 +418,8 @@ public:
 	const String operator[](const int idx);
 
 	int size() const;
+
+	PyObject *pythonize();
 
 	~PoolStringArray();
 };
@@ -498,6 +518,8 @@ public:
 
 	int size() const;
 
+	PyObject *pythonize();
+
 	~PoolVector2Array();
 };
 
@@ -595,6 +617,8 @@ public:
 
 	int size() const;
 
+	PyObject *pythonize();
+
 	~PoolVector3Array();
 };
 
@@ -691,6 +715,8 @@ public:
 	const Color operator[](const int idx);
 
 	int size() const;
+
+	PyObject *pythonize();
 
 	~PoolColorArray();
 };

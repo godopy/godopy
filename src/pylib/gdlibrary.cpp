@@ -1,6 +1,8 @@
 /* Default generic gdnlib, may be replaced by custom builds */
 
-#include <PyGodot.hpp>
+#include "GodotGlobal.hpp"
+#include "Defs.hpp"
+#include "PythonGlobal.hpp"
 
 #include "godot/nativescript.h"
 #include "godot/gdnative.h"
@@ -30,6 +32,8 @@ PyMODINIT_FUNC PyInit__pygodot(void) {
 }
 
 #ifndef PYGODOT_EXPORT
+#include <stdexcept>
+#include <string>
 #include <array>
 const std::string shelloutput(const char* cmd) {
   std::array<char, 1024> buffer;
@@ -49,7 +53,6 @@ const std::string shelloutput(const char* cmd) {
   return result;
 }
 #endif
-
 
 static void _ensure_pygodot_is_initialized() {
   if (_pygodot_is_initialized) return;
@@ -85,13 +88,13 @@ static void _ensure_pygodot_is_initialized() {
   // Importing of Cython modules is required to correctly initialize them
   PyObject *mod = NULL;
   // TODO: add Godot error handling
-  mod = PyImport_ImportModule("core_types"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  // XXX: Cython bindings are not needed in a generic lib
-  mod = PyImport_ImportModule("_cython_bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("_python_bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("nativescript"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("gdnative"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("core_types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+
+  // mod = PyImport_ImportModule("_cython_bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("_python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("utils"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("nativescript"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("gdnative"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 
   _pygodot_is_initialized = true;
 }

@@ -6,6 +6,10 @@
 #include "AABB.hpp"
 #include "Plane.hpp"
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotTransform *_python_transform_wrapper;
+
 namespace godot {
 
 class Transform {
@@ -70,6 +74,8 @@ public:
 	Transform inverse_xform(const Transform &t) const;
 
 	void set(real_t xx, real_t xy, real_t xz, real_t yx, real_t yy, real_t yz, real_t zx, real_t zy, real_t zz, real_t tx, real_t ty, real_t tz);
+
+	PyObject *pythonize();
 
 	operator String() const;
 

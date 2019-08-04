@@ -6,6 +6,9 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+// typedef struct __pyx_obj_5godot_10core_types_GodotCharString *_python_charstring_wrapper;
+// typedef struct __pyx_obj_5godot_10core_types_GodotString *_python_string_wrapper;
+
 namespace godot {
 
 class NodePath;
@@ -27,6 +30,8 @@ public:
 
 	int length() const;
 	const char *get_data() const;
+
+	PyObject *pythonize();
 };
 
 class String {
@@ -143,6 +148,8 @@ public:
 	String rstrip(const String &chars) const;
 	String trim_prefix(const String &prefix) const;
 	String trim_suffix(const String &suffix) const;
+
+	PyObject *pythonize();
 };
 
 String operator+(const char *a, const String &b);

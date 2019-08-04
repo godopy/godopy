@@ -6,6 +6,9 @@
 #include "Vector3.hpp"
 
 // #include "Basis.h"
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotQuat *_python_quat_wrapper;
 
 namespace godot {
 
@@ -63,6 +66,8 @@ public:
 
 	bool operator==(const Quat &p_quat) const;
 	bool operator!=(const Quat &p_quat) const;
+
+	PyObject *pythonize();
 
 	operator String() const;
 

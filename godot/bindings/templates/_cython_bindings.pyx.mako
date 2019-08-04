@@ -56,12 +56,17 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
     def __cinit__(self):
     % if class_def['singleton']:
         self._owner = gdapi.godot_global_get_singleton("${class_name}")
+        self.___CLASS_IS_SCRIPT = False
+        self.___CLASS_IS_SINGLETON = True
+        self.___CLASS_BINDING_LEVEL = 1
     % else:
     % if class_def['base_class']:
         pass
     % else:
         self._owner = NULL
         self.___CLASS_IS_SCRIPT = False
+        self.___CLASS_IS_SINGLETON = False
+        self.___CLASS_BINDING_LEVEL = 1
     % endif  ## base_class/else
     % endif  ## singleton/else
 
@@ -82,8 +87,8 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
 
     % endif
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
-    % if method_name in SPECIAL_ESCAPES.values():
-    def ${method_name}(self, ${clean_signature(signature, class_name)}):
+    % if method['__func_type'] == 'def':
+    def ${method_name}(self${', ' if signature else ''}${clean_signature(signature, class_name)}):
     % else:
     cdef ${return_type}${method_name}(self${', ' if signature else ''}${clean_signature(signature, class_name)}):
     % endif

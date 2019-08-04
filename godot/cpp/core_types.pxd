@@ -119,6 +119,12 @@ cdef extern from "AABB.hpp" namespace "godot" nogil:
         AABB() except +
         AABB(const Vector3 &pos, const Vector3 &size) except+
 
+        object pythonize()
+
+
+cdef extern from "Object.hpp" namespace "godot" nogil:
+    cdef cppclass __Object "godot::Object"
+
 
 cdef extern from "Array.hpp" namespace "godot" nogil:
     cdef cppclass Variant
@@ -129,8 +135,6 @@ cdef extern from "Array.hpp" namespace "godot" nogil:
     cdef cppclass PoolVector2Array
     cdef cppclass PoolVector3Array
     cdef cppclass PoolColorArray
-
-    cdef cppclass Object
 
     cdef cppclass Array:
         Array() except+
@@ -173,7 +177,9 @@ cdef extern from "Array.hpp" namespace "godot" nogil:
         void resize(const int size)
         int rfind(const Variant &what, const int from_=0)
         void sort()
-        void sort_custom(Object *obj, const String &func)
+        void sort_custom(__Object *obj, const String &func)
+
+        object pythonize()
 
 
 cdef extern from "Basis.hpp" namespace "godot" nogil:
@@ -237,6 +243,8 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         Vector3 snapped(const float by)
 
         # String operator String()
+
+        object pythonize()
 
     cdef cppclass Basis:
         # ColumnVector3[0] x
@@ -320,6 +328,7 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         Basis diagonalize()
 
         # Quat operator Quat()
+        object pythonize()
 
 
 cdef extern from "Color.hpp" namespace "godot" nogil:
@@ -366,6 +375,8 @@ cdef extern from "Color.hpp" namespace "godot" nogil:
         Color(float, float, float)
         Color(float, float, float, float)
 
+        object pythonize()
+
 
 cdef extern from "Dictionary.hpp" namespace "godot" nogil:
     cdef cppclass Dictionary:
@@ -388,6 +399,8 @@ cdef extern from "Dictionary.hpp" namespace "godot" nogil:
         String to_json()
         Array values()
 
+        object pythonize()
+
 
 cdef extern from "NodePath.hpp" namespace "godot" nogil:
     cdef cppclass NodePath:
@@ -406,6 +419,8 @@ cdef extern from "NodePath.hpp" namespace "godot" nogil:
         # String operator String()
 
         bint operator==(const NodePath&)
+
+        object pythonize()
 
 
 cdef extern from "Plane.hpp" namespace "godot" nogil:
@@ -452,6 +467,8 @@ cdef extern from "Plane.hpp" namespace "godot" nogil:
         Plane(const Vector3 &point1, const Vector3 &point2,
               const Vector3 &point3, ClockDirection dir=CLOCKWISE) except +
 
+        object pythonize()
+
 
 cdef extern from * namespace "godot":
     cdef cppclass Vector2
@@ -482,6 +499,8 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         uint8_t operator[](const int idx)
         int size()
 
+        object pythonize()
+
 
     cdef cppclass PoolIntArray:
         cppclass Read:
@@ -507,6 +526,8 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         void set(const int idx, const int data)
         int operator[](const int idx)
         int size()
+
+        object pythonize()
 
 
     cdef cppclass PoolRealArray:
@@ -534,6 +555,8 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         real_t operator[](const int idx)
         int size()
 
+        object pythonize()
+
 
     cdef cppclass PoolStringArray:
         cppclass Read:
@@ -559,6 +582,8 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         void set(const int idx, const String &data)
         const String operator[](const int idx)
         int size()
+
+        object pythonize()
 
 
     cdef cppclass PoolVector2Array:
@@ -586,6 +611,8 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector2 operator[](const int idx)
         int size()
 
+        object pythonize()
+
 
     cdef cppclass PoolVector3Array:
         cppclass Read:
@@ -612,6 +639,8 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector3 operator[](const int idx)
         int size()
 
+        object pythonize()
+
 
     cdef cppclass PoolColorArray:
         cppclass Read:
@@ -637,6 +666,8 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         void set(const int idx, const Color &data)
         const Color operator[](const int idx)
         int size()
+
+        object pythonize()
 
 
 cdef extern from "Quat.hpp" namespace "godot" nogil:
@@ -689,6 +720,8 @@ cdef extern from "Quat.hpp" namespace "godot" nogil:
         Quat(const Vector3 &v0, const Vector3 &v1) except +
         Quat() except +
 
+        object pythonize()
+
 
 cdef extern from "Rect2.hpp" namespace "godot" nogil:
     ctypedef Vector2 Size2
@@ -729,6 +762,8 @@ cdef extern from "Rect2.hpp" namespace "godot" nogil:
         Rect2(real_t x, real_t y, real_t width, real_t height) except +
         Rect2(const Point2 &position, const Size2 &size) except +
 
+        object pythonize()
+
 
 cdef extern from "Ref.hpp" namespace "godot" nogil:
     cdef cppclass Ref[T]:
@@ -761,7 +796,7 @@ cdef extern from "RID.hpp" namespace "godot" nogil:
     cdef cppclass RID:
         # godot_rid _godot_rid
         RID() except +
-        RID(Object*) except +
+        RID(__Object*) except +
         int32_t get_rid()
         bint is_valid()
 
@@ -772,11 +807,14 @@ cdef extern from "RID.hpp" namespace "godot" nogil:
         bint operator<=(const RID&)
         bint operator>=(const RID&)
 
+        object pythonize()
+
 
 cdef extern from "String.hpp" namespace "godot" nogil:
     cdef cppclass CharString:
         int length()
         const char *get_data()
+        object pythonize()
 
     cdef cppclass String:
         String() except +
@@ -896,6 +934,8 @@ cdef extern from "String.hpp" namespace "godot" nogil:
         signed char nocasecmp_to(String)
         signed char naturalnocasecmp_to(String)
 
+        object pythonize()
+
 
 cdef extern from "Transform.hpp" namespace "godot" nogil:
     cdef cppclass Transform:
@@ -959,6 +999,8 @@ cdef extern from "Transform.hpp" namespace "godot" nogil:
         Transform(const Basis &basis, const Vector3 &origin) except +
         Transform() except +
 
+        object pythonize()
+
 
 cdef extern from "Transform2D.hpp" namespace "godot" nogil:
     cdef cppclass Transform2D:  # C++ struct
@@ -1013,6 +1055,8 @@ cdef extern from "Transform2D.hpp" namespace "godot" nogil:
         Transform2D(real_t xx, real_t xy, real_t yx, real_t yy, real_t ox, real_t oy) except +
         Transform2D(real_t rot, Vector2 &pos) except +
         Transform2D() except +
+
+        object pythonize()
 
 
 cdef extern from "Variant.hpp" namespace "godot" nogil:
@@ -1121,7 +1165,7 @@ cdef extern from "Variant.hpp" namespace "godot" nogil:
         Variant(const Color&) except +
         Variant(const NodePath&) except +
         Variant(const RID&) except +
-        Variant(const Object&) except +
+        Variant(const __Object&) except +
         Variant(const Dictionary&) except +
         Variant(const Array&) except +
         Variant(const PoolByteArray&) except +
@@ -1225,6 +1269,9 @@ cdef extern from "Vector2.hpp" namespace "godot" nogil:
         real_t length()
         real_t length_squared()
 
+        object pythonize()
+
+
 cdef extern from "Vector3.hpp" namespace "godot" nogil:
     cdef cppclass Vector3:  # C++ struct
         enum Axis:
@@ -1286,12 +1333,13 @@ cdef extern from "Vector3.hpp" namespace "godot" nogil:
         Vector3 snapped(const float by)
 
         # String operator String()
+        object pythonize()
 
     Vector3 vec3_cross(const Vector3 &a, Vector3 &b)
 
 
 cdef extern from "Wrapped.hpp" namespace "godot" nogil:
-    cdef cppclass _Wrapped:
+    cdef cppclass __cpp_internal_Wrapped "godot::_Wrapped":
         godot_object *_owner
         size_t _type_tag
 

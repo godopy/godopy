@@ -42,7 +42,7 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
     % endif
 
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
-    % if method_name not in SPECIAL_ESCAPES.values():
+    % if method['__func_type'] == 'cdef':
     cdef ${return_type}${method_name}(self${', ' if pxd_signature else ''}${clean_signature(pxd_signature, class_name)})
     % endif
     % endfor

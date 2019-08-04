@@ -5,6 +5,10 @@
 
 #include <cmath>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotPlane *_python_plane_wrapper;
+
 namespace godot {
 
 enum ClockDirection {
@@ -52,6 +56,8 @@ public:
 	bool operator==(const Plane &p_plane) const;
 	bool operator!=(const Plane &p_plane) const;
 	operator String() const;
+
+	PyObject *pythonize();
 
 	inline Plane() { d = 0; }
 	inline Plane(real_t p_a, real_t p_b, real_t p_c, real_t p_d) :

@@ -1,11 +1,18 @@
 #ifndef DICTIONARY_H
 #define DICTIONARY_H
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 #include "Variant.hpp"
 
 #include "Array.hpp"
 
 #include <gdnative/dictionary.h>
+
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+// typedef struct __pyx_obj_5godot_10core_types_GodotDictionary *_python_dictionary_wrapper;
 
 namespace godot {
 
@@ -41,6 +48,8 @@ public:
 	const Variant &operator[](const Variant &key) const;
 
 	int size() const;
+
+	PyObject *pythonize();
 
 	String to_json() const;
 
