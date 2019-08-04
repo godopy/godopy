@@ -8,21 +8,9 @@ from cpython.mem cimport PyMem_Free
 import os
 import sys
 
-
 cdef extern from "Python.h":
     cdef wchar_t *Py_GetPythonHome()
     cdef char *Py_EncodeLocale(const wchar_t *text, size_t *error_pos)
-
-
-cdef bytes godot_string_to_bytes(const godot_string *s):
-    cdef godot_char_string chars = gdapi.godot_string_utf8(s)
-    cdef const char *cs = gdapi.godot_char_string_get_data(&chars)
-    cdef bytes bs
-    try:
-        bs = cs
-    finally:
-        gdapi.godot_char_string_destroy(&chars)
-    return bs
 
 
 cdef bint _dynamic_loading_initialized = False

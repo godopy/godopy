@@ -108,7 +108,6 @@ String::String(const PyObject *pystring) {
 		godot::api->godot_string_new_with_wide_string(&_godot_string, contents, size);
 	} else if (PyBytes_Check(pystring)) {
 		const char *contents = PyBytes_AsString((PyObject *)pystring);
-		printf("got bytes: %s\n", contents);
 		godot::api->godot_string_parse_utf8(&_godot_string, contents);
 	}
 }

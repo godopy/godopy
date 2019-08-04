@@ -7,18 +7,21 @@ from godot_headers.gdnative_api cimport (
 from .cpp.core_types cimport String
 
 
-# cdef extern from "Defs.hpp" namespace "godot":
-#     cdef void WARN_PRINT(const char *msg)
-#     cdef const char *WARN_PRINTS(const char *msg)
-#     cdef void ERR_PRINT(const char *msg)
-#     cdef const char *ERR_PRINTS(const char *msg)
-#     cdef void FATAL_PRINT(const char *msg)
-#     cdef void ERR_FAIL_INDEX(int index, int size)
-#     cdef void CRASH_BAD_INDEX(int index, int size)
-#     cdef void ERR_FAIL_NULL(void *param)
-#     cdef void ERR_FAIL_COND(bint cond)
-#     cdef void CRASH_COND(bint cond)
-#     cdef void CRASH_NOW()
+cdef extern from "Defs.hpp" namespace "godot":
+    cdef void WARN_PRINT(str msg)
+    cdef void WARN_PRINTS(const char *msg)
+    cdef void ERR_PRINT(str msg)
+    cdef void ERR_PRINTS(const char *msg)
+    cdef void FATAL_PRINT(str msg)
+    cdef void ERR_FAIL_INDEX(int index, int size)
+    cdef void CRASH_BAD_INDEX(int index, int size)
+    cdef void ERR_FAIL_NULL(void *param)
+    cdef void ERR_FAIL_PYTHON_NULL(object param)
+    cdef object ERR_FAIL_PYTHON_NULL_V(object param, object ret)
+    cdef void ERR_FAIL_COND(bint cond)
+    cdef object ERR_FAIL_COND_V(bint cond, object ret)
+    cdef void CRASH_COND(bint cond)
+    cdef void CRASH_NOW()
 
 
 cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:

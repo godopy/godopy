@@ -173,14 +173,23 @@ typedef float real_t;
 #endif
 
 #ifndef ERR_FAIL_PYTHON_NULL
-#define ERR_FAIL_PYTHON_NULL(param)        \
-  do {                                     \
-    if (unlikely(!param)) {                \
-      if (PyErr_Occurred()) PyErr_Print(); \
-      ERR_PRINT(ERR_MSG_NULL(param));      \
-      return;                              \
-    }                                      \
-  } while (0)
+#define ERR_FAIL_PYTHON_NULL(param)                         \
+	do {                                                       \
+		if (unlikely(!param)) {                                   \
+			PyObject *__err_type, *__err_value, *__err_traceback;    \
+			PyErr_Fetch(&__err_type, &__err_value, &__err_traceback); \
+			if (__err_value && __err_traceback) {                      \
+				Py_INCREF(__err_value);                                   \
+				PyErr_Restore(__err_type, __err_value, __err_traceback);   \
+				PyErr_Print();                                            \
+			}                                                          \
+			if (__err_value) ERR_PRINT(PyObject_Str(__err_value));    \
+			else ERR_PRINT(ERR_MSG_NULL(param));                     \
+			Py_XDECREF(__err_value);                                \
+			PyErr_Clear();                                         \
+			return;                                               \
+		}                                                      \
+	} while (0)
 #endif
 
 #ifndef ERR_FAIL_NULL_V
@@ -194,13 +203,22 @@ typedef float real_t;
 #endif
 
 #ifndef ERR_FAIL_PYTHON_NULL_V
-#define ERR_FAIL_PYTHON_NULL_V(param, ret)  \
-	do {                                      \
-		if (unlikely(!param)) {                 \
-			if (PyErr_Occurred()) PyErr_Print();  \
-			ERR_PRINT(ERR_MSG_NULL(param));       \
-			return ret;                           \
-		}                                       \
+#define ERR_FAIL_PYTHON_NULL_V(param, ret)                  \
+	do {                                                       \
+		if (unlikely(!param)) {                                   \
+			PyObject *__err_type, *__err_value, *__err_traceback;    \
+			PyErr_Fetch(&__err_type, &__err_value, &__err_traceback); \
+			if (__err_value && __err_traceback) {                      \
+				Py_INCREF(__err_value);                                   \
+				PyErr_Restore(__err_type, __err_value, __err_traceback);   \
+				PyErr_Print();                                            \
+			}                                                          \
+			if (__err_value) ERR_PRINT(PyObject_Str(__err_value));    \
+			else ERR_PRINT(ERR_MSG_NULL(param));                     \
+			Py_XDECREF(__err_value);                                \
+			PyErr_Clear();                                         \
+			return ret;                                           \
+		}                                                      \
 	} while (0)
 #endif
 

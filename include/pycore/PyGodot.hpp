@@ -33,6 +33,18 @@ struct _WrappedMethod {
 };
 
 template <class Self, class... As>
+struct _WrappedMethod<Self, PyObject *, As...> {
+  PyObject *(*f)(Self, As...);
+
+  template <int... I>
+  void apply(godot::Variant *ret, Self obj, godot::Variant **args, godot::__Sequence<I...>) {
+    PyObject *__result = (*f)(obj, godot::_ArgCast<As>::_arg_cast(*args[I])...);
+    ERR_FAIL_PYTHON_NULL(__result);
+    *ret = __result;
+  }
+};
+
+template <class Self, class... As>
 struct _WrappedMethod<Self, void, As...> {
   void (*f)(Self, As...);
 
