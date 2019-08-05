@@ -13,15 +13,41 @@ class GDNativeExtension(Extension):
         super().__init__(name, sources=[])
 
 
+if os.path.realpath(os.path.dirname(__file__)) != os.path.realpath(os.getcwd()):
+    os.chdir(os.realpath(os.path.dirname(__file__)))
+
 generate_bindings = False
-if '--generate_bindings' in sys.argv:
-    sys.argv.remove('--generate_bindings')
+headers_dir = os.path.join(os.getcwd(), 'godot_headers')
+headers_def = os.path.join(headers_dir, 'gdnative_api.pxd')
+
+if not os.path.exists(headers_def):
     generate_bindings = True
 
-export_build = False
-if '--export' in sys.argv:
-    sys.argv.remove('--export')
-    export_build = True
+if not os.path.exists(headers_dir):
+    import shutil
+    import subprocess
+    import glob
+
+    godot_build_dir = os.environ.get('GODOT_BUILD')
+    if not godot_build_dir:
+        raise SystemExit("'GODOT_BUILD' environment variable is required.")
+
+    source_dir = os.path.join(godot_build_dir, 'modules', 'gdnative', 'include')
+    shutil.copytree(source_dir, headers_dir)
+
+    godot_exe_list = glob.glob(os.path.join(godot_build_dir, 'bin', 'godot.*.64'))
+    if not godot_exe_list:
+        raise SystemExit("Can't find Godot executable.")
+
+    godot_exe = godot_exe_list.pop()
+    api_path = os.path.join(headers_dir, 'api.json')
+    # print([godot_exe, '--gdnative-generate-json-api', api_path])
+    subprocess.run([godot_exe, '--gdnative-generate-json-api', api_path], check=True)
+
+# export_build = False
+# if '--export' in sys.argv:
+#     sys.argv.remove('--export')
+#     export_build = True
 
 
 class build_ext(build_python_ext):
@@ -40,8 +66,8 @@ class build_ext(build_python_ext):
             args = ['scons', 'target_extension=%s' % extension_path]
             if generate_bindings:
                 args += ['generate_bindings=yes']
-            if export_build:
-                args += ['export=yes']
+            # if export_build:
+            #     args += ['export=yes']
             self.spawn(args)
 
 
@@ -75,22 +101,15 @@ install_requires = [
 
 setup_requires = ['scons', 'Cython']
 
-setup_args = dict(
+setup(
     name='pygodot',
     version=version,
     python_requires='>=3.7',
     packages=packages,
     package_data=package_data,
     cmdclass={'build_ext': build_ext},
+    ext_modules=[GDNativeExtension('_pygodot')],
     install_requires=install_requires,
     setup_requires=setup_requires,
     entry_points=entry_points
 )
-
-
-headers_def = os.path.join(os.getcwd(), 'godot_headers', 'gdnative_api.pxd')
-
-if os.path.exists(headers_def):
-    setup_args['ext_modules'] = [GDNativeExtension('_pygodot')]
-
-setup(**setup_args)

@@ -31,20 +31,7 @@ $ git submodule update --init --recursive
 
 Install PyGodot and create the development environment
 ```
-$ pipenv install -e pygodot
-```
-
-### Copying the development headers and building the bindings
-
-```
-$ cp -R <path to the Godot source folder>/modules/gdnative/include pygodot/godot_headers
-$ godot --gdnative-generate-json-api pygodot/godot_headers/api.json
-$ pipenv run bindgen api
-$ pipenv run bindgen classes
-$ pipenv shell
-(SimpleProject) $ cd pygodot
-(SimpleProject) $ python setup.py develop --generate_bindings
-(SimpleProject) $ exit
+$ GODOT_BUILD=<path to the Godot source folder> pipenv install -e pygodot
 ```
 > Replace `<path to the Godot source folder>` with an actual path. Godot source should be compiled.
 
@@ -59,19 +46,17 @@ Open Godot and create a new project. For this example, we will place it in a fol
 In our demo project, we’ll create a scene containing a Node2D called “Main” and we’ll save it as `main.tscn`.
 We’ll come back to that later.
 
-Back in the top-level project folder, we’re also going to create a subfolder called `_demo`
+Back in the top-level project folder, we’re also going to create a subfolder called `src`
 in which we’ll place our source files.
 
-You should now have `demo`, `PyGodot` and `_demo` directories in your PyGodot project.
+You should now have `demo`, `PyGodot` and `src` directories in your PyGodot project.
 
-Place an empty file `__init__.py` inside the `_demo` folder:
+Place an empty file `__init__.py` inside the `src` folder:
 ```
 $ touch _demo/__init__.py
 ```
 
-This will turn our `_demo` folder into a Python [package](https://docs.python.org/3/glossary.html#term-regular-package).
-
-In the `_demo` folder, we’ll start with creating our Cython definition file for the GDNative node we’ll be creating.
+In the `src` folder, we’ll start with creating our Cython definition file for the GDNative node we’ll be creating.
 We will name it `gdexample.pxd`:
 ```pyx
 from godot.bindings.cython cimport nodes
@@ -91,7 +76,7 @@ Let’s implement our functions by creating our `gdexample.pyx` file:
 from libc.math cimport cos, sin
 
 from godot.bindings.cython cimport nodes
-from godot.cpp.core_types cimport Vector2, String
+from godot.cpp.core_types cimport Vector2
 
 from godot.nativescript cimport register_method
 
@@ -108,9 +93,9 @@ cdef class GDExample(nodes.Sprite):
 
         self.set_position(new_position)
 
-    @classmethod
-    def _register_methods(cls):
-        register_method(cls, cls._process)
+    @staticmethod
+    def _register_methods():
+        register_method(GDExample, '_process', GDExample._process)
 ```
 
 Note that `Vector2` is a native C++ type.
@@ -132,6 +117,18 @@ cdef public _pygodot_nativescript_init():
     register_class(gdexample.GDExample)
 ```
 
+It is possible to register plain C++ NativeScript classes too. Here's an example:
+```pyx
+from godot.nativescript cimport register_cpp_class
+from godot.bindings.cpp cimport nodes
+
+cdef extern from "gdexample.h" namespace "godot" nogil:
+    cdef cppclass GDExample(nodes.Sprite)
+
+cdef public _pygodot_nativescript_init():
+    register_cpp_class[GDExample]()
+```
+
 ### Building the extension
 
 Create the `setup.py` file in the root directory:
@@ -144,11 +141,11 @@ from pygodot.build.extensions import GDNativeLibrary, NativeScript
 setup(
     name='demo',
     version='0.0.1',
-    packages=['_demo'],
+    packages=['demo'],
     ext_modules=[
-        GodotProject('demo', shadow='_demo', binary_path='.bin'),
-        GDNativeLibrary('bin/_gdexample.gdnlib', source='gdlibrary.pyx'),
-        NativeScript('gdexample.gdns', classname='GDExample', sources=['gdexample.pyx'])
+        GodotProject('demo', source='src', binary_path='.bin'),
+        GDNativeLibrary('gdlibrary.gdnlib', source='gdlibrary.pyx'),
+        NativeScript('gdexample.gdns', class_name='GDExample', sources=['gdexample.pyx'])
     ],
     cmdclass=get_cmdclass()
 )
@@ -176,3 +173,8 @@ our `gdexample.gdns` file onto the `script` property of the sprite:
 We’re finally ready to run the project:
 
 [picture]
+
+
+### Properties and signals
+
+Godot properties and signals are supported.

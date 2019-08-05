@@ -1,11 +1,14 @@
 import os
 import re
+import sys
 import json
 import struct
 import hashlib
 from collections import defaultdict
 
 from mako.template import Template
+
+from .pxd_writer import PxdWriter, parse as parse_c_header
 
 ARRAY_TYPES = (
     'Array', 'PoolByteArray', 'PoolIntArray', 'PoolRealArray', 'PoolStringArray', 'PoolVector2Array',
@@ -65,7 +68,54 @@ root_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 bindings_dir = os.path.join(root_dir, 'godot', 'bindings')
 
 
-def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo=print):
+def write_api_pxd(echo=print):
+    output_dir = os.path.join(root_dir, 'godot_headers')
+
+    if not os.path.isdir(output_dir):
+        echo(f'"{output_dir}" does not exist. Something went wrong…')
+        sys.exit(1)
+
+    echo("Converting 'gdnative_api_struct.gen.h' -> 'gdnative_api.pxd'")
+
+    inpath = os.path.join(output_dir, 'gdnative_api_struct.gen.h')
+    if not os.path.exists(inpath):
+        echo(f'Required "gdnative_api_struct.gen.h" file doesn\'t exist in "{output_dir}"')
+        sys.exit(1)
+
+    initial_dir = os.getcwd()
+
+    os.chdir(output_dir)
+    fname = 'gdnative_api_struct.gen.h'
+
+    with open(fname, 'r') as infile:
+        code = infile.read()
+
+    extra_cpp_args = ['-I', '.']
+    if sys.platform == 'darwin':
+        extra_cpp_args += ['-I', "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"]
+
+    p = PxdWriter(fname)
+    p.visit(parse_c_header(code, extra_cpp_args=extra_cpp_args))
+
+    pxd = 'from libc.stdint cimport {:s}\n'.format(', '.join(p.stdint_declarations))
+    pxd += 'from libc.stddef cimport wchar_t\nfrom libcpp cimport bool\n\n'
+    pxd += str(p)
+    pxd = pxd.replace('uint8_t _dont_touch_that[]', 'pass')
+    pxd = pxd.replace('extern from "gdnative_api_struct.gen.h":', 'extern from "gdnative_api_struct.gen.h" nogil:')
+
+    with open('gdnative_api.pxd', 'w', encoding='utf-8') as f:
+        f.write(pxd)
+
+    with open('__init__.py', 'w', encoding='utf-8') as f:
+        pass
+
+    os.chdir(initial_dir)
+
+
+def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo=print, preloaded_classes=None):
+    if preloaded_classes:
+        classes = preloaded_classes
+
     with open(os.path.join(root_dir, 'godot_headers', 'api.json'), encoding='utf-8') as fp:
         classes = json.load(fp)
 

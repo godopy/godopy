@@ -85,7 +85,7 @@ class gdnative_build_ext(build_ext):
 
         for res_path, content in self.godot_resources.items():
             self.write_target_file(os.path.join(self.godot_project.name, res_path), content,
-                                   pretty_path='res://%s' % res_path)
+                                   pretty_path='res://%s' % res_path, is_editable_resource=True)
 
     def run_generic(self):
         source = os.path.join(self.build_context['pygodot_bindings_path'], self.build_context['pygodot_library_name'])
@@ -113,7 +113,14 @@ class gdnative_build_ext(build_ext):
 
     def run_cpp_build(self):
         cpp_lib_template = Template(filename=os.path.join(templates_dir, 'gdlibrary.cpp.mako'))
-        self.write_target_file(self.build_context['cpp_library_path'], cpp_lib_template.render(**self.build_context))
+        cpp_lib_context = {k: w for (k, w) in self.build_context.items() if k != 'library_name'}
+        context_libname = self.build_context['library_name']
+        if context_libname == 'gdlibrary':
+            cpp_lib_context['library_name'] = '_gdlibrary'
+        else:
+            cpp_lib_context['library_name'] = context_libname
+
+        self.write_target_file(self.build_context['cpp_library_path'], cpp_lib_template.render(**cpp_lib_context))
 
         self.build_context['cpp_sources'].append(make_relative_path(self.build_context['cpp_library_path']))
 
@@ -123,7 +130,7 @@ class gdnative_build_ext(build_ext):
         if not self.dry_run:
             self.spawn(['scons'])
 
-    def write_target_file(self, path, content, pretty_path=None):
+    def write_target_file(self, path, content, pretty_path=None, is_editable_resource=False):
         if pretty_path is None:
             pretty_path = path
 
@@ -134,6 +141,10 @@ class gdnative_build_ext(build_ext):
                 old_hash = hashlib.sha1(fp.read().encode('utf-8'))
             if old_hash.digest() == new_hash.digest():
                 print('skip writing "%s"' % pretty_path)
+                return
+            elif is_editable_resource and not self.force:
+                # Do not overwrite user resources without --force flag
+                print('WARNING! modified resource already exists: "%s"' % pretty_path)
                 return
 
         print('writing "%s"' % pretty_path, path)
@@ -159,8 +170,16 @@ class gdnative_build_ext(build_ext):
 
         if sys.platform == 'darwin':
             platform = 'OSX.64'
+        elif sys.platform.startswith('linux'):
+            platform = 'X11.64'
+        elif sys.platform == 'win32':
+            platform = 'Windows.64'
         else:
             sys.stderr.write("Can't build for '%s' platform yet.\n" % sys.platform)
+            sys.exit(1)
+
+        if sys.maxsize <= 2**32:
+            sys.stderr.write("32-bit platforms are not supported.\n")
             sys.exit(1)
 
         ext_name = self.godot_project.get_setuptools_name(ext.name, validate='.gdnlib')

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 
 import json
+import importlib
 
 # comment.
 
 classes = []
 
-def generate_bindings(path):
 
+def generate_bindings(path):
     global classes
     classes = json.load(open(path))
 
@@ -27,7 +28,6 @@ def generate_bindings(path):
         source_file = open("src/gen/" + strip_name(c["name"]) + ".cpp", "w+")
         source_file.write(impl)
 
-
     icall_header_file = open("include/gen/__icalls.hpp", "w+")
     icall_header_file.write(generate_icall_header(icalls))
 
@@ -37,6 +37,11 @@ def generate_bindings(path):
     init_method_bindings_file = open("src/gen/__init_method_bindings.cpp", "w+")
     init_method_bindings_file.write(generate_init_method_bindings(classes))
 
+    pygodot_generator = importlib.import_module('pygodot.cli.binding_generator')
+
+    pygodot_generator.write_api_pxd()
+    pygodot_generator.generate(preloaded_classes=classes)
+
 
 def is_reference_type(t):
     for c in classes:
@@ -45,6 +50,7 @@ def is_reference_type(t):
         if c['is_reference']:
             return True
     return False
+
 
 def make_gdnative_type(t):
     if is_enum(t):
@@ -74,7 +80,6 @@ def generate_class_header(used_classes, c):
     source.append("#include <stdint.h>")
     source.append("")
 
-
     source.append("#include <core/CoreTypes.hpp>")
 
     class_name = strip_name(c["name"])
@@ -85,7 +90,6 @@ def generate_class_header(used_classes, c):
         source.append("#include <core/Ref.hpp>")
     else:
         source.append("#include <core/TagDB.hpp>")
-
 
     included = []
 
@@ -106,17 +110,14 @@ def generate_class_header(used_classes, c):
     if c["base_class"] != "":
         source.append("#include \"" + strip_name(c["base_class"]) + ".hpp\"")
 
-
     source.append("namespace godot {")
     source.append("")
-
 
     for used_type in used_classes:
         if is_enum(used_type) or is_nested_type(used_type, class_name):
             continue
         else:
             source.append("class " + strip_name(used_type) + ";")
-
 
     source.append("")
 
@@ -149,7 +150,6 @@ def generate_class_header(used_classes, c):
     source.append("\tstatic void ___init_method_bindings();")
 
     source.append("")
-
 
     if c["singleton"]:
         source.append("\tstatic inline " + class_name + " *get_singleton()")
@@ -184,14 +184,12 @@ def generate_class_header(used_classes, c):
         if name not in enum_values:
             source.append("\tconst static int " + name + " = " + str(c["constants"][name]) + ";")
 
-
     if c["instanciable"]:
         source.append("")
         source.append("")
         source.append("\tstatic " + class_name + " *_new();")
 
     source.append("\n\t// methods")
-
 
     if class_name == "Object":
         source.append("#ifndef GODOT_CPP_NO_OBJECT_CAST")
@@ -208,8 +206,7 @@ def generate_class_header(used_classes, c):
         # method_signature += "virtual " if method["is_virtual"] else ""
         method_signature += make_gdnative_type(method["return_type"])
         method_name = escape_cpp(method["name"])
-        method_signature +=  method_name + "("
-
+        method_signature += method_name + "("
 
         has_default_argument = False
         method_arguments = ""
@@ -219,7 +216,6 @@ def generate_class_header(used_classes, c):
             argument_name = escape_cpp(argument["name"])
             method_signature += argument_name
             method_arguments += argument_name
-
 
             # default arguments
             def escape_default_arg(_type, default_value):
@@ -253,14 +249,9 @@ def generate_class_header(used_classes, c):
 
                 return default_value
 
-
-
-
             if argument["has_default_value"] or has_default_argument:
                 method_signature += " = " + escape_default_arg(argument["type"], argument["default_value"])
                 has_default_argument = True
-
-
 
             if i != len(method["arguments"]) - 1:
                 method_signature += ", "
@@ -275,25 +266,18 @@ def generate_class_header(used_classes, c):
 
         method_signature += ")" + (" const" if method["is_const"] else "")
 
-
         source.append("\t" + method_signature + ";")
 
     source.append(vararg_templates)
     source.append("};")
     source.append("")
 
-
-
     source.append("}")
     source.append("")
 
     source.append("#endif")
 
-
     return "\n".join(source)
-
-
-
 
 
 def generate_class_implementation(icalls, used_classes, c):
@@ -310,7 +294,6 @@ def generate_class_implementation(icalls, used_classes, c):
     source.append("#include <core/Godot.hpp>")
     source.append("")
 
-
     source.append("#include \"__icalls.hpp\"")
     source.append("")
     source.append("")
@@ -326,9 +309,7 @@ def generate_class_implementation(icalls, used_classes, c):
 
     source.append("namespace godot {")
 
-
     core_object_name = "this"
-
 
     source.append("")
     source.append("")
@@ -367,7 +348,6 @@ def generate_class_implementation(icalls, used_classes, c):
     for method in c["methods"]:
         method_signature = ""
 
-
         method_signature += make_gdnative_type(method["return_type"])
         method_signature += strip_name(c["name"]) + "::" + escape_cpp(method["name"]) + "("
 
@@ -386,7 +366,6 @@ def generate_class_implementation(icalls, used_classes, c):
         method_signature += ")" + (" const" if method["is_const"] else "")
 
         source.append(method_signature + " {")
-
 
         if method["name"] == "free":
             # dirty hack because Object::free is marked virtual but doesn't actually exist...
@@ -415,8 +394,6 @@ def generate_class_implementation(icalls, used_classes, c):
                 return "Object"
             return name
 
-
-
         if method["has_varargs"]:
 
             if len(method["arguments"]) != 0:
@@ -426,7 +403,6 @@ def generate_class_implementation(icalls, used_classes, c):
                 source.append("\tgodot::api->godot_variant_new_nil((godot_variant *) &__given_args[" + str(i) + "]);")
 
             source.append("")
-
 
             for i, argument in enumerate(method["arguments"]):
                 source.append("\t__given_args[" + str(i) + "] = " + escape_cpp(argument["name"]) + ";")
@@ -467,7 +443,6 @@ def generate_class_implementation(icalls, used_classes, c):
 
                 source.append("")
 
-
             for i, argument in enumerate(method["arguments"]):
                 source.append("\tgodot::api->godot_variant_destroy((godot_variant *) &__given_args[" + str(i) + "]);")
 
@@ -483,8 +458,6 @@ def generate_class_implementation(icalls, used_classes, c):
                 else:
                     cast += "__result;"
                 source.append("\treturn " + cast)
-
-
 
         else:
 
@@ -512,15 +485,9 @@ def generate_class_implementation(icalls, used_classes, c):
         source.append("}")
         source.append("")
 
-
-
     source.append("}")
 
-
     return "\n".join(source)
-
-
-
 
 
 def generate_icall_header(icalls):
@@ -576,7 +543,6 @@ def generate_icall_header(icalls):
             source.append("\t" + ("godot_object *" if is_class_type(ret_type) else get_icall_return_type(ret_type)) + "ret;")
             if is_class_type(ret_type):
                 source.append("\tret = nullptr;")
-
 
         source.append("\tconst void *args[" + ("1" if len(args) == 0 else "") + "] = {")
 
@@ -653,7 +619,6 @@ def generate_type_registry(classes):
     source.append("")
     source.append("}")
 
-
     return "\n".join(source)
 
 
@@ -672,7 +637,7 @@ def generate_init_method_bindings(classes):
     source.append("{")
 
     for c in classes:
-        class_name = strip_name(c["name"])
+        # class_name = strip_name(c["name"])
 
         source.append("\t" + strip_name(c["name"]) + "::___init_method_bindings();")
 
@@ -706,10 +671,6 @@ def get_icall_name(sig):
     return name
 
 
-
-
-
-
 def get_used_classes(c):
     classes = []
     for method in c["methods"]:
@@ -722,12 +683,6 @@ def get_used_classes(c):
     return classes
 
 
-
-
-
-
-
-
 def strip_name(name):
     if len(name) == 0:
         return name
@@ -735,23 +690,30 @@ def strip_name(name):
         return name[1:]
     return name
 
+
 def extract_nested_type(nested_type):
     return strip_name(nested_type[:nested_type.find("::")])
+
 
 def remove_nested_type_prefix(name):
     return name if name.find("::") == -1 else strip_name(name[name.find("::") + 2:])
 
+
 def remove_enum_prefix(name):
     return strip_name(name[name.find("enum.") + 5:])
 
-def is_nested_type(name, type = ""):
+
+def is_nested_type(name, type=""):
     return name.find(type + "::") != -1
+
 
 def is_enum(name):
     return name.find("enum.") == 0
 
+
 def is_class_type(name):
     return not is_core_type(name) and not is_primitive(name)
+
 
 def is_core_type(name):
     core_types = ["Array",
@@ -783,11 +745,10 @@ def is_core_type(name):
     return name in core_types
 
 
-
-
 def is_primitive(name):
     core_types = ["int", "bool", "real", "float", "void"]
     return name in core_types
+
 
 def escape_cpp(name):
     escapes = {
