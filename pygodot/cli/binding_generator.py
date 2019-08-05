@@ -7,14 +7,20 @@ from collections import defaultdict
 
 from mako.template import Template
 
-CORE_TYPES = frozenset([
-    'Array', 'Basis', 'Color', 'Dictionary', 'Error', 'NodePath', 'Plane',
-    'PoolByteArray', 'PoolIntArray', 'PoolRealArray', 'PoolStringArray', 'PoolVector2Array', 'PoolVector3Array',
-    'PoolColorArray', 'PoolIntArray', 'PoolRealArray', 'Quat', 'Rect2', 'AABB', 'RID', 'String', 'Transform',
-    'Transform2D', 'Variant', 'Vector2', 'Vector3'
-])
+ARRAY_TYPES = (
+    'Array', 'PoolByteArray', 'PoolIntArray', 'PoolRealArray', 'PoolStringArray', 'PoolVector2Array',
+    'PoolVector3Array', 'PoolColorArray'
+)
 
-PRIMITIVE_TYPES = frozenset(['int', 'bool', 'real', 'float', 'void'])
+PYTHON_AUTOMATIC_CAST_TYPES = ('Variant', 'Array')
+
+CORE_TYPES = (
+    'Basis', 'Color', 'Dictionary', 'Error', 'NodePath', 'Plane',
+    'Quat', 'Rect2', 'AABB', 'RID', 'String', 'Transform',
+    'Transform2D', 'Variant', 'Vector2', 'Vector3'
+) + ARRAY_TYPES
+
+PRIMITIVE_TYPES = ('int', 'bool', 'real', 'float', 'void')
 
 CPP_ESCAPES = {
     'class':    '_class',
@@ -223,6 +229,7 @@ def generate_icalls_context(classes):
             var_arg = None
             if method['has_varargs']:
                 var_arg = '__var_args'
+
             ret = get_icall_type_name(method['return_type'])
             icalls.add((ret, args, var_arg))
 
@@ -294,9 +301,9 @@ def create_icall_arguments(args, var_arg, is_pxd=False):
 
     if var_arg:
         if is_pxd:
-            sig.append(', tuple')
+            sig.append(', const Array')
         else:
-            sig.append(', PyObject *__var_args')
+            sig.append(', const Array __var_args')
 
     return sig
 
@@ -363,13 +370,16 @@ def generate_class_context(class_def):
 
         for arg in method['arguments']:
             has_default = arg['has_default_value'] or has_default_argument
+            if has_default_argument and not arg['has_default_value']:
+                print('Update "has_default_value" flag for %s of %s', (arg['name'], method_name))
+                arg['has_default_value'] = True
             arg_type = make_cython_gdnative_type(arg['type'], has_default=has_default)
             arg_name = escape_cython(arg['name'])
 
             arg_default = None
             arg_init = None
             if has_default:
-                arg_default, arg_init = escape_cython_default_arg(arg['type'], arg['default_value'])
+                arg_default = escape_cython_default_arg(arg['type'], arg['default_value'])
                 has_default_argument = True
                 if arg_init:
                     real_arg_name = arg_name
@@ -389,8 +399,8 @@ def generate_class_context(class_def):
             def_sigs.append(sig)
 
         if method['has_varargs']:
-            pxd_sigs.append('tuple __var_args=*')
-            sigs.append('tuple __var_args=()')
+            pxd_sigs.append('object __var_args=*')
+            sigs.append('object __var_args=()')
             def_sigs.append('*__var_args')
 
         return_stmt = 'return '
@@ -440,29 +450,26 @@ def make_sha1_suffix(value):
 
 def escape_cython_default_arg(_type, default_value):
     if _type == 'Color':
-        return 'NULL', 'Color(%s)' % default_value
+        return 'GodotColor(%s)' % default_value
     elif _type in ('bool', 'int'):
-        return default_value, None
+        return default_value
     elif _type in ('Array', 'Dictionary', 'PoolVector2Array', 'PoolStringArray', 'PoolVector3Array', 'PoolColorArray',
                    'PoolIntArray', 'PoolRealArray', 'Transform', 'Transform2D', 'RID'):
-        return 'NULL', '%s()' % _type
+        return 'Godot%s()' % _type
     elif _type in ('Vector2', 'Vector3', 'Rect2'):
-        return 'NULL', '%s%s' % (_type, default_value)
+        return 'Godot%s%s' % (_type, default_value)
     elif _type == 'Variant':
         if default_value == 'Null':
-            return 'NULL', 'Variant()'
+            return 'None'
         else:
-            return 'NULL', '(<Variant>%s)' % default_value
+            return '(<object>%s)' % default_value
     elif _type == 'String':
         # return 'NULL', 'String(%r)' % default_value
-        return repr(default_value), None
+        return repr(default_value)
     elif default_value == 'Null' or default_value == '[Object:null]':
-        if is_class_type(_type):
-            return 'None', None
-        else:
-            return 'NULL', None
+        return 'None'
 
-    return default_value, None
+    return default_value
 
 
 # def cython_nonempty_comparison(_type):
@@ -485,8 +492,10 @@ def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=
         return '%s ' % strip_name(t)
     elif t == 'String':
         return 'str '
+    elif has_default and t in PYTHON_AUTOMATIC_CAST_TYPES:
+        return 'object '
     elif has_default and is_core_type(t):
-        return prefix + '%s *' % strip_name(t)
+        return 'Godot%s ' % strip_name(t)
 
     if t == 'int':
         return prefix + 'int64_t '

@@ -84,6 +84,8 @@ public:
 
 	Array(const PoolColorArray &a);
 
+	Array(const PyObject *o);
+
 	template <class... Args>
 	static Array make(Args... args) {
 		return helpers::append_all(Array(), args...);

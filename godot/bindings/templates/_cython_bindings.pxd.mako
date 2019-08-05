@@ -10,11 +10,7 @@
         enum_values.add(value_name)
         return remove_nested_type_prefix(value_name)
 %>
-from godot_headers.gdnative_api cimport *
-
-# Avoid c-importing "_Wrapped" and "Object"
-from ..cpp.core_types cimport real_t, ${', '.join(CORE_TYPES)}
-from ..core_types cimport _Wrapped, VariantType, VariantOperator, Vector3Axis
+from ..core_types cimport *
 
 cdef __register_types()
 cdef __init_method_bindings()

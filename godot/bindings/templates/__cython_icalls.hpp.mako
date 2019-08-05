@@ -26,16 +26,14 @@ static inline ${sig} {
   const Variant __given_args[] = {${', '.join(given_arg_elem(i, arg) for i, arg in enumerate(args))}};
   % endif
 
-  size_t __size = PyTuple_GET_SIZE(__var_args);
+  int __size = __var_args.size();
   godot_variant **__args = (godot_variant **) godot::api->godot_alloc(sizeof(godot_variant *) * (__size + ${len(args)}));
   % for i, arg in enumerate(args):
   __args[${i}] = (godot_variant *) &__given_args[${i}];
   % endfor
 
-  for (size_t i = 0; i < __size; i++) {
-    Variant _item = Variant((const PyObject *)PyTuple_GET_ITEM(__var_args, i));
-    __args[i + ${len(args)}] = (godot_variant *)&_item;
-    Godot::print("vararg item {0}", *(Variant *)__args[i + ${len(args)}]);
+  for (int i = 0; i < __size; i++) {
+    __args[i + ${len(args)}] = (godot_variant *) &((Array &) __var_args)[i];
   }
 
   Variant __result;

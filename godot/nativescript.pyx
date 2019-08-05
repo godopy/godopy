@@ -25,6 +25,7 @@ from pygodot.utils cimport _init_dynamic_loading
 
 from cython.operator cimport dereference as deref
 
+
 cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, dict TagDB) except NULL:
     cdef type cls = TagDB[type_tag]
     cdef obj = cls.__new__(cls)  # Don't call __init__

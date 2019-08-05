@@ -37,13 +37,13 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
         void print(String &message)
 
         @staticmethod
-        void print(str message)
-
-        @staticmethod
         void print(const String &fmt, ...)
 
         @staticmethod
-        void print(str fmt, ...)
+        void print(str)
+
+        @staticmethod
+        void print(str, ...)
 
 
     void *_nativescript_handle "godot::_RegisterState::nativescript_handle"

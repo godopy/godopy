@@ -4,6 +4,10 @@
 
 #include <cstdlib>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+#include "godot/core_types.h"
+
 namespace godot {
 
 class Object;
@@ -48,6 +52,54 @@ Array::Array(const PoolVector3Array &a) {
 
 Array::Array(const PoolColorArray &a) {
 	godot::api->godot_array_new_pool_color_array(&_godot_array, (godot_pool_color_array *)&a);
+}
+
+Array::Array(const PyObject *o) {
+	if (Py_TYPE(o) == PyGodotType_GodotArray) {
+		godot_array *p = _python_to_godot_array((PyObject *)o);
+
+		if (likely(p)) {
+			godot::api->godot_array_new_copy(&_godot_array, p);
+		} else {
+			if (PyErr_Occurred()) PyErr_Print();
+			ERR_PRINT("array was not created");
+			godot::api->godot_array_new(&_godot_array);
+		}
+
+		// TODO: Other array wrappers
+
+	} else {
+		// Not a C++ wrapper, initialize from standard Python types and protocols
+		godot::api->godot_array_new(&_godot_array);
+
+		if (PyTuple_CheckExact((PyObject *)o)) {
+			// Tuples are faster than generic sequence protocol
+			for (size_t i = 0; i < PyTuple_GET_SIZE(o); i++) {
+				PyObject *item = PyTuple_GET_ITEM((PyObject *)o, i);
+				append(Variant(item));
+			}
+		} else if (PySequence_Check((PyObject *)o)) {
+			for (size_t i = 0; i < PySequence_Length((PyObject *)o); i++) {
+				PyObject *item = PySequence_GetItem((PyObject *)o, i);
+				append(Variant(item));
+			}
+		} else if (PyIter_Check((PyObject *)o)) {
+			PyObject *iterator = PyObject_GetIter((PyObject *)o);
+			PyObject *item;
+			if (iterator) {
+				while ((item = PyIter_Next(iterator))) {
+					append(Variant(item));
+					Py_DECREF(item);
+				}
+				Py_DECREF(iterator);
+			}
+			if (PyErr_Occurred()) {
+				PyErr_Print();
+				ERR_PRINT("Python Error in Array constructor");
+			}
+		}
+	}
+
 }
 
 Variant &Array::operator[](const int idx) {

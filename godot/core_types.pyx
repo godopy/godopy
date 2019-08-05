@@ -356,8 +356,8 @@ cdef class GodotRect2(GodotCoreTypeWrapper):
         self._initialized = True
         return self
 
-    def __init__(self):
-        self._cpp_object = Rect2()
+    def __init__(self, x=0, y=0, width=0, height=0):
+        self._cpp_object = Rect2(x, y, width, height)
         self._initialized = True
 
 
@@ -369,8 +369,13 @@ cdef class GodotRID(GodotCoreTypeWrapper):
         self._initialized = True
         return self
 
-    def __init__(self):
-        self._cpp_object = RID()
+    def __init__(self, _Wrapped obj=None):
+        cdef godot_object *p
+        if obj is None:
+            self._cpp_object = RID()
+        else:
+            p = obj._owner
+            self._cpp_object = RID(<__Object *>p)
         self._initialized = True
 
 
@@ -555,13 +560,13 @@ cdef public:
 
     object _aabb_to_python(AABB _obj):
         return <object>GodotAABB.from_cpp(_obj)
-    object _array_to_python(Array _obj):
+    object _godot_array_to_python(Array _obj):
         return <object>GodotArray.from_cpp(_obj)
-    object _basis_to_python(Basis _obj):
+    object _godot_basis_to_python(Basis _obj):
         return <object>GodotBasis.from_cpp(_obj)
     object _color_to_python(Color _obj):
         return <object>GodotColor.from_cpp(_obj)
-    object _dictionary_to_python(Dictionary  _obj):
+    object _godot_dictionary_to_python(Dictionary  _obj):
         return <object>GodotDictionary.from_cpp(_obj)
     object _nodepath_to_python(NodePath _obj):
         return <object>GodotNodePath.from_cpp(_obj)
@@ -589,7 +594,7 @@ cdef public:
         return <object>GodotRID.from_cpp(_obj)
     object _charstring_to_python(CharString _obj):
         return <object>GodotCharString.from_cpp(_obj)
-    object _string_to_python(String _obj):
+    object _godot_string_to_python(String _obj):
         return <object>GodotString.from_cpp(_obj)
     object _transform_to_python(Transform _obj):
         return <object>GodotTransform.from_cpp(_obj)
@@ -603,6 +608,9 @@ cdef public:
 
     godot_object *_python_to_godot_object(object wrapped):
         return (<_Wrapped>wrapped)._owner
+
+    godot_array *_python_to_godot_array(object wrapper):
+        return <godot_array *>&(<GodotArray>wrapper)._cpp_object
 
     godot_vector2 *_python_to_vector2(object wrapper):
         return <godot_vector2 *>&(<GodotVector2>wrapper)._cpp_object
