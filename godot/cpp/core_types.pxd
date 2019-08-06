@@ -165,7 +165,9 @@ cdef extern from "Array.hpp" namespace "godot" nogil:
         void erase(const Variant &v)
         void erase(object)
         Variant front()
+        object front()
         Variant back()
+        object back()
         int find(const Variant &what, const int from_=0)
         int find(object what, const int from_=0)
         int find_last(const Variant &what)
@@ -190,6 +192,14 @@ cdef extern from "Array.hpp" namespace "godot" nogil:
         int rfind(object what, const int from_=0)
         void sort()
         void sort_custom(__Object *obj, const String &func)
+        int bsearch(const Variant &value, const bint before=True)
+        int bsearch(object value, const bint before=True)
+        Array duplicate(const bint deep=False)
+        Variant max()
+        object max()
+        Variant min()
+        object min()
+        void shuffle()
 
         object wrap "pythonize" ()
 
@@ -296,6 +306,8 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         Basis scaled(const Vector3 &scale)
         Vector3 get_scale()
 
+        Basis slerp(Basis b, real_t t)
+
         Vector3 get_euler_xyz()
         void set_euler_xyz(const Vector3 &euler)
         void set_euler_yxz(const Vector3 &euler)
@@ -352,11 +364,24 @@ cdef extern from "Color.hpp" namespace "godot" nogil:
 
         uint32_t to_32()
         uint32_t to_ARGB32()
+        uint32_t to_ABGR32()
+        uint64_t to_ABGR64()
+        uint64_t to_ARGB64()
+        uint32_t to_RGBA32()
+        uint64_t to_RGBA64()
         float gray()
+        uint8_t get_r8()
+        uint8_t get_g8()
+        uint8_t get_b8()
+        uint8_t get_a8()
         float get_h()
         float get_s()
         float get_v()
         void set_hsv(float, float, float, float alpha=1.0)
+
+        Color darkened(const float amount)
+        Color lightened(const float amount)
+        Color from_hsv(float h, float, s, float v, float a=1.0)
 
         float& operator[](int)
         const float& operator[](int)
@@ -427,6 +452,8 @@ cdef extern from "NodePath.hpp" namespace "godot" nogil:
         int get_subname_count()
         bint is_absolute()
         bint is_empty()
+        NodePath get_as_property_path()
+        String get_concatenated_subnames()
 
         # String operator String()
 
@@ -690,6 +717,7 @@ cdef extern from "Quat.hpp" namespace "godot" nogil:
         real_t length()
         void normalize()
         Quat normalized()
+        bint is_normalized()
         Quat inverse()
         void set_euler_xyz(const Vector3 &euler)
         Vector3 get_euler_xyz()
@@ -705,6 +733,7 @@ cdef extern from "Quat.hpp" namespace "godot" nogil:
         Quat cubic_slerp(const Quat &q, const Quat &prep, const Quat &postq, const real_t &t)
 
         void get_axis_and_angle(Vector3 &axis, real_t &angle)
+        void set_axis_angle(const Vector3 &axis, const real_t angle)
 
         # *=
         Quat operator*(const Quat&)
@@ -945,6 +974,11 @@ cdef extern from "String.hpp" namespace "godot" nogil:
         signed char casecmpt_to(String)
         signed char nocasecmp_to(String)
         signed char naturalnocasecmp_to(String)
+        String dedent()
+        PoolStringArray rsplit(const String &divisor, const bint allow_empty=True, const int maxsplit=0)
+        String rstrip(const String &chars)
+        String trim_prefix(const String &prefix)
+        String trim_suffix(const String &suffix)
 
         object wrap "pythonize" ()
 

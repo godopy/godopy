@@ -1,5 +1,6 @@
 from godot_headers.gdnative_api cimport (
     godot_gdnative_core_api_struct,
+    godot_gdnative_core_1_1_api_struct,
     godot_gdnative_ext_nativescript_api_struct,
     godot_gdnative_ext_nativescript_1_1_api_struct,
     godot_gdnative_ext_pluginscript_api_struct
@@ -26,6 +27,7 @@ cdef extern from "Defs.hpp" namespace "godot":
 
 cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
     godot_gdnative_core_api_struct *gdapi "godot::api"
+    godot_gdnative_core_1_1_api_struct *core_1_1_api
     godot_gdnative_ext_nativescript_api_struct *nativescript_api
     godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_1_api
     godot_gdnative_ext_pluginscript_api_struct *pluginscript_api
