@@ -36,6 +36,8 @@ const godot_gdnative_ext_pluginscript_api_struct *pluginscript_api = nullptr;
 
 const void *gdnlib = NULL;
 
+wchar_t *pythonpath = NULL;
+
 void Godot::print(const String &message) {
 	godot::api->godot_print((godot_string *)&message);
 }
