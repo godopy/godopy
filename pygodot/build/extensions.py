@@ -113,22 +113,18 @@ class gdnative_build_ext(build_ext):
 
     def run_cpp_build(self):
         cpp_lib_template = Template(filename=os.path.join(templates_dir, 'gdlibrary.cpp.mako'))
-        cpp_lib_context = {k: w for (k, w) in self.build_context.items() if k != 'library_name'}
-        context_libname = self.build_context['library_name']
-        if context_libname == 'gdlibrary':
-            cpp_lib_context['library_name'] = '_gdlibrary'
-        else:
-            cpp_lib_context['library_name'] = context_libname
-
-        self.write_target_file(self.build_context['cpp_library_path'], cpp_lib_template.render(**cpp_lib_context))
+        cpp_lib_path = self.build_context['cpp_library_path']
+        self.write_target_file(cpp_lib_path, cpp_lib_template.render(**self.build_context))
 
         self.build_context['cpp_sources'].append(make_relative_path(self.build_context['cpp_library_path']))
 
         scons_template = Template(filename=os.path.join(templates_dir, 'SConstruct.mako'))
         self.write_target_file('SConstruct', scons_template.render(**self.build_context))
 
+        scons = os.path.join(sys.prefix, 'Scripts', 'scons') if sys.platform == 'win32' else 'scons'
+
         if not self.dry_run:
-            self.spawn(['scons'])
+            self.spawn([scons, 'target=release'])
 
     def write_target_file(self, path, content, pretty_path=None, is_editable_resource=False):
         if pretty_path is None:
@@ -190,7 +186,7 @@ class gdnative_build_ext(build_ext):
         dst_name_parts = dst_fullname.split('.')
         src_name = '.'.join(['_pygodot', *dst_name_parts[1:]])  # differs from non-generic name, has extension
 
-        binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform.lower(), dst_fullname)
+        binext_path = os.path.join(godot_root, self.godot_project.binary_path, dst_fullname)
 
         self.build_context['pygodot_library_name'] = src_name
         self.build_context['target'] = binext_path
@@ -223,8 +219,16 @@ class gdnative_build_ext(build_ext):
 
         if sys.platform == 'darwin':
             platform = 'OSX.64'
+        elif sys.platform.startswith('linux'):
+            platform = 'X11.64'
+        elif sys.platform == 'win32':
+            platform = 'Windows.64'
         else:
             sys.stderr.write("Can't build for '%s' platform yet.\n" % sys.platform)
+            sys.exit(1)
+
+        if sys.maxsize <= 2**32:
+            sys.stderr.write("32-bit platforms are not supported.\n")
             sys.exit(1)
 
         ext_name = self.godot_project.get_setuptools_name(ext.name, validate='.gdnlib')
@@ -233,9 +237,16 @@ class gdnative_build_ext(build_ext):
 
         dst_dir, dst_fullname = os.path.split(ext_path)
         dst_name_parts = dst_fullname.split('.')
+        dst_name_parts[0] = 'lib' + dst_name_parts[0]
+        # if dst_name_parts[0] == 'gdlibrary':
+        #    dst_name_parts[0] = '_gdlibrary'
+        _ext = dst_name_parts[-1]
+        if _ext == 'pyd':
+            _ext = 'dll'
+        dst_fullname = dst_name_parts[0] + '.' + _ext  #  '.'.join(dst_name_parts)
         src_name = '.'.join(['_pygodot', *dst_name_parts[1:-1]])
 
-        binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform.lower(), dst_fullname)
+        binext_path = os.path.join(godot_root, self.godot_project.binary_path, dst_fullname)
 
         cpp_library_base_path = re.sub(r'\.pyx?$', '.cpp', ext.sources[0])
         cpp_library_dir, cpp_library_unprefixed = os.path.split(cpp_library_base_path)
@@ -247,7 +258,7 @@ class gdnative_build_ext(build_ext):
 
         dst_name = dst_name_parts[0]
         self.build_context['library_name'] = dst_name
-        gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name + '.gdnlib'))
+        gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name[3:] + '.gdnlib'))
         self.gdnative_library_path = gdnlib_respath
         self.generic_setup = False
 

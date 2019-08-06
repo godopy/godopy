@@ -16,10 +16,10 @@ static bool _pygodot_is_initialized = false;
 
 // The name should be the same as the binary's name as it makes this GDNative library also importable by Python
 static PyModuleDef _pygodotmodule = {
-    PyModuleDef_HEAD_INIT,
-    .m_name = "_pygodot",
-    .m_doc = "PyGodot Generic GDNative extension",
-    .m_size = -1,
+  PyModuleDef_HEAD_INIT,
+  "_pygodot",
+  "PyGodot Generic GDNative extension",
+  -1,
 };
 
 PyMODINIT_FUNC PyInit__pygodot(void) {
@@ -32,19 +32,25 @@ PyMODINIT_FUNC PyInit__pygodot(void) {
 }
 
 #ifndef PYGODOT_EXPORT
+#include <iostream>
 #include <stdexcept>
+#include <stdio.h>
 #include <string>
-#include <array>
+#include <algorithm>
 const std::string shelloutput(const char* cmd) {
-  std::array<char, 1024> buffer;
-  std::string result;
-  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-  if (!pipe) {
-    throw std::runtime_error("popen() failed!");
+  char buffer[128];
+  std::string result = "";
+  FILE* pipe = _popen(cmd, "r");
+  if (!pipe) throw std::runtime_error("popen() failed!");
+  try {
+      while (fgets(buffer, sizeof buffer, pipe) != NULL) {
+          result += buffer;
+      }
+  } catch (...) {
+      _pclose(pipe);
+      throw;
   }
-  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-    result += buffer.data();
-  }
+  _pclose(pipe);
 
   result.erase(std::find_if(result.rbegin(), result.rend(), [](int ch) {
     return !std::isspace(ch);

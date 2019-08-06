@@ -31,9 +31,14 @@ $ git submodule update --init --recursive
 
 Install PyGodot and create the development environment
 ```
-$ GODOT_BUILD=<path to the Godot source folder> pipenv install -e pygodot
+$ pipenv shell
+(env) $ export GODOT_BUILD=<path to the Godot source folder>
+(env) $ cd pygodot
+(env) $ python setup.py develop
+(env) $ exit
 ```
 > Replace `<path to the Godot source folder>` with an actual path. Godot source should be compiled.
+> On Windows PowerShell the command will be `$env:GODOT_BUILD=<path to the Godot source folder>`
 
 
 ### Creating a GDNative extension
@@ -49,11 +54,11 @@ We’ll come back to that later.
 Back in the top-level project folder, we’re also going to create a subfolder called `src`
 in which we’ll place our source files.
 
-You should now have `demo`, `PyGodot` and `src` directories in your PyGodot project.
+You should now have `demo`, `pygodot` and `src` directories in your PyGodot project.
 
 Place an empty file `__init__.py` inside the `src` folder:
 ```
-$ touch _demo/__init__.py
+$ touch src/__init__.py
 ```
 
 In the `src` folder, we’ll start with creating our Cython definition file for the GDNative node we’ll be creating.
@@ -65,7 +70,7 @@ from godot.bindings.cython cimport nodes
 cdef class GDExample(nodes.Sprite):
     cdef float time_passed
 
-    cpdef _process(GDExample self, float delta)
+    cdef _process(GDExample self, float delta)
 ```
 > Note the `cdef` declarations and that `cimport` is not the same as `import`
 
@@ -85,7 +90,7 @@ cdef class GDExample(nodes.Sprite):
     def __cinit__(self):
         self.time_passed = 0.0
 
-    cpdef void _process(self, float delta):
+    cdef _process(self, float delta):
         self.time_passed += delta
 
         cdef Vector2 new_position = Vector2(

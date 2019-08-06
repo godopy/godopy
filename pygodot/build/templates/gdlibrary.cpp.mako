@@ -26,30 +26,41 @@ extern "C" PyObject *_pygodot_gdnative_init(godot_gdnative_init_options *)
 static bool _pygodot_is_initialized = false;
 
 static PyModuleDef ${library_name}module = {
-    PyModuleDef_HEAD_INIT,
-    .m_name = "${library_name}",
-    .m_doc = "${repr(library)} GDNative extension",
-    .m_size = -1,
+  PyModuleDef_HEAD_INIT, "${library_name}",
+  "${repr(library)} GDNative extension",
+  -1
 };
 
-PyMODINIT_FUNC PyInit_${library_name}(void) {
-  return PyModule_Create(&${library_name}module);
-}
+PyMODINIT_FUNC PyInit_${library_name}(void) { return PyModule_Create(&${library_name}module); }
 
 #ifndef PYGODOT_EXPORT
+#ifndef _WIN32
+inline FILE* _popen(const char* command, const char* type) {
+   return popen(command, type);
+}
+inline void _pclose(FILE* file) { 
+   pclose(file); 
+}
+#endif
+#include <iostream>
 #include <stdexcept>
+#include <stdio.h>
 #include <string>
-#include <array>
+#include <algorithm>
 const std::string shelloutput(const char* cmd) {
-  std::array<char, 1024> buffer;
-  std::string result;
-  std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-  if (!pipe) {
-    throw std::runtime_error("popen() failed!");
+  char buffer[128];
+  std::string result = "";
+  FILE* pipe = _popen(cmd, "r");
+  if (!pipe) throw std::runtime_error("popen() failed!");
+  try {
+    while (fgets(buffer, sizeof buffer, pipe) != NULL) {
+      result += buffer;
+    }
+  } catch (...) {
+    _pclose(pipe);
+    throw;
   }
-  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-    result += buffer.data();
-  }
+  _pclose(pipe);
 
   result.erase(std::find_if(result.rbegin(), result.rend(), [](int ch) {
     return !std::isspace(ch);
@@ -63,6 +74,7 @@ static void _ensure_pygodot_is_initialized() {
   if (_pygodot_is_initialized) return;
 
 #ifndef PYGODOT_EXPORT
+#ifndef _WIN32
   static bool use_pipenv = (system("python -c 'import pygodot;_=print' &> /dev/null") != 0);
 
   if (system(use_pipenv ? "pipenv run python -c 'import pygodot;_=print' &> /dev/null" :
@@ -77,6 +89,9 @@ static void _ensure_pygodot_is_initialized() {
   const wchar_t *w_dev_python_path = Py_DecodeLocale(dev_python_path.c_str(), NULL);
   Py_SetPath(w_dev_python_path);
   PyMem_RawFree((void *)w_dev_python_path);
+#else
+  Py_SetPath(L"c:\\python37\\Lib;c:\\python37\\DLLs;c:\\demos\\cython-example\\pygodot;c:\\demos\\cython-example");
+#endif
 #endif
 
   PyImport_AppendInittab("${library_name}", PyInit_${library_name});
@@ -96,15 +111,15 @@ static void _ensure_pygodot_is_initialized() {
   // Importing of Cython modules is required to correctly initialize them
   PyObject *mod = NULL;
   // TODO: add Godot error handling
-  mod = PyImport_ImportModule("core_types"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("_cython_bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("_python_bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("utils"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("nativescript"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("gdnative"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("core_types"); ERR_FAIL_PYTHON_NULL(mod);; Py_DECREF(mod);
+  mod = PyImport_ImportModule("_cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("_python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("utils"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("nativescript"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("gdnative"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 
 % for varname, _, _ in reversed(pyx_sources):
-  mod = PyImport_ImportModule("${varname}"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
+  mod = PyImport_ImportModule("${varname}"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 % endfor
 
   _pygodot_is_initialized = true;
@@ -115,7 +130,7 @@ extern "C" void GDN_EXPORT pygodot_gdnative_init(godot_gdnative_init_options *o)
   pygodot::PyGodot::set_pythonpath(o);
 
 % if gdnative_init:
-  if (_pygodot_gdnative_init(o) == NULL) PyErr_Print(); // TODO: add Godot error handling
+  PyObject *result = _pygodot_gdnative_init(o); ERR_FAIL_PYTHON_NULL(result);
 % endif
 }
 
@@ -129,13 +144,13 @@ extern "C" void GDN_EXPORT pygodot_nativescript_init(void *handle) {
   _ensure_pygodot_is_initialized();
   pygodot::PyGodot::nativescript_init(handle);
 
-  if (_pygodot_nativescript_init() == NULL) PyErr_Print(); // TODO: add Godot error handling
+  PyObject *result = _pygodot_nativescript_init(); ERR_FAIL_PYTHON_NULL(result);
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_singleton() {
   _ensure_pygodot_is_initialized();
 % if singleton:
-  if (_pygodot_gdnative_singleton() == NULL) PyErr_Print(); // TODO: add Godot error handling
+  PyObject *result = _pygodot_gdnative_singleton(); ERR_FAIL_PYTHON_NULL(result);
 % endif
 }
 

@@ -6,7 +6,12 @@ from autopxd.declarations import BUILTIN_HEADERS_DIR, IGNORE_DECLARATIONS
 
 # Copied from autopxd2, modified preprocessor for macOS
 def preprocess(code, extra_cpp_args=[]):
-    preprocessor = ['clang', '-E'] if sys.platform == 'darwin' else 'cpp'
+    preprocessor = ['gcc', '-E', '-std=c99']
+    if sys.platform == 'darwin':
+        preprocessor = ['clang', '-E', '-std=c99']
+    elif sys.platform == 'win32':
+        preprocessor = ['cpp.exe']
+
     args = ['-nostdinc', '-D__attribute__(x)=', '-I', BUILTIN_HEADERS_DIR]
     proc = subprocess.Popen(preprocessor + args + extra_cpp_args + ['-'],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -15,12 +20,18 @@ def preprocess(code, extra_cpp_args=[]):
         result.append(proc.communicate()[0])
     if proc.returncode:
         raise Exception('Invoking C preprocessor failed')
-    return b''.join(result).decode('utf-8')
+
+    return b''.join(result).decode('ascii', 'ignore')
 
 def parse(code, extra_cpp_args=[]):
     preprocessed = preprocess(code, extra_cpp_args=extra_cpp_args)
+    stripped = []
+    for line in preprocessed.splitlines():
+        if not line.startswith('#'):
+            stripped.append(line)
+    stripped = ''.join(stripped)
     parser = c_parser.CParser()
-    ast = parser.parse(preprocessed)
+    ast = parser.parse(stripped)
     decls = []
     for decl in ast.ext:
         if hasattr(decl, 'name') and decl.name not in IGNORE_DECLARATIONS:
