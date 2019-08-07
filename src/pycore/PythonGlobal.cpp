@@ -25,9 +25,9 @@ void PyGodot::python_init() {
 	Py_SetProgramName(L"godot");
 #ifdef _WIN32
   Py_SetPath(
-    L"C:\\demos\\cython-example\\pygodot"
-    L";C:\\demos\\cython-example\\pygodot\\deps\\python\\PCBuild\\amd64"
-    L";C:\\demos\\cython-example\\pygodot\\deps\\python\\Lib"
+    L"C:\\demos\\cython-example\\pygodot;"
+    L"C:\\demos\\cython-example\\pygodot\\deps\\python\\PCBuild\\amd64;"
+    L"C:\\demos\\cython-example\\pygodot\\deps\\python\\Lib;"
   );
 #elif __APPLE__
 	// Py_SetPythonHome(L"/Users/ii/src/pygodot/buildenv");

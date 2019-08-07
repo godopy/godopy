@@ -90,7 +90,9 @@ def build_python():
 
 
 if __name__ == '__main__':
-    build_python()
+    if sys.platform != 'win32'
+        # Windows build would kill all other Python processes
+        build_python()
 
     if os.path.exists(headers_dir):
         print('\n*** Removing old %r ***' % headers_dir)
