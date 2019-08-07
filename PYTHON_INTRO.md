@@ -5,13 +5,14 @@
 The pure Python API is differs from the Cython API in the following ways:
 * Compilation is not required
 * Python wrappers should be used in place of native C++ classes
-* GDNative library file must be called exactly `gdlibrary.py` and located above the Godot project directory
+* GDNative library file must be called exactly `gdlibrary.py` and located in a directory which contains the target
+Godot project
 
 ## Getting started
 
 Please follow the instructions from [Cython intro](/CYTHON_INTRO.md#getting-started) to build PyGodot.
 
-Simple `pip install pygodot` setup will be available the future versions.
+Simple `pip install pygodot` setup will be available in the future versions.
 
 ### Creating pure Python GDNative extension
 

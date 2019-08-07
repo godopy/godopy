@@ -42,6 +42,7 @@ $ source _meta/bin/activate
 ```
 > Replace `<path to the Godot source folder>` with an actual path. Godot source should be compiled.
 > On Windows PowerShell the export command will be `$env:GODOT_BUILD = 'C:\godot'` if Godot build is in `C:\godot`
+> When you finish working with virtual environment, run `deactivate` command
 
 
 ### Creating a GDNative extension
