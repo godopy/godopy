@@ -153,10 +153,19 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
     resource_types = set(['Resource', 'TriangleMesh', *clsdict['Resource']['child_classes']]) - tools_types
     core_api_types = set(strip_name(c['name']) for c in classes) - tools_types - node_types - resource_types
 
-    print('Node classes:', len(node_types))
-    print('Resource classes:', len(resource_types))
-    print('Core API classes:', len(core_api_types))
-    print('Tools classes:', len(tools_types))
+    if generate_cython or generate_python:
+        if generate_cython and generate_python:
+            bindings_name = 'Python and Cython'
+        elif generate_cython:
+            bindings_name = 'Cython'
+        else:
+            bindings_name = 'Python'
+
+        echo("Generating %s bindings…" % bindings_name)
+        echo('Node classes:', len(node_types))
+        echo('Resource classes:', len(resource_types))
+        echo('Core API classes:', len(core_api_types))
+        echo('Tools classes:', len(tools_types))
 
     module_data = (
         ('nodes', node_types),
