@@ -16,38 +16,6 @@ class GDNativeExtension(Extension):
 if os.path.realpath(os.path.dirname(__file__)) != os.path.realpath(os.getcwd()):
     os.chdir(os.realpath(os.path.dirname(__file__)))
 
-generate_bindings = False
-headers_dir = os.path.join(os.getcwd(), 'godot_headers')
-headers_def = os.path.join(headers_dir, 'gdnative_api.pxd')
-
-if not os.path.exists(headers_def):
-    generate_bindings = True
-
-godot_build_dir = os.environ.get('GODOT_BUILD')
-
-if not os.path.exists(headers_dir):
-    import shutil
-    import subprocess
-    import glob
-
-    godot_build_dir = os.environ.get('GODOT_BUILD')
-    if not godot_build_dir:
-        raise SystemExit("'GODOT_BUILD' environment variable is required.")
-
-    source_dir = os.path.join(godot_build_dir, 'modules', 'gdnative', 'include')
-    shutil.copytree(source_dir, headers_dir)
-
-    exe_glob = 'godot.*.64.exe' if sys.platform == 'win32' else 'godot.*.64'
-    godot_exe_list = glob.glob(os.path.join(godot_build_dir, 'bin', exe_glob))
-    if not godot_exe_list:
-        raise SystemExit("Can't find Godot executable.")
-
-    godot_exe = godot_exe_list.pop()
-    api_path = os.path.join(headers_dir, 'api.json')
-    print(godot_exe, api_path)
-    # print([godot_exe, '--gdnative-generate-json-api', api_path])
-    subprocess.run([godot_exe, '--gdnative-generate-json-api', api_path], check=True)
-
 
 class build_ext(build_python_ext):
     def run(self):
@@ -63,9 +31,7 @@ class build_ext(build_python_ext):
         # Build only when the virtualenv is active
         if not self.dry_run and 'VIRTUAL_ENV' in os.environ:
             scons = os.path.join(sys.prefix, 'Scripts', 'scons') if sys.platform == 'win32' else 'scons'
-            args = [scons, 'target_extension=%s' % extension_path, 'target=release']
-            if generate_bindings:
-                args += ['generate_bindings=yes']
+            args = [scons, 'target_extension=%s' % extension_path]
 
             self.spawn(args)
 

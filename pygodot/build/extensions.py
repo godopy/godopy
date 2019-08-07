@@ -69,8 +69,8 @@ class gdnative_build_ext(build_ext):
 
     def run(self):
         if 'VIRTUAL_ENV' not in os.environ:
-           sys.stderr.write("Please run this command inside the virtual environment.\n")
-           sys.exit(1)
+            sys.stderr.write("Please run this command inside the virtual environment.\n")
+            sys.exit(1)
 
         for ext in self.extensions:
             print('setting up',
@@ -124,7 +124,7 @@ class gdnative_build_ext(build_ext):
         scons = os.path.join(sys.prefix, 'Scripts', 'scons') if sys.platform == 'win32' else 'scons'
 
         if not self.dry_run:
-            self.spawn([scons, 'target=release'])
+            self.spawn([scons])
 
     def write_target_file(self, path, content, pretty_path=None, is_editable_resource=False):
         if pretty_path is None:

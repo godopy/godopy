@@ -103,14 +103,14 @@ if host_platform == 'windows':
 
 if host_platform == 'osx':
     env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
-    env.Append(CPPPATH=[os.path.join('buildenv', 'include')])
+    env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
 elif host_platform == 'windows':
     env.Append(LIBPATH=[os.path.join('deps', 'python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join('deps', 'python', 'PC')])
     env.Append(CPPPATH=[os.path.join('deps', 'python', 'Include')])
 else:
     env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8')])
-    env.Append(CPPPATH=[os.path.join('buildenv', 'include')])
+    env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
 
 
 if env['platform'] == 'linux':
