@@ -1,0 +1,3 @@
+[submodule "deps/python"]
+	path = deps/python
+	url = https://github.com/python/cpython.git

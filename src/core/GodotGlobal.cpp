@@ -36,8 +36,6 @@ const godot_gdnative_ext_pluginscript_api_struct *pluginscript_api = nullptr;
 
 const void *gdnlib = NULL;
 
-wchar_t *pythonpath = NULL;
-
 void Godot::print(const String &message) {
 	godot::api->godot_print((godot_string *)&message);
 }
@@ -82,26 +80,19 @@ void Godot::gdnative_init(godot_gdnative_init_options *options) {
 	godot::gdnlib = options->gd_native_library;
 
 	const godot_gdnative_api_struct *core_extension = godot::api->next;
+	const godot_gdnative_api_struct *prev_extension = nullptr;
 
-	while (core_extension) {
+	// XXX: infinite cycle without pointer comparison
+	while (core_extension && core_extension != prev_extension) {
 		if (core_extension->version.major == 1 && core_extension->version.minor == 1) {
 			godot::core_1_1_api = (const godot_gdnative_core_1_1_api_struct *)core_extension;
 		}
+		prev_extension = core_extension;
 		core_extension = core_extension->next;
 	}
 
-	// Set Python path
-	godot_string path = godot::api->godot_string_get_base_dir(options->active_library_path);
-	godot_int size = godot::api->godot_string_length(&path);
-
-	pythonpath = (wchar_t *)PyMem_RawMalloc((size + 7) * sizeof(wchar_t));
-	wcsncpy(pythonpath, godot::api->godot_string_wide_str(&path), size);
-	wcsncpy(pythonpath + size, L"/pyres", 7);
-
-	godot::api->godot_string_destroy(&path);
-
 	// now find our extensions
-	for (int i = 0; i < godot::api->num_extensions; i++) {
+	for (size_t i = 0; i < godot::api->num_extensions; i++) {
 		switch (godot::api->extensions[i]->type) {
 			case GDNATIVE_EXT_NATIVESCRIPT: {
 				godot::nativescript_api = (const godot_gdnative_ext_nativescript_api_struct *)godot::api->extensions[i];

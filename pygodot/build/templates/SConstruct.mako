@@ -6,13 +6,9 @@ import sys
 
 import sys
 import os
-import distutils
-import sysconfig
 
 if not hasattr(sys, 'version_info') or sys.version_info < (3, 7):
     raise SystemExit("PyGodot requires Python version 3.7 or above.")
-
-config_vars = sysconfig.get_config_vars()
 
 # Try to detect the host platform automatically.
 # This is used if no `platform` argument is passed
@@ -35,11 +31,6 @@ opts.Add(EnumVariable('target', "Compilation target", 'debug', ['d', 'debug', 'r
 opts.Add(EnumVariable('platform', "Compilation platform", host_platform, ['windows', 'x11', 'linux', 'osx']))
 opts.Add(EnumVariable('p', "Compilation target, alias for 'platform'", host_platform, ['windows', 'linux', 'osx']))
 opts.Add(BoolVariable('use_llvm', "Use the LLVM / Clang compiler", 'no'))
-opts.Add(BoolVariable(
-    'export',
-    'Disable development features',
-    False
-))
 
 # Local dependency paths
 godot_headers_path = ${repr(godot_headers_path)}
@@ -65,11 +56,9 @@ if env['platform'] == '':
     print("No valid target platform selected.")
     quit()
 
-libs_path = config_vars.get('LIBPL', None)
-if not libs_path:
-    libs_path = os.path.normpath(os.path.join(distutils.sysconfig.get_python_inc(), '..', 'libs'))
-env.Append(LIBPATH=libs_path)
-env.Append(CPPPATH=distutils.sysconfig.get_python_inc())
+if host_platform == 'osx':
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
+env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
 
 # Check our platform specifics
 if env['platform'] == "osx":
@@ -105,9 +94,6 @@ elif env['platform'] == 'windows':
         env.Append(CPPDEFINES=['NDEBUG'])
         env.Append(CCFLAGS=['-O2', '-EHsc', '-MD'])
 
-if (env['export']):
-    env.Append(CPPDEFINES=['PYGODOT_EXPORT'])
-
 binpath = os.path.dirname(sys.executable)
 if sys.platform == 'win32':
     binpath = os.path.join(sys.prefix, 'Scripts')
@@ -128,9 +114,9 @@ env.Append(CPPPATH=[
 ])
 env.Append(LIBPATH=[os.path.join(pygodot_bindings_path)])
 % if sys.platform == 'win32':
-env.Append(LIBS=[pygodot_library, 'python37'])
+env.Append(LIBS=[pygodot_library, 'python38'])
 % else:
-env.Append(LIBS=[pygodot_library, 'python%(py_version_short)s%(abiflags)s' % config_vars])
+env.Append(LIBS=[pygodot_library, 'python3.8'])
 % endif
 
 % for varname, cpp, pyx in pyx_sources:

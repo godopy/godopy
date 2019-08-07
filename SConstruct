@@ -2,12 +2,9 @@
 
 import sys
 import os
-import sysconfig
 
 if not hasattr(sys, 'version_info') or sys.version_info < (3, 7):
     raise SystemExit("PyGodot requires Python version 3.7 or above.")
-
-config_vars = sysconfig.get_config_vars()
 
 # Try to detect the host platform automatically.
 # This is used if no `platform` argument is passed
@@ -36,11 +33,6 @@ opts.Add(EnumVariable(
     'Target platform bits',
     'default',
     ('default', '32', '64')
-))
-opts.Add(BoolVariable(
-    'export',
-    'Disable development features',
-    False
 ))
 opts.Add(BoolVariable(
     'use_llvm',
@@ -109,11 +101,9 @@ if host_platform == 'windows':
 
     opts.Update(env)
 
-libs_path = config_vars.get('LIBPL', None)
-if not libs_path:
-    libs_path = os.path.join('C:\\Python37', 'libs')
-env.Append(LIBPATH=libs_path)
-env.Append(CPPPATH=config_vars['INCLUDEPY'])
+if host_platform == 'osx':
+    env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
+env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
 
 if env['platform'] == 'linux':
     if env['use_llvm']:
@@ -143,12 +133,11 @@ elif env['platform'] == 'osx':
             'Only 64-bit builds are supported for the macOS target.'
         )
 
-    env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', 'x86_64', '-fwrapv'])
+    env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', 'x86_64', '-fwrapv', '-Wno-unused-result', '-Wsign-compare'])
     env.Append(LINKFLAGS=[
         '-arch',
         'x86_64',
-        '-framework',
-        'Cocoa',
+        '-framework', 'Cocoa',
         '-Wl,-undefined,dynamic_lookup',
     ])
 
@@ -190,9 +179,6 @@ elif env['platform'] == 'windows':
             '-static-libgcc',
             '-static-libstdc++',
         ])
-
-if (env['export']):
-    env.Append(CPPDEFINES=['PYGODOT_EXPORT'])
 
 binpath = os.path.dirname(sys.executable)
 if sys.platform == 'win32':
@@ -241,10 +227,6 @@ sources = [
 ]
 
 gdlib_sources = [
-    # Ensure Cython modules are (re-)compiled
-    #*cython_sources,
-    #*cython_extra_sources,
-    #*cython_binding_sources,
     'src/pylib/gdlibrary.cpp'
 ]
 
@@ -259,13 +241,13 @@ static_library = env.StaticLibrary(target=static_target_name, source=sources)
 
 if env['target_extension']:
     Default(static_library)
-    #dl_env = env.Clone()
-    #dl_env.Append(LIBS=[static_library, 'python37']) # XXX win32 name, python3.7m on mac
-    #dl_env['SHLIBPREFIX'] = ''
-    #dl_env['SHLINKFLAGS'] = ''
-    #dl_env['SHLIBSUFFIX'] = '.pyd'
-    #gdlib = dl_env.SharedLibrary(target=env['target_extension'], source=gdlib_sources)
+    # dl_env = env.Clone()
+    # dl_env.Append(LIBS=[static_library, 'python37']) # XXX win32 name, python3.7m on mac
+    # dl_env['SHLIBPREFIX'] = ''
+    # dl_env['SHLINKFLAGS'] = ''
+    # dl_env['SHLIBSUFFIX'] = '.pyd'
+    # gdlib = dl_env.SharedLibrary(target=env['target_extension'], source=gdlib_sources)
 
-    #Default(gdlib)
+    # Default(gdlib)
 else:
     Default(static_library)

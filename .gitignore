@@ -23,6 +23,7 @@ bin
 # Build files
 .eggs/
 /build
+/buildenv
 /dist
 
 # Generated files

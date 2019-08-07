@@ -33,66 +33,8 @@ static PyModuleDef ${library_name}module = {
 
 PyMODINIT_FUNC PyInit_${library_name}(void) { return PyModule_Create(&${library_name}module); }
 
-#ifndef PYGODOT_EXPORT
-#ifndef _WIN32
-inline FILE* _popen(const char* command, const char* type) {
-   return popen(command, type);
-}
-inline void _pclose(FILE* file) { 
-   pclose(file); 
-}
-#endif
-#include <iostream>
-#include <stdexcept>
-#include <stdio.h>
-#include <string>
-#include <algorithm>
-const std::string shelloutput(const char* cmd) {
-  char buffer[128];
-  std::string result = "";
-  FILE* pipe = _popen(cmd, "r");
-  if (!pipe) throw std::runtime_error("popen() failed!");
-  try {
-    while (fgets(buffer, sizeof buffer, pipe) != NULL) {
-      result += buffer;
-    }
-  } catch (...) {
-    _pclose(pipe);
-    throw;
-  }
-  _pclose(pipe);
-
-  result.erase(std::find_if(result.rbegin(), result.rend(), [](int ch) {
-    return !std::isspace(ch);
-  }).base(), result.end());
-
-  return result;
-}
-#endif
-
 static void _ensure_pygodot_is_initialized() {
   if (_pygodot_is_initialized) return;
-
-#ifndef PYGODOT_EXPORT
-#ifndef _WIN32
-  static bool use_pipenv = (system("python -c 'import pygodot;_=print' &> /dev/null") != 0);
-
-  if (system(use_pipenv ? "pipenv run python -c 'import pygodot;_=print' &> /dev/null" :
-                                     "python -c 'import pygodot;_=print' &> /dev/null") != 0) {
-    throw std::runtime_error("unusable Python environment");
-  }
-
-  // Copy the correct Python paths for development
-  const std::string dev_python_path = use_pipenv ?
-    shelloutput("pipenv run python -c \"print(':'.join(__import__('sys').path))\"") :
-    shelloutput("python -c \"print(':'.join(__import__('sys').path))\"") ;
-  const wchar_t *w_dev_python_path = Py_DecodeLocale(dev_python_path.c_str(), NULL);
-  Py_SetPath(w_dev_python_path);
-  PyMem_RawFree((void *)w_dev_python_path);
-#else
-  Py_SetPath(L"c:\\python37\\Lib;c:\\python37\\DLLs;c:\\demos\\cython-example\\pygodot;c:\\demos\\cython-example");
-#endif
-#endif
 
   PyImport_AppendInittab("${library_name}", PyInit_${library_name});
   PyImport_AppendInittab("core_types", PyInit_core_types);

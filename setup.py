@@ -69,6 +69,7 @@ class build_ext(build_python_ext):
 
             self.spawn(args)
 
+
 version = __import__('pygodot').__version__
 
 packages = ['godot', 'godot_headers', 'pygodot']

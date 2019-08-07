@@ -20,7 +20,7 @@ The instructions below assume using git for managing your project.
 ```
 $ mkdir gdnative-cython-example
 $ cd gdnative-cython-example
-$ git clone https://github.com/ivhilaire/pygodot
+$ git clone --recursive https://github.com/ivhilaire/pygodot
 ```
 
 If your project is an existing repository, use git submodule instead:
@@ -31,14 +31,17 @@ $ git submodule update --init --recursive
 
 Install PyGodot and create the development environment
 ```
-$ pipenv shell
+$ python pygodot/bootstrap.py
+$ pygodot/buildenv/bin/python3 -m venv _meta
+$ source _meta/bin/activate
+(env) $ pip install -r pygodot/meta-requirements.txt
 (env) $ export GODOT_BUILD=<path to the Godot source folder>
 (env) $ cd pygodot
+(env) $ python bootstrap.py
 (env) $ python setup.py develop
-(env) $ exit
 ```
 > Replace `<path to the Godot source folder>` with an actual path. Godot source should be compiled.
-> On Windows PowerShell the command will be `$env:GODOT_BUILD=<path to the Godot source folder>`
+> On Windows PowerShell the export command will be `$env:GODOT_BUILD = 'C:\godot'` if Godot build is in `C:\godot`
 
 
 ### Creating a GDNative extension

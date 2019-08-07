@@ -69,8 +69,8 @@ class gdnative_build_ext(build_ext):
 
     def run(self):
         if 'VIRTUAL_ENV' not in os.environ:
-            sys.stderr.write("Please run this command inside the virtual environment.\n")
-            sys.exit(1)
+           sys.stderr.write("Please run this command inside the virtual environment.\n")
+           sys.exit(1)
 
         for ext in self.extensions:
             print('setting up',

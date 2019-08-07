@@ -10,64 +10,34 @@ extern "C" PyObject *python_nativescript_terminate();
 
 namespace pygodot {
 
-wchar_t *pythonpath = nullptr;
-
 void PyGodot::set_pythonpath(godot_gdnative_init_options *options) {
-	const godot_gdnative_core_api_struct *api = options->api_struct;
-
-  // TODO: Use C++ String class
-	godot_string dir = api->godot_string_get_base_dir(options->active_library_path);
-  godot_string file = api->godot_string_get_file(options->active_library_path);
-	godot_int dirsize = api->godot_string_length(&dir);
-  godot_int filesize = api->godot_string_length(&file);
-
-	pythonpath = (wchar_t *)PyMem_RawMalloc((dirsize + 1 + filesize + 5) * sizeof(wchar_t));
-	wcsncpy(pythonpath, api->godot_string_wide_str(&dir), dirsize);
-  wcsncpy(pythonpath + dirsize, L"/", 1);
-  wcsncpy(pythonpath + dirsize + 1, api->godot_string_wide_str(&file), filesize);
-	wcsncpy(pythonpath + dirsize + 1 + filesize, L".env", 5);
-
-	api->godot_string_destroy(&dir);
-  api->godot_string_destroy(&file);
+  // TODO: Rename to python_preconfig(), use PyPreConfig_InitIsolatedConfig()
 }
 
 void PyGodot::python_init() {
-	if (!pythonpath) {
-		printf("Could not initialize Python interpreter:\n");
-		printf("Python path was not defined!\n");
-
-		return;
-	}
+  // TODO: PyConfig_InitIsolatedConfig()
 
   Py_NoUserSiteDirectory = 1;
-
-#ifdef PYGODOT_EXPORT
   Py_NoSiteFlag = 1;
-	Py_IgnoreEnvironmentFlag = 1;
-#endif
+	// Py_IgnoreEnvironmentFlag = 1;
 
+  // XXX: hardcoded
 	Py_SetProgramName(L"godot");
-	Py_SetPythonHome(pythonpath);
+#ifdef _WIN32
 
-	// Initialize interpreter but skip initialization registration of signal handlers
+#elif __APPLE__
+	Py_SetPythonHome(L"/Users/ii/src/pygodot/buildenv");
+#else
+
+#endif
 	Py_InitializeEx(0);
 
-	PyObject *mod = PyImport_ImportModule("pygodot");
-  if (mod != NULL) {
-    Py_DECREF(mod);
-
-    printf("Python %s\n\n", Py_GetVersion());
-  } else {
-    PyErr_Print();
-  }
+  printf("Python %s\n\n", Py_GetVersion());
 }
 
 void PyGodot::python_terminate() {
 	if (Py_IsInitialized()) {
 		Py_FinalizeEx();
-
-		if (pythonpath)
-			PyMem_RawFree((void *)pythonpath);
 	}
 }
 
