@@ -29,15 +29,16 @@ $ git submodule add https://github.com/ivhilaire/pygodot
 $ git submodule update --init --recursive
 ```
 
+[Windows only] If you are using Windows PowerShell, first run as admin: set-executionpolicy RemoteSigned
+
 Install PyGodot and create the development environment
 ```
 $ python pygodot/bootstrap.py
-$ pygodot/buildenv/bin/python3 -m venv _meta
-$ source _meta/bin/activate
-(env) $ pip install -r pygodot/meta-requirements.txt
+$ pygodot/buildenv/bin/python3 -m venv _meta  # on Windows: .\pygodot\deps\python\pcbuild\amd64\py -m venv _meta
+$ source _meta/bin/activate  # on Windows: .\_meta\Scripts\Activate
+(env) $ python -m pip install -r pygodot/meta-requirements.txt
 (env) $ export GODOT_BUILD=<path to the Godot source folder>
 (env) $ cd pygodot
-(env) $ python bootstrap.py
 (env) $ python setup.py develop
 ```
 > Replace `<path to the Godot source folder>` with an actual path. Godot source should be compiled.

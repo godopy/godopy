@@ -58,7 +58,14 @@ if env['platform'] == '':
 
 if host_platform == 'osx':
     env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
-env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include')])
+elif host_platform == 'windows':
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PC')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'include')])
+else:
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include')])
 
 # Check our platform specifics
 if env['platform'] == "osx":

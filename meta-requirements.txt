@@ -2,7 +2,7 @@ atomicwrites==1.3.0
 attrs==19.1.0
 autopxd2==1.0.0
 Click==7.0
--e git+git@github.com:cython/cython.git@HEAD#egg=Cython
+git+https://github.com/cython/cython.git@master#egg=Cython
 importlib-metadata==0.19
 Mako==1.1.0
 MarkupSafe==1.1.1

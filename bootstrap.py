@@ -13,14 +13,24 @@ def build():
     print('Building in %s' % python_path)
     os.chdir(python_path)
 
-    commands = [
-        f'./configure --prefix={prefix}'
-        # ' --enable-optimizations'
-        # ' --enable-loadable-sqlite-extensions'
-        ' --disable-shared',
-        'make -j%d' % max(os.cpu_count() - 1, 1),
-        'make install'
-    ]
+    if sys.platform == 'win32':
+        os.chdir('.\\PCBuild')
+        print(os.getcwd())
+        commands = [
+            'build.bat -p x64 -c Release --no-tkinter -t Build'
+        ]
+        subprocess.run(commands[0].split())
+        os.chdir(cwd)
+        sys.exit(0)
+    else:
+        commands = [
+            f'./configure --prefix={prefix}'
+            # ' --enable-optimizations'
+            # ' --enable-loadable-sqlite-extensions'
+            ' --disable-shared',
+            'make -j%d' % max(os.cpu_count() - 1, 1),
+            'make install'
+        ]
 
     if sys.platform == 'darwin':
         os.environ['OPENSSL_LIBS'] = '-lssl -lcrypto'
