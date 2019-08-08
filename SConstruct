@@ -101,24 +101,20 @@ if host_platform == 'windows':
 
     opts.Update(env)
 
-if host_platform == 'osx':
-    env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
-    env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
-elif host_platform == 'windows':
-    env.Append(LIBPATH=[os.path.join('deps', 'python', 'PCBuild', 'amd64')])
-    env.Append(CPPPATH=[os.path.join('deps', 'python', 'PC')])
-    env.Append(CPPPATH=[os.path.join('deps', 'python', 'Include')])
-else:
-    env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8')])
-    env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
-
-
 if env['platform'] == 'linux':
-    if env['use_llvm']:
-        env['CXX'] = 'clang++'
+    # if env['use_llvm']:
+    env['CXX'] = 'clang++'
 
-    env.Append(CCFLAGS=['-fPIC', '-g', '-std=c++14', '-Wwrite-strings'])
+    env.Append(LIBPATH=[
+        os.path.join('buildenv', 'lib'),
+        os.path.join('buildenv', 'lib', 'python3.8', 'config-3.8-x86_64-linux-gnu')
+    ])
+    env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
+
+    env.Append(CCFLAGS=['-pthread', '-fPIC', '-g', '-std=c++14', '-Wwrite-strings', '-fwrapv', '-Wno-unused-result', '-Wsign-compare'])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
+
+    env.Append(LIBS=['crypt', 'pthread', 'dl', 'util', 'm'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
@@ -135,6 +131,9 @@ if env['platform'] == 'linux':
 elif env['platform'] == 'osx':
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
+
+    env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
+    env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
 
     if env['bits'] == '32':
         raise ValueError(
@@ -157,6 +156,10 @@ elif env['platform'] == 'osx':
         env.Append(CCFLAGS=['-O3'])
 
 elif env['platform'] == 'windows':
+    env.Append(LIBPATH=[os.path.join('deps', 'python', 'PCBuild', 'amd64')])
+    env.Append(CPPPATH=[os.path.join('deps', 'python', 'PC')])
+    env.Append(CPPPATH=[os.path.join('deps', 'python', 'Include')])
+
     if host_platform == 'windows' and not env['use_mingw']:
         # MSVC
         env.Append(LINKFLAGS=['/WX'])

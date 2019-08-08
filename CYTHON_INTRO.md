@@ -29,21 +29,37 @@ $ git submodule add https://github.com/ivhilaire/pygodot
 $ git submodule update --init --recursive
 ```
 
-[Windows only] If you are using Windows PowerShell, first run as admin: set-executionpolicy RemoteSigned
+[Ubuntu Linux] `sudo apt-get build-dep python3.7`
 
-Install PyGodot and create the development environment
+Install PyGodot and set up a development environment (this process will take some time):
 ```
-$ python pygodot/bootstrap.py
-$ pygodot/buildenv/bin/python3 -m venv _meta  # on Windows: .\pygodot\deps\python\pcbuild\amd64\py -m venv _meta
-$ source _meta/bin/activate  # on Windows: .\_meta\Scripts\Activate
-(env) $ python -m pip install -r pygodot/meta-requirements.txt
-(env) $ export GODOT_BUILD=<path to the Godot source folder>
-(env) $ cd pygodot
-(env) $ python setup.py develop
+$ # Mac and Linux:
+$ python3 pygodot/build_python.py
+$ pygodot/buildenv/bin/python3 -m venv _meta
+$ source _meta/bin/activate
+(_meta) $ python -m pip install -r pygodot/meta-requirements.txt
+(_meta) $ export GODOT_BUILD=<path to Godot source folder>
+(_meta) $ cd pygodot
+(_meta) $ python bootstrap.py
+(_meta) $ python setup.py develop
 ```
-> Replace `<path to the Godot source folder>` with an actual path. Godot source should be compiled.
-> On Windows PowerShell the export command will be `$env:GODOT_BUILD = 'C:\godot'` if Godot build is in `C:\godot`
-> When you finish working with virtual environment, run `deactivate` command
+> Replace `<path to Godot source folder>` with an actual path. Godot source should be compiled.
+> When you finish working with a virtual environment, run `deactivate` command
+
+[Windows only] If you are using Windows PowerShell, first run as admin: `set-executionpolicy RemoteSigned`
+```
+$ # Windows:
+$ python pygodot/build_python.py
+$ .\pygodot\deps\python\pcbuild\amd64\py -m venv _meta
+$ .\_meta\Scripts\Activate
+(_meta) $ python -m pip install -r pygodot/meta-requirements.txt
+(_meta) $ $env:GODOT_BUILD = 'C:\path\to\godot'
+(_meta) $ cd pygodot
+(_meta) $ python bootstrap.py
+(_meta) $ python setup.py develop
+```
+> Replace `C:\path\to\godot` with an actual path.
+> When you finish working with a virtual environment, run `deactivate` command
 
 
 ### Creating a GDNative extension

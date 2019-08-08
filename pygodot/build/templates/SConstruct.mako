@@ -56,43 +56,46 @@ if env['platform'] == '':
     print("No valid target platform selected.")
     quit()
 
-if host_platform == 'osx':
-    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
-elif host_platform == 'windows':
-    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PC')])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'include')])
-else:
-    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8')])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
-
 # Check our platform specifics
 if env['platform'] == "osx":
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
 
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
     if env['target'] in ('debug', 'd'):
         env.Append(CCFLAGS=['-g', '-std=c++14', '-O2', '-arch', 'x86_64', '-fwrapv'])
-        env.Append(LINKFLAGS=['-arch', 'x86_64'])
     else:
         env.Append(CCFLAGS=['-g', '-std=c++14', '-O3', '-arch', 'x86_64', '-fwrapv'])
-        env.Append(LINKFLAGS=[
-            '-arch', 'x86_64',
-            '-framework', 'CoreFoundation',
-        ])
-    env.Append(LIBS=['dl'])
+    env.Append(LINKFLAGS=[
+        '-arch', 'x86_64',
+        '-framework', 'CoreFoundation',
+    ])
+    env.Append(LIBS=['dl', 'python3.8'])
 elif env['platform'] == 'linux':
+    env['CXX'] = 'clang++'
+    env.Append(LIBPATH=[
+        #os.path.join(pygodot_bindings_path, 'deps', 'python'),
+        #os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'lib.linux-x86_64-3.8'),
+        os.path.join(pygodot_bindings_path, 'buildenv', 'lib'),
+        os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-x86_64-linux-gnu')
+    ])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
+    env.Append(CCFLAGS=['-pthread', '-fPIC', '-std=c++14', '-Wwrite-strings', '-fwrapv', '-Wno-unused-result', '-Wsign-compare'])
+    env.Append(LIBS=['crypt', 'pthread', 'dl', 'util', 'm', 'python3.8'])
+    env.Append(LINKFLAGS=['-pthread', '-Xlinker', '-export-dynamic', '-Wl,-z,defs'])
     if env['target'] in ('debug', 'd'):
-        env.Append(CCFLAGS=['-fPIC', '-g3', '-Og'])
-        env.Append(CXXFLAGS=['-std=c++17'])
+        env.Append(CCFLAGS=['-g3', '-Og'])
     else:
         env.Append(CCFLAGS=['-fPIC', '-g', '-O3'])
-        env.Append(CXXFLAGS=['-std=c++17'])
 
 elif env['platform'] == 'windows':
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PC')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'include')])
     env.Append(CPPDEFINES=['WIN32', '_WIN32', '_WINDOWS', '_CRT_SECURE_NO_WARNINGS'])
     env.Append(CCFLAGS=['-W3', '-GR'])
+    env.Append(LIBS=['python38'])
     if env['target'] in ('debug', 'd'):
         env.Append(CPPDEFINES=['_DEBUG'])
         env.Append(CCFLAGS=['-EHsc', '-MDd', '-ZI'])
@@ -120,11 +123,7 @@ env.Append(CPPPATH=[
     os.path.join(pygodot_bindings_path, 'include', 'pygen')
 ])
 env.Append(LIBPATH=[os.path.join(pygodot_bindings_path)])
-% if sys.platform == 'win32':
-env.Append(LIBS=[pygodot_library, 'python38'])
-% else:
-env.Append(LIBS=[pygodot_library, 'python3.8'])
-% endif
+env.Append(LIBS=[pygodot_library])
 
 % for varname, cpp, pyx in pyx_sources:
 _gencpp_${varname} = env.CythonSource(${repr(cpp)}, ${repr(pyx)})
