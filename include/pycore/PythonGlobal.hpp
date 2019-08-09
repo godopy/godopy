@@ -11,7 +11,7 @@ namespace pygodot {
 class PyGodot {
 
 public:
-	static void set_pythonpath(godot_gdnative_init_options *o);
+	static void python_preconfig(godot_gdnative_init_options *o);
 	static void python_init();
 	static void python_terminate();
 

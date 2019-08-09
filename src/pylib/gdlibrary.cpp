@@ -61,7 +61,7 @@ static void _ensure_pygodot_is_initialized() {
 
 extern "C" void GDN_EXPORT pygodot_gdnative_init(godot_gdnative_init_options *o) {
     godot::Godot::gdnative_init(o);
-    pygodot::PyGodot::set_pythonpath(o);
+    pygodot::PyGodot::python_preconfig(o);
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_terminate(godot_gdnative_terminate_options *o) {

@@ -28,7 +28,6 @@ def build_python():
     commands = [
         f'./configure --prefix={prefix}'
         # ' --enable-optimizations'
-
         ' --enable-loadable-sqlite-extensions'
         ' --enable-shared',
         'make -j%d' % max(os.cpu_count() - 1, 1),

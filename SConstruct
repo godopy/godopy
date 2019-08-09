@@ -86,11 +86,7 @@ opts.Update(env)
 Help(opts.GenerateHelpText(env))
 
 is64 = sys.maxsize > 2**32
-if (
-    env['TARGET_ARCH'] == 'amd64' or
-    env['TARGET_ARCH'] == 'emt64' or
-    env['TARGET_ARCH'] == 'x86_64'
-):
+if env['TARGET_ARCH'] == 'amd64' or env['TARGET_ARCH'] == 'emt64' or env['TARGET_ARCH'] == 'x86_64':
     is64 = True
 
 if env['bits'] == 'default':
@@ -117,10 +113,20 @@ if env['platform'] == 'linux':
     ])
     env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
 
-    env.Append(CCFLAGS=['-pthread', '-fPIC', '-g', '-std=c++14', '-Wwrite-strings', '-fwrapv', '-Wno-unused-result', '-Wsign-compare'])
+    env.Append(CCFLAGS=[
+        '-pthread',
+        '-fPIC',
+        '-g',
+        '-std=c++14',
+        '-Wwrite-strings',
+        '-fwrapv',
+        '-Wno-unused-result',
+        '-Wsign-compare',
+        '-Wunreachable-code'
+    ])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
 
-    env.Append(LIBS=['crypt', 'pthread', 'dl', 'util', 'm'])
+    env.Append(LIBS=['python3.8', 'crypt', 'pthread', 'dl', 'util', 'm'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
@@ -146,7 +152,15 @@ elif env['platform'] == 'osx':
             'Only 64-bit builds are supported for the macOS target.'
         )
 
-    env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', 'x86_64', '-fwrapv', '-Wno-unused-result', '-Wsign-compare'])
+    env.Append(CCFLAGS=[
+        '-g',
+        '-std=c++14',
+        '-arch', 'x86_64',
+        '-fwrapv',
+        '-Wno-unused-result',
+        '-Wsign-compare',
+        '-Wunreachable-code'
+    ])
     env.Append(LINKFLAGS=[
         '-arch',
         'x86_64',
@@ -154,7 +168,7 @@ elif env['platform'] == 'osx':
         '-Wl,-undefined,dynamic_lookup',
     ])
 
-    env.Append(LIBS=['dl'])
+    env.Append(LIBS=['python3.8', 'dl'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])

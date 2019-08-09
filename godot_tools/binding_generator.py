@@ -162,10 +162,10 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
             bindings_name = 'Python'
 
         echo("Generating %s bindings…" % bindings_name)
-        echo('Node classes:', len(node_types))
-        echo('Resource classes:', len(resource_types))
-        echo('Core API classes:', len(core_api_types))
-        echo('Tools classes:', len(tools_types))
+        # echo('Node classes:', len(node_types))
+        # echo('Resource classes:', len(resource_types))
+        # echo('Core API classes:', len(core_api_types))
+        # echo('Tools classes:', len(tools_types))
 
     module_data = (
         ('nodes', node_types),

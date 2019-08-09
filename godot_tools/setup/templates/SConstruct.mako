@@ -7,11 +7,9 @@ import sys
 import sys
 import os
 
-if not hasattr(sys, 'version_info') or sys.version_info < (3, 7):
-    raise SystemExit("PyGodot requires Python version 3.7 or above.")
+if not hasattr(sys, 'version_info') or sys.version_info < (3, 6):
+    raise SystemExit("PyGodot requires Python version 3.6 or above.")
 
-# Try to detect the host platform automatically.
-# This is used if no `platform` argument is passed
 if sys.platform.startswith('linux'):
     host_platform = 'linux'
 elif sys.platform == 'darwin':
@@ -26,13 +24,11 @@ else:
 
 opts = Variables([], ARGUMENTS)
 
-# Define our options
 opts.Add(EnumVariable('target', "Compilation target", 'debug', ['d', 'debug', 'r', 'release']))
 opts.Add(EnumVariable('platform', "Compilation platform", host_platform, ['windows', 'x11', 'linux', 'osx']))
 opts.Add(EnumVariable('p', "Compilation target, alias for 'platform'", host_platform, ['windows', 'linux', 'osx']))
 opts.Add(BoolVariable('use_llvm', "Use the LLVM / Clang compiler", 'no'))
 
-# Local dependency paths
 godot_headers_path = ${repr(godot_headers_path)}
 pygodot_bindings_path = ${repr(pygodot_bindings_path)}
 pygodot_library = ${repr(pygodot_library_name)}
@@ -44,7 +40,6 @@ else:
 
 opts.Update(env)
 
-# Process some arguments
 if env['use_llvm']:
     env['CC'] = 'clang'
     env['CXX'] = 'clang++'
@@ -56,37 +51,60 @@ if env['platform'] == '':
     print("No valid target platform selected.")
     quit()
 
-# Check our platform specifics
 if env['platform'] == "osx":
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
 
     env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
     env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
-    if env['target'] in ('debug', 'd'):
-        env.Append(CCFLAGS=['-g', '-std=c++14', '-O2', '-arch', 'x86_64', '-fwrapv'])
-    else:
-        env.Append(CCFLAGS=['-g', '-std=c++14', '-O3', '-arch', 'x86_64', '-fwrapv'])
-    env.Append(LINKFLAGS=[
+    env.Append(CCFLAGS=[
+        '-g',
+        '-std=c++14',
         '-arch', 'x86_64',
-        '-framework', 'CoreFoundation',
+        '-fwrapv',
+        '-Wno-unused-result',
+        '-Wsign-compare',
+        '-Wunreachable-code'
     ])
-    env.Append(LIBS=['dl', 'python3.8'])
+    env.Append(LINKFLAGS=[
+        '-arch',
+        'x86_64',
+        '-framework', 'Cocoa',
+        '-Wl,-undefined,dynamic_lookup',
+    ])
+
+    env.Append(LIBS=['python3.8', 'dl'])
+
+    if env['target'] == 'debug':
+        env.Append(CCFLAGS=['-Og'])
+    elif env['target'] == 'release':
+        env.Append(CCFLAGS=['-O3'])
+
 elif env['platform'] == 'linux':
     env.Append(LIBPATH=[
-        #os.path.join(pygodot_bindings_path, 'deps', 'python'),
-        #os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'lib.linux-x86_64-3.8'),
+        # os.path.join(pygodot_bindings_path, 'deps', 'python'),
+        # os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'lib.linux-x86_64-3.8'),
         os.path.join(pygodot_bindings_path, 'buildenv', 'lib'),
         os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-x86_64-linux-gnu')
     ])
     env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
-    env.Append(CCFLAGS=['-pthread', '-fPIC', '-std=c++14', '-Wwrite-strings', '-fwrapv', '-Wno-unused-result', '-Wsign-compare'])
-    env.Append(LIBS=['crypt', 'pthread', 'dl', 'util', 'm', 'python3.8'])
+    env.Append(CCFLAGS=[
+        '-pthread',
+        '-fPIC',
+        '-g',
+        '-std=c++14',
+        '-Wwrite-strings',
+        '-fwrapv',
+        '-Wno-unused-result',
+        '-Wsign-compare',
+        '-Wunreachable-code'
+    ])
+    env.Append(LIBS=['python3.8', 'crypt', 'pthread', 'dl', 'util', 'm'])
     env.Append(LINKFLAGS=['-pthread', '-Xlinker', '-export-dynamic', '-Wl,-z,defs'])
     if env['target'] in ('debug', 'd'):
         env.Append(CCFLAGS=['-g3', '-Og'])
     else:
-        env.Append(CCFLAGS=['-fPIC', '-g', '-O3'])
+        env.Append(CCFLAGS=['-g', '-O3'])
 
 elif env['platform'] == 'windows':
     env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
