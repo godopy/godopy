@@ -3,8 +3,8 @@
 import sys
 import os
 
-if not hasattr(sys, 'version_info') or sys.version_info < (3, 7):
-    raise SystemExit("PyGodot requires Python version 3.7 or above.")
+if not hasattr(sys, 'version_info') or sys.version_info < (3, 6):
+    raise SystemExit("PyGodot requires Python version 3.6 or above.")
 
 # Try to detect the host platform automatically.
 # This is used if no `platform` argument is passed
@@ -21,6 +21,7 @@ else:
     )
 
 opts = Variables([], ARGUMENTS)
+
 opts.Add(EnumVariable(
     'platform',
     'Target platform',
@@ -42,6 +43,11 @@ opts.Add(BoolVariable(
 opts.Add(BoolVariable(
     'use_mingw',
     'Use the MinGW compiler instead of MSVC - only effective on Windows',
+    False
+))
+opts.Add(BoolVariable(
+    'only_cython',
+    'Compile only Cython sources',
     False
 ))
 # Must be the same setting as used for cpp_bindings
@@ -102,8 +108,8 @@ if host_platform == 'windows':
     opts.Update(env)
 
 if env['platform'] == 'linux':
-    # if env['use_llvm']:
-    env['CXX'] = 'clang++'
+    if env['use_llvm']:
+        env['CXX'] = 'clang++'
 
     env.Append(LIBPATH=[
         os.path.join('buildenv', 'lib'),
@@ -225,21 +231,18 @@ if env['generate_bindings']:
 
 # Sources to compile
 cython_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/*.pyx')]
-cython_extra_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('pygodot/*.pyx')]
 cython_binding_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/bindings/*.pyx')]
 
-sources = [
-    *cython_sources,
-    *cython_extra_sources,
-    *cython_binding_sources,
-    *Glob('src/core/*.cpp'),
-    *Glob('src/gen/*.cpp'),
-    *Glob('src/pycore/*.cpp')
-]
+sources = [*cython_sources, *cython_binding_sources]
 
-gdlib_sources = [
-    'src/pylib/gdlibrary.cpp'
-]
+if not env['only_cython']:
+    sources += [*Glob('src/core/*.cpp'), *Glob('src/gen/*.cpp'), *Glob('src/pycore/*.cpp')]
+
+# gdlib_sources = [
+#     *cython_sources,
+#     *cython_binding_sources,
+#     'src/pylib/gdlibrary.cpp'
+# ]
 
 static_target_name = 'bin/libpygodot.%(platform)s.%(target)s.%(bits)s' % env
 

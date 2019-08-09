@@ -21,7 +21,7 @@ from cpython.object cimport PyObject, PyTypeObject
 from cpython.tuple cimport PyTuple_New, PyTuple_SetItem
 from cpython.ref cimport Py_INCREF, Py_DECREF
 
-from pygodot.utils cimport _init_dynamic_loading
+from .utils cimport _init_dynamic_loading
 
 from cython.operator cimport dereference as deref
 

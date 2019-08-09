@@ -3,7 +3,6 @@
 #include "GodotGlobal.hpp"
 #include "Defs.hpp"
 
-extern "C" {
 #include "godot/nativescript.h"
 #include "godot/gdnative.h"
 
@@ -15,7 +14,6 @@ PyMODINIT_FUNC PyInit_utils();
 % for varname, _, _ in pyx_sources:
 PyMODINIT_FUNC PyInit_${varname}(void);
 % endfor
-}
 
 extern "C" PyObject *_pygodot_nativescript_init();
 % if singleton:

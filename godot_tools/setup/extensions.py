@@ -20,8 +20,8 @@ class ExtType(enum.Enum):
 
 
 root_dir = os.getcwd()  # XXX
-pygodot_lib_root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
-templates_dir = os.path.join(pygodot_lib_root, 'pygodot', 'build', 'templates')
+tools_root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+templates_dir = os.path.join(tools_root, 'setup', 'templates')
 
 
 class GenericGDNativeLibrary(Extension):
@@ -58,8 +58,8 @@ class gdnative_build_ext(build_ext):
 
     build_context = {
         '__version__': get_version(),
-        'godot_headers_path': os.path.join(pygodot_lib_root, 'godot_headers'),
-        'pygodot_bindings_path': pygodot_lib_root,
+        'godot_headers_path': os.path.join(tools_root, '..', 'godot_headers'),
+        'pygodot_bindings_path': os.path.dirname(tools_root),
         'singleton': False,
         'pyx_sources': [],
         'cpp_sources': []
@@ -243,8 +243,9 @@ class gdnative_build_ext(build_ext):
         _ext = dst_name_parts[-1]
         if _ext == 'pyd':
             _ext = 'dll'
-        dst_fullname = dst_name_parts[0] + '.' + _ext  #  '.'.join(dst_name_parts)
-        src_name = '.'.join(['_pygodot', *dst_name_parts[1:-1]])
+        dst_fullname = dst_name_parts[0] + '.' + _ext  # '.'.join(dst_name_parts)
+        # staticlib_name = '.'.join(['_pygodot', *dst_name_parts[1:-1]])
+        staticlib_name = 'libpygodot.%s.debug.64' % platform.lower().split('.')[0]
 
         binext_path = os.path.join(godot_root, self.godot_project.binary_path, dst_fullname)
 
@@ -253,7 +254,7 @@ class gdnative_build_ext(build_ext):
         self.build_context['cpp_library_path'] = \
             os.path.join(self.godot_project.shadow_name, cpp_library_dir, '_' + cpp_library_unprefixed)
 
-        self.build_context['pygodot_library_name'] = src_name
+        self.build_context['pygodot_library_name'] = staticlib_name
         self.build_context['target'] = make_relative_path(binext_path)
 
         dst_name = dst_name_parts[0]

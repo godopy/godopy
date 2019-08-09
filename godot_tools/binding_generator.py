@@ -64,7 +64,7 @@ CYTHON_ESCAPES = {**CPP_ESCAPES, **CYTHON_ONLY_ESCAPES}
 reference_types = set()
 icall_names = {}
 
-root_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
+root_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 bindings_dir = os.path.join(root_dir, 'godot', 'bindings')
 
 

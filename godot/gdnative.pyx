@@ -1,4 +1,4 @@
-from pygodot.utils cimport _init_dynamic_loading
+from .utils cimport _init_dynamic_loading
 
 
 cdef public generic_gdnative_singleton():

@@ -1,8 +1,12 @@
 import sys
 import subprocess
+
 from pycparser import c_parser
+
+from autopxd.nodes import Array
 from autopxd.writer import AutoPxd
 from autopxd.declarations import BUILTIN_HEADERS_DIR, IGNORE_DECLARATIONS
+
 
 # Copied from autopxd2, modified preprocessor for macOS
 def preprocess(code, extra_cpp_args=[]):
@@ -23,6 +27,7 @@ def preprocess(code, extra_cpp_args=[]):
 
     return b''.join(result).decode('ascii', 'ignore')
 
+
 def parse(code, extra_cpp_args=[]):
     preprocessed = preprocess(code, extra_cpp_args=extra_cpp_args)
     stripped = []
@@ -39,7 +44,7 @@ def parse(code, extra_cpp_args=[]):
     ast.ext = decls
     return ast
 
-from autopxd.nodes import Array
+
 class PxdWriter(AutoPxd):
     def visit_ArrayDecl(self, node):
         dim = ''

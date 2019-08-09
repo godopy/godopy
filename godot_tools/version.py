@@ -5,12 +5,10 @@ VERSION = (0, 0, 1, 'alpha', 0)
 
 
 def githead_sha():
-    from . import inside_godot
-
     repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     # TODO: Write PyGodot version to a C header file and retrieve SHA from the built-in modules
-    if inside_godot or not os.path.isdir(repo_dir):
+    if not os.path.isdir(repo_dir):
         return '<unknown-commit>'
 
     git_revparse = subprocess.Popen(

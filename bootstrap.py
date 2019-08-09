@@ -1,11 +1,13 @@
+#!/usr/bin/env python
+
 import os
 import sys
 import glob
 import shutil
 import subprocess
 
-
-from binding_generator import generate_bindings
+if not hasattr(sys, 'version_info') or sys.version_info < (3, 6):
+    raise SystemExit("PyGodot requires Python version 3.6 or above.")
 
 root_dir = os.path.abspath(os.path.dirname(__file__))
 headers_dir = os.path.join(root_dir, 'godot_headers')
@@ -39,9 +41,12 @@ def copy_headers():
 
 
 if __name__ == '__main__':
-    # if not os.path.exists(prefix) and sys.platform != 'win32':
-    #     # Windows build would kill all other Python processes
-    #     build_python()
+    from binding_generator import generate_bindings
+    from internal_python_build import build_python
+
+    if not os.path.exists(prefix) and sys.platform != 'win32':
+        # Windows build would kill all other Python processes
+        build_python()
 
     if os.path.exists(headers_dir):
         print('Removing old %r…' % headers_dir)

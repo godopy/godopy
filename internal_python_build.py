@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import sys
 import subprocess
@@ -5,7 +7,6 @@ import subprocess
 
 def build_python():
     root_dir = os.path.abspath(os.path.dirname(__file__))
-    headers_dir = os.path.join(root_dir, 'godot_headers')
 
     prefix = os.path.join(root_dir, 'buildenv')
     cwd = os.path.abspath(os.getcwd())
@@ -29,7 +30,7 @@ def build_python():
         # ' --enable-optimizations'
 
         ' --enable-loadable-sqlite-extensions'
-        ' --disable-shared',
+        ' --enable-shared',
         'make -j%d' % max(os.cpu_count() - 1, 1),
         'make install'
     ]
@@ -47,19 +48,14 @@ def build_python():
             '-I/usr/local/opt/sqlite/include '
         )
     else:
-        os.environ['CFLAGS'] = '-fPIC'
-        os.environ['CC'] = 'clang'
+        pass
+        # os.environ['CFLAGS'] = '-fPIC'
+        # os.environ['CC'] = 'clang'
 
     for command in commands:
         print()
         print('***', command, '***')
         subprocess.run(command.split(), check=True)
-
-    # os.chdir(root_dir)
-    # install_self = 'buildenv/bin/pip3 install -e .'
-    # print()
-    # print('\t***', install_self, '***')
-    # subprocess.run(install_self.split())
 
     os.chdir(cwd)
 

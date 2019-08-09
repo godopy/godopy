@@ -34,29 +34,32 @@ $ git submodule update --init --recursive
 Install PyGodot and set up a development environment (this process will take some time):
 ```
 $ # Mac and Linux:
-$ python3 pygodot/build_python.py
-$ pygodot/buildenv/bin/python3 -m venv _meta
-$ source _meta/bin/activate
-(_meta) $ python -m pip install -r pygodot/meta-requirements.txt
-(_meta) $ export GODOT_BUILD=<path to Godot source folder>
-(_meta) $ cd pygodot
-(_meta) $ python bootstrap.py
-(_meta) $ python setup.py develop
+$ python3 -m venv toolbox
+$ source toolbox/bin/activate
+(toolbox) $ pip install -r pygodot/tools-requirements.txt
+(toolbox) $ pip install -e ./pygodot
+(toolbox) $ export GODOT_BUILD=<path to Godot source folder>
+(toolbox) $ pygodot/bootstrap.py
+(toolbox) $ cd pygodot
+(toolbox) $ scons -j8 only_cython=yes
+(toolbox) $ scons -j8
 ```
 > Replace `<path to Godot source folder>` with an actual path. Godot source should be compiled.
 > When you finish working with a virtual environment, run `deactivate` command
+> It is not required to use `python3 -m venv`, any virtualenv would work: `pipenv` or `virtualenvwrapper` are fine too
 
 [Windows only] If you are using Windows PowerShell, first run as admin: `set-executionpolicy RemoteSigned`
 ```
 $ # Windows:
-$ python pygodot/build_python.py
-$ .\pygodot\deps\python\pcbuild\amd64\py -m venv _meta
+$ python -m venv _meta
 $ .\_meta\Scripts\Activate
 (_meta) $ python -m pip install -r pygodot/meta-requirements.txt
 (_meta) $ $env:GODOT_BUILD = 'C:\path\to\godot'
 (_meta) $ cd pygodot
+(_meta) $ python internal_python_build
 (_meta) $ python bootstrap.py
-(_meta) $ python setup.py develop
+(toolbox) $ scons -j8 only_cython=yes
+(toolbox) $ scons -j8
 ```
 > Replace `C:\path\to\godot` with an actual path.
 > When you finish working with a virtual environment, run `deactivate` command

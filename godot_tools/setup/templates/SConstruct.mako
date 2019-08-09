@@ -73,7 +73,6 @@ if env['platform'] == "osx":
     ])
     env.Append(LIBS=['dl', 'python3.8'])
 elif env['platform'] == 'linux':
-    env['CXX'] = 'clang++'
     env.Append(LIBPATH=[
         #os.path.join(pygodot_bindings_path, 'deps', 'python'),
         #os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'lib.linux-x86_64-3.8'),
@@ -122,7 +121,7 @@ env.Append(CPPPATH=[
     os.path.join(pygodot_bindings_path, 'include', 'pycore'),
     os.path.join(pygodot_bindings_path, 'include', 'pygen')
 ])
-env.Append(LIBPATH=[os.path.join(pygodot_bindings_path)])
+env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'bin')])
 env.Append(LIBS=[pygodot_library])
 
 % for varname, cpp, pyx in pyx_sources:
