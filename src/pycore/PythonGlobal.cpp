@@ -60,11 +60,11 @@ void PyGodot::python_init() {
 	status = PyWideStringList_Append(&config.module_search_paths, L"/Users/ii/src/pygodot/buildenv/lib/python3.8/lib-dynload");
 	ERR_FAIL_PYSTATUS(status, fail);
 #else
-	status = PyWideStringList_Append(&config.module_search_paths, L"~/src/pygodot");
+	status = PyWideStringList_Append(&config.module_search_paths, L"/home/ii/src/pygodot");
 	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, L"~/src/pygodot/buildenv/lib/python3.8");
+	status = PyWideStringList_Append(&config.module_search_paths, L"/home/ii/src/pygodot/buildenv/lib/python3.8");
 	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, L"~/src/pygodot/buildenv/lib/python3.8/lib-dynload");
+	status = PyWideStringList_Append(&config.module_search_paths, L"/home/ii/src/pygodot/buildenv/lib/python3.8/lib-dynload");
 	ERR_FAIL_PYSTATUS(status, fail);
 #endif
 

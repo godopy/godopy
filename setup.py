@@ -70,7 +70,7 @@ install_requires = [
 setup(
     name='pygodot',
     version=version,
-    python_requires='>=3.7',
+    python_requires='>=3.6',
     packages=packages,
     package_data=package_data,
     # cmdclass={'build_ext': build_ext},

@@ -107,22 +107,17 @@ if env['platform'] == 'linux':
     if env['use_llvm']:
         env['CXX'] = 'clang++'
 
-    env.Append(LIBPATH=[
-        os.path.join('buildenv', 'lib'),
-        os.path.join('buildenv', 'lib', 'python3.8', 'config-3.8-x86_64-linux-gnu')
-    ])
+    env.Append(LIBPATH=[os.path.join('buildenv', 'lib')])
     env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
 
     env.Append(CCFLAGS=[
-        '-pthread',
         '-fPIC',
         '-g',
         '-std=c++14',
         '-Wwrite-strings',
         '-fwrapv',
         '-Wno-unused-result',
-        '-Wsign-compare',
-        '-Wunreachable-code'
+        '-Wsign-compare'
     ])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
 
@@ -247,7 +242,7 @@ if env['generate_bindings']:
 cython_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/*.pyx')]
 cython_binding_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/bindings/*.pyx')]
 
-sources = [*cython_sources, *cython_binding_sources]
+sources = cython_sources + cython_binding_sources
 
 if not env['only_cython']:
     sources += [*Glob('src/core/*.cpp'), *Glob('src/gen/*.cpp'), *Glob('src/pycore/*.cpp')]

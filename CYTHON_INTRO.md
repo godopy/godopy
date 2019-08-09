@@ -29,7 +29,11 @@ $ git submodule add https://github.com/ivhilaire/pygodot
 $ git submodule update --init --recursive
 ```
 
-[Ubuntu Linux] `sudo apt-get build-dep python3.7`
+[Ubuntu Linux]
+```
+sudo apt-get install python3-venv python3-dev
+sudo apt-get build-dep python3
+```
 
 Install PyGodot and set up a development environment (this process will take some time):
 ```
@@ -163,8 +167,8 @@ cdef public _pygodot_nativescript_init():
 Create the `setup.py` file in the root directory:
 ```py
 from setuptools import setup
-from pygodot.build import GodotProject, get_cmdclass
-from pygodot.build.extensions import GDNativeLibrary, NativeScript
+from godot_tools.setup import GodotProject, get_cmdclass
+from godot_tools.setup import GDNativeLibrary, NativeScript
 
 
 setup(
@@ -182,9 +186,7 @@ setup(
 
 Now we can execute the setup script and build our GDNative extensions:
 ```
-$ pipenv shell
 $ python setup.py develop
-$ exit
 ```
 
 ### Using the GDNative module

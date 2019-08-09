@@ -245,7 +245,7 @@ class gdnative_build_ext(build_ext):
             _ext = 'dll'
         dst_fullname = dst_name_parts[0] + '.' + _ext  # '.'.join(dst_name_parts)
         # staticlib_name = '.'.join(['_pygodot', *dst_name_parts[1:-1]])
-        staticlib_name = 'libpygodot.%s.debug.64' % platform.lower().split('.')[0]
+        staticlib_name = 'libpygodot.%s.debug.64' % platform_suffix(platform)
 
         binext_path = os.path.join(godot_root, self.godot_project.binary_path, dst_fullname)
 
@@ -350,3 +350,13 @@ def make_resource_path(godot_root, path):
 
 def make_relative_path(path):
     return os.path.realpath(path).replace(root_dir, '').lstrip(os.sep).replace(os.sep, '/')
+
+
+def platform_suffix(platform):
+    replacements = {'x11': 'linux'}
+    suffix = platform.lower().split('.')[0]
+
+    if suffix in replacements:
+        return replacements[suffix]
+
+    return suffix

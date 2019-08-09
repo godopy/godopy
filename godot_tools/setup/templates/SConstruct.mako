@@ -81,26 +81,20 @@ if env['platform'] == "osx":
         env.Append(CCFLAGS=['-O3'])
 
 elif env['platform'] == 'linux':
-    env.Append(LIBPATH=[
-        # os.path.join(pygodot_bindings_path, 'deps', 'python'),
-        # os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'lib.linux-x86_64-3.8'),
-        os.path.join(pygodot_bindings_path, 'buildenv', 'lib'),
-        os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-x86_64-linux-gnu')
-    ])
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib')])
     env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
     env.Append(CCFLAGS=[
-        '-pthread',
         '-fPIC',
         '-g',
         '-std=c++14',
         '-Wwrite-strings',
         '-fwrapv',
         '-Wno-unused-result',
-        '-Wsign-compare',
-        '-Wunreachable-code'
+        '-Wsign-compare'
     ])
     env.Append(LIBS=['python3.8', 'crypt', 'pthread', 'dl', 'util', 'm'])
-    env.Append(LINKFLAGS=['-pthread', '-Xlinker', '-export-dynamic', '-Wl,-z,defs'])
+    # env.Append(LINKFLAGS=['-Wl,-undefined,dynamic_lookup'])
+    env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
     if env['target'] in ('debug', 'd'):
         env.Append(CCFLAGS=['-g3', '-Og'])
     else:
