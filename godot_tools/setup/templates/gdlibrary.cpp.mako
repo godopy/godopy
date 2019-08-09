@@ -47,12 +47,10 @@ static void _ensure_pygodot_is_initialized() {
 % for varname, _, _ in reversed(pyx_sources):
   PyImport_AppendInittab("${varname}", PyInit_${varname});
 % endfor
-
   pygodot::PyGodot::python_init();
 
   // Importing of Cython modules is required to correctly initialize them
   PyObject *mod = NULL;
-  // TODO: add Godot error handling
   mod = PyImport_ImportModule("core_types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("_cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("_python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);

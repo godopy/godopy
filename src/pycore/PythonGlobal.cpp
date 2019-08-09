@@ -3,6 +3,9 @@
 
 #include "CoreTypes.hpp"
 
+#include "OS.hpp"
+#include "ProjectSettings.hpp"
+
 #include <wchar.h>
 
 extern "C" PyObject *cython_nativescript_init();
@@ -29,21 +32,56 @@ void PyGodot::python_preconfig(godot_gdnative_init_options *options) {
 #define ERR_FAIL_PYSTATUS(status, label) if (PyStatus_Exception(status)) goto label
 
 void PyGodot::python_init() {
+	// In singleton configuration this function is called before 'nativescript_init' and method bindings are not set
+	godot::OS::___init_method_bindings();
+	godot::ProjectSettings::___init_method_bindings();
+
+	godot::OS *os = godot::OS::get_singleton();
+	godot::ProjectSettings *settings = godot::ProjectSettings::get_singleton();
+
 	PyStatus status;
 	PyConfig config;
+
+	// godot::Godot::print("get_user_data_dir: {0}", os->get_user_data_dir());
+	// godot::Godot::print("get_locale: {0}", os->get_locale());
+	// godot::Godot::print("get_model_name: {0}", os->get_model_name());
+	// godot::Godot::print("get_name: {0}", os->get_name());
+
+	godot::String executable = os->get_executable_path();
+	godot::String exec_prefix = executable.get_base_dir().get_base_dir();
+	godot::String project = settings->globalize_path("res://project.godot");
+	godot::String prefix = project.get_base_dir();
+	godot::PoolStringArray _argv = os->get_cmdline_args();
 
 	status = PyConfig_InitIsolatedConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
-	// TODO: Set the full path of the real executable
-	status = PyConfig_SetString(&config, &config.program_name, L"godot");
+	status = PyConfig_SetString(&config, &config.program_name, executable.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
 
-	// TODO: Set config.prefix from project path
-	// TODO: Set other prefixes, executable and argv from Godot OS singleton
+	for (int i = 0; i < _argv.size(); i++) {
+		status = PyWideStringList_Append(&config.argv, _argv[i].unicode_str());
+		ERR_FAIL_PYSTATUS(status, fail);
+	}
 
-	status = PyConfig_SetString(&config, &config.pycache_prefix, L".__pycache__");
+	status = PyConfig_SetString(&config, &config.base_exec_prefix, exec_prefix.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
+
+	status = PyConfig_SetString(&config, &config.base_prefix, prefix.unicode_str());
+	ERR_FAIL_PYSTATUS(status, fail);
+
+	status = PyConfig_SetString(&config, &config.exec_prefix, exec_prefix.unicode_str());
+	ERR_FAIL_PYSTATUS(status, fail);
+
+	status = PyConfig_SetString(&config, &config.executable, executable.unicode_str());
+	ERR_FAIL_PYSTATUS(status, fail);
+
+	status = PyConfig_SetString(&config, &config.prefix, prefix.unicode_str());
+	ERR_FAIL_PYSTATUS(status, fail);
+
+	// TODO: Set pycache_prefix in an user_data_dir subfolder if it is writable
+	// status = PyConfig_SetString(&config, &config.pycache_prefix, L"");
+	// ERR_FAIL_PYSTATUS(status, fail);
 
 #ifdef _WIN32
 	status = PyWideStringList_Append(&config.module_search_paths, L"C:\\demos\\cython-example\\pygodot");
@@ -68,9 +106,15 @@ void PyGodot::python_init() {
 	ERR_FAIL_PYSTATUS(status, fail);
 #endif
 
+	config.verbose = 0;
 	config.isolated = 1;
 	config.site_import = 0;
+	config.faulthandler = 0;
 	config.buffered_stdio = 1;
+	config.write_bytecode = 0;  // TODO: Enable bytecode if possible, set pycache_prefix
+	config.use_environment = 0;
+	config.user_site_directory = 0;
+	config.install_signal_handlers = 0;
 	config.module_search_paths_set = 1;
 
 	status = PyConfig_Read(&config);
