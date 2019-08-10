@@ -31,8 +31,9 @@ class GenericGDNativeLibrary(Extension):
 
 
 class GDNativeLibrary(Extension):
-    def __init__(self, name, source, extra_sources=None):
+    def __init__(self, name, source, extra_sources=None, **gdnative_options):
         self._gdnative_type = ExtType.LIBRARY
+        self._gdnative_options = gdnative_options
 
         sources = [source]
 
@@ -73,10 +74,9 @@ class gdnative_build_ext(build_ext):
             sys.exit(1)
 
         for ext in self.extensions:
-            print('setting up',
-                  ('GDNative %s' if self.godot_project else 'Godot %s') % ext._gdnative_type.name.lower(),
-                  ('"res://%s"' if self.godot_project else '"%s"') % ext.name)
-            getattr(self, 'collect_godot_%s_data' % ext._gdnative_type.name.lower())(ext)
+            if self.godot_project:
+                print('setting up', 'GDNative {0}: {1}'.format(ext._gdnative_type.name.lower(), ext.name))
+            getattr(self, 'collect_godot_{0}_data'.format(ext._gdnative_type.name.lower()))(ext)
 
         if self.generic_setup:
             self.run_generic()
@@ -86,6 +86,8 @@ class gdnative_build_ext(build_ext):
         for res_path, content in self.godot_resources.items():
             self.write_target_file(os.path.join(self.godot_project.name, res_path), content,
                                    pretty_path='res://%s' % res_path, is_editable_resource=True)
+
+        self.package_dependencies()
 
     def run_generic(self):
         source = os.path.join(self.build_context['pygodot_bindings_path'], self.build_context['pygodot_library_name'])
@@ -151,6 +153,112 @@ class gdnative_build_ext(build_ext):
 
             with open(path, 'w', encoding='utf-8') as fp:
                 fp.write(content)
+
+    def package_dependencies(self):
+        lib_dir = os.path.join(tools_root, '..', 'buildenv', 'lib', 'python3.8')
+        dynload_dir = os.path.join(lib_dir, 'lib-dynload')
+        site_dir = os.path.join(lib_dir, 'site-packages')
+
+        py_files_tools = []
+        so_files_tools = []
+        py_files = []
+        so_files = []
+
+        dirs = set()
+        tools_dirs = set()
+        for dirpath, dirnames, filenames in os.walk(lib_dir):
+            dirpath = dirpath[len(lib_dir):].lstrip(os.sep)
+            skip = False
+            if '__pychache__' in dirnames:
+                dirnames.remove('__pychache__')
+            if '__pycache__' in dirpath:
+                continue
+            for skipdir in ('site-packages', 'lib-dynload', 'config-', 'lib2to3', 'tkinter', 'distutils', 'ensurepip', 'venv'):
+                if dirpath.startswith(skipdir):
+                    skip = True
+                    break
+            if skip:
+                continue
+            has_files = False
+            has_tools_files = False
+            for fn in filenames:
+                if fn.endswith('.py'):
+                    is_tool = dirpath.endswith('tests')
+                    if not is_tool:
+                        for tooldir in ('typing', 'pydoc', 'doctest', 'unittest', 'test', 'idlelib'):
+                            if dirpath.startswith(tooldir):
+                                is_tool = True
+                                break
+                    if is_tool:
+                        has_tools_files = True
+                        py_files_tools.append(('lib', os.path.join(dirpath, fn)))
+                    else:
+                        has_files = True
+                        py_files.append(('lib', os.path.join(dirpath, fn)))
+
+            if has_files:
+                dirs.add(dirpath)  # dirpath.split(os.sep)[0]
+            if has_tools_files:
+                tools_dirs.add(dirpath)
+
+        for fn in os.listdir(dynload_dir):
+            if fn.endswith('.so'):
+                if 'test' in fn:
+                    so_files_tools.append(('dynload', fn))
+                else:
+                    so_files.append(('dynload', fn))
+
+        for dirpath, dirnames, filenames in os.walk(site_dir):
+            dirpath = dirpath[len(site_dir):].lstrip(os.sep)
+            skip = False
+            if '__pychache__' in dirnames:
+                dirnames.remove('__pychache__')
+            if '__pycache__' in dirpath:
+                continue
+            if 'typeshed' in dirpath:
+                continue
+            for skipdir in ('Cython', 'pip', 'setuptools', 'pkg_resources'):
+                if dirpath.startswith(skipdir):
+                    skip = True
+                    break
+            if skip:
+                continue
+            has_files = False
+            has_tools_files = False
+            for fn in filenames:
+                if fn.endswith('.py'):
+                    is_tool = dirpath.endswith('tests') or 'testing' in dirpath
+                    for tooldir in ('IPython', 'ipython_genutils', 'jedi', 'parso', 'pexpect', 'traitlets', 'ptyprocess'):
+                        if dirpath.startswith(tooldir):
+                            is_tool = True
+                            break
+                    if is_tool:
+                        has_tools_files = True
+                        py_files_tools.append(('site', os.path.join(dirpath, fn)))
+                    else:
+                        has_files = True
+                        py_files.append(('site', os.path.join(dirpath, fn)))
+                elif fn.endswith('.so'):
+                    if 'tests' not in fn and '_dummy' not in fn:
+                        has_files = True
+                        so_files.append(('site', os.path.join(dirpath, fn)))
+                    else:
+                        has_tools_files = True
+                        so_files_tools.append(('site', os.path.join(dirpath, fn)))
+            if has_files:
+                dirs.add(dirpath)
+            if has_tools_files:
+                tools_dirs.add(dirpath)
+
+        print(list(sorted(dirs)))
+        print(len(py_files), len(py_files_tools))
+        for root, fn in so_files:
+            print(fn)
+
+        print('tools:')
+        print(list(sorted(tools_dirs)))
+        for root, fn in so_files_tools:
+            print(fn)
 
     def collect_godot_project_data(self, ext):
         self.godot_project = ext
@@ -263,14 +371,11 @@ class gdnative_build_ext(build_ext):
         self.gdnative_library_path = gdnlib_respath
         self.generic_setup = False
 
-        context = dict(
-            singleton=False,
-            load_once=True,
-            symbol_prefix='pygodot_',
-            reloadable=False,
-            libraries={platform: make_resource_path(godot_root, binext_path)},
-            dependencies={platform: ''}
-        )
+        context = dict(singleton=False, load_once=True, reloadable=False)
+        context.update(ext._gdnative_options)
+        context['symbol_prefix'] = 'pygodot_'
+        context['libraries'] = {platform: make_resource_path(godot_root, binext_path)}
+        context['dependencies'] = {platform: ''}
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.collect_sources(ext.sources)

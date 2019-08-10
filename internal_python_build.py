@@ -66,8 +66,7 @@ def build_python():
         # os.environ['CC'] = 'clang'
 
     for command in commands:
-        print()
-        print(command, '...')
+        print(command)
         subprocess.run(command.split(), check=True)
 
     os.chdir(cwd)

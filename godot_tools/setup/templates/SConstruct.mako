@@ -51,12 +51,16 @@ if env['platform'] == '':
     print("No valid target platform selected.")
     quit()
 
+python_include = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
+python_lib = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
+
 if env['platform'] == "osx":
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
 
-    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
+    libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', libdir)])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', python_include)])
     env.Append(CCFLAGS=[
         '-g',
         '-std=c++14',
@@ -73,7 +77,7 @@ if env['platform'] == "osx":
         '-Wl,-undefined,dynamic_lookup',
     ])
 
-    env.Append(LIBS=['python3.8', 'dl'])
+    env.Append(LIBS=[python_lib, 'dl'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
@@ -82,7 +86,7 @@ if env['platform'] == "osx":
 
 elif env['platform'] == 'linux':
     env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib')])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', 'python3.8')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', python_include)])
     env.Append(CCFLAGS=[
         '-fPIC',
         '-g',
@@ -92,7 +96,7 @@ elif env['platform'] == 'linux':
         '-Wno-unused-result',
         '-Wsign-compare'
     ])
-    env.Append(LIBS=['python3.8', 'crypt', 'pthread', 'dl', 'util', 'm'])
+    env.Append(LIBS=[python_lib, 'crypt', 'pthread', 'dl', 'util', 'm'])
     # env.Append(LINKFLAGS=['-Wl,-undefined,dynamic_lookup'])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
     if env['target'] in ('debug', 'd'):

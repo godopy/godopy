@@ -80,6 +80,7 @@ extern "C" void GDN_EXPORT pygodot_gdnative_terminate(godot_gdnative_terminate_o
 }
 
 extern "C" void GDN_EXPORT pygodot_nativescript_init(void *handle) {
+  printf("NATIVESCRIPT INIT\n");
   godot::Godot::nativescript_init(handle);  // C++ bindings
   _ensure_pygodot_is_initialized();  // PyGodot::python_init()
   pygodot::PyGodot::nativescript_init(handle);
@@ -88,6 +89,7 @@ extern "C" void GDN_EXPORT pygodot_nativescript_init(void *handle) {
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_singleton() {
+  printf("SINGLETON\n");
   _ensure_pygodot_is_initialized();  // PyGodot::python_init()
 % if singleton:
   PyObject *result = _pygodot_gdnative_singleton(); ERR_FAIL_PYTHON_NULL(result);

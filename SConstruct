@@ -92,6 +92,9 @@ if env['TARGET_ARCH'] == 'amd64' or env['TARGET_ARCH'] == 'emt64' or env['TARGET
 if env['bits'] == 'default':
     env['bits'] = '64' if is64 else '32'
 
+python_include = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
+python_lib = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
+
 # This makes sure to keep the session environment variables on Windows.
 # This way, you can run SCons in a Visual Studio 2017 prompt and it will find
 # all the required tools
@@ -107,8 +110,9 @@ if env['platform'] == 'linux':
     if env['use_llvm']:
         env['CXX'] = 'clang++'
 
-    env.Append(LIBPATH=[os.path.join('buildenv', 'lib')])
-    env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
+    libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
+    env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8', libdir)])
+    env.Append(CPPPATH=[os.path.join('buildenv', 'include', python_include)])
 
     env.Append(CCFLAGS=[
         '-fPIC',
@@ -121,7 +125,7 @@ if env['platform'] == 'linux':
     ])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
 
-    env.Append(LIBS=['python3.8', 'crypt', 'pthread', 'dl', 'util', 'm'])
+    env.Append(LIBS=[python_lib, 'crypt', 'pthread', 'dl', 'util', 'm'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
@@ -139,8 +143,8 @@ elif env['platform'] == 'osx':
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
 
-    env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8', 'config-3.8-darwin')])
-    env.Append(CPPPATH=[os.path.join('buildenv', 'include', 'python3.8')])
+    env.Append(LIBPATH=[os.path.join('buildenv', 'lib')])
+    env.Append(CPPPATH=[os.path.join('buildenv', 'include', python_include)])
 
     if env['bits'] == '32':
         raise ValueError(
@@ -163,7 +167,7 @@ elif env['platform'] == 'osx':
         '-Wl,-undefined,dynamic_lookup',
     ])
 
-    env.Append(LIBS=['python3.8', 'dl'])
+    env.Append(LIBS=[python_lib, 'dl'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
