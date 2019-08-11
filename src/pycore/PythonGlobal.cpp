@@ -53,6 +53,10 @@ void PyGodot::python_init() {
 	godot::String prefix = project.get_base_dir();
 	godot::PoolStringArray _argv = os->get_cmdline_args();
 
+	godot::String path1 = prefix + "/.bin/gdexample.pak";
+	godot::String path2 = prefix + "/.bin/gdexample-tools.pak";
+	godot::String path3 = prefix + "/.bin/osx";
+
 	status = PyConfig_InitIsolatedConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
@@ -91,11 +95,11 @@ void PyGodot::python_init() {
 	status = PyWideStringList_Append(&config.module_search_paths, L"C:\\demos\\cython-example\\pygodot\\deps\\python\\Lib");
 	ERR_FAIL_PYSTATUS(status, fail);
 #elif __APPLE__
-	status = PyWideStringList_Append(&config.module_search_paths, L"/Users/ii/src/pygodot");
+	status = PyWideStringList_Append(&config.module_search_paths, path1.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, L"/Users/ii/src/pygodot/buildenv/lib/python3.8");
+	status = PyWideStringList_Append(&config.module_search_paths, path2.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, L"/Users/ii/src/pygodot/buildenv/lib/python3.8/lib-dynload");
+	status = PyWideStringList_Append(&config.module_search_paths, path3.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
 #else
 	status = PyWideStringList_Append(&config.module_search_paths, L"/home/ii/src/pygodot");

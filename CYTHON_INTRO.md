@@ -39,16 +39,17 @@ Install PyGodot and set up a development environment (this process will take som
 ```
 $ # Mac and Linux:
 $ python3 pygodot/internal_python_build.py
-$ # If you need numpy and IPython, run: pygodot/buildenv/bin/python3 -m pip install -r pygodot/internal-requirements.txt
+$ pygodot/buildenv/bin/python3 -m pip install -r pygodot/internal-requirements.txt
 $ python3 -m venv toolbox
 $ source toolbox/bin/activate
-(toolbox) $ pip install -r pygodot/tools-requirements.txt
-(toolbox) $ pip install -e ./pygodot
+(toolbox) $ pip install -r pygodot/godot-tools-requirements.txt
 (toolbox) $ export GODOT_BUILD=<path to Godot source folder>
 (toolbox) $ pygodot/bootstrap.py
 (toolbox) $ cd pygodot
 (toolbox) $ scons -j8 only_cython=yes
 (toolbox) $ scons -j8
+(toolbox) $ cd ..
+(toolbox) $ pip install -e ./pygodot
 ```
 > Replace `<path to Godot source folder>` with an actual path. Godot source should be compiled.
 > When you finish working with a virtual environment, run `deactivate` command
@@ -58,14 +59,17 @@ $ source toolbox/bin/activate
 ```
 $ # Windows:
 $ python pygodot/internal_python_build
+$ pygodot/buildenv/bin/python3 -m pip install -r pygodot/internal-requirements.txt
 $ python -m venv toolbox
 $ .\toolbox\Scripts\Activate
-(toolbox) $ python -m pip install -r pygodot/meta-requirements.txt
+(toolbox) $ python -m pip install -r pygodot/godot-tools-requirements.txt
 (toolbox) $ $env:GODOT_BUILD = 'C:\path\to\godot'
 (toolbox) $ cd pygodot
 (toolbox) $ python bootstrap.py
 (toolbox) $ scons -j8 only_cython=yes
 (toolbox) $ scons -j8
+(toolbox) $ cd ..
+(toolbox) $ pip install -e ./pygodot
 ```
 > Replace `C:\path\to\godot` with an actual path.
 > When you finish working with a virtual environment, run `deactivate` command
@@ -176,7 +180,7 @@ from godot_tools.setup import GDNativeLibrary, NativeScript
 setup(
     ext_modules=[
         GodotProject('demo', source='src', binary_path='.bin'),
-        GDNativeLibrary('gdlibrary.gdnlib', source='gdlibrary.pyx'),
+        GDNativeLibrary('gdexample.gdnlib', source='gdlibrary.pyx'),
         NativeScript('gdexample.gdns', class_name='GDExample', sources=['gdexample.pyx'])
     ],
     cmdclass=get_cmdclass()
