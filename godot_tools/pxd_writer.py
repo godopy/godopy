@@ -14,7 +14,7 @@ def preprocess(code, extra_cpp_args=[]):
     if sys.platform == 'darwin':
         preprocessor = ['clang', '-E', '-std=c99']
     elif sys.platform == 'win32':
-        preprocessor = ['cpp.exe']
+        preprocessor = ['cpp.exe', '-std=c99']
 
     args = ['-nostdinc', '-D__attribute__(x)=', '-I', BUILTIN_HEADERS_DIR]
     proc = subprocess.Popen(preprocessor + args + extra_cpp_args + ['-'],

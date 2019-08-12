@@ -281,11 +281,19 @@ class gdnative_build_ext(build_ext):
             print()
 
     def collect_dependencies(self):
-        self.python_dependencies['bin_dir'] = bin_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv', 'bin'))
-        self.python_dependencies['mainlib_dir'] = mainlib_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv', 'lib'))
-        self.python_dependencies['lib_dir'] = lib_dir = os.path.join(mainlib_dir, 'python3.8')
-        self.python_dependencies['dynload_dir'] = dynload_dir = os.path.join(lib_dir, 'lib-dynload')
-        self.python_dependencies['site_dir'] = site_dir = os.path.join(lib_dir, 'site-packages')
+        if sys.platform == 'win32':
+            py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
+            self.python_dependencies['bin_dir'] = bin_dir = os.path.join(py_base_dir, 'PCBuild', 'amd64')
+            self.python_dependencies['mainlib_dir'] = mainlib_dir = bin_dir
+            self.python_dependencies['lib_dir'] = lib_dir = os.path.join(py_base_dir, 'Lib')
+            self.python_dependencies['dynload_dir'] = dynload_dir = bin_dir
+            self.python_dependencies['site_dir'] = site_dir = os.path.join(lib_dir, 'site-packages')
+        else:
+            self.python_dependencies['bin_dir'] = bin_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv', 'bin'))
+            self.python_dependencies['mainlib_dir'] = mainlib_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv', 'lib'))
+            self.python_dependencies['lib_dir'] = lib_dir = os.path.join(mainlib_dir, 'python3.8')
+            self.python_dependencies['dynload_dir'] = dynload_dir = os.path.join(lib_dir, 'lib-dynload')
+            self.python_dependencies['site_dir'] = site_dir = os.path.join(lib_dir, 'site-packages')
 
         self.python_dependencies['py_files'] = py_files = []
         self.python_dependencies['so_files'] = so_files = []
@@ -301,8 +309,8 @@ class gdnative_build_ext(build_ext):
         if sys.platform == 'darwin':
             mainlib = 'libpython3.8d.dylib'
         elif sys.platform == 'win32':
-            mainlib = 'python38d.dll'
-            python_exe = 'python38.exe'
+            mainlib = 'python38_d.dll'
+            python_exe = 'python_d.exe'
 
         self.python_dependencies['executable'] = os.path.join(bin_dir, python_exe)
 

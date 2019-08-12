@@ -9,7 +9,7 @@ the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) project.
 
 [**Build latest version of Godot**](https://godot.readthedocs.io/en/latest/development/compiling/index.html)
 
-[**Make sure you’ve got Python & pip**](https://docs.python-guide.org/dev/virtualenvs/#make-sure-you-ve-got-python-pip)
+TODO: Describe Python 3 requirement
 
 ### Setting up a new project
 
@@ -29,6 +29,8 @@ $ git submodule add https://github.com/ivhilaire/pygodot
 $ git submodule update --init --recursive
 ```
 
+TODO: Build instructions for each platform in separate files
+
 [Ubuntu Linux]
 ```
 sudo apt-get install python3-venv python3-dev
@@ -46,8 +48,8 @@ $ source toolbox/bin/activate
 (toolbox) $ export GODOT_BUILD=<path to Godot source folder>
 (toolbox) $ pygodot/bootstrap.py
 (toolbox) $ cd pygodot
-(toolbox) $ scons -j8 only_cython=yes
-(toolbox) $ scons -j8
+(toolbox) $ scons -j4 only_cython=yes
+(toolbox) $ scons -j4
 (toolbox) $ cd ..
 (toolbox) $ pip install -e ./pygodot
 ```
@@ -55,21 +57,23 @@ $ source toolbox/bin/activate
 > When you finish working with a virtual environment, run `deactivate` command
 > It is not required to use `python3 -m venv`, any virtualenv would work: `pipenv` or `virtualenvwrapper` are fine too
 
+[Windows only] `choco install mingw` for `cpp.exe` (needed by bootstrap script)
+
 [Windows only] If you are using Windows PowerShell, first run as admin: `set-executionpolicy RemoteSigned`
 ```
 $ # Windows:
-$ python pygodot/internal_python_build
-$ pygodot/buildenv/bin/python3 -m pip install -r pygodot/internal-requirements.txt
+$ python pygodot\internal_python_build
+$ # pygodot\deps\python\PCBuild\amd64\python_d -m pip install -r pygodot\internal-requirements.txt
 $ python -m venv toolbox
-$ .\toolbox\Scripts\Activate
-(toolbox) $ python -m pip install -r pygodot/godot-tools-requirements.txt
+$ .\toolbox\Scripts\activate
+(toolbox) $ pip install -r pygodot\godot-tools-requirements.txt
 (toolbox) $ $env:GODOT_BUILD = 'C:\path\to\godot'
 (toolbox) $ cd pygodot
 (toolbox) $ python bootstrap.py
-(toolbox) $ scons -j8 only_cython=yes
-(toolbox) $ scons -j8
+(toolbox) $ scons -j4 only_cython=yes
+(toolbox) $ scons -j4
 (toolbox) $ cd ..
-(toolbox) $ pip install -e ./pygodot
+(toolbox) $ pip install -e .\pygodot
 ```
 > Replace `C:\path\to\godot` with an actual path.
 > When you finish working with a virtual environment, run `deactivate` command
@@ -174,7 +178,7 @@ Create the `setup.py` file in the root directory:
 ```py
 from setuptools import setup
 from godot_tools.setup import GodotProject, get_cmdclass
-from godot_tools.setup import GDNativeLibrary, NativeScript
+from godot_tools.setup.extensions import GDNativeLibrary, NativeScript
 
 
 setup(
