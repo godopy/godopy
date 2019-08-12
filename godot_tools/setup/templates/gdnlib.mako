@@ -14,5 +14,5 @@ ${platform}="res://${lib}"
 [dependencies]
 
 % for platform, deps in dependencies.items():
-${platform}=[${deps}]
+${platform}=[ ${', '.join('"%s"' % d for d in deps)} ]
 % endfor

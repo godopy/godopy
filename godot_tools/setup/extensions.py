@@ -14,6 +14,7 @@ from setuptools.command.build_ext import build_ext
 from mako.template import Template
 
 from ..version import get_version
+from ..utils import get_godot_executable
 
 
 class ExtType(enum.Enum):
@@ -101,6 +102,15 @@ class gdnative_build_ext(build_ext):
 
         self.package_dependencies()
 
+        setup_script = self.gdnative_library_path.replace('.gdnlib', '__setup.gd')
+        print('running "res://%s"' % setup_script)
+        if not self.dry_run:
+            subprocess.run([
+                get_godot_executable(),
+                '--path', self.godot_project.name,
+                '-s', 'res://%s' % setup_script
+            ], check=True)
+
     def run_copylib(self):
         source = os.path.join(self.build_context['pygodot_bindings_path'], self.build_context['pygodot_library_name'])
         target = self.build_context['target']
@@ -168,10 +178,7 @@ class gdnative_build_ext(build_ext):
                 fp.write(content)
 
     def package_dependencies(self):
-        print(len(self.python_dependencies['py_files']), len(self.python_dependencies['py_files_ed']))
-
         binroot = os.path.join(self.godot_project.name, self.godot_project.binary_path, platform_suffix(get_platform()))
-        print(binroot, os.path.isdir(binroot))
 
         for d in sorted(self.python_dependencies['bin_dirs']):
             target_dir = os.path.join(binroot, d)
@@ -194,15 +201,13 @@ class gdnative_build_ext(build_ext):
         _, gdnlib_name = os.path.split(self.gdnative_library_path)
         basename, _ = os.path.splitext(gdnlib_name)
         main_zip_path = os.path.join(self.godot_project.name, self.godot_project.binary_path, '%s.pak' % basename)
-        tools_zip_path = os.path.join(self.godot_project.name, self.godot_project.binary_path, '%s-tools.pak' % basename)
-
-        print(main_zip_path, tools_zip_path)
+        tools_zip_path = os.path.join(self.godot_project.name, self.godot_project.binary_path, '%s-dev.pak' % basename)
 
         self._make_zip(main_zip_path, 'py_files')
         self._make_zip(tools_zip_path, 'py_files_ed')
 
     def _make_zip(self, zippath, files):
-        print("Byte-compiling and compressing Python dependencies in %r" % zippath)
+        print('byte-compiling and compressing Python dependencies into "res://%s"' % zippath)
         if self.dry_run:
             return
 
@@ -248,7 +253,7 @@ class gdnative_build_ext(build_ext):
                 if changed:
                     # Compile to bytecode with target interpreter
                     if verbosity > 1:
-                        print("Byte-compiling and compressing %r %r != %r" % (fnc, os.stat(pre_dst).st_mtime, os.path.exists(dst) and os.stat(dst).st_mtime))
+                        print("Byte-compiling and compressing %r" % fnc)
                     elif verbosity == 1:
                         if _ratio > _prev_ratio:
                             print('.', end='', flush=True)
@@ -427,14 +432,15 @@ class gdnative_build_ext(build_ext):
         gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name + '.gdnlib'))
         self.gdnative_library_path = gdnlib_respath
         self.generic_setup = True
-
+        so_files = self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed']
+        deps = ['"res://%s/%s/%s"' % (self.godot_project.binary_path, platform_suffix(platform), fn) for root, fn in so_files]
         context = dict(
             singleton=False,
             load_once=True,
             symbol_prefix='pygodot_',
             reloadable=False,
             libraries={platform: make_resource_path(godot_root, binext_path)},
-            dependencies={platform: ''}
+            dependencies={platform: deps}
         )
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
@@ -456,6 +462,7 @@ class gdnative_build_ext(build_ext):
 
         dst_dir, dst_fullname = os.path.split(ext_path)
         dst_name_parts = dst_fullname.split('.')
+        base_name = dst_name_parts[0]
         dst_name_parts[0] = 'lib' + dst_name_parts[0]
         # if dst_name_parts[0] == 'gdlibrary':
         #    dst_name_parts[0] = '_gdlibrary'
@@ -476,17 +483,24 @@ class gdnative_build_ext(build_ext):
 
         dst_name = dst_name_parts[0]
         self.build_context['library_name'] = dst_name
-        gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name[3:] + '.gdnlib'))
+        gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, base_name + '.gdnlib'))
+        setup_script_respath = make_resource_path(godot_root, os.path.join(dst_dir, base_name + '__setup.gd'))
         self.gdnative_library_path = gdnlib_respath
         self.generic_setup = False
 
         context = dict(singleton=False, load_once=True, reloadable=False)
         context.update(ext._gdnative_options)
         context['symbol_prefix'] = 'pygodot_'
-        context['libraries'] = {platform: make_resource_path(godot_root, binext_path)}
-        context['dependencies'] = {platform: ''}
+        context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
+        so_files = self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed']
+        context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
+        context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+        deps = [main_zip_res, tools_zip_res, *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), fn) for root, fn in so_files)]
+        context['dependencies'] = {platform: deps, 'Server.64': deps}
+        context['library'] = 'res://%s' % gdnlib_respath
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
+        self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
         self.collect_sources(ext.sources)
 
     def collect_godot_nativescript_data(self, ext):

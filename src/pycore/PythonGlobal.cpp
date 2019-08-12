@@ -3,10 +3,8 @@
 
 #include "CoreTypes.hpp"
 
-#include "OS.hpp"
-#include "ProjectSettings.hpp"
-
-#include <wchar.h>
+#include <OS.hpp>
+#include <ProjectSettings.hpp>
 
 extern "C" PyObject *cython_nativescript_init();
 extern "C" PyObject *cython_nativescript_terminate();
@@ -14,6 +12,9 @@ extern "C" PyObject *python_nativescript_init();
 extern "C" PyObject *python_nativescript_terminate();
 
 namespace pygodot {
+
+bool in_editor = false;
+godot_string active_library_path;
 
 void PyGodot::python_preconfig(godot_gdnative_init_options *options) {
 	PyPreConfig preconfig;
@@ -27,6 +28,9 @@ void PyGodot::python_preconfig(godot_gdnative_init_options *options) {
 		FATAL_PRINT("Python Pre-Initialization Failed.");
 		Py_ExitStatusException(status);
 	}
+
+	godot::api->godot_string_new_copy(&active_library_path, options->active_library_path);
+	in_editor = options->in_editor;
 }
 
 #define ERR_FAIL_PYSTATUS(status, label) if (PyStatus_Exception(status)) goto label
@@ -53,9 +57,19 @@ void PyGodot::python_init() {
 	godot::String prefix = project.get_base_dir();
 	godot::PoolStringArray _argv = os->get_cmdline_args();
 
-	godot::String path1 = prefix + "/.bin/gdexample.pak";
-	godot::String path2 = prefix + "/.bin/gdexample-tools.pak";
-	godot::String path3 = prefix + "/.bin/osx";
+	if (!settings->has_setting("python/config/module_search_path/main")) {
+		FATAL_PRINT("Python Initialization Failed: no Python module search path defined.");
+		return;
+	}
+
+	godot::String main_module_path = settings->globalize_path(settings->get_setting("python/config/module_search_path/main"));
+	godot::String extended_module_path = settings->has_setting("python/config/module_search_path/extended") ?
+		settings->globalize_path(settings->get_setting("python/config/module_search_path/extended")) : "";
+	godot::String binary_module_path = ((godot::String *)&active_library_path)->get_base_dir();
+
+	godot::api->godot_string_destroy(&active_library_path);
+
+	bool commandline_script_mode = false;
 
 	status = PyConfig_InitIsolatedConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
@@ -64,6 +78,9 @@ void PyGodot::python_init() {
 	ERR_FAIL_PYSTATUS(status, fail);
 
 	for (int i = 0; i < _argv.size(); i++) {
+		if (_argv[i] == "-s") {
+			commandline_script_mode = true;
+		}
 		status = PyWideStringList_Append(&config.argv, _argv[i].unicode_str());
 		ERR_FAIL_PYSTATUS(status, fail);
 	}
@@ -87,28 +104,14 @@ void PyGodot::python_init() {
 	// status = PyConfig_SetString(&config, &config.pycache_prefix, L"");
 	// ERR_FAIL_PYSTATUS(status, fail);
 
-#ifdef _WIN32
-	status = PyWideStringList_Append(&config.module_search_paths, L"C:\\demos\\cython-example\\pygodot");
+	status = PyWideStringList_Append(&config.module_search_paths, main_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, L"C:\\demos\\cython-example\\pygodot\\deps\\python\\PCBuild\\amd64");
+	if (extended_module_path != "" && (in_editor || commandline_script_mode)) {
+		status = PyWideStringList_Append(&config.module_search_paths, extended_module_path.unicode_str());
+		ERR_FAIL_PYSTATUS(status, fail);
+	}
+	status = PyWideStringList_Append(&config.module_search_paths, binary_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, L"C:\\demos\\cython-example\\pygodot\\deps\\python\\Lib");
-	ERR_FAIL_PYSTATUS(status, fail);
-#elif __APPLE__
-	status = PyWideStringList_Append(&config.module_search_paths, path1.unicode_str());
-	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, path2.unicode_str());
-	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, path3.unicode_str());
-	ERR_FAIL_PYSTATUS(status, fail);
-#else
-	status = PyWideStringList_Append(&config.module_search_paths, L"/home/ii/src/pygodot");
-	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, L"/home/ii/src/pygodot/buildenv/lib/python3.8");
-	ERR_FAIL_PYSTATUS(status, fail);
-	status = PyWideStringList_Append(&config.module_search_paths, L"/home/ii/src/pygodot/buildenv/lib/python3.8/lib-dynload");
-	ERR_FAIL_PYSTATUS(status, fail);
-#endif
 
 	config.verbose = 0;
 	config.isolated = 1;
@@ -131,7 +134,10 @@ void PyGodot::python_init() {
 
 	PyConfig_Clear(&config);
 
-	godot::Godot::print("Python {0}\nPyGodot 0.0.1a0\n", (godot::Variant)Py_GetVersion());
+	if (!commandline_script_mode) {
+		godot::Godot::print("Python {0}\nPyGodot 0.0.1a0\n", (godot::Variant)Py_GetVersion());
+	}
+
 	return;
 
 fail:

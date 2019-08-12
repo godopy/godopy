@@ -3,9 +3,10 @@
 
 import os
 import sys
-import glob
 import shutil
 import subprocess
+
+from godot_tools.utils import get_godot_executable
 
 if not hasattr(sys, 'version_info') or sys.version_info < (3, 6):
     raise SystemExit("Python version 3.6 or above is required. Please run from Python 3.6+ virtualenv.")
@@ -15,7 +16,7 @@ try:
     import autopxd    # noqa
     import cython     # noqa
 except ImportError:
-    raise SystemExit("Required packages were not found. Please install them from 'tool-requirements.txt'.")
+    raise SystemExit("Required packages were not found. Please install them from 'godot-tool-requirements.txt'.")
 
 root_dir = os.path.abspath(os.path.dirname(__file__))
 headers_dir = os.path.join(root_dir, 'godot_headers')
@@ -33,13 +34,7 @@ def copy_headers():
     print('Copying godot_headers from %r…' % source_dir)
     shutil.copytree(source_dir, headers_dir)
 
-    godot_server_exe_list = crossplat_exe_glob(godot_build_dir, 'godot?server.*.64')
-    godot_exe_list = crossplat_exe_glob(godot_build_dir, 'godot.*.64')
-
-    if not godot_server_exe_list and not godot_exe_list:
-        raise SystemExit("Can't find Godot executable.")
-
-    godot_exe = godot_server_exe_list.pop() if godot_server_exe_list else godot_exe_list.pop()
+    godot_exe = get_godot_executable()
     api_path = os.path.join(headers_dir, 'api.json')
 
     print('Found %r executable.' % godot_exe)
@@ -48,13 +43,6 @@ def copy_headers():
 
     with open(os.path.join(headers_dir, '__init__.py'), 'w', encoding='utf-8'):
         pass  # Empty file
-
-
-def crossplat_exe_glob(godot_build_dir, pattern):
-    if sys.platform == 'win32':
-        pattern += '.exe'
-
-    return glob.glob(os.path.join(godot_build_dir, 'bin', pattern))
 
 
 if __name__ == '__main__':
