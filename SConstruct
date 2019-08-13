@@ -113,8 +113,8 @@ if env['platform'] == 'linux':
     if env['use_llvm']:
         env['CXX'] = 'clang++'
 
-    libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8', libdir)])
+    # libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
+    env.Append(LIBPATH=[os.path.join('buildenv', 'lib')])
     env.Append(CPPPATH=[os.path.join('buildenv', 'include', python_include)])
 
     env.Append(CCFLAGS=[

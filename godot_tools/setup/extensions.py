@@ -223,7 +223,7 @@ class gdnative_build_ext(build_ext):
 
         _prev_ratio = 0
         _total = len(self.python_dependencies[files])
-        with zipfile.ZipFile(zippath, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as _zip:
+        with zipfile.ZipFile(zippath, 'w', zipfile.ZIP_DEFLATED, 9) as _zip:
             for i, (root, fn) in enumerate(self.python_dependencies[files]):
                 if root == 'lib':
                     basedir = self.python_dependencies['lib_dir']
@@ -259,11 +259,13 @@ class gdnative_build_ext(build_ext):
                             print('.', end='', flush=True)
                             _prev_ratio = _ratio
 
-                    subprocess.run([
+                    cmd = [
                         self.python_dependencies['executable'],
                         '-c',
                         "from py_compile import compile; compile(%r, %r, dfile=%r)" % (pre_dst, dst, fn)
-                    ], check=True)
+                    ]
+
+                    subprocess.run(cmd, check=True)
                     shutil.copystat(pre_dst, dst)
                 else:
                     if verbosity > 1:
@@ -305,9 +307,9 @@ class gdnative_build_ext(build_ext):
         self.python_dependencies['bin_dirs'] = so_dirs = set()
 
         # TODO: non-debug targets
-        mainlib = 'libpython3.8d.so'
+        mainlib = 'libpython3.8d.so.1.0'
         extra_mainlib = None
-        python_exe = 'python3.8'
+        python_exe = 'python3.8d'
         if sys.platform == 'darwin':
             mainlib = 'libpython3.8d.dylib'
         elif sys.platform == 'win32':
@@ -316,6 +318,10 @@ class gdnative_build_ext(build_ext):
             python_exe = 'python_d.exe'
 
         self.python_dependencies['executable'] = os.path.join(bin_dir, python_exe)
+        self.python_dependencies['shared_library'] = os.path.join(mainlib_dir, mainlib)
+
+        if sys.platform.startswith('linux'):
+            os.environ['LD_LIBRARY_PATH'] = mainlib_dir
 
         so_files.append(('mainlib', mainlib))
         if extra_mainlib is not None:
@@ -511,6 +517,8 @@ class gdnative_build_ext(build_ext):
         deps = [main_zip_res, tools_zip_res, *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), fn) for root, fn in so_files)]
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
+        python_shared_library = 'res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), os.path.basename(self.python_dependencies['shared_library']))
+        context['python_library'] = {platform: python_shared_library}
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)

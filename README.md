@@ -17,5 +17,5 @@ The bindings are a work in progress. Some planned features are missing and the e
 - [Cython] Automatic type conversions between `Variant` and `PyObject *`, `String` and `str`, etc.
 
 This project consists of two parts:
-- [**Cython API**](CYTHON_INTRO.md)
-- [**Pure Python API**](PYTHON_INTRO.md)
+- [**Cython API**](CYTHON_README.md)
+- [**Pure Python API**](PYTHON_README.md)

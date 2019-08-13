@@ -5,6 +5,10 @@ func _initialize():
     ProjectSettings.set("python/config/module_search_path/main", "${main_zip_resource}")
     ProjectSettings.set("python/config/module_search_path/extended", "${dev_zip_resource}")
 
+    % for platform, lib in python_library.items():
+    ProjectSettings.set("python/config/python_library/${platform}", "${lib}")
+    % endfor
+
     var singletons = []
 
     if ProjectSettings.has_setting("gdnative/singletons"):

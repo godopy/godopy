@@ -97,8 +97,8 @@ elif env['platform'] == 'linux':
         '-Wsign-compare'
     ])
     env.Append(LIBS=[python_lib, 'crypt', 'pthread', 'dl', 'util', 'm'])
-    # env.Append(LINKFLAGS=['-Wl,-undefined,dynamic_lookup'])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
+    # env.Append(LINKFLAGS=['-Wl,-undefined,dynamic_lookup'])
     if env['target'] in ('debug', 'd'):
         env.Append(CCFLAGS=['-g3', '-Og'])
     else:

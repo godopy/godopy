@@ -41,6 +41,8 @@ Install PyGodot and set up a development environment (this process will take som
 ```
 $ # Mac and Linux:
 $ python3 pygodot/internal_python_build.py
+$ pygodot/buildenv/bin/python3 -m pip install -U pip
+$ pygodot/buildenv/bin/python3 -m pip install git+https://github.com/cython/cython.git@master#egg=Cython
 $ pygodot/buildenv/bin/python3 -m pip install -r pygodot/internal-requirements.txt
 $ python3 -m venv toolbox
 $ source toolbox/bin/activate
@@ -55,7 +57,7 @@ $ source toolbox/bin/activate
 ```
 > Replace `<path to Godot source folder>` with an actual path. Godot source should be compiled.
 > When you finish working with a virtual environment, run `deactivate` command
-> It is not required to use `python3 -m venv`, any virtualenv would work: `pipenv` or `virtualenvwrapper` are fine too
+> Cython must be installed before numpy because numpy build depends on it
 
 [Windows only] `choco install mingw` for `cpp.exe` (needed by bootstrap script)
 

@@ -6,6 +6,14 @@
 #include <OS.hpp>
 #include <ProjectSettings.hpp>
 
+#ifdef _WIN32
+// placeholder for Windows includes
+#elif __APPLE__
+// placeholder for macOS/iOS includes
+#else
+#include <dlfcn.h>
+#endif
+
 extern "C" PyObject *cython_nativescript_init();
 extern "C" PyObject *cython_nativescript_terminate();
 extern "C" PyObject *python_nativescript_init();
@@ -71,6 +79,18 @@ void PyGodot::python_init() {
 	godot::api->godot_string_destroy(&active_library_path);
 
 	bool commandline_script_mode = false;
+
+#ifdef _WIN32
+
+#elif __APPLE__
+
+#else
+	#include <dlfcn.h>
+	// Make Python symbols available for Python extension modules on Linux
+	// Idea from https://stackoverflow.com/questions/11842920/undefined-symbol-pyexc-importerror-when-embedding-python-in-c#11847653
+	godot::String python_library = settings->globalize_path(settings->get_setting("python/config/python_library/X11.64"));
+	const void *python_handle = dlopen(python_library.utf8().get_data(), RTLD_LAZY | RTLD_GLOBAL);
+#endif
 
 	status = PyConfig_InitIsolatedConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);

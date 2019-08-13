@@ -62,9 +62,9 @@ def build_python():
             '-I/usr/local/opt/sqlite/include '
         )
     else:
-        pass
         # os.environ['CFLAGS'] = '-fPIC'
-        # os.environ['CC'] = 'clang'
+        # os.environ['LDFLAGS'] = '-Xlinker -export-dynamic'
+        pass
 
     for command in commands:
         print(command)
