@@ -32,12 +32,8 @@ def build_python():
 
     if sys.platform == 'win32':
         os.chdir('.\\PCBuild')
-        print(os.getcwd())
-        commands = [
-            'build.bat -p x64 -c {0} --no-tkinter -t Build'
-            .format('Release' if release_build else 'Debug')
-        ]
-        subprocess.run(commands[0].split())
+        cmd = 'build.bat -p x64 -c {0} --no-tkinter -t Build'.format('Release' if release_build else 'Debug')
+        subprocess.run(cmd.split())
         os.chdir(cwd)
         sys.exit(0)
 

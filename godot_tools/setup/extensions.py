@@ -185,18 +185,30 @@ class gdnative_build_ext(build_ext):
             if not os.path.isdir(target_dir) and not self.dry_run:
                 os.makedirs(target_dir)
 
+        bin_packages = {''}
+
         for root, fn in reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed']):
+            prefix = ''
+            create_package = False
             if root == 'dynload':
                 basedir = self.python_dependencies['dynload_dir']
             elif root == 'site':
+                prefix = '_'
+                create_package = True
                 basedir = self.python_dependencies['site_dir']
             else:
                 basedir = self.python_dependencies['mainlib_dir']
 
             src = os.path.join(basedir, fn)
-            dst = os.path.join(binroot, fn)
+            dst = os.path.join(binroot, prefix + fn)
             if not os.path.exists(dst) and not self.dry_run:
                 shutil.copy2(src, dst)
+            if create_package:
+                dirs, filename = os.path.split(fn)
+                cur_dir = []
+                for d in (prefix + dirs).split(os.sep):
+                    cur_dir.append(d)
+                    bin_packages.add(os.sep.join(cur_dir))
 
         _, gdnlib_name = os.path.split(self.gdnative_library_path)
         basename, _ = os.path.splitext(gdnlib_name)
@@ -206,6 +218,25 @@ class gdnative_build_ext(build_ext):
         self._make_zip(main_zip_path, 'py_files')
         self._make_zip(tools_zip_path, 'py_files_ed')
 
+        if self.dry_run:
+            return
+
+        builddir_src = os.path.join('build', '_bin.py_files')
+
+        for d in bin_packages:
+            src_dir = os.path.join(builddir_src, d)
+            if not os.path.isdir(src_dir):
+                os.makedirs(src_dir)
+            src = os.path.join(builddir_src, d, '__init__.py')
+            with open(src, 'w', encoding='utf-8'):
+                pass
+
+            dst = os.path.join(binroot, d, '__init__.pyc')
+            cmd = [self.python_dependencies['executable'], '-c',
+                   "from py_compile import compile; compile(%r, %r, doraise=True)" % (src, dst)]
+
+            subprocess.run(cmd, check=True)
+
     def _make_zip(self, zippath, files):
         print('byte-compiling and compressing Python dependencies into "res://%s"' % zippath)
         if self.dry_run:
@@ -213,6 +244,7 @@ class gdnative_build_ext(build_ext):
 
         builddir_src = os.path.join('build', os.path.basename(zippath) + '.py_files')
         builddir_dst = os.path.join('build', os.path.basename(zippath) + '.pyc_files')
+        unprefixed_binroot = os.path.join(self.godot_project.binary_path, platform_suffix(get_platform()))
 
         verbosity = 1
 
@@ -222,8 +254,46 @@ class gdnative_build_ext(build_ext):
                     os.makedirs(target_dir)
 
         _prev_ratio = 0
+        so_shims = [(root, fn) for root, fn in
+                    reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed'])
+                    if root == 'site']
         _total = len(self.python_dependencies[files])
+        so_shims_written = set()
         with zipfile.ZipFile(zippath, 'w', zipfile.ZIP_DEFLATED, 9) as _zip:
+            for root, fn_so in so_shims:
+                base_fn, so_ext = os.path.splitext(fn_so)
+                fn = base_fn + '.py'
+                inner_dir, import_name = os.path.split(base_fn)
+                bin_dir = '/' + os.path.join(unprefixed_binroot, inner_dir)
+                import_name = import_name.split('.')[0]
+
+                fn = os.path.join(inner_dir, import_name + '.py')
+                fnc = fn + 'c'
+                dst = os.path.join(builddir_dst, fnc)
+                pre_dst = os.path.join(builddir_src, fn)
+
+                with open(pre_dst, 'w', encoding='utf-8') as fp:
+                    shim_tmpl = (
+                        "import _{1} as ___mod\n\n"
+                        "for ___name in dir(___mod):\n"
+                        "    globals()[___name] = getattr(___mod, ___name)\n"
+                    )
+                    fp.write(shim_tmpl.format(bin_dir, os.path.join(inner_dir, import_name).replace(os.sep, '.')))
+
+                cmd = [
+                    self.python_dependencies['executable'],
+                    '-c',
+                    "from py_compile import compile; compile(%r, %r, dfile=%r, doraise=True)" % (pre_dst, dst, fn)
+                ]
+
+                subprocess.run(cmd, check=True)
+                shutil.copystat(pre_dst, dst)
+
+                with open(dst, 'rb') as fp_src:
+                    with _zip.open(fnc, 'w') as fp_dst:
+                        fp_dst.write(fp_src.read())
+                so_shims_written.add(fnc)
+
             for i, (root, fn) in enumerate(self.python_dependencies[files]):
                 if root == 'lib':
                     basedir = self.python_dependencies['lib_dir']
@@ -265,7 +335,7 @@ class gdnative_build_ext(build_ext):
                         "from py_compile import compile; compile(%r, %r, dfile=%r)" % (pre_dst, dst, fn)
                     ]
 
-                    subprocess.run(cmd, check=True)
+                    subprocess.run(cmd, check=True, capture_output=True)
                     shutil.copystat(pre_dst, dst)
                 else:
                     if verbosity > 1:
@@ -275,9 +345,10 @@ class gdnative_build_ext(build_ext):
                             print('.', end='', flush=True)
                             _prev_ratio = _ratio
 
-                with open(dst, 'rb') as fp_src:
-                    with _zip.open(fnc, 'w') as fp_dst:
-                        fp_dst.write(fp_src.read())
+                if fnc not in so_shims_written:
+                    with open(dst, 'rb') as fp_src:
+                        with _zip.open(fnc, 'w') as fp_dst:
+                            fp_dst.write(fp_src.read())
 
         if verbosity == 1:
             print()
@@ -310,18 +381,12 @@ class gdnative_build_ext(build_ext):
         mainlib = None
         extra_mainlib = None
         python_exe = 'python3.8d'
-        if sys.platform == 'darwin':
-            mainlib = 'libpython3.8d.dylib'
-        elif sys.platform == 'win32':
+        if sys.platform == 'win32':
             mainlib = 'python38_d.dll'
             extra_mainlib = 'python38.dll'
             python_exe = 'python_d.exe'
 
         self.python_dependencies['executable'] = os.path.join(bin_dir, python_exe)
-        # self.python_dependencies['shared_library'] = os.path.join(mainlib_dir, mainlib)
-
-        # if sys.platform.startswith('linux'):
-        #    os.environ['LD_LIBRARY_PATH'] = mainlib_dir
 
         if mainlib is not None:
             so_files.append(('mainlib', mainlib))
@@ -355,7 +420,7 @@ class gdnative_build_ext(build_ext):
                     continue
                 is_tool = dirpath.endswith('tests')
                 if not is_tool:
-                    for tooldir in ('typing', 'pydoc', 'doctest', 'unittest', 'idlelib', 'distutils', 'zipapp'):
+                    for tooldir in ('typing', 'pydoc', 'doctest', 'idlelib', 'distutils', 'zipapp'):
                         if dirpath.startswith(tooldir):
                             is_tool = True
                             break
@@ -399,7 +464,7 @@ class gdnative_build_ext(build_ext):
                 if is_python_source(fn):
                     # if dirpath.startswith('traitlets') or dirpath.startswith('jedi'):
                     #     continue
-                    is_tool = dirpath.endswith('tests') or 'testing' in dirpath
+                    is_tool = dirpath.endswith('tests')  # or 'testing' in dirpath
                     for tooldir in ('Cython', 'IPython', 'ipython_genutils', 'jedi', 'parso', 'pexpect', 'traitlets', 'ptyprocess'):
                         if dirpath.startswith(tooldir):
                             is_tool = True
@@ -411,6 +476,7 @@ class gdnative_build_ext(build_ext):
                         py_files.append(('site', os.path.join(dirpath, fn)))
                 elif is_python_ext(fn):
                     has_so_files = True
+                    has_files = True
                     if 'tests' not in fn and '_dummy' not in fn and not dirpath.startswith('Cython'):
                         so_files.append(('site', os.path.join(dirpath, fn)))
                     else:
@@ -418,7 +484,7 @@ class gdnative_build_ext(build_ext):
             if has_files:
                 dirs.add(dirpath)
             if has_so_files:
-                so_dirs.add(dirpath)
+                so_dirs.add('_' + dirpath)
 
     def collect_godot_project_data(self, ext):
         self.godot_project = ext
@@ -453,7 +519,7 @@ class gdnative_build_ext(build_ext):
         self.gdnative_library_path = gdnlib_respath
         self.generic_setup = True
         so_files = self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed']
-        deps = ['"res://%s/%s/%s"' % (self.godot_project.binary_path, platform_suffix(platform), fn) for root, fn in so_files]
+        deps = ['"res://%s/%s/%s"' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn)) for root, fn in so_files]
         context = dict(
             singleton=False,
             load_once=True,
@@ -484,11 +550,7 @@ class gdnative_build_ext(build_ext):
         dst_name_parts = dst_fullname.split('.')
         base_name = dst_name_parts[0]
         dst_name_parts[0] = 'lib' + dst_name_parts[0]
-        # if dst_name_parts[0] == 'gdlibrary':
-        #    dst_name_parts[0] = '_gdlibrary'
-        # _ext = dst_name_parts[-1]
         dst_fullname = dst_name_parts[0] + get_dylib_ext()
-        # dst_fullname = '.'.join(dst_name_parts)
         staticlib_name = 'libpygodot.%s.debug.64' % platform_suffix(platform)
 
         binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform_suffix(platform), dst_fullname)
@@ -515,11 +577,11 @@ class gdnative_build_ext(build_ext):
         so_files = self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed']
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
         context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
-        deps = [main_zip_res, tools_zip_res, *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), fn) for root, fn in so_files)]
+        deps = [main_zip_res, tools_zip_res,
+                *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
+                    for root, fn in so_files)]
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
-        # python_shared_library = 'res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), os.path.basename(self.python_dependencies['shared_library']))
-        # context['python_library'] = {platform: python_shared_library}
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
@@ -538,9 +600,6 @@ class gdnative_build_ext(build_ext):
         dst_name_parts = dst_fullname.split('.')
         dst_name = dst_name_parts[0]
         gdns_path = os.path.join(dst_dir, dst_name + '.gdns')
-
-        # if dst_name == self.build_context['library_name']:
-        #     raise NameError("'%s' name is already used. Please select a different name\n" % dst_name)
 
         classname = ext._nativescript_classname or dst_name
         context = dict(gdnlib_resource=self.gdnative_library_path, classname=classname)
@@ -626,6 +685,12 @@ def get_dylib_ext():
     elif sys.platform == 'win32':
         return '.dll'
     return '.so'
+
+
+def inner_so_path(root, fn):
+    if root == 'site':
+        return '_' + fn
+    return fn
 
 
 def get_platform():
