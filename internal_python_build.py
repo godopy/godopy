@@ -34,7 +34,8 @@ def build_python():
         os.chdir('.\\PCBuild')
         print(os.getcwd())
         commands = [
-            'build.bat -p x64 -c {0} --no-tkinter -t Build'.format('Release' if release_build else 'Debug')
+            'build.bat -p x64 -c {0} --no-tkinter -t Build'
+            .format('Release' if release_build else 'Debug')
         ]
         subprocess.run(commands[0].split())
         os.chdir(cwd)

@@ -59,6 +59,7 @@ void PyGodot::python_init() {
 
 	if (!settings->has_setting("python/config/module_search_path/main")) {
 		FATAL_PRINT("Python Initialization Failed: no Python module search path defined.");
+		CRASH_NOW();
 		return;
 	}
 

@@ -107,10 +107,13 @@ elif env['platform'] == 'linux':
 elif env['platform'] == 'windows':
     env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PC')])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'include')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'Include')])
     env.Append(CPPDEFINES=['WIN32', '_WIN32', '_WINDOWS', '_CRT_SECURE_NO_WARNINGS'])
     env.Append(CCFLAGS=['-W3', '-GR'])
-    env.Append(LIBS=['python38'])
+
+    python_lib = 'python38_d' if env['target'] == 'debug' else 'python38'
+    env.Append(LIBS=[python_lib])
+
     if env['target'] in ('debug', 'd'):
         env.Append(CPPDEFINES=['_DEBUG'])
         env.Append(CCFLAGS=['-EHsc', '-MDd', '-ZI'])

@@ -61,14 +61,16 @@ $ source toolbox/bin/activate
 
 [Windows only] If you are using Windows PowerShell, first run as admin: `set-executionpolicy RemoteSigned`
 ```
-$ # Windows:
-$ python pygodot\internal_python_build
-$ # pygodot\deps\python\PCBuild\amd64\python_d -m pip install -r pygodot\internal-requirements.txt
-$ python -m venv toolbox
-$ .\toolbox\Scripts\activate
-(toolbox) $ pip install -r pygodot\godot-tools-requirements.txt
-(toolbox) $ $env:GODOT_BUILD = 'C:\path\to\godot'
-(toolbox) $ cd pygodot
+> # Windows:
+> python pygodot\internal_python_build
+> # python pygodot\internal_python_build target=release
+> .\pygodot\deps\python\PCbuild\amd64\python_d.exe -m venv .\pygodot\buildenv
+> .\pygodot\buildenv\Scripts\python_d.exe -m pip install -r .\pygodot\internal-requirements.txt
+> python -m venv toolbox
+> .\toolbox\Scripts\activate
+(toolbox) > python -m pip install -r pygodot\godot-tools-requirements.txt
+(toolbox) > $env:GODOT_BUILD = 'C:\path\to\godot'
+(toolbox) > cd pygodot
 (toolbox) $ python bootstrap.py
 (toolbox) $ scons -j4 only_cython=yes
 (toolbox) $ scons -j4
