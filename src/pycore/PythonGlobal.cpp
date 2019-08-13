@@ -85,11 +85,9 @@ void PyGodot::python_init() {
 #elif __APPLE__
 
 #else
-	#include <dlfcn.h>
-	// Make Python symbols available for Python extension modules on Linux
-	// Idea from https://stackoverflow.com/questions/11842920/undefined-symbol-pyexc-importerror-when-embedding-python-in-c#11847653
-	godot::String python_library = settings->globalize_path(settings->get_setting("python/config/python_library/X11.64"));
-	const void *python_handle = dlopen(python_library.utf8().get_data(), RTLD_LAZY | RTLD_GLOBAL);
+	// Make Python symbols available for core Python extension modules on Linux
+	// Idea from https://stackoverlow.com/questions/11842920/undefined-symbol-pyexc-importerror-when-embedding-python-in-c#11847653
+	const void *___so_handle = dlopen(((godot::String *)&active_library_path)->utf8().get_data(), RTLD_LAZY | RTLD_GLOBAL);
 #endif
 
 	status = PyConfig_InitIsolatedConfig(&config);

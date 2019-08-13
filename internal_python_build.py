@@ -44,7 +44,7 @@ def build_python():
     commands = [
         './configure --prefix={0} --quiet {1}'
         ' --enable-loadable-sqlite-extensions'
-        ' --enable-shared'.format(prefix, '--enable-optimizations' if release_build else '--with-pydebug'),
+        ' --disable-shared'.format(prefix, '--enable-optimizations' if release_build else '--with-pydebug'),
         'make -j{0}'.format(max(os.cpu_count() - 1, 1)),
         'make install'
     ]
@@ -62,9 +62,7 @@ def build_python():
             '-I/usr/local/opt/sqlite/include '
         )
     else:
-        # os.environ['CFLAGS'] = '-fPIC'
-        # os.environ['LDFLAGS'] = '-Xlinker -export-dynamic'
-        pass
+        os.environ['CFLAGS'] = '-fPIC'
 
     for command in commands:
         print(command)

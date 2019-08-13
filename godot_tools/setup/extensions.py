@@ -307,7 +307,7 @@ class gdnative_build_ext(build_ext):
         self.python_dependencies['bin_dirs'] = so_dirs = set()
 
         # TODO: non-debug targets
-        mainlib = 'libpython3.8d.so.1.0'
+        mainlib = None
         extra_mainlib = None
         python_exe = 'python3.8d'
         if sys.platform == 'darwin':
@@ -318,12 +318,13 @@ class gdnative_build_ext(build_ext):
             python_exe = 'python_d.exe'
 
         self.python_dependencies['executable'] = os.path.join(bin_dir, python_exe)
-        self.python_dependencies['shared_library'] = os.path.join(mainlib_dir, mainlib)
+        # self.python_dependencies['shared_library'] = os.path.join(mainlib_dir, mainlib)
 
-        if sys.platform.startswith('linux'):
-            os.environ['LD_LIBRARY_PATH'] = mainlib_dir
+        # if sys.platform.startswith('linux'):
+        #    os.environ['LD_LIBRARY_PATH'] = mainlib_dir
 
-        so_files.append(('mainlib', mainlib))
+        if mainlib is not None:
+            so_files.append(('mainlib', mainlib))
         if extra_mainlib is not None:
             so_files.append(('mainlib', extra_mainlib))
 
@@ -396,8 +397,8 @@ class gdnative_build_ext(build_ext):
             has_so_files = False
             for fn in filenames:
                 if is_python_source(fn):
-                    if dirpath.startswith('traitlets'):
-                        continue
+                    # if dirpath.startswith('traitlets') or dirpath.startswith('jedi'):
+                    #     continue
                     is_tool = dirpath.endswith('tests') or 'testing' in dirpath
                     for tooldir in ('Cython', 'IPython', 'ipython_genutils', 'jedi', 'parso', 'pexpect', 'traitlets', 'ptyprocess'):
                         if dirpath.startswith(tooldir):
@@ -517,8 +518,8 @@ class gdnative_build_ext(build_ext):
         deps = [main_zip_res, tools_zip_res, *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), fn) for root, fn in so_files)]
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
-        python_shared_library = 'res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), os.path.basename(self.python_dependencies['shared_library']))
-        context['python_library'] = {platform: python_shared_library}
+        # python_shared_library = 'res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), os.path.basename(self.python_dependencies['shared_library']))
+        # context['python_library'] = {platform: python_shared_library}
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
