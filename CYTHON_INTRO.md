@@ -51,7 +51,7 @@ $ source toolbox/bin/activate
 (toolbox) $ scons -j4 only_cython=yes
 (toolbox) $ scons -j4
 (toolbox) $ cd ..
-(toolbox) $ pip install -e ./pygodot
+(toolbox) $ pip install -e pygodot
 ```
 > Replace `<path to Godot source folder>` with an actual path. Godot source should be compiled.
 > When you finish working with a virtual environment, run `deactivate` command
@@ -62,10 +62,16 @@ $ source toolbox/bin/activate
 [Windows only] If you are using Windows PowerShell, first run as admin: `set-executionpolicy RemoteSigned`
 ```
 > # Windows:
-> python pygodot\internal_python_build
-> # python pygodot\internal_python_build target=release
+> python .\pygodot\internal_python_build.py
+> python .\pygodot\internal_python_build.py target=release
 > .\pygodot\deps\python\PCbuild\amd64\python_d.exe -m venv .\pygodot\buildenv
-> .\pygodot\buildenv\Scripts\python_d.exe -m pip install -r .\pygodot\internal-requirements.txt
+> .\pygodot\buildenv\Scripts\activate
+(buildenv) > python_d -m pip install --upgrade pip
+(buildenv) > cp .\pygodot\deps\python\PC\pyconfig.h .\pygodot\buildenv\Include\
+(buildenv) > python_d -m pip install git+https://github.com/cython/cython.git@master#egg=Cython
+(buildenv) > python -m pip install git+https://github.com/numpy/numpy.git@master#egg=numpy
+(buildenv) > python_d -m pip install -r .\pygodot\internal-requirements.txt
+(buildenv) > deactivate
 > python -m venv toolbox
 > .\toolbox\Scripts\activate
 (toolbox) > python -m pip install -r pygodot\godot-tools-requirements.txt
@@ -75,10 +81,12 @@ $ source toolbox/bin/activate
 (toolbox) $ scons -j4 only_cython=yes
 (toolbox) $ scons -j4
 (toolbox) $ cd ..
-(toolbox) $ pip install -e .\pygodot
+(toolbox) $ pip install -e pygodot
 ```
 > Replace `C:\path\to\godot` with an actual path.
 > When you finish working with a virtual environment, run `deactivate` command
+> Cython must be installed before numpy because numpy build depends on it
+> Debug build of Python couldn't build numpy on Windows therefore instructions use release build
 
 
 ### Creating a GDNative extension

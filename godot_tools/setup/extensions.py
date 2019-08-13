@@ -283,11 +283,12 @@ class gdnative_build_ext(build_ext):
     def collect_dependencies(self):
         if sys.platform == 'win32':
             py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
+            py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv'))
             self.python_dependencies['bin_dir'] = bin_dir = os.path.join(py_base_dir, 'PCBuild', 'amd64')
             self.python_dependencies['mainlib_dir'] = mainlib_dir = bin_dir
             self.python_dependencies['lib_dir'] = lib_dir = os.path.join(py_base_dir, 'Lib')
             self.python_dependencies['dynload_dir'] = dynload_dir = bin_dir
-            self.python_dependencies['site_dir'] = site_dir = os.path.join(lib_dir, 'site-packages')
+            self.python_dependencies['site_dir'] = site_dir = os.path.join(py_venv_dir, 'Lib', 'site-packages')
         else:
             self.python_dependencies['bin_dir'] = bin_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv', 'bin'))
             self.python_dependencies['mainlib_dir'] = mainlib_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv', 'lib'))
@@ -305,16 +306,20 @@ class gdnative_build_ext(build_ext):
 
         # TODO: non-debug targets
         mainlib = 'libpython3.8d.so'
+        extra_mainlib = None
         python_exe = 'python3.8'
         if sys.platform == 'darwin':
             mainlib = 'libpython3.8d.dylib'
         elif sys.platform == 'win32':
             mainlib = 'python38_d.dll'
+            extra_mainlib = 'python38.dll'
             python_exe = 'python_d.exe'
 
         self.python_dependencies['executable'] = os.path.join(bin_dir, python_exe)
 
         so_files.append(('mainlib', mainlib))
+        if extra_mainlib is not None:
+            so_files.append(('mainlib', extra_mainlib))
 
         py_files.append((None, os.path.join('godot', '__init__.py')))
         dirs.add('godot')
