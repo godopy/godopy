@@ -12,7 +12,7 @@ def pygodot(ctx, version):
     cmdname = os.path.basename(sys.argv[0])
 
     if version or not ctx.invoked_subcommand:
-        from .. import get_version
+        from .version import get_version
         click.echo(f'{cmdname} v{get_version()}')
 
         if not version:
@@ -28,7 +28,7 @@ def bindgen(ctx, version):
     cmdname = os.path.basename(sys.argv[0])
 
     if version or not ctx.invoked_subcommand:
-        from .. import get_version
+        from .version import get_version
         click.echo(f'{cmdname} v{get_version()}')
 
         if not version:

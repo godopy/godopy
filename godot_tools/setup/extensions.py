@@ -2,7 +2,6 @@ import os
 import re
 import sys
 import math
-import enum
 import shutil
 import hashlib
 import zipfile
@@ -16,37 +15,11 @@ from mako.template import Template
 from ..version import get_version
 from ..utils import get_godot_executable
 
-
-class ExtType(enum.Enum):
-    PROJECT = enum.auto()
-    GENERIC_LIBRARY = enum.auto()
-    LIBRARY = enum.auto()
-    NATIVESCRIPT = enum.auto()
-
+from .enums import ExtType
 
 root_dir = os.getcwd()  # XXX
 tools_root = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
 templates_dir = os.path.join(tools_root, 'setup', 'templates')
-
-
-class GenericGDNativeLibrary(Extension):
-    def __init__(self, name):
-        self._gdnative_type = ExtType.GENERIC_LIBRARY
-        super().__init__(name, sources=[])
-
-
-class GDNativeLibrary(Extension):
-    def __init__(self, name, source, extra_sources=None, **gdnative_options):
-        self._gdnative_type = ExtType.LIBRARY
-        self._gdnative_options = gdnative_options
-
-        sources = [source]
-
-        if extra_sources is not None:
-            for src in extra_sources:
-                sources.append(src)
-
-        super().__init__(name, sources=sources)
 
 
 class NativeScript(Extension):
