@@ -53,6 +53,7 @@ if env['platform'] == '':
 
 python_include = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
 python_lib = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
+python_internal_env = os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'site-packages')
 
 if env['platform'] == "osx":
     # Use Clang on macOS by default
@@ -68,7 +69,7 @@ if env['platform'] == "osx":
         '-fwrapv',
         '-Wno-unused-result',
         '-Wsign-compare',
-        '-Wunreachable-code'
+        # '-Wunreachable-code'
     ])
     env.Append(LINKFLAGS=[
         '-arch',
@@ -105,6 +106,8 @@ elif env['platform'] == 'linux':
         env.Append(CCFLAGS=['-g', '-O3'])
 
 elif env['platform'] == 'windows':
+    python_internal_env = os.path.join(pygodot_bindings_path, 'buildenv', 'Lib', 'site-packages')
+
     env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'PC')])
     env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'Include')])
@@ -138,7 +141,8 @@ env.Append(CPPPATH=[
     os.path.join(pygodot_bindings_path, 'include', 'core'),
     os.path.join(pygodot_bindings_path, 'include', 'gen'),
     os.path.join(pygodot_bindings_path, 'include', 'pycore'),
-    os.path.join(pygodot_bindings_path, 'include', 'pygen')
+    os.path.join(pygodot_bindings_path, 'include', 'pygen'),
+    os.path.join(python_internal_env, 'numpy', 'core', 'include')
 ])
 env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'bin')])
 env.Append(LIBS=[pygodot_library])

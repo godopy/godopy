@@ -3,6 +3,11 @@ from libc.stddef cimport wchar_t
 
 from godot_headers.gdnative_api cimport *
 
+cdef extern from *:
+    "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION"
+
+cimport numpy as np
+
 cdef extern from "Defs.hpp":
     ctypedef float real_t
 
@@ -138,17 +143,17 @@ cdef extern from "Array.hpp" namespace "godot" nogil:
 
     cdef cppclass Array:
         Array() except+
-        Array(const Array &other) except+
+        Array(const Array &other) except +
 
-        Array(const PoolByteArray &a) except+
-        Array(const PoolIntArray &a) except+
-        Array(const PoolRealArray &a) except+
-        Array(const PoolStringArray &a) except+
-        Array(const PoolVector2Array &a) except+
-        Array(const PoolVector3Array &a) except+
-        Array(const PoolColorArray &a) except+
+        Array(const PoolByteArray &a) except +
+        Array(const PoolIntArray &a) except +
+        Array(const PoolRealArray &a) except +
+        Array(const PoolStringArray &a) except +
+        Array(const PoolVector2Array &a) except +
+        Array(const PoolVector3Array &a) except +
+        Array(const PoolColorArray &a) except +
 
-        Array(object) except+
+        Array(object) except +
 
         @staticmethod
         Array make(...) except +
@@ -1284,10 +1289,13 @@ cdef extern from "Variant.hpp" namespace "godot" nogil:
 
 cdef extern from "Vector2.hpp" namespace "godot" nogil:
     cdef cppclass Vector2:  # C++ struct
-        real_t x, y, w, h # x,w and y,h are unions in C++
+        real_t x, y, width, height # x,width and y,height are unions in C++
 
         Vector2(real_t, real_t)
         Vector2()
+        Vector2(np.ndarray) except +ValueError
+
+        np.ndarray[np.float32_t] to_numpy()
 
         real_t& operator[](int)
         const real_t& operator[](int)

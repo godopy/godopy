@@ -6,6 +6,7 @@
 #include "godot/nativescript.h"
 #include "godot/gdnative.h"
 
+
 PyMODINIT_FUNC PyInit_core_types();
 PyMODINIT_FUNC PyInit__cython_bindings();
 PyMODINIT_FUNC PyInit__python_bindings();
@@ -23,7 +24,7 @@ extern "C" PyObject *_pygodot_gdnative_singleton();
 extern "C" PyObject *_pygodot_gdnative_init(godot_gdnative_init_options *)
 % endif
 
-static bool _pygodot_is_initialized = false;
+static bool __python_initialized = false;
 
 static PyModuleDef ${library_name}module = {
   PyModuleDef_HEAD_INIT, "${library_name}",
@@ -33,8 +34,8 @@ static PyModuleDef ${library_name}module = {
 
 PyMODINIT_FUNC PyInit_${library_name}(void) { return PyModule_Create(&${library_name}module); }
 
-static void _ensure_pygodot_is_initialized() {
-  if (_pygodot_is_initialized) return;
+static void ___python_init() {
+  if (__python_initialized) return;
 
   PyImport_AppendInittab("${library_name}", PyInit_${library_name});
   PyImport_AppendInittab("core_types", PyInit_core_types);
@@ -49,8 +50,9 @@ static void _ensure_pygodot_is_initialized() {
 % endfor
   pygodot::PyGodot::python_init();
 
-  // Importing of Cython modules is required to correctly initialize them
   PyObject *mod = NULL;
+
+  // Importing of Cython modules is required to correctly initialize them
   mod = PyImport_ImportModule("core_types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("_cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("_python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
@@ -62,7 +64,7 @@ static void _ensure_pygodot_is_initialized() {
   mod = PyImport_ImportModule("${varname}"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 % endfor
 
-  _pygodot_is_initialized = true;
+  __python_initialized = true;
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_init(godot_gdnative_init_options *o) {
@@ -82,14 +84,14 @@ extern "C" void GDN_EXPORT pygodot_gdnative_terminate(godot_gdnative_terminate_o
 extern "C" void GDN_EXPORT pygodot_nativescript_init(void *handle) {
   printf("NATIVESCRIPT INIT\n");
   godot::Godot::nativescript_init(handle);  // C++ bindings
-  _ensure_pygodot_is_initialized();  // PyGodot::python_init()
+  ___python_init();
   pygodot::PyGodot::nativescript_init(handle);
 
   PyObject *result = _pygodot_nativescript_init(); ERR_FAIL_PYTHON_NULL(result);
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_singleton() {
-  _ensure_pygodot_is_initialized();  // PyGodot::python_init()
+  ___python_init();
 % if singleton:
   PyObject *result = _pygodot_gdnative_singleton(); ERR_FAIL_PYTHON_NULL(result);
 % endif

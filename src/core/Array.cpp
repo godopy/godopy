@@ -3,6 +3,7 @@
 #include "Variant.hpp"
 
 #include <cstdlib>
+#include <stdexcept>
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
@@ -61,9 +62,8 @@ Array::Array(const PyObject *o) {
 		if (likely(p)) {
 			godot::api->godot_array_new_copy(&_godot_array, p);
 		} else {
-			if (PyErr_Occurred()) PyErr_Print();
-			ERR_PRINT("array was not created");
-			godot::api->godot_array_new(&_godot_array);
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("invalid Python argument");
 		}
 
 		// TODO: Other array wrappers
@@ -74,12 +74,12 @@ Array::Array(const PyObject *o) {
 
 		if (PyTuple_CheckExact((PyObject *)o)) {
 			// Tuples are faster than generic sequence protocol
-			for (size_t i = 0; i < PyTuple_GET_SIZE(o); i++) {
+			for (int i = 0; i < PyTuple_GET_SIZE(o); i++) {
 				PyObject *item = PyTuple_GET_ITEM((PyObject *)o, i);
 				append(Variant(item));
 			}
 		} else if (PySequence_Check((PyObject *)o)) {
-			for (size_t i = 0; i < PySequence_Length((PyObject *)o); i++) {
+			for (int i = 0; i < PySequence_Length((PyObject *)o); i++) {
 				PyObject *item = PySequence_GetItem((PyObject *)o, i);
 				append(Variant(item));
 			}

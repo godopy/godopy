@@ -94,6 +94,7 @@ if env['bits'] == 'default':
 
 python_include = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
 python_lib = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
+python_internal_env = os.path.join('buildenv', 'lib', 'python3.8', 'site-packages')
 
 # This makes sure to keep the session environment variables on Windows.
 # This way, you can run SCons in a Visual Studio 2017 prompt and it will find
@@ -108,6 +109,7 @@ if host_platform == 'windows':
 
     opts.Update(env)
     env['bits'] = bits
+    python_internal_env = os.path.join('buildenv', 'Lib', 'site-packages')
 
 if env['platform'] == 'linux':
     if env['use_llvm']:
@@ -162,7 +164,7 @@ elif env['platform'] == 'osx':
         '-fwrapv',
         '-Wno-unused-result',
         '-Wsign-compare',
-        '-Wunreachable-code'
+        # '-Wunreachable-code'
     ])
     env.Append(LINKFLAGS=[
         '-arch',
@@ -233,6 +235,7 @@ env.Append(CPPPATH=[
     'include/core',
     'include/pycore',
     'include/pygen',
+    os.path.join(python_internal_env, 'numpy', 'core', 'include')
 ])
 
 # Generate bindings?

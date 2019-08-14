@@ -1,3 +1,8 @@
 [submodule "deps/python"]
 	path = deps/python
 	url = https://github.com/python/cpython.git
+	branch = 3.8
+[submodule "deps/numpy"]
+	path = deps/numpy
+	url = https://github.com/numpy/numpy.git
+	branch = master
