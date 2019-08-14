@@ -2,9 +2,18 @@
 
 import os
 import sys
+import shutil
 import subprocess
 
 DEFAULT_TARGET = 'debug'
+
+OVERLAYS_UNIX = (
+    (('Modules',), 'Setup.unix.local', 'Setup.local'),
+)
+
+OVERLAYS_WINDOWS = (
+    (('Modules',), 'Setup.windows.local', 'Setup.local'),
+)
 
 
 def build_python():
@@ -13,12 +22,18 @@ def build_python():
     prefix = os.path.join(root_dir, 'buildenv')
     cwd = os.path.abspath(os.getcwd())
     python_path = os.path.join(root_dir, 'deps', 'python')
+    overlay_path = os.path.join(root_dir, 'deps', 'overlay', 'python')
 
     if 'VIRTUAL_ENV' in os.environ:
         raise SystemExit("Please deactivate virtualenv")
 
     os.chdir(python_path)
     print("Building internal Python interpreter in", repr(python_path), '...')
+
+    for path, _src, _dst in OVERLAYS_WINDOWS if sys.platform == 'win32' else OVERLAYS_UNIX:
+        src = os.path.join(overlay_path, *path, _src)
+        dst = os.path.join(python_path, *path, _dst)
+        shutil.copy(src, dst)
 
     release_build = DEFAULT_TARGET == 'release'
 

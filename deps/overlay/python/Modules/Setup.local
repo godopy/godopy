@@ -1,6 +1,0 @@
-# Edit this file for local setup changes
-
-# Not used yet.
-# TODO: Define all extensions that should be compiled as built-in and copy this file to deps/python/Modules
-
-zlib zlibmodule.c -I$(prefix)/include -L$(exec_prefix)/lib -lz

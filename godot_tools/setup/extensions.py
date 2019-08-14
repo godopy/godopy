@@ -249,7 +249,7 @@ class GDNativeBuildExt(build_ext):
                     if root == 'site']
         _total = len(self.python_dependencies[files])
         so_shims_written = set()
-        with zipfile.ZipFile(zippath, 'w', zipfile.ZIP_DEFLATED, 9) as _zip:
+        with zipfile.ZipFile(zippath, 'w', zipfile.ZIP_DEFLATED) as _zip:
             for root, fn_so in so_shims:
                 base_fn, so_ext = os.path.splitext(fn_so)
                 fn = base_fn + '.py'

@@ -1,3 +1,2 @@
-git+https://github.com/cython/cython.git@master#egg=Cython
 git+https://github.com/numpy/numpy.git@master#egg=numpy
-git+https://github.com/ipython/ipython.git@master#egg=IPython
+ipython==7.7.0
