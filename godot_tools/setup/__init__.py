@@ -2,7 +2,7 @@ import sys
 import os
 
 from setuptools import Extension
-from .extensions import ExtType, gdnative_build_ext
+from .extensions import ExtType, GDNativeBuildExt
 
 
 class GodotProject(Extension):
@@ -30,4 +30,4 @@ class GodotProject(Extension):
 
 
 def get_cmdclass():
-    return {'build_ext': gdnative_build_ext}
+    return {'build_ext': GDNativeBuildExt}

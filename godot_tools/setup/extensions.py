@@ -56,7 +56,11 @@ class NativeScript(Extension):
         super().__init__(name, sources=(sources or []))
 
 
-class gdnative_build_ext(build_ext):
+# TODO:
+# * Allow users to exclude Python dependencies with glob patterns
+# * Encapsulate Python packaging into a separate class and let users create custom classes
+# * Optionally allow to compress all binary Python extensions to .pak files (uncompress to user:// at runtime)
+class GDNativeBuildExt(build_ext):
     godot_project = None
     gdnative_library_path = None
     generic_setup = False
@@ -74,10 +78,6 @@ class gdnative_build_ext(build_ext):
     python_dependencies = {}
 
     def run(self):
-        if 'VIRTUAL_ENV' not in os.environ:
-            sys.stderr.write("Please run this command inside the virtual environment.\n")
-            sys.exit(1)
-
         dependencies_collected = False
 
         for ext in self.extensions:
@@ -185,30 +185,18 @@ class gdnative_build_ext(build_ext):
             if not os.path.isdir(target_dir) and not self.dry_run:
                 os.makedirs(target_dir)
 
-        bin_packages = {''}
-
-        for root, fn in reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed']):
-            prefix = ''
-            create_package = False
+        for root, fn in reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_dev']):
             if root == 'dynload':
                 basedir = self.python_dependencies['dynload_dir']
             elif root == 'site':
-                prefix = '_'
-                create_package = True
                 basedir = self.python_dependencies['site_dir']
             else:
                 basedir = self.python_dependencies['mainlib_dir']
 
             src = os.path.join(basedir, fn)
-            dst = os.path.join(binroot, prefix + fn)
+            dst = os.path.join(binroot, inner_so_path(root, fn))
             if not os.path.exists(dst) and not self.dry_run:
                 shutil.copy2(src, dst)
-            if create_package:
-                dirs, filename = os.path.split(fn)
-                cur_dir = []
-                for d in (prefix + dirs).split(os.sep):
-                    cur_dir.append(d)
-                    bin_packages.add(os.sep.join(cur_dir))
 
         _, gdnlib_name = os.path.split(self.gdnative_library_path)
         basename, _ = os.path.splitext(gdnlib_name)
@@ -216,22 +204,24 @@ class gdnative_build_ext(build_ext):
         tools_zip_path = os.path.join(self.godot_project.name, self.godot_project.binary_path, '%s-dev.pak' % basename)
 
         self._make_zip(main_zip_path, 'py_files')
-        self._make_zip(tools_zip_path, 'py_files_ed')
+        self._make_zip(tools_zip_path, 'py_files_dev')
 
         if self.dry_run:
             return
 
         builddir_src = os.path.join('build', '_bin.py_files')
 
-        for d in bin_packages:
+        for path in self.python_dependencies['py_files_for_bin'] + self.python_dependencies['py_files_for_bin_dev']:
+            d, fn = os.path.split(path)
+            assert fn == '__init__.py', fn
             src_dir = os.path.join(builddir_src, d)
             if not os.path.isdir(src_dir):
                 os.makedirs(src_dir)
-            src = os.path.join(builddir_src, d, '__init__.py')
+            src = os.path.join(builddir_src, d, fn)
             with open(src, 'w', encoding='utf-8'):
                 pass
 
-            dst = os.path.join(binroot, d, '__init__.pyc')
+            dst = os.path.join(binroot, d, fn + 'c')
             cmd = [self.python_dependencies['executable'], '-c',
                    "from py_compile import compile; compile(%r, %r, doraise=True)" % (src, dst)]
 
@@ -255,7 +245,7 @@ class gdnative_build_ext(build_ext):
 
         _prev_ratio = 0
         so_shims = [(root, fn) for root, fn in
-                    reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed'])
+                    reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_dev'])
                     if root == 'site']
         _total = len(self.python_dependencies[files])
         so_shims_written = set()
@@ -371,8 +361,10 @@ class gdnative_build_ext(build_ext):
 
         self.python_dependencies['py_files'] = py_files = []
         self.python_dependencies['so_files'] = so_files = []
-        self.python_dependencies['py_files_ed'] = py_files_ed = []
-        self.python_dependencies['so_files_ed'] = so_files_ed = []
+        self.python_dependencies['py_files_for_bin'] = py_files_for_bin = []
+        self.python_dependencies['py_files_dev'] = py_files_dev = []
+        self.python_dependencies['so_files_dev'] = so_files_dev = []
+        self.python_dependencies['py_files_for_bin_dev'] = py_files_for_bin_dev = []
 
         self.python_dependencies['zip_dirs'] = dirs = set()
         self.python_dependencies['bin_dirs'] = so_dirs = set()
@@ -426,7 +418,7 @@ class gdnative_build_ext(build_ext):
                             break
                 if is_tool:
                     has_ed_files = True
-                    py_files_ed.append(('lib', os.path.join(dirpath, fn)))
+                    py_files_dev.append(('lib', os.path.join(dirpath, fn)))
                 else:
                     has_files = True
                     py_files.append(('lib', os.path.join(dirpath, fn)))
@@ -438,7 +430,7 @@ class gdnative_build_ext(build_ext):
             if not is_python_ext(fn):
                 continue
             if 'test' in fn:
-                so_files_ed.append(('dynload', fn))
+                so_files_dev.append(('dynload', fn))
             else:
                 so_files.append(('dynload', fn))
 
@@ -471,7 +463,7 @@ class gdnative_build_ext(build_ext):
                             break
                     has_files = True
                     if is_tool:
-                        py_files_ed.append(('site', os.path.join(dirpath, fn)))
+                        py_files_dev.append(('site', os.path.join(dirpath, fn)))
                     else:
                         py_files.append(('site', os.path.join(dirpath, fn)))
                 elif is_python_ext(fn):
@@ -480,11 +472,33 @@ class gdnative_build_ext(build_ext):
                     if 'tests' not in fn and '_dummy' not in fn and not dirpath.startswith('Cython'):
                         so_files.append(('site', os.path.join(dirpath, fn)))
                     else:
-                        so_files_ed.append(('site', os.path.join(dirpath, fn)))
+                        so_files_dev.append(('site', os.path.join(dirpath, fn)))
             if has_files:
                 dirs.add(dirpath)
             if has_so_files:
                 so_dirs.add('_' + dirpath)
+
+        bin_package_dirs = {''}
+        bin_package_dev_dirs = {''}
+        for packages_set, files in ((bin_package_dirs, so_files), (bin_package_dev_dirs, so_files_dev)):
+            for root, fn in reversed(files):
+                if root == 'site':
+                    prefix = '_'
+                    create_package = True
+                else:
+                    prefix = ''
+                    create_package = False
+
+                if create_package:
+                    dirs, filename = os.path.split(fn)
+                    cur_dir = []
+                    for d in (prefix + dirs).split(os.sep):
+                        cur_dir.append(d)
+                        packages_set.add(os.sep.join(cur_dir))
+
+        for bin_dirs, files in ((bin_package_dirs, py_files_for_bin), (bin_package_dev_dirs, py_files_for_bin_dev)):
+            for d in bin_dirs:
+                files.append(os.path.join(d, '__init__.py'))
 
     def collect_godot_project_data(self, ext):
         self.godot_project = ext
@@ -518,8 +532,11 @@ class gdnative_build_ext(build_ext):
         gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name + '.gdnlib'))
         self.gdnative_library_path = gdnlib_respath
         self.generic_setup = True
-        so_files = self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed']
-        deps = ['"res://%s/%s/%s"' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn)) for root, fn in so_files]
+        so_files = self.python_dependencies['so_files']
+        deps = ['res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn)) for root, fn in so_files]
+        py_files_for_bin = self.python_dependencies['py_files_for_bin']
+        deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
+
         context = dict(
             singleton=False,
             load_once=True,
@@ -574,12 +591,17 @@ class gdnative_build_ext(build_ext):
         context.update(ext._gdnative_options)
         context['symbol_prefix'] = 'pygodot_'
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
-        so_files = self.python_dependencies['so_files'] + self.python_dependencies['so_files_ed']
+
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
         context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+
+        so_files = self.python_dependencies['so_files']
         deps = [main_zip_res, tools_zip_res,
                 *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
                     for root, fn in so_files)]
+        py_files_for_bin = self.python_dependencies['py_files_for_bin']
+        deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
+
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
 
@@ -688,9 +710,10 @@ def get_dylib_ext():
 
 
 def inner_so_path(root, fn):
+    parts = fn.split('.')
     if root == 'site':
-        return '_' + fn
-    return fn
+        return '_%s.%s' % (parts[0], parts[-1])
+    return '%s.%s' % (parts[0], parts[-1])
 
 
 def get_platform():
