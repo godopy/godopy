@@ -1,6 +1,6 @@
 from . cimport cpp_types as cpp
 
-cdef class GodotCoreTypeWrapper:
+cdef class CoreTypeWrapper:
     cdef bint _initialized
 
     # cdef inline int _internal_check(self) except -1
@@ -12,126 +12,126 @@ cdef class GodotCoreTypeWrapper:
     cdef inline object _init_value_error(self, object value):
         return ValueError('Bad %r init value: %r' % (self.__class__, value))
 
-cdef class GodotAABB(GodotCoreTypeWrapper):
+cdef class AABB(CoreTypeWrapper):
     cdef cpp.AABB _cpp_object
     @staticmethod
-    cdef GodotAABB from_cpp(cpp.AABB _cpp_object)
+    cdef AABB from_cpp(cpp.AABB _cpp_object)
 
-cdef class GodotArrayBase(GodotCoreTypeWrapper):
+cdef class ArrayBase(CoreTypeWrapper):
     pass
 
-cdef class GodotArray(GodotArrayBase):
+cdef class Array(ArrayBase):
     cdef cpp.Array _cpp_object
     @staticmethod
-    cdef GodotArray from_cpp(cpp.Array _cpp_object)
+    cdef Array from_cpp(cpp.Array _cpp_object)
 
-cdef class GodotBasis(GodotCoreTypeWrapper):
+cdef class Basis(CoreTypeWrapper):
     cdef cpp.Basis _cpp_object
     @staticmethod
-    cdef GodotBasis from_cpp(cpp.Basis _cpp_object)
+    cdef Basis from_cpp(cpp.Basis _cpp_object)
 
-cdef class GodotColor(GodotCoreTypeWrapper):
+cdef class Color(CoreTypeWrapper):
     cdef cpp.Color _cpp_object
     @staticmethod
-    cdef GodotColor from_cpp(cpp.Color _cpp_object)
+    cdef Color from_cpp(cpp.Color _cpp_object)
 
-cdef class GodotDictionary(GodotCoreTypeWrapper):
+cdef class Dictionary(CoreTypeWrapper):
     cdef cpp.Dictionary _cpp_object
     @staticmethod
-    cdef GodotDictionary from_cpp(cpp.Dictionary _cpp_object)
+    cdef Dictionary from_cpp(cpp.Dictionary _cpp_object)
 
-cdef class GodotNodePath(GodotCoreTypeWrapper):
+cdef class NodePath(CoreTypeWrapper):
     cdef cpp.NodePath _cpp_object
     @staticmethod
-    cdef GodotNodePath from_cpp(cpp.NodePath _cpp_object)
+    cdef NodePath from_cpp(cpp.NodePath _cpp_object)
 
-cdef class GodotPlane(GodotCoreTypeWrapper):
+cdef class Plane(CoreTypeWrapper):
     cdef cpp.Plane _cpp_object
     @staticmethod
-    cdef GodotPlane from_cpp(cpp.Plane _cpp_object)
+    cdef Plane from_cpp(cpp.Plane _cpp_object)
 
-cdef class GodotPoolArrayBase(GodotArrayBase):
+cdef class PoolArrayBase(ArrayBase):
     pass
 
-cdef class GodotPoolByteArray(GodotPoolArrayBase):
+cdef class PoolByteArray(PoolArrayBase):
     cdef cpp.PoolByteArray _cpp_object
     @staticmethod
-    cdef GodotPoolByteArray from_cpp(cpp.PoolByteArray _cpp_object)
+    cdef PoolByteArray from_cpp(cpp.PoolByteArray _cpp_object)
 
-cdef class GodotPoolIntArray(GodotPoolArrayBase):
+cdef class PoolIntArray(PoolArrayBase):
     cdef cpp.PoolIntArray _cpp_object
     @staticmethod
-    cdef GodotPoolIntArray from_cpp(cpp.PoolIntArray _cpp_object)
+    cdef PoolIntArray from_cpp(cpp.PoolIntArray _cpp_object)
 
-cdef class GodotPoolRealArray(GodotPoolArrayBase):
+cdef class PoolRealArray(PoolArrayBase):
     cdef cpp.PoolRealArray _cpp_object
     @staticmethod
-    cdef GodotPoolRealArray from_cpp(cpp.PoolRealArray _cpp_object)
+    cdef PoolRealArray from_cpp(cpp.PoolRealArray _cpp_object)
 
-cdef class GodotPoolStringArray(GodotPoolArrayBase):
+cdef class PoolStringArray(PoolArrayBase):
     cdef cpp.PoolStringArray _cpp_object
     @staticmethod
-    cdef GodotPoolStringArray from_cpp(cpp.PoolStringArray _cpp_object)
+    cdef PoolStringArray from_cpp(cpp.PoolStringArray _cpp_object)
 
-cdef class GodotPoolVector2Array(GodotPoolArrayBase):
+cdef class PoolVector2Array(PoolArrayBase):
     cdef cpp.PoolVector2Array _cpp_object
     @staticmethod
-    cdef GodotPoolVector2Array from_cpp(cpp.PoolVector2Array _cpp_object)
+    cdef PoolVector2Array from_cpp(cpp.PoolVector2Array _cpp_object)
 
-cdef class GodotPoolVector3Array(GodotPoolArrayBase):
+cdef class PoolVector3Array(PoolArrayBase):
     cdef cpp.PoolVector3Array _cpp_object
     @staticmethod
-    cdef GodotPoolVector3Array from_cpp(cpp.PoolVector3Array _cpp_object)
+    cdef PoolVector3Array from_cpp(cpp.PoolVector3Array _cpp_object)
 
-cdef class GodotPoolColorArray(GodotPoolArrayBase):
+cdef class PoolColorArray(PoolArrayBase):
     cdef cpp.PoolColorArray _cpp_object
     @staticmethod
-    cdef GodotPoolColorArray from_cpp(cpp.PoolColorArray _cpp_object)
+    cdef PoolColorArray from_cpp(cpp.PoolColorArray _cpp_object)
 
-cdef class GodotQuat(GodotCoreTypeWrapper):
+cdef class Quat(CoreTypeWrapper):
     cdef cpp.Quat _cpp_object
     @staticmethod
-    cdef GodotQuat from_cpp(cpp.Quat _cpp_object)
+    cdef Quat from_cpp(cpp.Quat _cpp_object)
 
-cdef class GodotRect2(GodotCoreTypeWrapper):
+cdef class Rect2(CoreTypeWrapper):
     cdef cpp.Rect2 _cpp_object
     @staticmethod
-    cdef GodotRect2 from_cpp(cpp.Rect2 _cpp_object)
+    cdef Rect2 from_cpp(cpp.Rect2 _cpp_object)
 
-cdef class GodotRID(GodotCoreTypeWrapper):
+cdef class RID(CoreTypeWrapper):
     cdef cpp.RID _cpp_object
     @staticmethod
-    cdef GodotRID from_cpp(cpp.RID _cpp_object)
+    cdef RID from_cpp(cpp.RID _cpp_object)
 
-cdef class GodotCharString(GodotCoreTypeWrapper):
+cdef class CharString(CoreTypeWrapper):
     cdef cpp.CharString _cpp_object
     @staticmethod
-    cdef GodotCharString from_cpp(cpp.CharString _cpp_object)
+    cdef CharString from_cpp(cpp.CharString _cpp_object)
 
-cdef class GodotString(GodotCoreTypeWrapper):
+cdef class String(CoreTypeWrapper):
     cdef cpp.String _cpp_object
     @staticmethod
-    cdef GodotString from_cpp(cpp.String _cpp_object)
+    cdef String from_cpp(cpp.String _cpp_object)
 
-cdef class GodotTransform(GodotCoreTypeWrapper):
+cdef class Transform(CoreTypeWrapper):
     cdef cpp.Transform _cpp_object
     @staticmethod
-    cdef GodotTransform from_cpp(cpp.Transform _cpp_object)
+    cdef Transform from_cpp(cpp.Transform _cpp_object)
 
-cdef class GodotTransform2D(GodotCoreTypeWrapper):
+cdef class Transform2D(CoreTypeWrapper):
     cdef cpp.Transform2D _cpp_object
     @staticmethod
-    cdef GodotTransform2D from_cpp(cpp.Transform2D _cpp_object)
+    cdef Transform2D from_cpp(cpp.Transform2D _cpp_object)
 
-cdef class GodotVector2(GodotCoreTypeWrapper):
+cdef class Vector2(CoreTypeWrapper):
     cdef cpp.Vector2 _cpp_object
     @staticmethod
-    cdef GodotVector2 from_cpp(cpp.Vector2 _cpp_object)
+    cdef Vector2 from_cpp(cpp.Vector2 _cpp_object)
 
-cdef class GodotVector3(GodotCoreTypeWrapper):
+cdef class Vector3(CoreTypeWrapper):
     cdef cpp.Vector3 _cpp_object
     @staticmethod
-    cdef GodotVector3 from_cpp(cpp.Vector3 _cpp_object)
+    cdef Vector3 from_cpp(cpp.Vector3 _cpp_object)
 
 
 

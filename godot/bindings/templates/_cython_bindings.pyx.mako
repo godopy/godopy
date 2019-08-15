@@ -13,11 +13,11 @@
         if is_class_type(arg[2]['type']):
             return '%s._owner' % arg[1]
         if arg[2]['type'] == 'String':
-            return 'String(%s)' % arg[1]
+            return 'cpp.String(%s)' % arg[1]
         if arg[2]['type'] == 'Variant' and arg[2]['has_default_value']:
-            return 'Variant(%s)' % arg[1]
+            return 'cpp.Variant(%s)' % arg[1]
         if arg[2]['type'] == 'Array' and arg[2]['has_default_value']:
-            return 'Array(%s)' % arg[1]
+            return 'cpp.Array(%s)' % arg[1]
         # if arg[2]['type'] in ARRAY_TYPES and arg[2]['has_default_value']:
         #    return '<%s>Array(%s)' % (make_cython_gdnative_type(arg[2]['type']).rstrip(), arg[1])
         if arg[2]['type'] in CORE_TYPES and arg[2]['has_default_value']:
@@ -29,13 +29,13 @@
         return arg_type.rstrip('*').rstrip().replace('const ', '')
 %>
 from godot_headers.gdnative_api cimport godot_object, godot_variant
-from ..core.globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _cython_language_index
+from ..globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _cython_language_index
 
-from ..core.cpp_types cimport *
+from ..core cimport cpp_types as cpp
 from ..core.defs cimport *
 from ..core._wrapped cimport _Wrapped
 from ..core.tag_db cimport register_global_cython_type, get_instance_from_owner
-from .cython.__icalls cimport *
+from .cython cimport __icalls
 
 from cpython.ref cimport Py_DECREF
 
@@ -111,14 +111,14 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
         self._owner = NULL
     % elif method['has_varargs']:
         % if is_class_type(method['return_type']):
-        cdef Variant __owner = ${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, Array(__var_args))
+        cdef cpp.Variant __owner = __icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, cpp.Array(__var_args))
         return get_instance_from_owner(<godot_object *>__owner)
         % else:
-        ${return_stmt}${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, Array(__var_args))
+        ${return_stmt}__icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, cpp.Array(__var_args))
         % endif
     % else:
         ## not has_varargs
-        ${return_stmt}${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''})${'.py_str()' if method['return_type'] == 'String' else ''}
+        ${return_stmt}__icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''})${'.py_str()' if method['return_type'] == 'String' else ''}
     % endif
 
     % endfor

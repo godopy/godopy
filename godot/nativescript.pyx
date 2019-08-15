@@ -1,7 +1,7 @@
 # cython: c_string_encoding=utf-8
 from godot_headers.gdnative_api cimport *
 
-from .core.globals cimport (
+from .globals cimport (
     Godot, PyGodot,
     gdapi, nativescript_api as nsapi, nativescript_1_1_api as ns11api,
     _nativescript_handle as handle
@@ -24,6 +24,15 @@ from .utils cimport _init_dynamic_loading
 
 from cython.operator cimport dereference as deref
 
+cdef extern from *:
+    """
+#define GDCALLINGCONV_VOID_PTR GDCALLINGCONV void*
+#define GDCALLINGCONV_VOID GDCALLINGCONV void
+#define GDCALLINGCONV_BOOL GDCALLINGCONV bool
+    """
+    ctypedef void* GDCALLINGCONV_VOID_PTR
+    ctypedef void GDCALLINGCONV_VOID
+    ctypedef bint GDCALLINGCONV_BOOL
 
 cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, dict TagDB) except NULL:
     cdef type cls = TagDB[type_tag]
@@ -54,16 +63,15 @@ cdef inline void __incref_python_pointer(void *ptr) nogil:
     if not ptr: return
     with gil: Py_INCREF(<object>ptr)
 
-# FIXME: Should be declared GDCALLINGCONV void *
-cdef void *_cython_wrapper_create(void *data, const void *type_tag, godot_object *instance) nogil:
+cdef GDCALLINGCONV_VOID_PTR _cython_wrapper_create(void *data, const void *type_tag, godot_object *instance) nogil:
     with gil:
         return _instance_create(<size_t>type_tag, instance, _Wrapped, CythonTagDB)
 
-cdef void *_python_wrapper_create(void *data, const void *type_tag, godot_object *instance) nogil:
+cdef GDCALLINGCONV_VOID_PTR _python_wrapper_create(void *data, const void *type_tag, godot_object *instance) nogil:
     with gil:
         return _instance_create(<size_t>type_tag, instance, _PyWrapped, PythonTagDB)
 
-cdef void _wrapper_destroy(void *data, void *wrapper) nogil:
+cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
     cdef size_t _owner;
     with gil:
         _owner = <size_t>(<_Wrapped>wrapper)._owner
@@ -71,10 +79,10 @@ cdef void _wrapper_destroy(void *data, void *wrapper) nogil:
             del __instance_map[_owner]
     __decref_python_pointer(wrapper)
 
-cdef void _wrapper_incref(void *data, void *wrapper) nogil:
+cdef GDCALLINGCONV_VOID _wrapper_incref(void *data, void *wrapper) nogil:
     __incref_python_pointer(wrapper)
 
-cdef bool _wrapper_decref(void *data, void *wrapper) nogil:
+cdef GDCALLINGCONV_BOOL _wrapper_decref(void *data, void *wrapper) nogil:
     __decref_python_pointer(wrapper)
     return False  # FIXME
 

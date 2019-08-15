@@ -3,7 +3,7 @@
     from godot_tools.binding_generator import CORE_TYPES
 %>
 from godot_headers.gdnative_api cimport godot_method_bind, godot_object
-from ...core.cpp_types cimport bool, real_t, int64_t, ${', '.join(CORE_TYPES)}
+from ...core.cpp_types cimport *
 
 cdef extern from "__cython_icalls.hpp" namespace "godot" nogil:
 % for ret, args, has_varargs, sig, pxd_signature in icalls:

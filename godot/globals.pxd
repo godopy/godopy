@@ -6,7 +6,7 @@ from godot_headers.gdnative_api cimport (
     godot_gdnative_ext_pluginscript_api_struct
 )
 
-from . cimport cpp_types as cpp
+from .core cimport cpp_types as cpp
 
 
 cdef extern from "Defs.hpp" namespace "godot":

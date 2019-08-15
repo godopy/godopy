@@ -339,9 +339,9 @@ def create_icall_arguments(args, var_arg, is_pxd=False):
         if is_core_type(arg):
             prefix = ''
             if is_pxd:
-                sig.append(arg + '&')
+                sig.append('%s&' % arg)
             else:
-                sig.append(arg + ' &')
+                sig.append('%s &' % arg)
         elif arg == 'int':
             sig.append('int64_t')
         elif arg == 'float':
@@ -509,14 +509,14 @@ def make_sha1_suffix(value):
 
 def escape_cython_default_arg(_type, default_value):
     if _type == 'Color':
-        return 'GodotColor(%s)' % default_value
+        return 'wrappers.Color(%s)' % default_value
     elif _type in ('bool', 'int'):
         return default_value
     elif _type in ('Array', 'Dictionary', 'PoolVector2Array', 'PoolStringArray', 'PoolVector3Array', 'PoolColorArray',
                    'PoolIntArray', 'PoolRealArray', 'Transform', 'Transform2D', 'RID'):
-        return 'Godot%s()' % _type
+        return 'wrappers.%s()' % _type
     elif _type in ('Vector2', 'Vector3', 'Rect2'):
-        return 'Godot%s%s' % (_type, default_value)
+        return 'wrappers.%s%s' % (_type, default_value)
     elif _type == 'Variant':
         if default_value == 'Null':
             return 'None'
@@ -546,6 +546,8 @@ def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=
     prefix = '' if is_return or has_default else 'const '
     if is_enum(t):
         enum_name = remove_enum_prefix(t).replace('::', '')
+        if enum_name == 'Error':
+            return 'cpp.Error '
         return '%s ' % enum_name
     elif is_class_type(t):
         return '%s ' % strip_name(t)
@@ -554,21 +556,21 @@ def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=
     elif has_default and t in PYTHON_AUTOMATIC_CAST_TYPES:
         return 'object '
     elif has_default and is_core_type(t):
-        return 'Godot%s ' % strip_name(t)
+        return 'wrappers.%s ' % strip_name(t)
 
-    if t == 'int':
-        return prefix + 'int64_t '
-    if t == 'float' or t == 'real':
-        return prefix + 'real_t '
+    elif t == 'int':
+        return prefix + 'int '
+    elif t == 'float' or t == 'real':
+        return prefix + 'float '
 
-    if is_virtual:
-        # For Python runtime exceptions
-        if t == 'void':
-            return 'object '
-        elif t == 'bool':
-            return 'bint '
-
-    return prefix + '%s ' % strip_name(t)
+    elif t == 'void':
+        return 'object '
+    elif t == 'bool':
+        return 'bint '
+    # elif t == 'Error':
+    #     return 'cpp.Error '
+    else:
+        return prefix + 'cpp.%s ' % strip_name(t)
 
 
 def generate_cppclass_context(class_def):

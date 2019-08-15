@@ -11,8 +11,9 @@
         return remove_nested_type_prefix(value_name)
 %>
 from godot_headers.gdnative_api cimport godot_method_bind
-from ..core.cpp_types cimport *
-from ..core.wrapper_types cimport *
+
+from ..core cimport cpp_types as cpp
+from ..core cimport wrapper_types as wrappers
 from ..core.defs cimport *
 from ..core._wrapped cimport _Wrapped
 

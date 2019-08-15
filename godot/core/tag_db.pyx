@@ -1,4 +1,4 @@
-from .globals cimport (
+from ..globals cimport (
     gdapi,
     nativescript_1_1_api as ns11api,
     _nativescript_handle as handle,
