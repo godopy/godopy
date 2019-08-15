@@ -255,9 +255,10 @@ if env['generate_bindings']:
 
 # Sources to compile
 cython_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/*.pyx')]
+cython_core_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/core/*.pyx')]
 cython_binding_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/bindings/*.pyx')]
 
-sources = cython_sources + cython_binding_sources
+sources = cython_sources + cython_core_sources + cython_binding_sources
 
 if not env['only_cython']:
     sources += [*Glob('src/core/*.cpp'), *Glob('src/gen/*.cpp'), *Glob('src/pycore/*.cpp')]

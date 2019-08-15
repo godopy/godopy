@@ -1,7 +1,6 @@
 from godot_headers.gdnative_api cimport (
     godot_method_rpc_mode, godot_property_usage_flags, godot_property_hint
 )
-from .cpp.core_types cimport String
 
 ctypedef object (*_regfunc_static)()
 ctypedef object (*_regfunc_classobj)(type)

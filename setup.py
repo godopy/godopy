@@ -38,16 +38,16 @@ if not hasattr(sys, 'version_info') or sys.version_info < (3, 6):
 
 version = __import__('godot_tools').__version__
 
-packages = ['godot_tools', 'godot', 'godot_headers']
+packages = ['godot_tools']
 package_data = {
-    'godot': [
-        '*.pxd',
-        'cpp/*.pxd',
-        'bindings/*.pxd',
-        'bindings/cpp/*.pxd'
-        'bindings/cython/*.pxd'
-    ],
-    'godot_headers': ['*.pxd'],
+    # 'godot': [
+    #     '*.pxd',
+    #     'cpp/*.pxd',
+    #     'bindings/*.pxd',
+    #     'bindings/cpp/*.pxd'
+    #     'bindings/cython/*.pxd'
+    # ],
+    # 'godot_headers': ['*.pxd'],
     'godot_tools': [
         # TODO: Compile build templates and remove runtime dependency on Mako
         'build/templates/*.mako'

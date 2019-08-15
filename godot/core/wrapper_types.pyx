@@ -1,14 +1,10 @@
-from godot_headers.gdnative_api cimport godot_object
+from libc.stdint cimport uint64_t, uint32_t, uint8_t, int64_t, int32_t
+from libc.stddef cimport wchar_t
 
-from .cpp.core_types cimport *
+from godot_headers.gdnative_api cimport godot_object, godot_array, godot_vector2
 
-from .globals cimport (
-    gdapi,
-    nativescript_1_1_api as ns11api,
-    _nativescript_handle as handle,
-    _cython_language_index as cython_idx,
-    _python_language_index as python_idx
-)
+from ._wrapped cimport _Wrapped, _PyWrapped
+from . cimport cpp_types as cpp
 
 
 def is_godot_wrapper_instance(object obj, object instances):
@@ -28,7 +24,7 @@ cdef class GodotCoreTypeWrapper:
 
 cdef class GodotAABB(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotAABB from_cpp(AABB _cpp_object):
+    cdef GodotAABB from_cpp(cpp.AABB _cpp_object):
         cdef GodotAABB self = GodotAABB.__new__(GodotAABB)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -41,9 +37,9 @@ cdef class GodotAABB(GodotCoreTypeWrapper):
             raise self._init_value_error(size)
 
         if pos is not None and size is not None:
-            self._cpp_object = AABB((<GodotVector3>pos)._cpp_object, (<GodotVector3>size)._cpp_object)
+            self._cpp_object = cpp.AABB((<GodotVector3>pos)._cpp_object, (<GodotVector3>size)._cpp_object)
         else:
-            self._cpp_object = AABB()
+            self._cpp_object = cpp.AABB()
             if pos is not None:
                 self._cpp_object.set_position((<GodotVector3>pos)._cpp_object)
             if size is not None:
@@ -52,14 +48,13 @@ cdef class GodotAABB(GodotCoreTypeWrapper):
         self._initialized = True
 
 
-
 cdef class GodotArrayBase(GodotCoreTypeWrapper):
     pass
 
 
 cdef class GodotArray(GodotArrayBase):
     @staticmethod
-    cdef GodotArray from_cpp(Array _cpp_object):
+    cdef GodotArray from_cpp(cpp.Array _cpp_object):
         cdef GodotArray self = GodotArray.__new__(GodotArray)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -67,23 +62,23 @@ cdef class GodotArray(GodotArrayBase):
 
     def __init__(self, object other=None):
         if other is None:
-            self._cpp_object = Array()
+            self._cpp_object = cpp.Array()
         elif is_godot_wrapper_instance(other, GodotArray):
-            self._cpp_object = Array((<GodotArray>other)._cpp_object)
+            self._cpp_object = cpp.Array((<GodotArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotPoolByteArray):
-            self._cpp_object = Array((<GodotPoolByteArray>other)._cpp_object)
+            self._cpp_object = cpp.Array((<GodotPoolByteArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotPoolIntArray):
-            self._cpp_object = Array((<GodotPoolIntArray>other)._cpp_object)
+            self._cpp_object = cpp.Array((<GodotPoolIntArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotPoolRealArray):
-            self._cpp_object = Array((<GodotPoolRealArray>other)._cpp_object)
+            self._cpp_object = cpp.Array((<GodotPoolRealArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotPoolStringArray):
-            self._cpp_object = Array((<GodotPoolStringArray>other)._cpp_object)
+            self._cpp_object = cpp.Array((<GodotPoolStringArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotPoolVector2Array):
-            self._cpp_object = Array((<GodotPoolVector2Array>other)._cpp_object)
+            self._cpp_object = cpp.Array((<GodotPoolVector2Array>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotPoolVector3Array):
-            self._cpp_object = Array((<GodotPoolByteArray>other)._cpp_object)
+            self._cpp_object = cpp.Array((<GodotPoolByteArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotPoolColorArray):
-            self._cpp_object = Array((<GodotPoolByteArray>other)._cpp_object)
+            self._cpp_object = cpp.Array((<GodotPoolByteArray>other)._cpp_object)
         else:
             raise self._init_value_error(other)
 
@@ -95,7 +90,7 @@ cdef class GodotArray(GodotArrayBase):
         array = GodotArray()
 
         for value in values:
-            array._cpp_object.append(<const Variant &>value)
+            array._cpp_object.append(<const cpp.Variant &>value)
 
         return array
 
@@ -105,37 +100,37 @@ cdef class GodotArray(GodotArrayBase):
 
     # def __setitem__(self, int item, object value):
     #     self._internal_check()
-    #     self._cpp_object[<const int>item] = <const Variant &>value
+    #     self._cpp_object[<const int>item] = <const cpp.Variant &>value
 
 
 cdef class GodotBasis(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotBasis from_cpp(Basis _cpp_object):
+    cdef GodotBasis from_cpp(cpp.Basis _cpp_object):
         cdef GodotBasis self = GodotBasis.__new__(GodotBasis)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self, object other=None):
-        self._cpp_object = Basis()
+        self._cpp_object = cpp.Basis()
         self._initialized = True
 
 
 cdef class GodotColor(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotColor from_cpp(Color _cpp_object):
+    cdef GodotColor from_cpp(cpp.Color _cpp_object):
         cdef GodotColor self = GodotColor.__new__(GodotColor)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self, float r=0, float g=0, float b=0, float a=1):
-        self._cpp_object = Color(r, g, b, a)
+        self._cpp_object = cpp.Color(r, g, b, a)
         self._initialized = True
 
     @staticmethod
     def hex(self, uint32_t value):
-        return GodotColor.from_cpp(Color.hex(value))
+        return GodotColor.from_cpp(cpp.Color.hex(value))
 
     # def __getitem__(self, int item):
     #     self._internal_check()
@@ -148,40 +143,40 @@ cdef class GodotColor(GodotCoreTypeWrapper):
 
 cdef class GodotDictionary(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotDictionary from_cpp(Dictionary _cpp_object):
+    cdef GodotDictionary from_cpp(cpp.Dictionary _cpp_object):
         cdef GodotDictionary self = GodotDictionary.__new__(GodotDictionary)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self):
-        self._cpp_object = Dictionary()
+        self._cpp_object = cpp.Dictionary()
         self._initialized = True
 
 
 cdef class GodotNodePath(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotNodePath from_cpp(NodePath _cpp_object):
+    cdef GodotNodePath from_cpp(cpp.NodePath _cpp_object):
         cdef GodotNodePath self = GodotNodePath.__new__(GodotNodePath)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self):
-        self._cpp_object = NodePath()
+        self._cpp_object = cpp.NodePath()
         self._initialized = True
 
 
 cdef class GodotPlane(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotPlane from_cpp(Plane _cpp_object):
+    cdef GodotPlane from_cpp(cpp.Plane _cpp_object):
         cdef GodotPlane self = GodotPlane.__new__(GodotPlane)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self):
-        self._cpp_object = Plane()
+        self._cpp_object = cpp.Plane()
         self._initialized = True
 
 
@@ -191,7 +186,7 @@ cdef class GodotPoolArrayBase(GodotArrayBase):
 
 cdef class GodotPoolByteArray(GodotPoolArrayBase):
     @staticmethod
-    cdef GodotPoolByteArray from_cpp(PoolByteArray _cpp_object):
+    cdef GodotPoolByteArray from_cpp(cpp.PoolByteArray _cpp_object):
         cdef GodotPoolByteArray self = GodotPoolByteArray.__new__(GodotPoolByteArray)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -199,11 +194,11 @@ cdef class GodotPoolByteArray(GodotPoolArrayBase):
 
     def __init__(self, other=None):
         if other is None:
-            self._cpp_object = PoolByteArray()
+            self._cpp_object = cpp.PoolByteArray()
         elif is_godot_wrapper_instance(other, GodotPoolByteArray):
-            self._cpp_object = PoolByteArray((<GodotPoolByteArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolByteArray((<GodotPoolByteArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotArray):
-            self._cpp_object = PoolByteArray((<GodotArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolByteArray((<GodotArray>other)._cpp_object)
         else:
             raise self._init_value_error(other)
 
@@ -212,7 +207,7 @@ cdef class GodotPoolByteArray(GodotPoolArrayBase):
 
 cdef class GodotPoolIntArray(GodotPoolArrayBase):
     @staticmethod
-    cdef GodotPoolIntArray from_cpp(PoolIntArray _cpp_object):
+    cdef GodotPoolIntArray from_cpp(cpp.PoolIntArray _cpp_object):
         cdef GodotPoolIntArray self = GodotPoolIntArray.__new__(GodotPoolIntArray)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -220,11 +215,11 @@ cdef class GodotPoolIntArray(GodotPoolArrayBase):
 
     def __init__(self, other=None):
         if other is None:
-            self._cpp_object = PoolIntArray()
+            self._cpp_object = cpp.PoolIntArray()
         elif is_godot_wrapper_instance(other, GodotPoolIntArray):
-            self._cpp_object = PoolIntArray((<GodotPoolIntArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolIntArray((<GodotPoolIntArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotArray):
-            self._cpp_object = PoolIntArray((<GodotArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolIntArray((<GodotArray>other)._cpp_object)
         else:
             raise self._init_value_error(other)
 
@@ -233,7 +228,7 @@ cdef class GodotPoolIntArray(GodotPoolArrayBase):
 
 cdef class GodotPoolRealArray(GodotPoolArrayBase):
     @staticmethod
-    cdef GodotPoolRealArray from_cpp(PoolRealArray _cpp_object):
+    cdef GodotPoolRealArray from_cpp(cpp.PoolRealArray _cpp_object):
         cdef GodotPoolRealArray self = GodotPoolRealArray.__new__(GodotPoolRealArray)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -241,11 +236,11 @@ cdef class GodotPoolRealArray(GodotPoolArrayBase):
 
     def __init__(self, other=None):
         if other is None:
-            self._cpp_object = PoolRealArray()
+            self._cpp_object = cpp.PoolRealArray()
         elif is_godot_wrapper_instance(other, GodotPoolRealArray):
-            self._cpp_object = PoolRealArray((<GodotPoolRealArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolRealArray((<GodotPoolRealArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotArray):
-            self._cpp_object = PoolRealArray((<GodotArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolRealArray((<GodotArray>other)._cpp_object)
         else:
             raise self._init_value_error(other)
         self._initialized = True
@@ -253,7 +248,7 @@ cdef class GodotPoolRealArray(GodotPoolArrayBase):
 
 cdef class GodotPoolStringArray(GodotPoolArrayBase):
     @staticmethod
-    cdef GodotPoolStringArray from_cpp(PoolStringArray _cpp_object):
+    cdef GodotPoolStringArray from_cpp(cpp.PoolStringArray _cpp_object):
         cdef GodotPoolStringArray self = GodotPoolStringArray.__new__(GodotPoolStringArray)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -261,11 +256,11 @@ cdef class GodotPoolStringArray(GodotPoolArrayBase):
 
     def __init__(self, other=None):
         if other is None:
-            self._cpp_object = PoolStringArray()
+            self._cpp_object = cpp.PoolStringArray()
         elif is_godot_wrapper_instance(other, GodotPoolStringArray):
-            self._cpp_object = PoolStringArray((<GodotPoolStringArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolStringArray((<GodotPoolStringArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotArray):
-            self._cpp_object = PoolStringArray((<GodotArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolStringArray((<GodotArray>other)._cpp_object)
         else:
             raise self._init_value_error(other)
 
@@ -274,7 +269,7 @@ cdef class GodotPoolStringArray(GodotPoolArrayBase):
 
 cdef class GodotPoolVector2Array(GodotPoolArrayBase):
     @staticmethod
-    cdef GodotPoolVector2Array from_cpp(PoolVector2Array _cpp_object):
+    cdef GodotPoolVector2Array from_cpp(cpp.PoolVector2Array _cpp_object):
         cdef GodotPoolVector2Array self = GodotPoolVector2Array.__new__(GodotPoolVector2Array)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -282,11 +277,11 @@ cdef class GodotPoolVector2Array(GodotPoolArrayBase):
 
     def __init__(self, other=None):
         if other is None:
-            self._cpp_object = PoolVector2Array()
+            self._cpp_object = cpp.PoolVector2Array()
         elif is_godot_wrapper_instance(other, GodotPoolVector2Array):
-            self._cpp_object = PoolVector2Array((<GodotPoolVector2Array>other)._cpp_object)
+            self._cpp_object = cpp.PoolVector2Array((<GodotPoolVector2Array>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotArray):
-            self._cpp_object = PoolVector2Array((<GodotArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolVector2Array((<GodotArray>other)._cpp_object)
         else:
             raise self._init_value_error(other)
 
@@ -295,7 +290,7 @@ cdef class GodotPoolVector2Array(GodotPoolArrayBase):
 
 cdef class GodotPoolVector3Array(GodotPoolArrayBase):
     @staticmethod
-    cdef GodotPoolVector3Array from_cpp(PoolVector3Array _cpp_object):
+    cdef GodotPoolVector3Array from_cpp(cpp.PoolVector3Array _cpp_object):
         cdef GodotPoolVector3Array self = GodotPoolVector3Array.__new__(GodotPoolVector3Array)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -303,11 +298,11 @@ cdef class GodotPoolVector3Array(GodotPoolArrayBase):
 
     def __init__(self, other=None):
         if other is None:
-            self._cpp_object = PoolVector3Array()
+            self._cpp_object = cpp.PoolVector3Array()
         elif is_godot_wrapper_instance(other, GodotPoolVector3Array):
-            self._cpp_object = PoolVector3Array((<GodotPoolVector3Array>other)._cpp_object)
+            self._cpp_object = cpp.PoolVector3Array((<GodotPoolVector3Array>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotArray):
-            self._cpp_object = PoolVector3Array((<GodotArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolVector3Array((<GodotArray>other)._cpp_object)
         else:
             raise self._init_value_error(other)
 
@@ -316,7 +311,7 @@ cdef class GodotPoolVector3Array(GodotPoolArrayBase):
 
 cdef class GodotPoolColorArray(GodotPoolArrayBase):
     @staticmethod
-    cdef GodotPoolColorArray from_cpp(PoolColorArray _cpp_object):
+    cdef GodotPoolColorArray from_cpp(cpp.PoolColorArray _cpp_object):
         cdef GodotPoolColorArray self = GodotPoolColorArray.__new__(GodotPoolColorArray)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -324,11 +319,11 @@ cdef class GodotPoolColorArray(GodotPoolArrayBase):
 
     def __init__(self, other=None):
         if other is None:
-            self._cpp_object = PoolColorArray()
+            self._cpp_object = cpp.PoolColorArray()
         elif is_godot_wrapper_instance(other, GodotPoolColorArray):
-            self._cpp_object = PoolColorArray((<GodotPoolColorArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolColorArray((<GodotPoolColorArray>other)._cpp_object)
         elif is_godot_wrapper_instance(other, GodotArray):
-            self._cpp_object = PoolColorArray((<GodotArray>other)._cpp_object)
+            self._cpp_object = cpp.PoolColorArray((<GodotArray>other)._cpp_object)
         else:
             raise self._init_value_error(other)
 
@@ -337,33 +332,33 @@ cdef class GodotPoolColorArray(GodotPoolArrayBase):
 
 cdef class GodotQuat(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotQuat from_cpp(Quat _cpp_object):
+    cdef GodotQuat from_cpp(cpp.Quat _cpp_object):
         cdef GodotQuat self = GodotQuat.__new__(GodotQuat)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self):
-        self._cpp_object = Quat()
+        self._cpp_object = cpp.Quat()
         self._initialized = True
 
 
 cdef class GodotRect2(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotRect2 from_cpp(Rect2 _cpp_object):
+    cdef GodotRect2 from_cpp(cpp.Rect2 _cpp_object):
         cdef GodotRect2 self = GodotRect2.__new__(GodotRect2)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self, x=0, y=0, width=0, height=0):
-        self._cpp_object = Rect2(x, y, width, height)
+        self._cpp_object = cpp.Rect2(x, y, width, height)
         self._initialized = True
 
 
 cdef class GodotRID(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotRID from_cpp(RID _cpp_object):
+    cdef GodotRID from_cpp(cpp.RID _cpp_object):
         cdef GodotRID self = GodotRID.__new__(GodotRID)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -372,16 +367,16 @@ cdef class GodotRID(GodotCoreTypeWrapper):
     def __init__(self, _Wrapped obj=None):
         cdef godot_object *p
         if obj is None:
-            self._cpp_object = RID()
+            self._cpp_object = cpp.RID()
         else:
             p = obj._owner
-            self._cpp_object = RID(<__Object *>p)
+            self._cpp_object = cpp.RID(<cpp.__Object *>p)
         self._initialized = True
 
 
 cdef class GodotCharString(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotCharString from_cpp(CharString _cpp_object):
+    cdef GodotCharString from_cpp(cpp.CharString _cpp_object):
         cdef GodotCharString self = GodotCharString.__new__(GodotCharString)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -398,7 +393,7 @@ cdef class GodotCharString(GodotCoreTypeWrapper):
 
 cdef class GodotString(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotString from_cpp(String _cpp_object):
+    cdef GodotString from_cpp(cpp.String _cpp_object):
         cdef GodotString self = GodotString.__new__(GodotString)
         self._cpp_object = _cpp_object
         self._initialized = True
@@ -407,11 +402,11 @@ cdef class GodotString(GodotCoreTypeWrapper):
     def __init__(self, object content=None):
         if not content:
             # Initialize an empty String for all falsy values
-            self._cpp_object = String()
+            self._cpp_object = cpp.String()
         elif isinstance(content, basestring):
-            self._cpp_object = String(content)
+            self._cpp_object = cpp.String(content)
         else:
-            self._cpp_object = String(str(content))
+            self._cpp_object = cpp.String(str(content))
 
     # @staticmethod
     # def num(double num, int decimals=-1):
@@ -433,8 +428,8 @@ cdef class GodotString(GodotCoreTypeWrapper):
 
     def __repr__(self):
         if self._initialized:
-            return 'GodotString(%r)' % self._cpp_object.py_str()
-        return super().__repr__(self).replace('GodotString', 'Uninitialized GodotString')
+            return 'String(%r)' % self._cpp_object.py_str()
+        return super().__repr__(self).replace('String', 'Uninitialized String')
 
     def __str__(self):
         if self._initialized:
@@ -450,62 +445,54 @@ cdef class GodotString(GodotCoreTypeWrapper):
 
 cdef class GodotTransform(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotTransform from_cpp(Transform _cpp_object):
+    cdef GodotTransform from_cpp(cpp.Transform _cpp_object):
         cdef GodotTransform self = GodotTransform.__new__(GodotTransform)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self):
-        self._cpp_object = Transform()
+        self._cpp_object = cpp.Transform()
         self._initialized = True
 
 
 cdef class GodotTransform2D(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotTransform2D from_cpp(Transform2D _cpp_object):
+    cdef GodotTransform2D from_cpp(cpp.Transform2D _cpp_object):
         cdef GodotTransform2D self = GodotTransform2D.__new__(GodotTransform2D)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self):
-        self._cpp_object = Transform2D()
+        self._cpp_object = cpp.Transform2D()
         self._initialized = True
 
 
 cdef class GodotVector2(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotVector2 from_cpp(Vector2 _cpp_object):
+    cdef GodotVector2 from_cpp(cpp.Vector2 _cpp_object):
         cdef GodotVector2 self = GodotVector2.__new__(GodotVector2)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self, float x=0, float y=0):
-        self._cpp_object = Vector2(x, y)
+        self._cpp_object = cpp.Vector2(x, y)
         self._initialized = True
 
 
 cdef class GodotVector3(GodotCoreTypeWrapper):
     @staticmethod
-    cdef GodotVector3 from_cpp(Vector3 _cpp_object):
+    cdef GodotVector3 from_cpp(cpp.Vector3 _cpp_object):
         cdef GodotVector3 self = GodotVector3.__new__(GodotVector3)
         self._cpp_object = _cpp_object
         self._initialized = True
         return self
 
     def __init__(self, float x=0, float y=0, float z=0):
-        self._cpp_object = Vector3(x, y, z)
+        self._cpp_object = cpp.Vector3(x, y, z)
         self._initialized = True
-
-
-cdef class _Wrapped:
-    pass
-
-
-cdef class _PyWrapped:
-    pass
 
 
 cdef public:
@@ -533,76 +520,76 @@ cdef public:
     # ctypedef GodotVector2 _python_vector2_wrapper
     # ctypedef GodotVector3 _python_vector3_wrapper
 
-    cdef type PyGodotType_GodotAABB = GodotAABB
-    cdef type PyGodotType_GodotArray = GodotArray
-    cdef type PyGodotType_GodotBasis = GodotBasis
-    cdef type PyGodotType_GodotColor = GodotColor
-    cdef type PyGodotType_GodotDictionary = GodotDictionary
-    cdef type PyGodotType_GodotNodePath = GodotNodePath
-    cdef type PyGodotType_GodotPlane = GodotPlane
-    cdef type PyGodotType_GodotPoolByteArray = GodotPoolByteArray
-    cdef type PyGodotType_GodotPoolIntArray = GodotPoolIntArray
-    cdef type PyGodotType_GodotPoolRealArray = GodotPoolRealArray
-    cdef type PyGodotType_GodotPoolStringArray = GodotPoolStringArray
-    cdef type PyGodotType_GodotPoolVector2Array = GodotPoolVector2Array
-    cdef type PyGodotType_GodotPoolVector3Array = GodotPoolVector3Array
-    cdef type PyGodotType_GodotPoolColorArray = GodotPoolColorArray
-    cdef type PyGodotType_GodotQuat = GodotQuat
-    cdef type PyGodotType_GodotRect2 = GodotRect2
-    cdef type PyGodotType_GodotRID = GodotRID
-    cdef type PyGodotType_GodotCharString = GodotCharString
-    cdef type PyGodotType_GodotString = GodotString
-    cdef type PyGodotType_GodotTransform = GodotTransform
-    cdef type PyGodotType_GodotTransform2D = GodotTransform2D
-    cdef type PyGodotType_GodotVector2 = GodotVector2
-    cdef type PyGodotType_GodotVector3 = GodotVector3
+    cdef type PyGodotWrapperType_GodotAABB = GodotAABB
+    cdef type PyGodotWrapperType_GodotArray = GodotArray
+    cdef type PyGodotWrapperType_GodotBasis = GodotBasis
+    cdef type PyGodotWrapperType_GodotColor = GodotColor
+    cdef type PyGodotWrapperType_GodotDictionary = GodotDictionary
+    cdef type PyGodotWrapperType_GodotNodePath = GodotNodePath
+    cdef type PyGodotWrapperType_GodotPlane = GodotPlane
+    cdef type PyGodotWrapperType_GodotPoolByteArray = GodotPoolByteArray
+    cdef type PyGodotWrapperType_GodotPoolIntArray = GodotPoolIntArray
+    cdef type PyGodotWrapperType_GodotPoolRealArray = GodotPoolRealArray
+    cdef type PyGodotWrapperType_GodotPoolStringArray = GodotPoolStringArray
+    cdef type PyGodotWrapperType_GodotPoolVector2Array = GodotPoolVector2Array
+    cdef type PyGodotWrapperType_GodotPoolVector3Array = GodotPoolVector3Array
+    cdef type PyGodotWrapperType_GodotPoolColorArray = GodotPoolColorArray
+    cdef type PyGodotWrapperType_GodotQuat = GodotQuat
+    cdef type PyGodotWrapperType_GodotRect2 = GodotRect2
+    cdef type PyGodotWrapperType_GodotRID = GodotRID
+    cdef type PyGodotWrapperType_GodotCharString = GodotCharString
+    cdef type PyGodotWrapperType_GodotString = GodotString
+    cdef type PyGodotWrapperType_GodotTransform = GodotTransform
+    cdef type PyGodotWrapperType_GodotTransform2D = GodotTransform2D
+    cdef type PyGodotWrapperType_GodotVector2 = GodotVector2
+    cdef type PyGodotWrapperType_GodotVector3 = GodotVector3
     cdef type PyGodotType__Wrapped = _Wrapped
 
-    object _aabb_to_python_wrapper(AABB _obj):
+    object _aabb_to_python_wrapper(cpp.AABB _obj):
         return <object>GodotAABB.from_cpp(_obj)
-    object _godot_array_to_python_wrapper(Array _obj):
+    object _godot_array_to_python_wrapper(cpp.Array _obj):
         return <object>GodotArray.from_cpp(_obj)
-    object _godot_basis_to_python_wrapper(Basis _obj):
+    object _godot_basis_to_python_wrapper(cpp.Basis _obj):
         return <object>GodotBasis.from_cpp(_obj)
-    object _color_to_python_wrapper(Color _obj):
+    object _color_to_python_wrapper(cpp.Color _obj):
         return <object>GodotColor.from_cpp(_obj)
-    object _godot_dictionary_to_python_wrapper(Dictionary  _obj):
+    object _godot_dictionary_to_python_wrapper(cpp.Dictionary  _obj):
         return <object>GodotDictionary.from_cpp(_obj)
-    object _nodepath_to_python_wrapper(NodePath _obj):
+    object _nodepath_to_python_wrapper(cpp.NodePath _obj):
         return <object>GodotNodePath.from_cpp(_obj)
-    object _plane_to_python_wrapper(Plane _obj):
+    object _plane_to_python_wrapper(cpp.Plane _obj):
         return <object>GodotPlane.from_cpp(_obj)
-    object _poolbytearray_to_python_wrapper(PoolByteArray _obj):
+    object _poolbytearray_to_python_wrapper(cpp.PoolByteArray _obj):
         return <object>GodotPoolByteArray.from_cpp(_obj)
-    object _poolintarray_to_python_wrapper(PoolIntArray _obj):
+    object _poolintarray_to_python_wrapper(cpp.PoolIntArray _obj):
         return <object>GodotPoolIntArray.from_cpp(_obj)
-    object _poolrealarray_to_python_wrapper(PoolRealArray _obj):
+    object _poolrealarray_to_python_wrapper(cpp.PoolRealArray _obj):
         return <object>GodotPoolRealArray.from_cpp(_obj)
-    object _poolstringarray_to_python_wrapper(PoolStringArray _obj):
+    object _poolstringarray_to_python_wrapper(cpp.PoolStringArray _obj):
         return <object>GodotPoolStringArray.from_cpp(_obj)
-    object _poolvector2array_to_python_wrapper(PoolVector2Array _obj):
+    object _poolvector2array_to_python_wrapper(cpp.PoolVector2Array _obj):
         return <object>GodotPoolVector2Array.from_cpp(_obj)
-    object _poolvector3array_to_python_wrapper(PoolVector3Array _obj):
+    object _poolvector3array_to_python_wrapper(cpp.PoolVector3Array _obj):
         return <object>GodotPoolVector3Array.from_cpp(_obj)
-    object _poolcolorarray_to_python_wrapper(PoolColorArray _obj):
+    object _poolcolorarray_to_python_wrapper(cpp.PoolColorArray _obj):
         return <object>GodotPoolColorArray.from_cpp(_obj)
-    object _quat_to_python_wrapper(Quat _obj):
+    object _quat_to_python_wrapper(cpp.Quat _obj):
         return <object>GodotQuat.from_cpp(_obj)
-    object _rect2_to_python_wrapper(Rect2 _obj):
+    object _rect2_to_python_wrapper(cpp.Rect2 _obj):
         return GodotRect2.from_cpp(_obj)
-    object _rid_to_python_wrapper(RID _obj):
+    object _rid_to_python_wrapper(cpp.RID _obj):
         return <object>GodotRID.from_cpp(_obj)
-    object _charstring_to_python_wrapper(CharString _obj):
+    object _charstring_to_python_wrapper(cpp.CharString _obj):
         return <object>GodotCharString.from_cpp(_obj)
-    object _godot_string_to_python_wrapper(String _obj):
+    object _godot_string_to_python_wrapper(cpp.String _obj):
         return <object>GodotString.from_cpp(_obj)
-    object _transform_to_python_wrapper(Transform _obj):
+    object _transform_to_python_wrapper(cpp.Transform _obj):
         return <object>GodotTransform.from_cpp(_obj)
-    object _transform2d_to_python_wrapper(Transform2D _obj):
+    object _transform2d_to_python_wrapper(cpp.Transform2D _obj):
         return <object>GodotTransform2D.from_cpp(_obj)
-    object _vector2_to_python_wrapper(Vector2 _obj):
+    object _vector2_to_python_wrapper(cpp.Vector2 _obj):
         return <object>GodotVector2.from_cpp(_obj)
-    object _vector3_to_python_wrapper(Vector3 _obj):
+    object _vector3_to_python_wrapper(cpp.Vector3 _obj):
         return <object>GodotVector3.from_cpp(_obj)
 
 
@@ -621,53 +608,3 @@ cdef public:
     godot_vector2 *_python_wrapper_to_vector2(object wrapper):
         return <godot_vector2 *>&(<GodotVector2>wrapper)._cpp_object
 
-
-include "core/signal_arguments_impl.pxi"
-
-cdef dict CythonTagDB = {}
-cdef dict PythonTagDB = {}
-cdef dict __instance_map = {}
-
-
-cdef register_cython_type(type cls):
-    cdef size_t type_tag = <size_t><void *>cls
-    cdef bytes name = cls.__name__.encode('utf-8')
-
-    print('set type tag', name, type_tag)
-
-    ns11api.godot_nativescript_set_type_tag(handle, <const char *>name, <void *>type_tag)
-
-    CythonTagDB[type_tag] = cls
-
-
-cdef register_python_type(type cls):
-    cdef size_t type_tag = <size_t><void *>cls
-    cdef bytes name = cls.__name__.encode('utf-8')
-
-    ns11api.godot_nativescript_set_type_tag(handle, <const char *>name, <void *>type_tag)
-
-    PythonTagDB[type_tag] = cls
-
-
-cdef register_global_cython_type(type cls, str api_name):
-    cdef bytes _api_name = api_name.encode('utf-8')
-    cdef size_t type_tag = <size_t><void *>cls
-
-    ns11api.godot_nativescript_set_global_type_tag(cython_idx, <const char *>_api_name, <const void *>type_tag)
-
-    CythonTagDB[type_tag] = cls
-
-
-cdef register_global_python_type(type cls, str api_name):
-    cdef bytes _api_name = api_name.encode('utf-8')
-    cdef size_t type_tag = <size_t><void *>cls
-
-    ns11api.godot_nativescript_set_global_type_tag(python_idx, <const char *>_api_name, <const void *>type_tag)
-
-    PythonTagDB[type_tag] = cls
-
-    # cls.__godot_api_name__ = api_name
-
-
-cdef get_instance_from_owner(godot_object *instance):
-    return __instance_map[<size_t>instance]

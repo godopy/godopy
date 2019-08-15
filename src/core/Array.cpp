@@ -7,7 +7,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include <godot/core_types.hpp>
+#include <godot/core/wrapper_types.hpp>
 
 namespace godot {
 
@@ -56,7 +56,7 @@ Array::Array(const PoolColorArray &a) {
 }
 
 Array::Array(const PyObject *o) {
-	if (Py_TYPE(o) == PyGodotType_GodotArray) {
+	if (Py_TYPE(o) == PyGodotWrapperType_GodotArray) {
 		godot_array *p = _python_wrapper_to_godot_array((PyObject *)o);
 
 		if (likely(p)) {

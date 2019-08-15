@@ -32,3 +32,5 @@ bin
 /godot_headers
 /godot/*.hpp
 /godot/*.cpp
+/godot/core/*.hpp
+/godot/core/*.cpp

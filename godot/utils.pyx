@@ -1,6 +1,6 @@
-from godot_headers.gdnative_api cimport *
-from godot.globals cimport gdapi
-from godot.core_types cimport _Wrapped
+# from godot_headers.gdnative_api cimport *
+# from godot.core.globals cimport gdapi
+# from godot.core._types cimport _Wrapped
 
 from libc.stddef cimport wchar_t
 from cpython.mem cimport PyMem_Free

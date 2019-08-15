@@ -29,9 +29,12 @@
         return arg_type.rstrip('*').rstrip().replace('const ', '')
 %>
 from godot_headers.gdnative_api cimport godot_object, godot_variant
-from ..globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _cython_language_index
+from ..core.globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _cython_language_index
 
-from ..core_types cimport *
+from ..core.cpp_types cimport *
+from ..core.defs cimport *
+from ..core._wrapped cimport _Wrapped
+from ..core.tag_db cimport register_global_cython_type, get_instance_from_owner
 from .cython.__icalls cimport *
 
 from cpython.ref cimport Py_DECREF

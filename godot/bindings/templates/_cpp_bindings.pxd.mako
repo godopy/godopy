@@ -16,7 +16,7 @@
             return name
 %>
 from godot_headers.gdnative_api cimport *
-from ..cpp.core_types cimport *
+from ..core.cpp_types cimport *
 % for class_name, class_def, includes, forwards, methods in classes:
 
 

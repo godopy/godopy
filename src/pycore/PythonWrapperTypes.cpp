@@ -2,7 +2,7 @@
 #include <Python.h>
 
 #include "CoreTypes.hpp"
-#include <godot/core_types.hpp>
+#include <godot/core/wrapper_types.hpp>
 
 namespace godot {
 
@@ -33,7 +33,7 @@ Vector2 Vector2_from_PyObject(PyObject *obj) {
   if (PyArray_Check(obj))
     return Vector2((const PyArrayObject *)obj);
 
-  if (Py_TYPE(obj) == PyGodotType_GodotVector2)
+  if (Py_TYPE(obj) == PyGodotWrapperType_GodotVector2)
     return *(Vector2 *)_python_wrapper_to_vector2(obj);
 
   throw std::invalid_argument("incompatible Python object argument");

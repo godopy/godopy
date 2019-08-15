@@ -1,18 +1,17 @@
 # cython: c_string_encoding=utf-8
 from godot_headers.gdnative_api cimport *
 
-from .globals cimport (
+from .core.globals cimport (
     Godot, PyGodot,
     gdapi, nativescript_api as nsapi, nativescript_1_1_api as ns11api,
     _nativescript_handle as handle
 )
-from .cpp.core_types cimport String, Variant
-from .core_types cimport (
-    _Wrapped, _PyWrapped,
-    CythonTagDB, PythonTagDB, __instance_map,
-    register_cython_type, register_python_type,
-    VARIANT_OBJECT, VARIANT_NIL, SignalArgument
-)
+from .core.cpp_types cimport String, Variant
+from .core._wrapped cimport _Wrapped, _PyWrapped
+from .core.tag_db cimport CythonTagDB, PythonTagDB, __instance_map, register_cython_type, register_python_type
+from .core.defs cimport VARIANT_OBJECT, VARIANT_NIL
+from .core.signal_arguments cimport SignalArgument
+
 from .bindings cimport _cython_bindings, _python_bindings
 
 from libcpp cimport nullptr

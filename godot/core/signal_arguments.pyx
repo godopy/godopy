@@ -1,3 +1,7 @@
+from godot_headers.gdnative_api cimport GODOT_PROPERTY_HINT_NONE, GODOT_PROPERTY_USAGE_DEFAULT
+
+from .defs cimport *
+
 cdef class SignalArgument:
     def __init__(self, str name, godot_property_hint hint=GODOT_PROPERTY_HINT_NONE, str hint_string='',
                  godot_property_usage_flags usage=GODOT_PROPERTY_USAGE_DEFAULT, object default_value=None):

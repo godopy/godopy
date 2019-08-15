@@ -5,7 +5,8 @@ from godot_headers.gdnative_api cimport (
     godot_gdnative_ext_nativescript_1_1_api_struct,
     godot_gdnative_ext_pluginscript_api_struct
 )
-from .cpp.core_types cimport String
+
+from . cimport cpp_types as cpp
 
 
 cdef extern from "Defs.hpp" namespace "godot":
@@ -36,10 +37,10 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
 
     cdef cppclass Godot:
         @staticmethod
-        void print(String &message)
+        void print(cpp.String &message)
 
         @staticmethod
-        void print(const String &fmt, ...)
+        void print(const cpp.String &fmt, ...)
 
         @staticmethod
         void print(str)

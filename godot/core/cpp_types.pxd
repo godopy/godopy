@@ -1,7 +1,8 @@
-from libc.stdint cimport uint64_t, int64_t
+from libc.stdint cimport uint64_t, uint32_t, uint8_t, int64_t, int32_t
 from libc.stddef cimport wchar_t
+from libcpp cimport bool
 
-from godot_headers.gdnative_api cimport *
+from godot_headers.gdnative_api cimport godot_object, godot_char_type
 
 cdef extern from *:
     "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION"
@@ -431,8 +432,8 @@ cdef extern from "Dictionary.hpp" namespace "godot" nogil:
         void clear()
         bint empty()
         void erase(const Variant &key)
-        bool has(const Variant &key)
-        bool has_all(const Array &keys)
+        bint has(const Variant &key)
+        bint has_all(const Array &keys)
         uint32_t hash()
         Array keys()
         Variant& operator[](const Variant &key)
@@ -840,7 +841,6 @@ cdef extern from "Ref.hpp" namespace "godot" nogil:
 
 cdef extern from "RID.hpp" namespace "godot" nogil:
     cdef cppclass RID:
-        # godot_rid _godot_rid
         RID() except +
         RID(__Object*) except +
         int32_t get_rid()
@@ -944,7 +944,7 @@ cdef extern from "String.hpp" namespace "godot" nogil:
         bint is_valid_html_color()
         bint is_valid_identifier()
         bint is_valid_integer()
-        bool is_valid_ip_address()
+        bint is_valid_ip_address()
         String json_escape()
         String left(int position)
         bint match(String expr)
