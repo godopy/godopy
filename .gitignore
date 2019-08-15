@@ -30,7 +30,5 @@ bin
 
 # Generated files
 /godot_headers
-/pygodot/*.h
-/pygodot/*.cpp
-/godot/*.h
+/godot/*.hpp
 /godot/*.cpp

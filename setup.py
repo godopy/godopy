@@ -54,7 +54,7 @@ package_data = {
     ]
 }
 
-entry_points = {'console_scripts': ['pygodot=godot_tools.cli:pygodot', 'bindgen=godot_tools.cli:bindgen']}
+entry_points = {'console_scripts': ['pygodot=godot_tools.cli:pygodot', 'bindgen=godot_tools.cli:bindgen', 'pygodot_cython=godot_tools.cli:pygodot_cython']}
 
 install_requires = [
     'Cython',

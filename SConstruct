@@ -224,7 +224,8 @@ if sys.platform == 'win32':
     binpath = os.path.join(sys.prefix, 'Scripts')
 
 env.Append(BUILDERS={
-    'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)
+    # 'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)
+    'CythonSource': Builder(action='%s/pygodot_cython $SOURCE $TARGET' % binpath)
 })
 
 env.Append(CPPPATH=[

@@ -130,7 +130,8 @@ if sys.platform == 'win32':
     binpath = os.path.join(sys.prefix, 'Scripts')
 
 env.Append(BUILDERS={
-    'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)
+    # 'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)
+    'CythonSource': Builder(action='%s/pygodot_cython $SOURCE $TARGET' % binpath)
 })
 
 # make sure our binding library is properly includes
@@ -147,13 +148,13 @@ env.Append(CPPPATH=[
 env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'bin')])
 env.Append(LIBS=[pygodot_library])
 
-% for varname, cpp, pyx in pyx_sources:
-_gencpp_${varname} = env.CythonSource(${repr(cpp)}, ${repr(pyx)})
+% for mod in pyx_sources:
+_gencpp_${mod['symbol_name']} = env.CythonSource(${repr(mod['cpp'])}, ${repr(mod['pyx'])})
 % endfor
 
 sources = [
-% for varname, _, _ in pyx_sources:
-    _gencpp_${varname},
+% for mod in pyx_sources:
+    _gencpp_${mod['symbol_name']},
 % endfor
 % for src in cpp_sources:
     ${repr(src)},

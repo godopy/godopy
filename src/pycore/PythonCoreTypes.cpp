@@ -2,7 +2,7 @@
 #include <Python.h>
 
 #include "CoreTypes.hpp"
-#include "godot/core_types.h"
+#include <godot/core_types.hpp>
 
 namespace godot {
 

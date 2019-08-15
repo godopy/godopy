@@ -76,13 +76,15 @@ class GDNativeBuildExt(build_ext):
         self.package_dependencies()
 
         setup_script = self.gdnative_library_path.replace('.gdnlib', '__setup.gd')
-        print('running "res://%s"' % setup_script)
+        print('updating godot project settings')
         if not self.dry_run:
             subprocess.run([
                 get_godot_executable(),
                 '--path', self.godot_project.name,
                 '-s', 'res://%s' % setup_script
             ], check=True)
+
+            os.unlink(os.path.join(self.godot_project.name, setup_script))
 
     def run_copylib(self):
         source = os.path.join(self.build_context['pygodot_bindings_path'], self.build_context['pygodot_library_name'])
@@ -619,9 +621,16 @@ class GDNativeBuildExt(build_ext):
             target_dir, target_name = os.path.split(target)
 
             # varnames should be unique due to the way Python modules are initialized
-            varname, _ = os.path.splitext(target_name)
+            name, _ = os.path.splitext(target_name)
 
-            self.build_context['pyx_sources'].append((varname, target, source))
+            modname = target_dir.replace(os.sep, '.') + '.' + name
+
+            self.build_context['pyx_sources'].append({
+                'name': modname,
+                'symbol_name': modname.replace('.', '__'),
+                'cpp': target,
+                'pyx': source
+            })
 
         for cpp_source in cpp_sources:
             source = os.path.join(self.godot_project.shadow_name, cpp_source)

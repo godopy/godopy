@@ -3,17 +3,17 @@
 #include "GodotGlobal.hpp"
 #include "Defs.hpp"
 
-#include "godot/nativescript.h"
-#include "godot/gdnative.h"
+#include <godot/nativescript.hpp>
+#include <godot/gdnative.hpp>
 
 
-PyMODINIT_FUNC PyInit_core_types();
-PyMODINIT_FUNC PyInit__cython_bindings();
-PyMODINIT_FUNC PyInit__python_bindings();
-PyMODINIT_FUNC PyInit_utils();
+PyMODINIT_FUNC PyInit_godot__core_types();
+PyMODINIT_FUNC PyInit_godot__bindings___cython_bindings();
+PyMODINIT_FUNC PyInit_godot__bindings___python_bindings();
+PyMODINIT_FUNC PyInit_godot__utils();
 
-% for varname, _, _ in pyx_sources:
-PyMODINIT_FUNC PyInit_${varname}(void);
+% for mod in pyx_sources:
+PyMODINIT_FUNC PyInit_${mod['symbol_name']}(void);
 % endfor
 
 extern "C" PyObject *_pygodot_nativescript_init();
@@ -28,7 +28,7 @@ static bool __python_initialized = false;
 
 static PyModuleDef ${library_name}module = {
   PyModuleDef_HEAD_INIT, "${library_name}",
-  "${repr(library)} GDNative extension",
+  "${repr(library_name)} GDNative extension",
   -1
 };
 
@@ -38,30 +38,30 @@ static void ___python_init() {
   if (__python_initialized) return;
 
   PyImport_AppendInittab("${library_name}", PyInit_${library_name});
-  PyImport_AppendInittab("core_types", PyInit_core_types);
-  PyImport_AppendInittab("_cython_bindings", PyInit__cython_bindings);
-  PyImport_AppendInittab("_python_bindings", PyInit__python_bindings);
-  PyImport_AppendInittab("utils", PyInit_utils);
-  PyImport_AppendInittab("nativescript", PyInit_nativescript);
-  PyImport_AppendInittab("gdnative", PyInit_gdnative);
+  PyImport_AppendInittab("__pygodot_internal__godot__core_types", PyInit_godot__core_types);
+  PyImport_AppendInittab("__pygodot_internal__godot__bindings___cython_bindings", PyInit_godot__bindings___cython_bindings);
+  PyImport_AppendInittab("__pygodot_internal__godot__bindings___python_bindings", PyInit_godot__bindings___python_bindings);
+  PyImport_AppendInittab("__pygodot_internal__godot__utils", PyInit_godot__utils);
+  PyImport_AppendInittab("__pygodot_internal__godot__nativescript", PyInit_godot__nativescript);
+  PyImport_AppendInittab("__pygodot_internal__godot__gdnative", PyInit_godot__gdnative);
 
-% for varname, _, _ in reversed(pyx_sources):
-  PyImport_AppendInittab("${varname}", PyInit_${varname});
+% for mod in reversed(pyx_sources):
+  PyImport_AppendInittab("__pygodot_internal__${mod['symbol_name']}", PyInit_${mod['symbol_name']});
 % endfor
   pygodot::PyGodot::python_init();
 
   PyObject *mod = NULL;
 
   // Importing of Cython modules is required to correctly initialize them
-  mod = PyImport_ImportModule("core_types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("_cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("_python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("utils"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("nativescript"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("gdnative"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__core_types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__bindings___cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__bindings___python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__utils"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__nativescript"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__gdnative"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 
-% for varname, _, _ in reversed(pyx_sources):
-  mod = PyImport_ImportModule("${varname}"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+% for mod in reversed(pyx_sources):
+  mod = PyImport_ImportModule("__pygodot_internal__${mod['symbol_name']}"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 % endfor
 
   __python_initialized = true;
