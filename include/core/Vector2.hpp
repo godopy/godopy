@@ -10,7 +10,6 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-// typedef struct __pyx_obj_5godot_10core_types_GodotVector2 *_python_vector2_wrapper;
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <numpy/arrayobject.h>
@@ -38,24 +37,6 @@ struct Vector2 {
 	inline Vector2() {
 		x = 0;
 		y = 0;
-	}
-
-	inline Vector2(const PyArrayObject *arr) {
-		if (likely(PyArray_SIZE((PyArrayObject *)arr) == 2 && PyArray_NDIM((PyArrayObject *)arr) == 1 &&
-			  (PyArray_TYPE((PyArrayObject *)arr) == NPY_FLOAT || PyArray_TYPE((PyArrayObject *)arr) == NPY_DOUBLE))) {
-			x = *(real_t *)PyArray_GETPTR1((PyArrayObject *)arr, 0);
-			y = *(real_t *)PyArray_GETPTR1((PyArrayObject *)arr, 1);
-		} else {
-			// raises ValueError in Cython/Python context
-			throw std::invalid_argument("argument must be an array of two float values");
-		}
-	}
-
-	inline const PyObject *to_numpy() {
-		npy_intp dims[] = {2};
-		PyObject *arr = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT, (void *)this);
-		Py_INCREF(arr);
-		return arr;
 	}
 
 	inline real_t &operator[](int p_idx) {
@@ -242,14 +223,34 @@ struct Vector2 {
 
 	inline real_t aspect() const { return width / height; }
 
-	PyObject *pythonize();
-
 	operator String() const;
+
+	inline Vector2(const PyArrayObject *arr) {
+		if (likely(PyArray_SIZE((PyArrayObject *)arr) == 2 && PyArray_NDIM((PyArrayObject *)arr) == 1 &&
+			  (PyArray_TYPE((PyArrayObject *)arr) == NPY_FLOAT || PyArray_TYPE((PyArrayObject *)arr) == NPY_DOUBLE))) {
+			x = *(real_t *)PyArray_GETPTR1((PyArrayObject *)arr, 0);
+			y = *(real_t *)PyArray_GETPTR1((PyArrayObject *)arr, 1);
+		} else {
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("argument must be an array of two float values");
+		}
+	}
+
+	const PyObject *to_python_wrapper();
+
+	inline const PyObject *to_numpy() {
+		npy_intp dims[] = {2};
+		PyObject *arr = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT, (void *)this);
+		Py_INCREF(arr);
+		return arr;
+	}
 };
 
 inline Vector2 operator*(real_t p_scalar, const Vector2 &p_vec) {
 	return p_vec * p_scalar;
 }
+
+Vector2 Vector2_from_PyObject(PyObject *obj);
 
 } // namespace godot
 

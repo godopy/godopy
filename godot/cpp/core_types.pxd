@@ -124,7 +124,7 @@ cdef extern from "AABB.hpp" namespace "godot" nogil:
         AABB() except +
         AABB(const Vector3 &pos, const Vector3 &size) except+
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Object.hpp" namespace "godot" nogil:
@@ -206,7 +206,7 @@ cdef extern from "Array.hpp" namespace "godot" nogil:
         object min()
         void shuffle()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Basis.hpp" namespace "godot" nogil:
@@ -271,7 +271,7 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
 
         # String operator String()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
     cdef cppclass Basis:
         # ColumnVector3[0] x
@@ -357,7 +357,7 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         Basis diagonalize()
 
         # Quat operator Quat()
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Color.hpp" namespace "godot" nogil:
@@ -417,7 +417,7 @@ cdef extern from "Color.hpp" namespace "godot" nogil:
         Color(float, float, float)
         Color(float, float, float, float)
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Dictionary.hpp" namespace "godot" nogil:
@@ -441,7 +441,7 @@ cdef extern from "Dictionary.hpp" namespace "godot" nogil:
         String to_json()
         Array values()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "NodePath.hpp" namespace "godot" nogil:
@@ -464,7 +464,7 @@ cdef extern from "NodePath.hpp" namespace "godot" nogil:
 
         bint operator==(const NodePath&)
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Plane.hpp" namespace "godot" nogil:
@@ -511,7 +511,7 @@ cdef extern from "Plane.hpp" namespace "godot" nogil:
         Plane(const Vector3 &point1, const Vector3 &point2,
               const Vector3 &point3, ClockDirection dir=CLOCKWISE) except +
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from * namespace "godot":
@@ -543,7 +543,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         uint8_t operator[](const int idx)
         int size()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
     cdef cppclass PoolIntArray:
@@ -571,7 +571,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         int operator[](const int idx)
         int size()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
     cdef cppclass PoolRealArray:
@@ -599,7 +599,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         real_t operator[](const int idx)
         int size()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
     cdef cppclass PoolStringArray:
@@ -627,7 +627,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const String operator[](const int idx)
         int size()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
     cdef cppclass PoolVector2Array:
@@ -655,7 +655,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector2 operator[](const int idx)
         int size()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
     cdef cppclass PoolVector3Array:
@@ -683,7 +683,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector3 operator[](const int idx)
         int size()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
     cdef cppclass PoolColorArray:
@@ -711,7 +711,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Color operator[](const int idx)
         int size()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Quat.hpp" namespace "godot" nogil:
@@ -766,7 +766,7 @@ cdef extern from "Quat.hpp" namespace "godot" nogil:
         Quat(const Vector3 &v0, const Vector3 &v1) except +
         Quat() except +
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Rect2.hpp" namespace "godot" nogil:
@@ -808,7 +808,7 @@ cdef extern from "Rect2.hpp" namespace "godot" nogil:
         Rect2(real_t x, real_t y, real_t width, real_t height) except +
         Rect2(const Point2 &position, const Size2 &size) except +
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Ref.hpp" namespace "godot" nogil:
@@ -853,14 +853,14 @@ cdef extern from "RID.hpp" namespace "godot" nogil:
         bint operator<=(const RID&)
         bint operator>=(const RID&)
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "String.hpp" namespace "godot" nogil:
     cdef cppclass CharString:
         int length()
         const char *get_data()
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
     cdef cppclass String:
         String() except +
@@ -985,7 +985,7 @@ cdef extern from "String.hpp" namespace "godot" nogil:
         String trim_prefix(const String &prefix)
         String trim_suffix(const String &suffix)
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Transform.hpp" namespace "godot" nogil:
@@ -1050,7 +1050,7 @@ cdef extern from "Transform.hpp" namespace "godot" nogil:
         Transform(const Basis &basis, const Vector3 &origin) except +
         Transform() except +
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Transform2D.hpp" namespace "godot" nogil:
@@ -1107,7 +1107,7 @@ cdef extern from "Transform2D.hpp" namespace "godot" nogil:
         Transform2D(real_t rot, Vector2 &pos) except +
         Transform2D() except +
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Variant.hpp" namespace "godot" nogil:
@@ -1323,7 +1323,7 @@ cdef extern from "Vector2.hpp" namespace "godot" nogil:
         real_t length()
         real_t length_squared()
 
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
 
 cdef extern from "Vector3.hpp" namespace "godot" nogil:
@@ -1387,7 +1387,7 @@ cdef extern from "Vector3.hpp" namespace "godot" nogil:
         Vector3 snapped(const float by)
 
         # String operator String()
-        object wrap "pythonize" ()
+        object wrap "to_python_wrapper" ()
 
     Vector3 vec3_cross(const Vector3 &a, Vector3 &b)
 

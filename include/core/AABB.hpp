@@ -73,7 +73,7 @@ public:
 	void project_range_in_plane(const Plane &p_plane, real_t &r_min, real_t &r_max) const;
 	void expand_to(const Vector3 &p_vector); /** expand to contain a point if necesary */
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	operator String() const;
 

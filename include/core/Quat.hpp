@@ -67,7 +67,7 @@ public:
 	bool operator==(const Quat &p_quat) const;
 	bool operator!=(const Quat &p_quat) const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	operator String() const;
 

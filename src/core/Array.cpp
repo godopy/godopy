@@ -57,7 +57,7 @@ Array::Array(const PoolColorArray &a) {
 
 Array::Array(const PyObject *o) {
 	if (Py_TYPE(o) == PyGodotType_GodotArray) {
-		godot_array *p = _python_to_godot_array((PyObject *)o);
+		godot_array *p = _python_wrapper_to_godot_array((PyObject *)o);
 
 		if (likely(p)) {
 			godot::api->godot_array_new_copy(&_godot_array, p);

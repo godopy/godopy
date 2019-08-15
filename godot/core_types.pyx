@@ -558,61 +558,67 @@ cdef public:
     cdef type PyGodotType_GodotVector3 = GodotVector3
     cdef type PyGodotType__Wrapped = _Wrapped
 
-    object _aabb_to_python(AABB _obj):
+    object _aabb_to_python_wrapper(AABB _obj):
         return <object>GodotAABB.from_cpp(_obj)
-    object _godot_array_to_python(Array _obj):
+    object _godot_array_to_python_wrapper(Array _obj):
         return <object>GodotArray.from_cpp(_obj)
-    object _godot_basis_to_python(Basis _obj):
+    object _godot_basis_to_python_wrapper(Basis _obj):
         return <object>GodotBasis.from_cpp(_obj)
-    object _color_to_python(Color _obj):
+    object _color_to_python_wrapper(Color _obj):
         return <object>GodotColor.from_cpp(_obj)
-    object _godot_dictionary_to_python(Dictionary  _obj):
+    object _godot_dictionary_to_python_wrapper(Dictionary  _obj):
         return <object>GodotDictionary.from_cpp(_obj)
-    object _nodepath_to_python(NodePath _obj):
+    object _nodepath_to_python_wrapper(NodePath _obj):
         return <object>GodotNodePath.from_cpp(_obj)
-    object _plane_to_python(Plane _obj):
+    object _plane_to_python_wrapper(Plane _obj):
         return <object>GodotPlane.from_cpp(_obj)
-    object _poolbytearray_to_python(PoolByteArray _obj):
+    object _poolbytearray_to_python_wrapper(PoolByteArray _obj):
         return <object>GodotPoolByteArray.from_cpp(_obj)
-    object _poolintarray_to_python(PoolIntArray _obj):
+    object _poolintarray_to_python_wrapper(PoolIntArray _obj):
         return <object>GodotPoolIntArray.from_cpp(_obj)
-    object _poolrealarray_to_python(PoolRealArray _obj):
+    object _poolrealarray_to_python_wrapper(PoolRealArray _obj):
         return <object>GodotPoolRealArray.from_cpp(_obj)
-    object _poolstringarray_to_python(PoolStringArray _obj):
+    object _poolstringarray_to_python_wrapper(PoolStringArray _obj):
         return <object>GodotPoolStringArray.from_cpp(_obj)
-    object _poolvector2array_to_python(PoolVector2Array _obj):
+    object _poolvector2array_to_python_wrapper(PoolVector2Array _obj):
         return <object>GodotPoolVector2Array.from_cpp(_obj)
-    object _poolvector3array_to_python(PoolVector3Array _obj):
+    object _poolvector3array_to_python_wrapper(PoolVector3Array _obj):
         return <object>GodotPoolVector3Array.from_cpp(_obj)
-    object _poolcolorarray_to_python(PoolColorArray _obj):
+    object _poolcolorarray_to_python_wrapper(PoolColorArray _obj):
         return <object>GodotPoolColorArray.from_cpp(_obj)
-    object _quat_to_python(Quat _obj):
+    object _quat_to_python_wrapper(Quat _obj):
         return <object>GodotQuat.from_cpp(_obj)
-    object _rect2_to_python(Rect2 _obj):
+    object _rect2_to_python_wrapper(Rect2 _obj):
         return GodotRect2.from_cpp(_obj)
-    object _rid_to_python(RID _obj):
+    object _rid_to_python_wrapper(RID _obj):
         return <object>GodotRID.from_cpp(_obj)
-    object _charstring_to_python(CharString _obj):
+    object _charstring_to_python_wrapper(CharString _obj):
         return <object>GodotCharString.from_cpp(_obj)
-    object _godot_string_to_python(String _obj):
+    object _godot_string_to_python_wrapper(String _obj):
         return <object>GodotString.from_cpp(_obj)
-    object _transform_to_python(Transform _obj):
+    object _transform_to_python_wrapper(Transform _obj):
         return <object>GodotTransform.from_cpp(_obj)
-    object _transform2d_to_python(Transform2D _obj):
+    object _transform2d_to_python_wrapper(Transform2D _obj):
         return <object>GodotTransform2D.from_cpp(_obj)
-    object  _vector2_to_python(Vector2 _obj):
+    object _vector2_to_python_wrapper(Vector2 _obj):
         return <object>GodotVector2.from_cpp(_obj)
-    object _vector3_to_python(Vector3 _obj):
+    object _vector3_to_python_wrapper(Vector3 _obj):
         return <object>GodotVector3.from_cpp(_obj)
 
 
-    godot_object *_python_to_godot_object(object wrapped):
+    # Caller is responsible for type-checking in all
+    # "*_binding_to_*" and "_python_wrapper_to_*" functions
+
+    godot_object *_cython_binding_to_godot_object(object wrapped):
         return (<_Wrapped>wrapped)._owner
 
-    godot_array *_python_to_godot_array(object wrapper):
+    godot_object *_python_binding_to_godot_object(object wrapped):
+        return (<_PyWrapped>wrapped)._owner
+
+    godot_array *_python_wrapper_to_godot_array(object wrapper):
         return <godot_array *>&(<GodotArray>wrapper)._cpp_object
 
-    godot_vector2 *_python_to_vector2(object wrapper):
+    godot_vector2 *_python_wrapper_to_vector2(object wrapper):
         return <godot_vector2 *>&(<GodotVector2>wrapper)._cpp_object
 
 

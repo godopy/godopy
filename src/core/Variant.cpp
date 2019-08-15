@@ -184,7 +184,7 @@ Variant::Variant(const PyObject *p_python_object) {
 		godot::api->godot_variant_new_string(&_godot_variant, (godot_string *)&s);
 
 	} else if (Py_TYPE(p_python_object) == PyGodotType_GodotVector2) {
-		godot_vector2 *p = _python_to_vector2((PyObject *)p_python_object);
+		godot_vector2 *p = _python_wrapper_to_vector2((PyObject *)p_python_object);
 		if (p) {
 			godot::api->godot_variant_new_vector2(&_godot_variant, p);
 		} else {
@@ -192,7 +192,7 @@ Variant::Variant(const PyObject *p_python_object) {
 		}
 
 	} else if (Py_TYPE(p_python_object) == PyGodotType_GodotArray) {
-		godot_array *p = _python_to_godot_array((PyObject *)p_python_object);
+		godot_array *p = _python_wrapper_to_godot_array((PyObject *)p_python_object);
 		if (p) {
 			godot::api->godot_variant_new_array(&_godot_variant, p);
 		} else {
@@ -201,8 +201,9 @@ Variant::Variant(const PyObject *p_python_object) {
 
 		// TODO: Other Python wrappers
 
+		// TODO: numpy arrays
 	} else if (PyObject_IsInstance((PyObject *)p_python_object, (PyObject *)PyGodotType__Wrapped)) {
-		godot_object *p = _python_to_godot_object((PyObject *)p_python_object);
+		godot_object *p = _cython_binding_to_godot_object((PyObject *)p_python_object);
 		godot::api->godot_variant_new_object(&_godot_variant, p);
 
 		// TODO: dict -> Dictionary, other iterables -> Array, array.Array -> PoolArray*, numpy.array -> PoolArray*

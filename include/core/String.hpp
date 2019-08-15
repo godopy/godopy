@@ -31,7 +31,7 @@ public:
 	int length() const;
 	const char *get_data() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 };
 
 class String {
@@ -149,7 +149,7 @@ public:
 	String trim_prefix(const String &prefix) const;
 	String trim_suffix(const String &suffix) const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 };
 
 String operator+(const char *a, const String &b);

@@ -49,7 +49,7 @@ public:
 
 	int size() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	String to_json() const;
 

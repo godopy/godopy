@@ -26,7 +26,7 @@ public:
 		return *this != RID();
 	}
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	bool operator==(const RID &p_other) const;
 	bool operator!=(const RID &p_other) const;

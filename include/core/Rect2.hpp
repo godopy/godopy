@@ -121,7 +121,7 @@ struct Rect2 {
 		size = end - begin;
 	}
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	operator String() const;
 

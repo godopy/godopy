@@ -90,7 +90,7 @@ struct Transform2D {
 	Rect2 xform(const Rect2 &p_vec) const;
 	Rect2 xform_inv(const Rect2 &p_vec) const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	operator String() const;
 

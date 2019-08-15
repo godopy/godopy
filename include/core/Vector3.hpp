@@ -266,7 +266,7 @@ struct Vector3 {
 		return v;
 	}
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	operator String() const;
 };

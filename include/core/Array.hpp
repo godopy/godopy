@@ -156,7 +156,7 @@ public:
 
 	void shuffle();
 
-  PyObject *pythonize();
+  PyObject *to_python_wrapper();
 
 	~Array();
 };

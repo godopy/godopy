@@ -122,7 +122,7 @@ public:
 
 	int size() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	~PoolByteArray();
 };
@@ -221,7 +221,7 @@ public:
 
 	int size() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	~PoolIntArray();
 };
@@ -320,7 +320,7 @@ public:
 
 	int size() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	~PoolRealArray();
 };
@@ -419,7 +419,7 @@ public:
 
 	int size() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	~PoolStringArray();
 };
@@ -518,7 +518,7 @@ public:
 
 	int size() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	~PoolVector2Array();
 };
@@ -617,7 +617,7 @@ public:
 
 	int size() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	~PoolVector3Array();
 };
@@ -716,7 +716,7 @@ public:
 
 	int size() const;
 
-	PyObject *pythonize();
+	PyObject *to_python_wrapper();
 
 	~PoolColorArray();
 };

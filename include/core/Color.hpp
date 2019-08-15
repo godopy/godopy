@@ -101,7 +101,7 @@ public:
 
 	bool operator<(const Color &p_color) const; //used in set keys
 
-	 PyObject *pythonize();
+	 PyObject *to_python_wrapper();
 
 	operator String() const;
 
