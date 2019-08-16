@@ -1,4 +1,0 @@
-autopxd2==1.0.0
-git+https://github.com/cython/cython.git@master#egg=Cython
-Mako==1.1.0
-scons==3.1.0

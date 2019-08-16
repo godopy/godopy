@@ -65,11 +65,11 @@ reference_types = set()
 icall_names = {}
 
 root_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
-bindings_dir = os.path.join(root_dir, 'godot', 'bindings')
+bindings_dir = os.path.join(root_dir, 'internal-packages', 'godot', 'bindings')
 
 
 def write_api_pxd(echo=print):
-    output_dir = os.path.join(root_dir, 'godot_headers')
+    output_dir = os.path.join(root_dir, 'internal-packages', 'godot_headers')
 
     if not os.path.isdir(output_dir):
         echo(f'"{output_dir}" does not exist. Something went wrong…')
@@ -116,7 +116,7 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
     if preloaded_classes:
         classes = preloaded_classes
 
-    with open(os.path.join(root_dir, 'godot_headers', 'api.json'), encoding='utf-8') as fp:
+    with open(os.path.join(root_dir, 'internal-packages', 'godot_headers', 'api.json'), encoding='utf-8') as fp:
         classes = json.load(fp)
 
     class_names = [strip_name(c['name']) for c in classes]

@@ -27,10 +27,3 @@ bin
 /build
 /buildenv
 /dist
-
-# Generated files
-/godot_headers
-/godot/*.hpp
-/godot/*.cpp
-/godot/core/*.hpp
-/godot/core/*.cpp

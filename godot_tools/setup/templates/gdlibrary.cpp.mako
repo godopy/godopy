@@ -3,8 +3,8 @@
 #include "GodotGlobal.hpp"
 #include "Defs.hpp"
 
-#include <godot/nativescript.hpp>
-#include <godot/gdnative.hpp>
+#include <internal-packages/godot/nativescript.hpp>
+#include <internal-packages/godot/gdnative.hpp>
 
 
 PyMODINIT_FUNC PyInit_godot__core___wrapped();

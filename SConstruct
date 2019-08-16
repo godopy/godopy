@@ -66,7 +66,7 @@ opts.Add(
 opts.Add(PathVariable(
     'headers_dir',
     'Path to the directory containing Godot headers',
-    'godot_headers',
+    'internal-packages/godot_headers',
     PathVariable.PathIsDir
 ))
 opts.Add(PathVariable(
@@ -245,7 +245,7 @@ json_api_file = ''
 if 'custom_api_file' in env:
     json_api_file = env['custom_api_file']
 else:
-    json_api_file = os.path.join(os.getcwd(), 'godot_headers', 'api.json')
+    json_api_file = os.path.join(os.getcwd(), 'internal-packages', 'godot_headers', 'api.json')
 
 if env['generate_bindings']:
     # Actually create the bindings here
@@ -254,9 +254,9 @@ if env['generate_bindings']:
     binding_generator.generate_bindings(json_api_file)
 
 # Sources to compile
-cython_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/*.pyx')]
-cython_core_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/core/*.pyx')]
-cython_binding_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('godot/bindings/*.pyx')]
+cython_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('internal-packages/godot/*.pyx')]
+cython_core_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('internal-packages/godot/core/*.pyx')]
+cython_binding_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('internal-packages/godot/bindings/*.pyx')]
 
 sources = cython_sources + cython_core_sources + cython_binding_sources
 

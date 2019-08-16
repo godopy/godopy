@@ -14,12 +14,12 @@ if not hasattr(sys, 'version_info') or sys.version_info < (3, 6):
 try:
     import pycparser  # noqa
     import autopxd    # noqa
-    import cython     # noqa
+    import scons      # noqa
 except ImportError:
-    raise SystemExit("Required packages were not found. Please install them from 'godot-tool-requirements.txt'.")
+    raise SystemExit("Required packages were not found. Please install them from 'requirements.txt'.")
 
 root_dir = os.path.abspath(os.path.dirname(__file__))
-headers_dir = os.path.join(root_dir, 'godot_headers')
+headers_dir = os.path.join(root_dir, 'internal-packages', 'godot_headers')
 cwd = os.path.abspath(os.getcwd())
 
 prefix = os.path.join(root_dir, 'buildenv')
@@ -29,6 +29,10 @@ def copy_headers():
     godot_build_dir = os.environ.get('GODOT_BUILD')
     if not godot_build_dir:
         raise SystemExit("'GODOT_BUILD' environment variable is required.")
+
+    if os.path.exists(headers_dir):
+        print('Removing old %r…' % headers_dir)
+        shutil.rmtree(headers_dir)
 
     source_dir = os.path.join(godot_build_dir, 'modules', 'gdnative', 'include')
     print('Copying godot_headers from %r…' % source_dir)
@@ -52,10 +56,6 @@ if __name__ == '__main__':
     # if not os.path.exists(prefix) and sys.platform != 'win32':
     #     # Windows build would kill all other Python processes
     #     build_python()
-
-    if os.path.exists(headers_dir):
-        print('Removing old %r…' % headers_dir)
-        shutil.rmtree(headers_dir)
 
     copy_headers()
 

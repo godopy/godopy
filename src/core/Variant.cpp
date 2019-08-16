@@ -11,7 +11,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include <godot/core/wrapper_types.hpp>
+#include <internal-packages/godot/core/wrapper_types.hpp>
 
 namespace godot {
 

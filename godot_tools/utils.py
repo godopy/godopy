@@ -3,7 +3,7 @@ import os
 import glob
 
 
-def get_godot_executable(noserver=False):
+def get_godot_executable(*, noserver=False):
     godot_build_dir = os.environ.get('GODOT_BUILD')
     if not godot_build_dir:
         raise SystemExit("'GODOT_BUILD' environment variable is required.")

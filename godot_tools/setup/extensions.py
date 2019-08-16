@@ -12,6 +12,8 @@ from setuptools.command.build_ext import build_ext
 
 from mako.template import Template
 
+from godot_tools.cli import is_internal_path
+
 from ..version import get_version
 from ..utils import get_godot_executable
 
@@ -40,7 +42,7 @@ class GDNativeBuildExt(build_ext):
 
     build_context = {
         '__version__': get_version(),
-        'godot_headers_path': os.path.normpath(os.path.join(tools_root, '..', 'godot_headers')),
+        'godot_headers_path': os.path.normpath(os.path.join(tools_root, '..', 'internal-packages', 'godot_headers')),
         'pygodot_bindings_path': os.path.dirname(tools_root),
         'singleton': False,
         'pyx_sources': [],
@@ -76,7 +78,7 @@ class GDNativeBuildExt(build_ext):
         self.package_dependencies()
 
         setup_script = self.gdnative_library_path.replace('.gdnlib', '__setup.gd')
-        print('updating godot project settings')
+        print('updating godot project settings, running "res://%s"' % setup_script)
         if not self.dry_run:
             subprocess.run([
                 get_godot_executable(),
@@ -84,6 +86,8 @@ class GDNativeBuildExt(build_ext):
                 '-s', 'res://%s' % setup_script
             ], check=True)
 
+        print('removing "res://%s"' % setup_script)
+        if not self.dry_run:
             os.unlink(os.path.join(self.godot_project.name, setup_script))
 
     def run_copylib(self):
@@ -344,13 +348,12 @@ class GDNativeBuildExt(build_ext):
         self.python_dependencies['zip_dirs'] = dirs = set()
         self.python_dependencies['bin_dirs'] = so_dirs = set()
 
-        # TODO: non-debug targets
         mainlib = None
         extra_mainlib = None
-        python_exe = 'python3.8d'
+        python_exe = 'python3'
         if sys.platform == 'win32':
-            mainlib = 'python38_d.dll'
-            extra_mainlib = 'python38.dll'
+            mainlib = 'python38.dll'
+            # extra_mainlib = 'python38_d.dll'
             python_exe = 'python_d.exe'
 
         self.python_dependencies['executable'] = os.path.join(bin_dir, python_exe)
@@ -359,9 +362,6 @@ class GDNativeBuildExt(build_ext):
             so_files.append(('mainlib', mainlib))
         if extra_mainlib is not None:
             so_files.append(('mainlib', extra_mainlib))
-
-        py_files.append((None, os.path.join('godot', '__init__.py')))
-        dirs.add('godot')
 
         py_files.append((None, os.path.join(self.godot_project.shadow_name, '__init__.py')))
         dirs.add(self.godot_project.shadow_name)
@@ -620,10 +620,14 @@ class GDNativeBuildExt(build_ext):
             target = source.replace('.pyx', '.cpp')
             target_dir, target_name = os.path.split(target)
 
-            # varnames should be unique due to the way Python modules are initialized
             name, _ = os.path.splitext(target_name)
 
-            modname = target_dir.replace(os.sep, '.') + '.' + name
+            dir_components = target_dir.split(os.sep)
+
+            if is_internal_path(dir_components[0]):
+                dir_components = dir_components[1:]
+
+            modname = '.'.join([*dir_components, name])
 
             self.build_context['pyx_sources'].append({
                 'name': modname,

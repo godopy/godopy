@@ -2,7 +2,14 @@
 	path = deps/python
 	url = https://github.com/python/cpython.git
 	branch = 3.8
+	shallow = true
 [submodule "deps/numpy"]
 	path = deps/numpy
 	url = https://github.com/numpy/numpy.git
 	branch = master
+	shallow = true
+[submodule "deps/cython"]
+	path = deps/cython
+	url = https://github.com/cython/cython.git
+	branch = master
+	shallow = true

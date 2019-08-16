@@ -40,29 +40,20 @@ version = __import__('godot_tools').__version__
 
 packages = ['godot_tools']
 package_data = {
-    # 'godot': [
-    #     '*.pxd',
-    #     'cpp/*.pxd',
-    #     'bindings/*.pxd',
-    #     'bindings/cpp/*.pxd'
-    #     'bindings/cython/*.pxd'
-    # ],
-    # 'godot_headers': ['*.pxd'],
     'godot_tools': [
-        # TODO: Compile build templates and remove runtime dependency on Mako
-        'build/templates/*.mako'
+        'setup/templates/*.mako'
     ]
 }
 
 entry_points = {'console_scripts': ['pygodot=godot_tools.cli:pygodot', 'bindgen=godot_tools.cli:bindgen', 'pygodot_cython=godot_tools.cli:pygodot_cython']}
 
 install_requires = [
-    'Cython',
+    # 'Cython',
     'Mako',
     'scons',
-    'pycparser',
-    'autopxd2',
-    'Click'
+    # 'pycparser',
+    # 'autopxd2',
+    'Click'  # TODO: Use something from the standard library
 ]
 
 # setup_requires = ['scons', 'Cython', 'Mako', 'pycparser', 'autopxd2', 'Click']

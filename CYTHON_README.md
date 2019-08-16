@@ -41,25 +41,25 @@ Install PyGodot and set up a development environment (this process will take som
 ```
 $ # Mac and Linux:
 $ cd pygodot
-$ python3 internal_python_build.py
-$ buildenv/bin/python3 -m pip install --upgrade pip
-$ buildenv/bin/python3 -m pip install git+https://github.com/cython/cython.git@master#egg=Cython
-$ buildenv/bin/python3 -m pip install -r internal-requirements.txt
+$ ./internal_python_build.py
+$ ./internal_python_build.py --target=release
+$ buildenv/bin/python3 -m pip install deps/cython
+$ buildenv/bin/python3 -m pip install -r internal-packages/requirements.txt
 $ cd ..
 $ python3 -m venv toolbox
 $ source toolbox/bin/activate
-(toolbox) $ pip install -r pygodot/godot-tools-requirements.txt
+(toolbox) $ pip install -r pygodot/requirements.txt
+(toolbox) $ pip install -e pygodot
 (toolbox) $ export GODOT_BUILD=<path to Godot source folder>
 (toolbox) $ pygodot/bootstrap.py
 (toolbox) $ cd pygodot
-(toolbox) $ scons -j4 only_cython=yes
-(toolbox) $ scons -j4
+(toolbox) $ scons  # scons -j4 only_cython=yes && scons -j4
 (toolbox) $ cd ..
-(toolbox) $ pip install -e pygodot
 ```
 > Replace `<path to Godot source folder>` with an actual path. Godot source should be compiled.
 > When you finish working with a virtual environment, run `deactivate` command
-> Cython must be installed before numpy because numpy build depends on it
+> Cython installation before other packages ensures that their build process will use the same version of Cython
+> If you want a faster parallel initial build, build with "only_cython=yes" first, otherwise the required headers will be missing
 
 [Windows only] `choco install mingw` for `cpp.exe` (needed by bootstrap script)
 
@@ -71,28 +71,25 @@ $ source toolbox/bin/activate
 > python internal_python_build.py target=release
 > .\deps\python\PCbuild\amd64\python_d.exe -m venv .\pygodot\buildenv
 > .\buildenv\Scripts\activate
-(buildenv) > python_d -m pip install --upgrade pip
 (buildenv) > cp .\deps\python\PC\pyconfig.h .\buildenv\Include\
-(buildenv) > python_d -m pip install git+https://github.com/cython/cython.git@master#egg=Cython
-(buildenv) > python -m pip install deps\numpy
-(buildenv) > python_d -m pip install -r internal-requirements.txt
+(buildenv) > python -m pip install deps\cython
+(buildenv) > python -m pip install -r internal-packages\requirements.txt
 (buildenv) > deactivate
 > cd ..
 > python -m venv toolbox
 > .\toolbox\Scripts\activate
-(toolbox) > python -m pip install -r pygodot\godot-tools-requirements.txt
+(toolbox) > python -m pip install -r pygodot\requirements.txt
+(toolbox) $ python -m pip install -e pygodot
 (toolbox) > $env:GODOT_BUILD = 'C:\path\to\godot'
 (toolbox) > cd pygodot
 (toolbox) $ python bootstrap.py
 (toolbox) $ scons -j4 only_cython=yes
 (toolbox) $ scons -j4
 (toolbox) $ cd ..
-(toolbox) $ pip install -e pygodot
 ```
 > Replace `C:\path\to\godot` with an actual path.
 > When you finish working with a virtual environment, run `deactivate` command
-> Cython must be installed before numpy because numpy build depends on it
-> Debug build of Python couldn't build numpy on Windows therefore instructions use release build
+> Cython installation before other packages ensures that their build process will use the same version of Cython
 
 
 ### Creating a GDNative extension
