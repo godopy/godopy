@@ -17,12 +17,13 @@ from .bindings cimport _cython_bindings, _python_bindings
 from libcpp cimport nullptr
 from libc.string cimport memset
 from cpython.object cimport PyObject, PyTypeObject
-from cpython.tuple cimport PyTuple_New, PyTuple_SetItem
+from cpython.tuple cimport PyTuple_New, PyTuple_SET_ITEM
 from cpython.ref cimport Py_INCREF, Py_DECREF
 
 from .utils cimport _init_dynamic_loading
 
 from cython.operator cimport dereference as deref
+
 
 cdef extern from *:
     """
@@ -33,6 +34,7 @@ cdef extern from *:
     ctypedef void* GDCALLINGCONV_VOID_PTR
     ctypedef void GDCALLINGCONV_VOID
     ctypedef bint GDCALLINGCONV_BOOL
+
 
 cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, dict TagDB) except NULL:
     cdef type cls = TagDB[type_tag]
@@ -233,6 +235,10 @@ cdef register_signal(type cls, str name, object args=()):
         gdapi.godot_free(signal.args)
 
 
+def register_python_signal(type cls, str name, *args):
+    register_signal(cls, name, args)
+
+
 cdef inline _set_signal_argument(godot_signal_argument *sigarg, object _arg):
     cdef SignalArgument arg = _arg
     cdef String _name
@@ -326,6 +332,13 @@ cdef void _property_setter(godot_object *object, void *method_data, void *self_d
         setattr(self, prop_name, <object>_value)
 
 
+def register_python_property(type cls, str name, object default_value,
+                             godot_method_rpc_mode rpc_mode=GODOT_METHOD_RPC_MODE_DISABLED,
+                             godot_property_usage_flags usage=GODOT_PROPERTY_USAGE_DEFAULT,
+                             godot_property_hint hint=GODOT_PROPERTY_HINT_NONE,
+                             str hint_string=''):
+    register_property(cls, name, default_value, rpc_mode, usage, hint, hint_string)
+
 cdef _register_python_method(type cls, const char *name, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
     Py_INCREF(method)
     cdef godot_instance_method m = [_python_method_wrapper, <void *>method, _python_method_free]
@@ -335,19 +348,21 @@ cdef _register_python_method(type cls, const char *name, object method, godot_me
     nsapi.godot_nativescript_register_method(handle, <const char *>class_name, name, attrs, m)
 
 
-# cdef extern from "Godot.hpp" namespace "godot":
-#     cdef cppclass _ArgCast[T]:
-#         @staticmethod
-#         T _arg_cast(CVariant a)
+def register_python_method(type cls, str method_name, *, object method=None, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
+    if method is None:
+        method = getattr(cls, method_name)
+    cdef bytes _method_name = method_name.encode('utf-8')
+    return _register_python_method(cls, <const char *>_method_name, method, rpc_type)
 
 
 cdef tuple __parse_args(int num_args, godot_variant **args):
     cdef Py_ssize_t i
-    cdef tuple __args = PyTuple_New(num_args)
+    cdef object __args = PyTuple_New(num_args)
+    Py_INCREF(__args)
 
     for i in range(num_args):
         # PyObject * casts are defined in `Variant::operator PyObject *() const` C++ method
-        PyTuple_SetItem(__args, i, <object>args[i])
+        PyTuple_SET_ITEM(__args, i, <object>deref(<Variant *>args[i]))
 
     return __args
 
@@ -358,6 +373,7 @@ cdef godot_variant _python_method_wrapper(godot_object *instance, void *method_d
     with gil:
         self = <object>self_data
         method = <object>method_data
+        Py_INCREF(self)  # Make sure there are no leaks here
 
         # Variant casts from PyObject* are defined in Variant::Variant(const PyObject*) constructor
         result = <Variant>method(self, *__parse_args(num_args, args))

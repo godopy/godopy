@@ -2,7 +2,7 @@
 <%!
     from godot_tools.binding_generator import (
         python_module_name, is_class_type,
-        CORE_TYPES, ARRAY_TYPES, SPECIAL_ESCAPES,
+        CORE_TYPES, SPECIAL_ESCAPES,
         remove_nested_type_prefix, clean_signature, make_cython_gdnative_type
     )
 
@@ -18,8 +18,6 @@
             return 'cpp.Variant(%s)' % arg[1]
         if arg[2]['type'] == 'Array' and arg[2]['has_default_value']:
             return 'cpp.Array(%s)' % arg[1]
-        # if arg[2]['type'] in ARRAY_TYPES and arg[2]['has_default_value']:
-        #    return '<%s>Array(%s)' % (make_cython_gdnative_type(arg[2]['type']).rstrip(), arg[1])
         if arg[2]['type'] in CORE_TYPES and arg[2]['has_default_value']:
             return '%s._cpp_object' % arg[1]
 
@@ -32,6 +30,7 @@ from godot_headers.gdnative_api cimport godot_object, godot_variant
 from ..globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _cython_language_index
 
 from ..core cimport cpp_types as cpp
+from ..core cimport wrapper_types as wrappers
 from ..core.defs cimport *
 from ..core._wrapped cimport _Wrapped
 from ..core.tag_db cimport register_global_cython_type, get_instance_from_owner

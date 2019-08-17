@@ -57,8 +57,10 @@ def pygodot_cython(source, outfile):
             # python_exe = os.path.join(internal_pyenv, 'bin', 'python3')
             cython_exe = os.path.join(internal_pyenv, 'bin', 'cython')
 
-        subprocess.run([cython_exe, '--fast-fail', '-3', '--cplus', '-o', tempfile, source], check=True)
-
+        try:
+            subprocess.run([cython_exe, '--fast-fail', '-3', '--cplus', '-o', tempfile, source], check=True)
+        except subprocess.CalledProcessError:
+            raise SystemExit('Cython compilation finished with errors')
     else:
         from Cython.Compiler import Options
         from Cython.Compiler.Main import compile

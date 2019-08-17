@@ -25,9 +25,10 @@ templates_dir = os.path.join(tools_root, 'setup', 'templates')
 
 
 class NativeScript(Extension):
-    def __init__(self, name, *, sources=None, class_name=None):
+    def __init__(self, name, *, sources=None, python_sources=None, class_name=None):
         self._gdnative_type = ExtType.NATIVESCRIPT
         self._nativescript_classname = class_name
+        self._dynamic_sources = python_sources or []
         super().__init__(name, sources=(sources or []))
 
 
@@ -78,7 +79,7 @@ class GDNativeBuildExt(build_ext):
         self.package_dependencies()
 
         setup_script = self.gdnative_library_path.replace('.gdnlib', '__setup.gd')
-        print('updating godot project settings, running "res://%s"' % setup_script)
+        print('updating Godot project settings, running "res://%s"' % setup_script)
         if not self.dry_run:
             subprocess.run([
                 get_godot_executable(),
@@ -264,10 +265,15 @@ class GDNativeBuildExt(build_ext):
                 so_shims_written.add(fnc)
 
             for i, (root, fn) in enumerate(self.python_dependencies[files]):
+                fn_src = fn
                 if root == 'lib':
                     basedir = self.python_dependencies['lib_dir']
                 elif root == 'site':
                     basedir = self.python_dependencies['site_dir']
+                elif root == 'local':
+                    basedir = os.getcwd()
+                    fn_src = fn.replace('%PROJECT%', self.godot_project.shadow_name)
+                    fn = fn.replace('%PROJECT%', self.godot_project.shadow_name)
                 else:
                     basedir = None
 
@@ -277,7 +283,7 @@ class GDNativeBuildExt(build_ext):
                     with open(pre_dst, 'w', encoding='utf-8'):
                         pass
                 else:
-                    src = os.path.join(basedir, fn)
+                    src = os.path.join(basedir, fn_src)
                     changed = not os.path.exists(pre_dst) or os.stat(src).st_mtime != os.stat(pre_dst).st_mtime
                     if changed:
                         shutil.copy2(src, pre_dst)
@@ -603,6 +609,7 @@ class GDNativeBuildExt(build_ext):
 
         self.make_godot_resource('gdns.mako', make_resource_path(godot_root, gdns_path), context)
         self.collect_sources(ext.sources)
+        self.collect_dynamic_sources(ext._dynamic_sources)
 
     def make_godot_resource(self, template_filename, path, context):
         template = Template(filename=os.path.join(templates_dir, template_filename))
@@ -639,6 +646,10 @@ class GDNativeBuildExt(build_ext):
         for cpp_source in cpp_sources:
             source = os.path.join(self.godot_project.shadow_name, cpp_source)
             self.build_context['cpp_sources'].append(make_relative_path(source))
+
+    def collect_dynamic_sources(self, sources):
+        for source in sources:
+            self.python_dependencies['py_files'].append(('local', os.path.join('%PROJECT%', source)))
 
 
 def ensure_godot_project_path(path):

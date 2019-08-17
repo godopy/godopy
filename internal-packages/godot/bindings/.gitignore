@@ -13,6 +13,7 @@
 /cython/nodes.pxd
 /cython/resources.pxd
 
+/python/__icalls.pxd
 /python/core.py
 /python/tools.py
 /python/nodes.py

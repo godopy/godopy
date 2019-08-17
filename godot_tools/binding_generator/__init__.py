@@ -10,18 +10,16 @@ from mako.template import Template
 
 from .pxd_writer import PxdWriter, parse as parse_c_header
 
-ARRAY_TYPES = (
-    'Array', 'PoolByteArray', 'PoolIntArray', 'PoolRealArray', 'PoolStringArray', 'PoolVector2Array',
-    'PoolVector3Array', 'PoolColorArray'
-)
 
 PYTHON_AUTOMATIC_CAST_TYPES = ('Variant', 'Array')
 
 CORE_TYPES = (
     'Basis', 'Color', 'Dictionary', 'Error', 'NodePath', 'Plane',
     'Quat', 'Rect2', 'AABB', 'RID', 'String', 'Transform',
-    'Transform2D', 'Variant', 'Vector2', 'Vector3'
-) + ARRAY_TYPES
+    'Transform2D', 'Variant', 'Vector2', 'Vector3',
+    'Array', 'PoolByteArray', 'PoolIntArray', 'PoolRealArray', 'PoolStringArray', 'PoolVector2Array',
+    'PoolVector3Array', 'PoolColorArray'
+)
 
 PRIMITIVE_TYPES = ('int', 'bool', 'real', 'float', 'void')
 
@@ -51,7 +49,7 @@ CYTHON_ONLY_ESCAPES = {
     'import':   'import_',
     'object':   'object_',
     'get_singleton': '_get_singleton',  # Some API methods are in conflict with auto-generated get_singleton() methods
-    'set_singleton': '_set_singleton',  # for consistency
+    'set_singleton': '_set_singleton',
 }
 
 SPECIAL_ESCAPES = {
@@ -64,8 +62,9 @@ CYTHON_ESCAPES = {**CPP_ESCAPES, **CYTHON_ONLY_ESCAPES}
 reference_types = set()
 icall_names = {}
 
-root_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
+root_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), '..', '..'))
 bindings_dir = os.path.join(root_dir, 'internal-packages', 'godot', 'bindings')
+templates_dir = os.path.join(root_dir, 'godot_tools', 'binding_generator', 'templates')
 
 
 def write_api_pxd(echo=print):
@@ -162,10 +161,10 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
             bindings_name = 'Python'
 
         echo("Generating %s bindings…" % bindings_name)
-        # echo('Node classes:', len(node_types))
-        # echo('Resource classes:', len(resource_types))
-        # echo('Core API classes:', len(core_api_types))
-        # echo('Tools classes:', len(tools_types))
+        echo('Node classes: %d' % len(node_types))
+        echo('Resource classes: %d' % len(resource_types))
+        echo('Core API classes: %d' % len(core_api_types))
+        echo('Tools classes: %d' % len(tools_types))
 
     module_data = (
         ('nodes', node_types),
@@ -176,30 +175,29 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
 
     if generate_cpp:
         # C++ bindings
-        cpp_bindings_template = Template(filename=os.path.join(bindings_dir, 'templates', '_cpp_bindings.pxd.mako'))
+        cpp_bindings_template = Template(filename=os.path.join(templates_dir, '_cpp_bindings.pxd.mako'))
         cpp_path = os.path.join(bindings_dir, '_cpp_bindings.pxd')
-        cpp_source = cpp_bindings_template.render(classes=[generate_cppclass_context(c) for c in classes])
+        cpp_source = cpp_bindings_template.render(classes=[generate_class_context(c, 'cpp') for c in classes])
         with open(cpp_path, 'w', encoding='utf-8') as fp:
             fp.write(cpp_source)
 
         for module, _types in module_data:
             write_cpp_definitions(module, _types, class_names)
 
-    if generate_cython or generate_python:
-        class_contexts = [generate_class_context(c) for c in classes]
-
     if generate_cython:
+        class_contexts = [generate_class_context(c, 'cython') for c in classes]
+
         # Cython bindings
-        write_cython_icall_definitions(generate_icalls_context(classes), root_dir)
+        write_icall_definitions(generate_icalls_context(classes, 'cython'), 'cython', root_dir)
 
         cython_bindings_pxd = (
             os.path.join(bindings_dir, '_cython_bindings.pxd'),
-            Template(filename=os.path.join(bindings_dir, 'templates', '_cython_bindings.pxd.mako'))
+            Template(filename=os.path.join(templates_dir, '_cython_bindings.pxd.mako'))
         )
 
         cython_bindings_pyx = (
             os.path.join(bindings_dir, '_cython_bindings.pyx'),
-            Template(filename=os.path.join(bindings_dir, 'templates', '_cython_bindings.pyx.mako'))
+            Template(filename=os.path.join(templates_dir, '_cython_bindings.pyx.mako'))
         )
 
         for path, template in (cython_bindings_pxd, cython_bindings_pyx):
@@ -211,15 +209,19 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
             write_cython_definitions(module, _types, class_names)
 
     if generate_python:
+        class_contexts = [generate_class_context(c, 'python') for c in classes]
+
         # Python bindings
+        write_icall_definitions(generate_icalls_context(classes, 'python'), 'python', root_dir)
+
         python_bindings_pxd = (
             os.path.join(bindings_dir, '_python_bindings.pxd'),
-            Template(filename=os.path.join(bindings_dir, 'templates', '_python_bindings.pxd.mako'))
+            Template(filename=os.path.join(templates_dir, '_python_bindings.pxd.mako'))
         )
 
         python_bindings_pyx = (
             os.path.join(bindings_dir, '_python_bindings.pyx'),
-            Template(filename=os.path.join(bindings_dir, 'templates', '_python_bindings.pyx.mako'))
+            Template(filename=os.path.join(templates_dir, '_python_bindings.pyx.mako'))
         )
 
         for path, template in (python_bindings_pxd, python_bindings_pyx):
@@ -231,7 +233,7 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
 
 
 def write_python_definitions(python_module, _types, class_names):
-    python_package_template = Template(filename=os.path.join(bindings_dir, 'templates', 'python_module.py.mako'))
+    python_package_template = Template(filename=os.path.join(templates_dir, 'python_module.py.mako'))
 
     python_path = os.path.join(bindings_dir, 'python', '%s.py' % python_module)
     python_source = python_package_template.render(class_names=[cn for cn in class_names if cn in _types])
@@ -241,7 +243,7 @@ def write_python_definitions(python_module, _types, class_names):
 
 
 def write_cython_definitions(cython_module, _types, class_names):
-    cython_package_template = Template(filename=os.path.join(bindings_dir, 'templates', 'cython_module.pxd.mako'))
+    cython_package_template = Template(filename=os.path.join(templates_dir, 'cython_module.pxd.mako'))
 
     cpp_path = os.path.join(bindings_dir, 'cython', '%s.pxd' % cython_module)
     cpp_source = cython_package_template.render(class_names=[cn for cn in class_names if cn in _types])
@@ -251,7 +253,7 @@ def write_cython_definitions(cython_module, _types, class_names):
 
 
 def write_cpp_definitions(cpp_module, _types, class_names):
-    cpp_package_template = Template(filename=os.path.join(bindings_dir, 'templates', 'cpp_module.pxd.mako'))
+    cpp_package_template = Template(filename=os.path.join(templates_dir, 'cpp_module.pxd.mako'))
 
     cpp_path = os.path.join(bindings_dir, 'cpp', '%s.pxd' % cpp_module)
     cpp_source = cpp_package_template.render(class_names=[cn for cn in class_names if cn in _types])
@@ -260,24 +262,24 @@ def write_cpp_definitions(cpp_module, _types, class_names):
         fp.write(cpp_source)
 
 
-def write_cython_icall_definitions(prepared_icalls, root_dir):
-    icalls_header_path = os.path.join(root_dir, 'include', 'pygen', '__cython_icalls.hpp')
-    icalls_pxd_path = os.path.join(bindings_dir, 'cython', '__icalls.pxd')
+def write_icall_definitions(prepared_icalls, binding, root_dir):
+    icalls_header_path = os.path.join(root_dir, 'include', 'pygen', '__%s_icalls.hpp' % binding)
+    icalls_pxd_path = os.path.join(bindings_dir, binding, '__icalls.pxd')
 
-    icalls_header_template = Template(filename=os.path.join(bindings_dir, 'templates', '__cython_icalls.hpp.mako'))
+    icalls_header_template = Template(filename=os.path.join(templates_dir, '__%s_icalls.hpp.mako' % binding))
     icalls_header = icalls_header_template.render(icalls=prepared_icalls)
 
     with open(icalls_header_path, 'w', encoding='utf-8') as fp:
         fp.write(icalls_header)
 
-    icalls_pxd_template = Template(filename=os.path.join(bindings_dir, 'templates', '__cython_icalls.pxd.mako'))
+    icalls_pxd_template = Template(filename=os.path.join(templates_dir, '__%s_icalls.pxd.mako' % binding))
     icalls_pxd = icalls_pxd_template.render(icalls=prepared_icalls)
 
     with open(icalls_pxd_path, 'w', encoding='utf-8') as fp:
         fp.write(icalls_pxd)
 
 
-def generate_icalls_context(classes):
+def generate_icalls_context(classes, language):
     icalls = set()
 
     icall2methodkeys = {}
@@ -294,7 +296,7 @@ def generate_icalls_context(classes):
 
             method_name = escape_cython(method['name'])
             # vararg methods have two version, `cdef` version is '_'-prefixed
-            key = '#'.join([strip_name(c['name']), '_%s' % method_name if method['has_varargs'] else method_name])
+            key = '#'.join([strip_name(c['name']), method_name])
             icall2methodkeys.setdefault((ret, args, var_arg), []).append(key)
 
             if method['name'] in SPECIAL_ESCAPES:
@@ -308,7 +310,7 @@ def generate_icalls_context(classes):
 
     for ret_type, args, var_arg in icalls:
         methodkeys = icall2methodkeys[ret_type, args, var_arg]
-        icall_name = get_icall_name(ret_type, args, var_arg)
+        icall_name = get_icall_name(language, ret_type, args, var_arg)
 
         for key in methodkeys:
             icall_names[key] = icall_name
@@ -389,8 +391,8 @@ def get_icall_pxd_return_type(t, has_varargs=False):
     return t + ' '
 
 
-def get_icall_name(ret_type, args, var_arg):
-    name = "___pygodot_icall_"
+def get_icall_name(lang, ret_type, args, var_arg):
+    name = "___%s_icall_" % lang
     name += strip_name(ret_type)
     for arg in args:
         name += "_" + strip_name(arg)
@@ -409,7 +411,10 @@ def get_icall_type_name(name):
     return name
 
 
-def generate_class_context(class_def):
+def generate_class_context(class_def, language):
+    if language == 'cpp':
+        return generate_cppclass_context(class_def)
+
     class_name = strip_name(class_def['name'])
     includes, forwards = detect_used_classes(class_def)
 
@@ -432,7 +437,10 @@ def generate_class_context(class_def):
             if has_default_argument and not arg['has_default_value']:
                 print('Update "has_default_value" flag for %s of %s', (arg['name'], method_name))
                 arg['has_default_value'] = True
-            arg_type = make_cython_gdnative_type(arg['type'], has_default=has_default)
+            if language == 'cython':
+                arg_type = make_cython_gdnative_type(arg['type'], has_default=has_default)
+            else:
+                arg_type = make_python_gdnative_type(arg['type'], has_default=has_default)
             arg_name = escape_cython(arg['name'])
 
             arg_default = None
@@ -458,53 +466,42 @@ def generate_class_context(class_def):
             def_sigs.append(sig)
 
         if method['has_varargs']:
-            pxd_sigs.append('object __var_args=*')
-            sigs.append('object __var_args=()')
+            pxd_sigs.append('cpp.Array __var_args')
+            sigs.append('cpp.Array __var_args')
             def_sigs.append('*__var_args')
 
         return_stmt = 'return '
-        if is_enum(method['return_type']):
+        if language == 'cython' and is_enum(method['return_type']):
             return_stmt = 'return <%s>' % return_type.rstrip()
+        # elif language == 'python' and not is_enum(method['return_type']) and is_class_type(method['return_type']):
+        #     return_stmt = 'return <%s>' % return_type.rstrip()
         elif method['return_type'] == 'void':
             return_stmt = ''
 
         defmethod = {k: v for k, v in method.items()}
         method['__func_type'] = 'cdef'
         defmethod['__func_type'] = 'def'
-        prepared_methods.append((
-            '_%s' % method_name if method['has_varargs'] else method_name, method, return_type,
-            ', '.join(pxd_sigs), ', '.join(sigs),
-            args, return_stmt, init_args
-        ))
+        if language == 'cython':
+            prepared_methods.append((
+                method_name, method, return_type,
+                ', '.join(pxd_sigs), ', '.join(sigs),
+                args, return_stmt, init_args
+            ))
+        elif method['name'] not in SPECIAL_ESCAPES:
+            prepared_methods.append((
+                method_name, defmethod, return_type,
+                '<no-pxd>', ', '.join(def_sigs),
+                args, return_stmt, init_args
+            ))
+
         if method['name'] in SPECIAL_ESCAPES:
             prepared_methods.append((
                 SPECIAL_ESCAPES[method['name']], defmethod, return_type,
                 '<no-pxd>', ', '.join(def_sigs),
                 args, return_stmt, init_args
             ))
-        elif method['has_varargs']:
-            prepared_methods.append((
-                method_name, defmethod, return_type,
-                '<no-pxd>', ', '.join(def_sigs),
-                args, return_stmt.replace('return ', 'return <object>'), init_args
-            ))
 
     return class_name, class_def, includes, forwards, prepared_methods
-
-
-__B58_ALPHABET = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-
-
-# Not used
-def make_sha1_suffix(value):
-    hash = hashlib.sha1(value.encode('utf-8'))
-    # Base58-encode first 4 bytes of SHA1 hash
-    i, = struct.unpack('!L', hash.digest()[:4])
-    string = b""
-    while i:
-        i, idx = divmod(i, 58)
-        string = __B58_ALPHABET[idx:idx+1] + string
-    return string.decode('utf-8')
 
 
 def escape_cython_default_arg(_type, default_value):
@@ -531,23 +528,10 @@ def escape_cython_default_arg(_type, default_value):
     return default_value
 
 
-# def cython_nonempty_comparison(_type):
-#     if is_class_type(_type):
-#         return 'is not None'
-#     if _type in ('bool', 'int'):
-#         return '!= 0'
-#     elif _type == 'String':
-#         return '!= String()'
-
-#     return '!= NULL'
-
-
 def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=False):
     prefix = '' if is_return or has_default else 'const '
     if is_enum(t):
         enum_name = remove_enum_prefix(t).replace('::', '')
-        if enum_name == 'Error':
-            return 'cpp.Error '
         return '%s ' % enum_name
     elif is_class_type(t):
         return '%s ' % strip_name(t)
@@ -567,10 +551,33 @@ def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=
         return 'object '
     elif t == 'bool':
         return 'bint '
-    # elif t == 'Error':
-    #     return 'cpp.Error '
     else:
         return prefix + 'cpp.%s ' % strip_name(t)
+
+
+def make_python_gdnative_type(t, is_virtual=False, is_return=False, has_default=False):
+    if is_enum(t):
+        return 'int '
+    elif is_class_type(t):
+        return '%s ' % strip_name(t)
+    elif t == 'String':
+        return 'str '
+    elif t in PYTHON_AUTOMATIC_CAST_TYPES:
+        return 'object '
+    elif is_core_type(t):
+        return 'wrappers.%s ' % strip_name(t)
+
+    elif t == 'int':
+        return 'int '
+    elif t == 'float' or t == 'real':
+        return 'float '
+
+    elif t == 'void':
+        return 'object '
+    elif t == 'bool':
+        return 'bint '
+    else:
+        raise ValueError('Uknown Type %r' % t)
 
 
 def generate_cppclass_context(class_def):
