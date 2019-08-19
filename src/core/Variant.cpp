@@ -378,6 +378,7 @@ Variant::operator PyObject *() const {
 		case STRING: {
 			String s = *this;
 			obj = PyUnicode_FromWideChar(s.unicode_str(), s.length());
+			break;
 		}
 		// TODO: Add more convertions
 

@@ -1,18 +1,21 @@
 /* Default generic gdnlib, may be replaced by custom builds */
 
+#include "PythonGlobal.hpp"
 #include "GodotGlobal.hpp"
 #include "Defs.hpp"
-#include "PythonGlobal.hpp"
 
-#include "godot/nativescript.h"
-#include "godot/gdnative.h"
+#include <internal-packages/godot/nativescript.hpp>
+#include <internal-packages/godot/gdnative.hpp>
 
-PyMODINIT_FUNC PyInit_core_types();
-PyMODINIT_FUNC PyInit__cython_bindings();
-PyMODINIT_FUNC PyInit__python_bindings();
-PyMODINIT_FUNC PyInit_utils();
+PyMODINIT_FUNC PyInit_godot__core___wrapped();
+PyMODINIT_FUNC PyInit_godot__core__signal_arguments();
+PyMODINIT_FUNC PyInit_godot__core__tag_db();
+PyMODINIT_FUNC PyInit_godot__core__wrapper_types();
+PyMODINIT_FUNC PyInit_godot__bindings___cython_bindings();
+PyMODINIT_FUNC PyInit_godot__bindings___python_bindings();
+PyMODINIT_FUNC PyInit_godot__utils();
 
-static bool _pygodot_is_initialized = false;
+static bool __python_initialized = false;
 
 // The name should be the same as the binary's name as it makes this GDNative library also importable by Python
 static PyModuleDef _pygodotmodule = {
@@ -31,32 +34,36 @@ PyMODINIT_FUNC PyInit__pygodot(void) {
   return m;
 }
 
-static void _ensure_pygodot_is_initialized() {
-  if (_pygodot_is_initialized) return;
+static void ___python_init() {
+  if (__python_initialized) return;
 
   PyImport_AppendInittab("_pygodot", PyInit__pygodot);
-  PyImport_AppendInittab("core_types", PyInit_core_types);
-  // XXX: Cython bindings are not needed in a generic lib
-  PyImport_AppendInittab("_cython_bindings", PyInit__cython_bindings);
-  PyImport_AppendInittab("_python_bindings", PyInit__python_bindings);
-  PyImport_AppendInittab("utils", PyInit_utils);
-  PyImport_AppendInittab("nativescript", PyInit_nativescript);
-  PyImport_AppendInittab("gdnative", PyInit_gdnative);
+  PyImport_AppendInittab("__pygodot_internal__godot__core___wrapped", PyInit_godot__core___wrapped);
+  PyImport_AppendInittab("__pygodot_internal__godot__core__signal_arguments", PyInit_godot__core__signal_arguments);
+  PyImport_AppendInittab("__pygodot_internal__godot__core__tag_db", PyInit_godot__core__tag_db);
+  PyImport_AppendInittab("__pygodot_internal__godot__core__wrapper_types", PyInit_godot__core__wrapper_types);
+  PyImport_AppendInittab("__pygodot_internal__godot__bindings___cython_bindings", PyInit_godot__bindings___cython_bindings);
+  PyImport_AppendInittab("__pygodot_internal__godot__bindings___python_bindings", PyInit_godot__bindings___python_bindings);
+  PyImport_AppendInittab("__pygodot_internal__godot__utils", PyInit_godot__utils);
+  PyImport_AppendInittab("__pygodot_internal__godot__nativescript", PyInit_godot__nativescript);
+  PyImport_AppendInittab("__pygodot_internal__godot__gdnative", PyInit_godot__gdnative);
 
   pygodot::PyGodot::python_init();
 
-  // Importing of Cython modules is required to correctly initialize them
   PyObject *mod = NULL;
-  // TODO: add Godot error handling
-  mod = PyImport_ImportModule("core_types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 
-  // mod = PyImport_ImportModule("_cython_bindings"); if (mod == NULL) return PyErr_Print(); Py_DECREF(mod);
-  mod = PyImport_ImportModule("_python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("utils"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("nativescript"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("gdnative"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  // Importing of Cython modules is required to correctly initialize them
+  mod = PyImport_ImportModule("__pygodot_internal__godot__core___wrapped"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__core__signal_arguments"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__core__tag_db"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__core__wrapper_types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__bindings___cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__bindings___python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__utils"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__nativescript"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__gdnative"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 
-  _pygodot_is_initialized = true;
+  __python_initialized = true;
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_init(godot_gdnative_init_options *o) {
@@ -70,17 +77,24 @@ extern "C" void GDN_EXPORT pygodot_gdnative_terminate(godot_gdnative_terminate_o
 }
 
 extern "C" void GDN_EXPORT pygodot_nativescript_init(void *handle) {
-  _ensure_pygodot_is_initialized();
+  printf("NATIVESCRIPT INIT\n");
+  // godot::Godot::nativescript_init(handle);  // C++ bindings
+  ___python_init();
   pygodot::PyGodot::nativescript_init(handle);
 
-  if (generic_nativescript_init() == NULL) PyErr_Print(); // TODO: add Godot error handling
+  PyObject *result = generic_nativescript_init();
+  ERR_FAIL_PYTHON_NULL(result);
+  Py_DECREF(result);
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_singleton() {
-  _ensure_pygodot_is_initialized();
-  if (generic_gdnative_singleton() == NULL) PyErr_Print(); // TODO: add Godot error handling
+  ___python_init();
+  PyObject *result = generic_gdnative_singleton();
+  ERR_FAIL_PYTHON_NULL(result);
+  Py_DECREF(result);
 }
 
 extern "C" void GDN_EXPORT pygodot_nativescript_terminate(void *handle) {
   pygodot::PyGodot::nativescript_terminate(handle);
+  // godot::Godot::nativescript_terminate(handle); // C++ bindings
 }

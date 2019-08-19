@@ -271,7 +271,7 @@ class GDNativeBuildExt(build_ext):
                     basedir = self.python_dependencies['site_dir']
                 elif root == 'local':
                     basedir = os.getcwd()
-                    fn = fn.replace('%PROJECT%', self.godot_project.shadow_name)
+                    fn = fn.replace('%PROJECT%', self.godot_project.python_package)
                 else:
                     basedir = None
 
@@ -369,8 +369,12 @@ class GDNativeBuildExt(build_ext):
         if extra_mainlib is not None:
             so_files.append(('mainlib', extra_mainlib))
 
-        py_files.append((None, os.path.join(self.godot_project.shadow_name, '__init__.py')))
-        dirs.add(self.godot_project.shadow_name)
+        python_package_path = os.path.join(self.godot_project.python_package, '__init__.py')
+        if os.path.exists(python_package_path):
+            py_files.append(('local', os.path.join('%PROJECT%', '__init__.py')))
+        else:
+            py_files.append((None, os.path.join(self.godot_project.python_package, '__init__.py')))
+        dirs.add(self.godot_project.python_package)
 
         for dirpath, dirnames, filenames in os.walk(lib_dir):
             dirpath = dirpath[len(lib_dir):].lstrip(os.sep)
@@ -509,25 +513,33 @@ class GDNativeBuildExt(build_ext):
         self.build_context['target'] = binext_path
         self.build_context['library_name'] = '_pygodot'
 
-        dst_name = dst_name_parts[0]
-        gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, dst_name + '.gdnlib'))
+        base_name = dst_name_parts[0]
+        gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, base_name + '.gdnlib'))
+        setup_script_respath = make_resource_path(godot_root, os.path.join(dst_dir, base_name + '__setup.gd'))
         self.gdnative_library_path = gdnlib_respath
         self.generic_setup = True
+
+        context = dict(singleton=False, load_once=True, reloadable=False)
+        context.update(ext._gdnative_options)
+        context['symbol_prefix'] = 'pygodot_'
+        context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
+
+        context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
+        context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+
         so_files = self.python_dependencies['so_files']
-        deps = ['res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn)) for root, fn in so_files]
+        deps = [main_zip_res, tools_zip_res,
+                *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
+                    for root, fn in so_files)]
         py_files_for_bin = self.python_dependencies['py_files_for_bin']
         deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
 
-        context = dict(
-            singleton=False,
-            load_once=True,
-            symbol_prefix='pygodot_',
-            reloadable=False,
-            libraries={platform: make_resource_path(godot_root, binext_path)},
-            dependencies={platform: deps}
-        )
+        context['dependencies'] = {platform: deps, 'Server.64': deps}
+        context['library'] = 'res://%s' % gdnlib_respath
+        context['python_package'] = self.godot_project.python_package
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
+        self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
 
     def collect_godot_library_data(self, ext):
         if self.godot_project is None:
@@ -541,9 +553,9 @@ class GDNativeBuildExt(build_ext):
         pyx_source = '__init__.pyx'
         py_source = '__init__.py'
 
-        if os.path.exists(os.path.join(self.godot_project.shadow_name, pyx_source)):
+        if os.path.exists(os.path.join(self.godot_project.python_package, pyx_source)):
             library_source = pyx_source
-        elif os.path.exists(os.path.join(self.godot_project.shadow_name, py_source)):
+        elif os.path.exists(os.path.join(self.godot_project.python_package, py_source)):
             library_source = py_source
         else:
             raise SystemExit("Coudn't find GDNative library source, tried %r and %r" % (pyx_source, py_source))
@@ -563,7 +575,7 @@ class GDNativeBuildExt(build_ext):
 
         cpp_library_dir = os.path.dirname(library_source)
         self.build_context['cpp_library_path'] = \
-            os.path.join(self.godot_project.shadow_name, cpp_library_dir, '__gdinit__.cpp')
+            os.path.join(self.godot_project.python_package, cpp_library_dir, '__gdinit__.cpp')
 
         self.build_context['pygodot_library_name'] = staticlib_name
         self.build_context['target'] = make_relative_path(binext_path)
@@ -592,6 +604,7 @@ class GDNativeBuildExt(build_ext):
 
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
+        context['python_package'] = self.godot_project.python_package
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
@@ -630,7 +643,7 @@ class GDNativeBuildExt(build_ext):
                 cpp_sources.append(pyx_source)
                 continue
 
-            source = os.path.join(self.godot_project.shadow_name, pyx_source)
+            source = os.path.join(self.godot_project.python_package, pyx_source)
             target = source.replace('.pyx', '.cpp')
             target_dir, target_name = os.path.split(target)
 
@@ -654,7 +667,7 @@ class GDNativeBuildExt(build_ext):
             })
 
         for cpp_source in cpp_sources:
-            source = os.path.join(self.godot_project.shadow_name, cpp_source)
+            source = os.path.join(self.godot_project.python_package, cpp_source)
             self.build_context['cpp_sources'].append(make_relative_path(source))
 
     def collect_dynamic_sources(self, sources):

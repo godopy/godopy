@@ -3,8 +3,10 @@ from .enums import ExtType
 
 
 class GenericGDNativeLibrary(Extension):
-    def __init__(self, name):
+    def __init__(self, name, **gdnative_options):
         self._gdnative_type = ExtType.GENERIC_LIBRARY
+        self._gdnative_options = gdnative_options
+
         super().__init__(name, sources=[])
 
 

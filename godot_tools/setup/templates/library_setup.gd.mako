@@ -2,6 +2,7 @@ extends MainLoop
 
 func _initialize():
     ProjectSettings.set("python/config/library", "${library}")
+    ProjectSettings.set("python/config/gdnlib_module", "${python_package}")
     ProjectSettings.set("python/config/module_search_path/main", "${main_zip_resource}")
     ProjectSettings.set("python/config/module_search_path/extended", "${dev_zip_resource}")
 

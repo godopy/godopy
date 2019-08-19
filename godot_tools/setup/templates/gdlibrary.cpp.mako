@@ -96,13 +96,13 @@ extern "C" void GDN_EXPORT pygodot_nativescript_init(void *handle) {
   ___python_init();
   pygodot::PyGodot::nativescript_init(handle);
 
-  PyObject *result = _pygodot_nativescript_init(); ERR_FAIL_PYTHON_NULL(result);
+  PyObject *result = _pygodot_nativescript_init(); ERR_FAIL_PYTHON_NULL(result); Py_DECREF(result);
 }
 
 extern "C" void GDN_EXPORT pygodot_gdnative_singleton() {
   ___python_init();
 % if singleton:
-  PyObject *result = _pygodot_gdnative_singleton(); ERR_FAIL_PYTHON_NULL(result);
+  PyObject *result = _pygodot_gdnative_singleton(); ERR_FAIL_PYTHON_NULL(result); Py_DECREF(result);
 % endif
 }
 

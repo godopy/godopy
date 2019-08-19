@@ -20,10 +20,7 @@ from cpython.object cimport PyObject, PyTypeObject
 from cpython.tuple cimport PyTuple_New, PyTuple_SET_ITEM
 from cpython.ref cimport Py_INCREF, Py_DECREF
 
-from .utils cimport _init_dynamic_loading
-
 from cython.operator cimport dereference as deref
-
 
 cdef extern from *:
     """
@@ -134,12 +131,14 @@ cdef public python_nativescript_terminate():
 
 
 cdef public generic_nativescript_init():
-    _init_dynamic_loading()
+    from importlib import import_module
 
-    import gdlibrary
+    cdef _cython_bindings.ProjectSettings ps = _cython_bindings.ProjectSettings.get_singleton()
+    gdlibrary_name = <object>ps.get_setting('python/config/gdnlib_module')
+    gdlibrary = import_module(gdlibrary_name)
 
-    if hasattr(gdlibrary, 'nativescript_init'):
-        gdlibrary.nativescript_init()
+    if hasattr(gdlibrary, '_nativescript_init'):
+        gdlibrary._nativescript_init()
 
 
 cdef __default_registration_function(type cls):
