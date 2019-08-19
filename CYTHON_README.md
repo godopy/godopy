@@ -1,7 +1,8 @@
 # Cython API
 
-The Cython API is built on top of the C++ bindings to the NativeScript from
-the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) project.
+The Cython API is built on top of the [C++ bindings to NativeScript](https://github.com/GodotNativeTools/godot-cpp).
+
+This tutorial is based on the official [GDNative C++ example](https://docs.godotengine.org/en/latest/tutorials/plugins/gdnative/gdnative-cpp-example.html).
 
 ## Getting started
 
@@ -12,8 +13,6 @@ the exisitng [godot-cpp](https://github.com/GodotNativeTools/godot-cpp) project.
 TODO: Describe Python 3 requirement
 
 ### Setting up a new project
-
-This introduction is based on the [GDNative C++ example](https://docs.godotengine.org/en/latest/tutorials/plugins/gdnative/gdnative-cpp-example.html) from the offial Godot docs.
 
 The instructions below assume using git for managing your project.
 
@@ -29,67 +28,10 @@ $ git submodule add https://github.com/ivhilaire/pygodot
 $ git submodule update --init --recursive
 ```
 
-TODO: Build instructions for each platform in separate files
-
-[Ubuntu Linux]
-```
-sudo apt-get install python3-venv python3-dev
-sudo apt-get build-dep python3
-```
-
-Install PyGodot and set up a development environment (this process will take some time):
-```
-$ # Mac and Linux:
-$ cd pygodot
-$ ./internal_python_build.py
-$ ./internal_python_build.py --target=release
-$ buildenv/bin/python3 -m pip install deps/cython
-$ buildenv/bin/python3 -m pip install -r internal-packages/requirements.txt
-$ cd ..
-$ python3 -m venv toolbox
-$ source toolbox/bin/activate
-(toolbox) $ pip install -r pygodot/requirements.txt
-(toolbox) $ pip install -e pygodot
-(toolbox) $ export GODOT_BUILD=<path to Godot source folder>
-(toolbox) $ pygodot/bootstrap.py
-(toolbox) $ cd pygodot
-(toolbox) $ scons  # scons -j4 only_cython=yes && scons -j4
-(toolbox) $ cd ..
-```
-> Replace `<path to Godot source folder>` with an actual path. Godot source should be compiled.
-> When you finish working with a virtual environment, run `deactivate` command
-> Cython installation before other packages ensures that their build process will use the same version of Cython
-> If you want a faster parallel initial build, build with "only_cython=yes" first, otherwise the required headers will be missing
-
-[Windows only] `choco install mingw` for `cpp.exe` (needed by bootstrap script)
-
-[Windows only] If you are using Windows PowerShell, first run as admin: `set-executionpolicy RemoteSigned`
-```
-> # Windows:
-> cd pygodot
-> python internal_python_build.py
-> python internal_python_build.py target=release
-> .\deps\python\PCbuild\amd64\python_d.exe -m venv .\pygodot\buildenv
-> .\buildenv\Scripts\activate
-(buildenv) > cp .\deps\python\PC\pyconfig.h .\buildenv\Include\
-(buildenv) > python -m pip install deps\cython
-(buildenv) > python -m pip install -r internal-packages\requirements.txt
-(buildenv) > deactivate
-> cd ..
-> python -m venv toolbox
-> .\toolbox\Scripts\activate
-(toolbox) > python -m pip install -r pygodot\requirements.txt
-(toolbox) $ python -m pip install -e pygodot
-(toolbox) > $env:GODOT_BUILD = 'C:\path\to\godot'
-(toolbox) > cd pygodot
-(toolbox) $ python bootstrap.py
-(toolbox) $ scons -j4 only_cython=yes
-(toolbox) $ scons -j4
-(toolbox) $ cd ..
-```
-> Replace `C:\path\to\godot` with an actual path.
-> When you finish working with a virtual environment, run `deactivate` command
-> Cython installation before other packages ensures that their build process will use the same version of Cython
+Build PyGodot and set up a development environment for your platform:
+- [MacOS](BUILD_MACOS.md)
+- [Linux](BUILD_LINUX.md)
+- [Windows](BUILD_WINDOWS.md)
 
 
 ### Creating a GDNative extension
@@ -102,42 +44,42 @@ Open Godot and create a new project. For this example, we will place it in a fol
 In our demo project, we’ll create a scene containing a Node2D called “Main” and we’ll save it as `main.tscn`.
 We’ll come back to that later.
 
-Back in the top-level project folder, we’re also going to create a subfolder called `src`
+Back in the top-level project folder, we’re also going to create a subfolder called `_demo`
 in which we’ll place our source files.
 
-You should now have `demo`, `pygodot` and `src` directories in your PyGodot project.
+You should now have `demo`, `pygodot`, `_demo` and `toolbox` directories in your PyGodot project.
 
-Place an empty file `__init__.py` inside the `src` folder:
+Place an empty file `__init__.pxd` inside the `_demo` folder, Cython requires this in order to perform C-level imports:
 ```
-$ touch src/__init__.py
+$ touch _demo/__init__.pxd
 ```
 
-In the `src` folder, we’ll start with creating our Cython definition file for the GDNative node we’ll be creating.
-We will name it `gdexample.pxd`:
+In the `_demo` folder, we’ll start with creating our Cython definition file for the GDNative node we’ll be creating.
+We will name it `cython_example.pxd`:
 ```pyx
 from godot.bindings.cython cimport nodes
 
 
-cdef class GDExample(nodes.Sprite):
+cdef class CythonExample(nodes.Sprite):
     cdef float time_passed
 
-    cdef _process(GDExample self, float delta)
+    cdef _process(CythonExample self, float delta)
 ```
-> Note the `cdef` declarations and that `cimport` is not the same as `import`
+> Note the `cdef` declarations and that `cimport` is a C-level import, not Python `import`
 
 ...
 
-Let’s implement our functions by creating our `gdexample.pyx` file:
+Let’s implement our functions by creating our `cython_example.pyx` file:
 ```pyx
 from libc.math cimport cos, sin
 
 from godot.bindings.cython cimport nodes
-from godot.cpp.core_types cimport Vector2
+from godot.core.cpp_types cimport Vector2
 
 from godot.nativescript cimport register_method
 
 
-cdef class GDExample(nodes.Sprite):
+cdef class CythonExample(nodes.Sprite):
     def __cinit__(self):
         self.time_passed = 0.0
 
@@ -151,7 +93,7 @@ cdef class GDExample(nodes.Sprite):
 
     @staticmethod
     def _register_methods():
-        register_method(GDExample, '_process', GDExample._process)
+        register_method(CythonExample, '_process', CythonExample._process)
 ```
 
 Note that `Vector2` is a native C++ type.
@@ -159,18 +101,17 @@ Note that `Vector2` is a native C++ type.
 
 ...
 
-There is one more Cython file we need, we'll name it `gdlibrary.pyx`.  Our GDNative plugin can contain
-multiple NativeScripts, each with their own `.pxd` and `.pyx` file like we’ve implemented
-`GDExample` up above. What we need now is a small bit of code that tells Godot about all the NativeScripts in our GDNative plugin.
+There is one more Cython file we need, `__init__.pyx`.  Our GDNative plugin can contain
+multiple NativeScripts implemented in C++, Cython or pure Python, each with their own files like we’ve implemented `CythonExample` up above. What we need now is a small bit of code that tells Godot about all the NativeScripts in our GDNative plugin.
 
 ```pyx
 from godot.nativescript cimport register_class
 
-from . cimport gdexample
+from . cimport cython_example
 
 
 cdef public _pygodot_nativescript_init():
-    register_class(gdexample.GDExample)
+    register_class(cython_example.CythonExample)
 ```
 
 It is possible to register plain C++ NativeScript classes too. Here's an example:
@@ -184,6 +125,26 @@ cdef extern from "gdexample.h" namespace "godot" nogil:
 cdef public _pygodot_nativescript_init():
     register_cpp_class[GDExample]()
 ```
+> This will register a C++ class from the [C++ tutorial](https://docs.godotengine.org/en/latest/tutorials/plugins/gdnative/gdnative-cpp-example.html)
+
+Also, is is possible to mix pure Python classes with Cython classes:
+```pyx
+from godot.nativescript cimport register_class
+from godot.bindings.cpp cimport nodes
+
+from godot.utils cimport allow_pure_python_imports
+
+from _demo cimport cython_example
+
+# sys.modules['_demo'] is configured to work with Cython-compiled modules
+# by default and won't be able to import our pure Python files without the "allow_pure_python_imports"
+allow_pure_python_imports('_demo')
+from _demo import python_example
+
+cdef public _pygodot_nativescript_init():
+    register_class(cython_example.CythonExample)
+    register_class(python_example.PythonExample)
+```
 
 ### Building the extension
 
@@ -196,10 +157,9 @@ from godot_tools.setup.extensions import NativeScript
 
 godot_setup(
     godot_project='demo',
-    source='src',
-    library=GDNativeLibrary('gdexample.gdnlib', source='gdlibrary.pyx'),
+    library=GDNativeLibrary('cython_example.gdnlib'),
     extensions=[
-        NativeScript('gdexample.gdns', class_name='GDExample', sources=['gdexample.pyx'])
+        NativeScript('cython_example.gdns', class_name='CythonExample', sources=['cython_example.pyx'])
     ]
 )
 ```
@@ -217,7 +177,7 @@ now add a Sprite to our scene:
 [picture]
 
 We’re going to assign the Godot logo to this sprite as our texture, disable the `centered` property and drag
-our `gdexample.gdns` file onto the `script` property of the sprite:
+our `cython_example.gdns` file onto the `script` property of the sprite:
 
 [picture]
 

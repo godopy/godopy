@@ -28,6 +28,7 @@ opts.Add(EnumVariable('target', "Compilation target", 'debug', ['d', 'debug', 'r
 opts.Add(EnumVariable('platform', "Compilation platform", host_platform, ['windows', 'x11', 'linux', 'osx']))
 opts.Add(EnumVariable('p', "Compilation target, alias for 'platform'", host_platform, ['windows', 'linux', 'osx']))
 opts.Add(BoolVariable('use_llvm', "Use the LLVM / Clang compiler", 'no'))
+opts.Add(BoolVariable('python_debug', 'Use debug build of Python', False))
 
 godot_headers_path = ${repr(godot_headers_path)}
 pygodot_bindings_path = ${repr(pygodot_bindings_path)}
@@ -51,17 +52,17 @@ if env['platform'] == '':
     print("No valid target platform selected.")
     quit()
 
-python_include = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
-python_lib = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
+python_include = 'python3.8d' if env['python_debug'] else 'python3.8'
+python_lib = 'python3.8d' if env['python_debug'] else 'python3.8'
 python_internal_env = os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', 'site-packages')
 
 if env['platform'] == "osx":
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
 
-    libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib', 'python3.8', libdir)])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', python_include)])
+    libdir = 'config-3.8d-darwin' if env['python_debug'] else 'config-3.8-darwin'
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'lib', 'python3.8', libdir)])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'include', python_include)])
     env.Append(CCFLAGS=[
         '-g',
         '-std=c++14',
@@ -86,8 +87,8 @@ if env['platform'] == "osx":
         env.Append(CCFLAGS=['-O3'])
 
 elif env['platform'] == 'linux':
-    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'lib')])
-    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'buildenv', 'include', python_include)])
+    env.Append(LIBPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'lib')])
+    env.Append(CPPPATH=[os.path.join(pygodot_bindings_path, 'deps', 'python', 'build', 'include', python_include)])
     env.Append(CCFLAGS=[
         '-fPIC',
         '-g',
@@ -114,7 +115,7 @@ elif env['platform'] == 'windows':
     env.Append(CPPDEFINES=['WIN32', '_WIN32', '_WINDOWS', '_CRT_SECURE_NO_WARNINGS'])
     env.Append(CCFLAGS=['-W3', '-GR'])
 
-    python_lib = 'python38_d' if env['target'] == 'debug' else 'python38'
+    python_lib = 'python38_d' if env['python_debug'] else 'python38'
     env.Append(LIBS=[python_lib])
 
     if env['target'] in ('debug', 'd'):
@@ -125,9 +126,7 @@ elif env['platform'] == 'windows':
         env.Append(CPPDEFINES=['NDEBUG'])
         env.Append(CCFLAGS=['-O2', '-EHsc', '-MD'])
 
-binpath = os.path.dirname(sys.executable)
-if sys.platform == 'win32':
-    binpath = os.path.join(sys.prefix, 'Scripts')
+binpath = os.path.join(pygodot_bindings_path, 'buildenv', 'Scripts' if sys.platform == 'win32' else 'bin')
 
 env.Append(BUILDERS={
     # 'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)

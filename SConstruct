@@ -50,6 +50,11 @@ opts.Add(BoolVariable(
     'Compile only Cython sources',
     False
 ))
+opts.Add(BoolVariable(
+    'python_debug',
+    'Use debug build of Python',
+    False
+))
 # Must be the same setting as used for cpp_bindings
 opts.Add(EnumVariable(
     'target',
@@ -92,8 +97,8 @@ if env['TARGET_ARCH'] == 'amd64' or env['TARGET_ARCH'] == 'emt64' or env['TARGET
 if env['bits'] == 'default':
     env['bits'] = '64' if is64 else '32'
 
-python_include = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
-python_lib = 'python3.8d' if env['target'] == 'debug' else 'python3.8'
+python_include = 'python3.8d' if env['python_debug'] else 'python3.8'
+python_lib = 'python3.8d' if env['python_debug'] else 'python3.8'
 python_internal_env = os.path.join('buildenv', 'lib', 'python3.8', 'site-packages')
 
 # This makes sure to keep the session environment variables on Windows.
@@ -116,8 +121,8 @@ if env['platform'] == 'linux':
         env['CXX'] = 'clang++'
 
     # libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join('buildenv', 'lib')])
-    env.Append(CPPPATH=[os.path.join('buildenv', 'include', python_include)])
+    env.Append(LIBPATH=[os.path.join('deps', 'python', 'build', 'lib')])
+    env.Append(CPPPATH=[os.path.join('deps', 'python', 'build', 'include', python_include)])
 
     env.Append(CCFLAGS=[
         '-fPIC',
@@ -148,9 +153,9 @@ elif env['platform'] == 'osx':
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
 
-    libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join('buildenv', 'lib', 'python3.8', libdir)])
-    env.Append(CPPPATH=[os.path.join('buildenv', 'include', python_include)])
+    libdir = 'config-3.8d-darwin' if env['python_debug'] else 'config-3.8-darwin'
+    env.Append(LIBPATH=[os.path.join('deps', 'python', 'build', 'lib', 'python3.8', libdir)])
+    env.Append(CPPPATH=[os.path.join('deps', 'python', 'build', 'include', python_include)])
 
     if env['bits'] == '32':
         raise ValueError(
@@ -185,7 +190,7 @@ elif env['platform'] == 'windows':
     env.Append(CPPPATH=[os.path.join('deps', 'python', 'PC')])
     env.Append(CPPPATH=[os.path.join('deps', 'python', 'Include')])
 
-    python_lib = 'python38_d' if env['target'] == 'debug' else 'python38'
+    python_lib = 'python38_d' if env['python_debug'] else 'python38'
     env.Append(LIBS=[python_lib])
 
     if host_platform == 'windows' and not env['use_mingw']:
@@ -219,12 +224,10 @@ elif env['platform'] == 'windows':
             '-static-libstdc++',
         ])
 
-binpath = os.path.dirname(sys.executable)
-if sys.platform == 'win32':
-    binpath = os.path.join(sys.prefix, 'Scripts')
+binpath = os.path.join('buildenv', 'Scripts' if sys.platform == 'win32' else 'bin')
 
 env.Append(BUILDERS={
-    # 'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)
+    # 'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath),
     'CythonSource': Builder(action='%s/pygodot_cython $SOURCE $TARGET' % binpath)
 })
 

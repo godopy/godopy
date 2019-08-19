@@ -265,14 +265,12 @@ class GDNativeBuildExt(build_ext):
                 so_shims_written.add(fnc)
 
             for i, (root, fn) in enumerate(self.python_dependencies[files]):
-                fn_src = fn
                 if root == 'lib':
                     basedir = self.python_dependencies['lib_dir']
                 elif root == 'site':
                     basedir = self.python_dependencies['site_dir']
                 elif root == 'local':
                     basedir = os.getcwd()
-                    fn_src = fn.replace('%PROJECT%', self.godot_project.shadow_name)
                     fn = fn.replace('%PROJECT%', self.godot_project.shadow_name)
                 else:
                     basedir = None
@@ -283,7 +281,7 @@ class GDNativeBuildExt(build_ext):
                     with open(pre_dst, 'w', encoding='utf-8'):
                         pass
                 else:
-                    src = os.path.join(basedir, fn_src)
+                    src = os.path.join(basedir, fn)
                     changed = not os.path.exists(pre_dst) or os.stat(src).st_mtime != os.stat(pre_dst).st_mtime
                     if changed:
                         shutil.copy2(src, pre_dst)
@@ -338,11 +336,13 @@ class GDNativeBuildExt(build_ext):
             self.python_dependencies['dynload_dir'] = dynload_dir = bin_dir
             self.python_dependencies['site_dir'] = site_dir = os.path.join(py_venv_dir, 'Lib', 'site-packages')
         else:
-            self.python_dependencies['bin_dir'] = bin_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv', 'bin'))
-            self.python_dependencies['mainlib_dir'] = mainlib_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv', 'lib'))
+            py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
+            py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv'))
+            self.python_dependencies['bin_dir'] = bin_dir = os.path.join(py_base_dir, 'build', 'bin')
+            self.python_dependencies['mainlib_dir'] = mainlib_dir = os.path.join(py_base_dir, 'build', 'lib')
             self.python_dependencies['lib_dir'] = lib_dir = os.path.join(mainlib_dir, 'python3.8')
             self.python_dependencies['dynload_dir'] = dynload_dir = os.path.join(lib_dir, 'lib-dynload')
-            self.python_dependencies['site_dir'] = site_dir = os.path.join(lib_dir, 'site-packages')
+            self.python_dependencies['site_dir'] = site_dir = os.path.join(py_venv_dir, 'lib', 'python3.8', 'site-packages')
 
         self.python_dependencies['py_files'] = py_files = []
         self.python_dependencies['so_files'] = so_files = []
@@ -360,7 +360,7 @@ class GDNativeBuildExt(build_ext):
         if sys.platform == 'win32':
             mainlib = 'python38.dll'
             # extra_mainlib = 'python38_d.dll'
-            python_exe = 'python_d.exe'
+            python_exe = 'python.exe'
 
         self.python_dependencies['executable'] = os.path.join(bin_dir, python_exe)
 
@@ -531,14 +531,22 @@ class GDNativeBuildExt(build_ext):
 
     def collect_godot_library_data(self, ext):
         if self.godot_project is None:
-            sys.stderr.write("Can't build a GDNative library without a Godot project.\n\n")
-            sys.exit(1)
+            raise SystemExit("Can't build a GDNative library without a Godot project.\n\n")
 
         if self.gdnative_library_path is not None:
-            sys.stderr.write("Can't build multiple GDNative libraries.\n")
-            sys.exit(1)
+            raise SystemExit("Can't build multiple GDNative libraries.\n")
 
         platform = get_platform()
+
+        pyx_source = '__init__.pyx'
+        py_source = '__init__.py'
+
+        if os.path.exists(os.path.join(self.godot_project.shadow_name, pyx_source)):
+            library_source = pyx_source
+        elif os.path.exists(os.path.join(self.godot_project.shadow_name, py_source)):
+            library_source = py_source
+        else:
+            raise SystemExit("Coudn't find GDNative library source, tried %r and %r" % (pyx_source, py_source))
 
         ext_name = self.godot_project.get_setuptools_name(ext.name, validate='.gdnlib')
         ext_path = self.get_ext_fullpath(ext_name)
@@ -553,10 +561,9 @@ class GDNativeBuildExt(build_ext):
 
         binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform_suffix(platform), dst_fullname)
 
-        cpp_library_base_path = re.sub(r'\.pyx?$', '.cpp', ext.sources[0])
-        cpp_library_dir, cpp_library_unprefixed = os.path.split(cpp_library_base_path)
+        cpp_library_dir = os.path.dirname(library_source)
         self.build_context['cpp_library_path'] = \
-            os.path.join(self.godot_project.shadow_name, cpp_library_dir, '_' + cpp_library_unprefixed)
+            os.path.join(self.godot_project.shadow_name, cpp_library_dir, '__gdinit__.cpp')
 
         self.build_context['pygodot_library_name'] = staticlib_name
         self.build_context['target'] = make_relative_path(binext_path)
@@ -588,7 +595,7 @@ class GDNativeBuildExt(build_ext):
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
-        self.collect_sources(ext.sources)
+        self.collect_sources([library_source] + ext.sources)
 
     def collect_godot_nativescript_data(self, ext):
         if not self.gdnative_library_path:
@@ -634,7 +641,10 @@ class GDNativeBuildExt(build_ext):
             if is_internal_path(dir_components[0]):
                 dir_components = dir_components[1:]
 
-            modname = '.'.join([*dir_components, name])
+            if name == '__init__':
+                modname = '.'.join(dir_components)
+            else:
+                modname = '.'.join([*dir_components, name])
 
             self.build_context['pyx_sources'].append({
                 'name': modname,

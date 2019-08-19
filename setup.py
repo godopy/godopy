@@ -45,15 +45,12 @@ package_data = {
     ]
 }
 
-entry_points = {'console_scripts': ['pygodot=godot_tools.cli:pygodot', 'bindgen=godot_tools.cli:bindgen', 'pygodot_cython=godot_tools.cli:pygodot_cython']}
+entry_points = {'console_scripts': ['pygodot=godot_tools.cli:pygodot', 'bindgen=godot_tools.cli:bindgen']}
 
 install_requires = [
-    # 'Cython',
     'Mako',
     'scons',
-    # 'pycparser',
-    # 'autopxd2',
-    'Click'  # TODO: Use something from the standard library
+    'Click'  # TODO: Use argparse
 ]
 
 # setup_requires = ['scons', 'Cython', 'Mako', 'pycparser', 'autopxd2', 'Click']

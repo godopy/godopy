@@ -5,7 +5,7 @@ import sys
 import shutil
 import subprocess
 
-DEFAULT_TARGET = 'debug'
+DEFAULT_TARGET = 'release'
 
 OVERLAYS_UNIX = (
     (('Modules',), 'Setup.unix.local', 'Setup.local'),
@@ -19,7 +19,7 @@ OVERLAYS_WINDOWS = (
 def build_python():
     root_dir = os.path.abspath(os.path.dirname(__file__))
 
-    prefix = os.path.join(root_dir, 'buildenv')
+    prefix = os.path.join(root_dir, 'deps', 'python', 'build')
     cwd = os.path.abspath(os.getcwd())
     python_path = os.path.join(root_dir, 'deps', 'python')
     overlay_path = os.path.join(root_dir, 'deps', 'overlay', 'python')
@@ -61,6 +61,7 @@ def build_python():
     ]
 
     if sys.platform == 'darwin':
+        os.environ['CC'] = 'clang'
         os.environ['OPENSSL_LIBS'] = '-lssl -lcrypto'
 
         os.environ['LDFLAGS'] = (
