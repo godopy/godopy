@@ -8,9 +8,9 @@
 #include "Object.hpp"
 
 #include <iostream>
+#include <stdexcept>
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#include "PythonGlobal.hpp"
 #include <internal-packages/godot/core/types.hpp>
 
 namespace godot {
@@ -164,6 +164,7 @@ Variant::Variant(const PoolColorArray &p_color_array) {
 }
 
 Variant::Variant(const PyObject *p_python_object) {
+	PYGODOT_CHECK_NUMPY_API();
 
 	if (p_python_object == Py_None) {
 		// Py_XDECREF(p_python_object); // XXX
@@ -200,8 +201,27 @@ Variant::Variant(const PyObject *p_python_object) {
 		}
 
 		// TODO: Other Python wrappers
+	} else if (PyArray_Check(p_python_object)) {
+		PyArrayObject *arr = (PyArrayObject *)p_python_object;
 
-		// TODO: numpy arrays
+		if (PyArray_NDIM(arr) == 1 && (PyArray_TYPE(arr) == NPY_FLOAT || PyArray_TYPE(arr) == NPY_DOUBLE)) {
+			// 1-dimentional numeric arrays
+
+			if (PyArray_SIZE(arr) == 2) {
+				Vector2 vec = Vector2(*(real_t *)PyArray_GETPTR1(arr, 0), *(real_t *)PyArray_GETPTR1(arr, 1));
+				godot::api->godot_variant_new_vector2(&_godot_variant, (godot_vector2 *)&vec);
+			} else if (PyArray_SIZE(arr) == 3) {
+				Vector3 vec = Vector3(*(real_t *)PyArray_GETPTR1(arr, 0), *(real_t *)PyArray_GETPTR1(arr, 1), *(real_t *)PyArray_GETPTR1(arr, 2));
+				godot::api->godot_variant_new_vector3(&_godot_variant, (godot_vector3 *)&vec);
+			} else {
+				// raises ValueError in Cython/Python context
+				throw std::invalid_argument("required NumPy/Godot cast is not implemented yet");
+			}
+		} else {
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("required NumPy/Godot cast is not implemented yet");
+		}
+		// TODO: Other numpy arrays
 	} else if (PyObject_IsInstance((PyObject *)p_python_object, (PyObject *)PyGodotType__Wrapped)) {
 		godot_object *p = _cython_binding_to_godot_object((PyObject *)p_python_object);
 		godot::api->godot_variant_new_object(&_godot_variant, p);
@@ -209,8 +229,9 @@ Variant::Variant(const PyObject *p_python_object) {
 		// TODO: dict -> Dictionary, other iterables -> Array, array.Array -> PoolArray*, numpy.array -> PoolArray*
 
 	} else {
-		// Py_XDECREF(p_python_object); // XXX
-		godot::api->godot_variant_new_nil(&_godot_variant);
+
+		// raises ValueError in Cython/Python context
+		throw std::invalid_argument("could not cast Python object to Godot Variant");
 	}
 }
 
