@@ -42,7 +42,8 @@ cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, 
     (<_Wrapped>obj)._owner = instance
     (<_Wrapped>obj).___CLASS_IS_SCRIPT = True
 
-    if hasattr(obj, '_init'):
+    # Check for _init in class dictionary, otherwise Object._init() will be called incorrectly
+    if '_init' in obj.__class__.__dict__:
         obj._init()
 
     print('instance created', obj)
@@ -338,9 +339,12 @@ def register_python_property(type cls, str name, object default_value,
                              str hint_string=''):
     register_property(cls, name, default_value, rpc_mode, usage, hint, hint_string)
 
+
+ctypedef godot_variant (*__godot_wrapper_method)(godot_object *, void *, void *, int, godot_variant **) nogil
+
 cdef _register_python_method(type cls, const char *name, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
     Py_INCREF(method)
-    cdef godot_instance_method m = [_python_method_wrapper, <void *>method, _python_method_free]
+    cdef godot_instance_method m = [<__godot_wrapper_method>_python_method_wrapper, <void *>method, _python_method_free]
     cdef godot_method_attributes attrs = [rpc_type]
 
     cdef bytes class_name = cls.__name__.encode('utf-8')
@@ -366,18 +370,14 @@ cdef tuple __parse_args(int num_args, godot_variant **args):
     return __args
 
 
-cdef godot_variant _python_method_wrapper(godot_object *instance, void *method_data, void *self_data, int num_args, godot_variant **args) nogil:
-    cdef Variant result
-
+cdef Variant _python_method_wrapper(godot_object *instance, void *method_data, void *self_data, int num_args, godot_variant **args) nogil:
     with gil:
         self = <object>self_data
         method = <object>method_data
         Py_INCREF(self)  # Make sure there are no leaks here
 
         # Variant casts from PyObject* are defined in Variant::Variant(const PyObject*) constructor
-        result = <Variant>method(self, *__parse_args(num_args, args))
-
-    return deref(<godot_variant *>&result)
+        return <Variant>method(self, *__parse_args(num_args, args))
 
 
 cdef void _python_method_free(void *method_data) nogil:
