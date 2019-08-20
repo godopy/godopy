@@ -1230,6 +1230,8 @@ cdef extern from "Variant.hpp" namespace "godot" nogil:
 
         # Variant &operator=(const Variant &v)
         bool operator bool()
+
+        # object operator object() except +
         # signed int operator signed int()
         # unsigned int operator unsigned int()
         # signed short operator signed short()

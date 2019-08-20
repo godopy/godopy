@@ -207,12 +207,17 @@ Variant::Variant(const PyObject *p_python_object) {
 		if (PyArray_NDIM(arr) == 1 && (PyArray_TYPE(arr) == NPY_FLOAT || PyArray_TYPE(arr) == NPY_DOUBLE)) {
 			// 1-dimentional numeric arrays
 
+			// TODO: Cast this to PoolRealArray
+
 			if (PyArray_SIZE(arr) == 2) {
 				Vector2 vec = Vector2(*(real_t *)PyArray_GETPTR1(arr, 0), *(real_t *)PyArray_GETPTR1(arr, 1));
 				godot::api->godot_variant_new_vector2(&_godot_variant, (godot_vector2 *)&vec);
 			} else if (PyArray_SIZE(arr) == 3) {
 				Vector3 vec = Vector3(*(real_t *)PyArray_GETPTR1(arr, 0), *(real_t *)PyArray_GETPTR1(arr, 1), *(real_t *)PyArray_GETPTR1(arr, 2));
 				godot::api->godot_variant_new_vector3(&_godot_variant, (godot_vector3 *)&vec);
+			} else if (PyArray_SIZE(arr) == 4) {
+				Quat q = Quat(*(real_t *)PyArray_GETPTR1(arr, 0), *(real_t *)PyArray_GETPTR1(arr, 1), *(real_t *)PyArray_GETPTR1(arr, 2), *(real_t *)PyArray_GETPTR1(arr, 3));
+				godot::api->godot_variant_new_quat(&_godot_variant, (godot_quat *)&q);
 			} else {
 				// raises ValueError in Cython/Python context
 				throw std::invalid_argument("required NumPy/Godot cast is not implemented yet");
@@ -379,6 +384,8 @@ Variant::operator godot_object *() const {
 Variant::operator PyObject *() const {
 	PyObject *obj;
 
+	PYGODOT_CHECK_NUMPY_API();
+
 	switch (get_type()) {
 		case NIL:
 			obj = Py_None;
@@ -401,11 +408,70 @@ Variant::operator PyObject *() const {
 			obj = PyUnicode_FromWideChar(s.unicode_str(), s.length());
 			break;
 		}
+
+		case VECTOR2: {
+			Vector2 vec = *this;
+			const npy_intp dims[] = {2};
+			obj = PyArray_SimpleNew(1, dims, NPY_FLOAT);
+
+			real_t *p_x = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 0);
+			real_t *p_y = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 1);
+			*p_x = vec.x;
+			*p_y = vec.y;
+			break;
+		}
+
+		case VECTOR3: {
+			Vector3 vec = *this;
+			const npy_intp dims[] = {3};
+			obj = PyArray_SimpleNew(1, dims, NPY_FLOAT);
+
+			real_t *p_x = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 0);
+			real_t *p_y = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 1);
+			real_t *p_z = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 2);
+			*p_x = vec.x;
+			*p_y = vec.y;
+			*p_z = vec.z;
+			break;
+		}
+
+		case COLOR: {
+			Color c = *this;
+			const npy_intp dims[] = {4};
+			obj = PyArray_SimpleNew(1, dims, NPY_FLOAT);
+
+			real_t *p_r = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 0);
+			real_t *p_g = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 1);
+			real_t *p_b = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 2);
+			real_t *p_a = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 3);
+			*p_r = c.r;
+			*p_g = c.g;
+			*p_b = c.b;
+			*p_a = c.a;
+			break;
+		}
+
+		case QUAT: {
+			Quat q = *this;
+			const npy_intp dims[] = {4};
+			obj = PyArray_SimpleNew(1, dims, NPY_FLOAT);
+
+			real_t *p_x = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 0);
+			real_t *p_y = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 1);
+			real_t *p_z = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 2);
+			real_t *p_w = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 3);
+			*p_x = q.x;
+			*p_y = q.y;
+			*p_z = q.z;
+			*p_w = q.w;
+			break;
+		}
+
 		// TODO: Add more convertions
 
 		default:
-			// Warning?
-			obj = Py_None;
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("could not cast Python object to Godot Variant");
 	}
 
 	Py_XINCREF(obj);
