@@ -1,5 +1,6 @@
 from . cimport cpp_types as cpp
 
+
 cdef class CoreTypeWrapper:
     cdef bint _initialized
 

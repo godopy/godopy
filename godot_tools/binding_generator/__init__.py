@@ -2,8 +2,6 @@ import os
 import re
 import sys
 import json
-import struct
-import hashlib
 from collections import defaultdict
 
 from mako.template import Template
@@ -12,6 +10,9 @@ from .pxd_writer import PxdWriter, parse as parse_c_header
 
 
 PYTHON_AUTOMATIC_CAST_TYPES = ('Variant', 'Array')
+
+# TODO: Provide numpy interface for all numeric and array Godot types
+NUMPY_TYPES = ('Vector2',)
 
 CORE_TYPES = (
     'Basis', 'Color', 'Dictionary', 'Error', 'NodePath', 'Plane',
@@ -506,14 +507,14 @@ def generate_class_context(class_def, language):
 
 def escape_cython_default_arg(_type, default_value):
     if _type == 'Color':
-        return 'wrappers.Color(%s)' % default_value
+        return 'py.Color(%s)' % default_value
     elif _type in ('bool', 'int'):
         return default_value
     elif _type in ('Array', 'Dictionary', 'PoolVector2Array', 'PoolStringArray', 'PoolVector3Array', 'PoolColorArray',
                    'PoolIntArray', 'PoolRealArray', 'Transform', 'Transform2D', 'RID'):
-        return 'wrappers.%s()' % _type
+        return 'py.%s()' % _type
     elif _type in ('Vector2', 'Vector3', 'Rect2'):
-        return 'wrappers.%s%s' % (_type, default_value)
+        return 'py.%s%s' % (_type, default_value)
     elif _type == 'Variant':
         if default_value == 'Null':
             return 'None'
@@ -540,7 +541,7 @@ def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=
     elif has_default and t in PYTHON_AUTOMATIC_CAST_TYPES:
         return 'object '
     elif has_default and is_core_type(t):
-        return 'wrappers.%s ' % strip_name(t)
+        return 'py.%s ' % strip_name(t)
 
     elif t == 'int':
         return prefix + 'int '
@@ -564,8 +565,10 @@ def make_python_gdnative_type(t, is_virtual=False, is_return=False, has_default=
         return 'str '
     elif t in PYTHON_AUTOMATIC_CAST_TYPES:
         return 'object '
+    elif t in NUMPY_TYPES:
+        return 'object '
     elif is_core_type(t):
-        return 'wrappers.%s ' % strip_name(t)
+        return 'py.%s ' % strip_name(t)
 
     elif t == 'int':
         return 'int '

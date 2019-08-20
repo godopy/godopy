@@ -13,7 +13,7 @@
 from godot_headers.gdnative_api cimport godot_method_bind
 
 from ..core cimport cpp_types as cpp
-from ..core cimport wrapper_types as wrappers
+from ..core cimport types as py
 from ..core.defs cimport *
 from ..core._wrapped cimport _Wrapped
 

@@ -10,7 +10,7 @@
 PyMODINIT_FUNC PyInit_godot__core___wrapped();
 PyMODINIT_FUNC PyInit_godot__core__signal_arguments();
 PyMODINIT_FUNC PyInit_godot__core__tag_db();
-PyMODINIT_FUNC PyInit_godot__core__wrapper_types();
+PyMODINIT_FUNC PyInit_godot__core__types();
 PyMODINIT_FUNC PyInit_godot__bindings___cython_bindings();
 PyMODINIT_FUNC PyInit_godot__bindings___python_bindings();
 PyMODINIT_FUNC PyInit_godot__utils();
@@ -41,7 +41,7 @@ static void ___python_init() {
   PyImport_AppendInittab("__pygodot_internal__godot__core___wrapped", PyInit_godot__core___wrapped);
   PyImport_AppendInittab("__pygodot_internal__godot__core__signal_arguments", PyInit_godot__core__signal_arguments);
   PyImport_AppendInittab("__pygodot_internal__godot__core__tag_db", PyInit_godot__core__tag_db);
-  PyImport_AppendInittab("__pygodot_internal__godot__core__wrapper_types", PyInit_godot__core__wrapper_types);
+  PyImport_AppendInittab("__pygodot_internal__godot__core__types", PyInit_godot__core__types);
   PyImport_AppendInittab("__pygodot_internal__godot__bindings___cython_bindings", PyInit_godot__bindings___cython_bindings);
   PyImport_AppendInittab("__pygodot_internal__godot__bindings___python_bindings", PyInit_godot__bindings___python_bindings);
   PyImport_AppendInittab("__pygodot_internal__godot__utils", PyInit_godot__utils);
@@ -56,7 +56,7 @@ static void ___python_init() {
   mod = PyImport_ImportModule("__pygodot_internal__godot__core___wrapped"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__pygodot_internal__godot__core__signal_arguments"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__pygodot_internal__godot__core__tag_db"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("__pygodot_internal__godot__core__wrapper_types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__core__types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__pygodot_internal__godot__bindings___cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__pygodot_internal__godot__bindings___python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__pygodot_internal__godot__utils"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);

@@ -6,6 +6,8 @@ from godot_headers.gdnative_api cimport godot_object, godot_array, godot_vector2
 from ._wrapped cimport _Wrapped, _PyWrapped
 from . cimport cpp_types as cpp
 
+cimport numpy as np
+
 
 def is_godot_wrapper_instance(object obj, object instances):
     return isinstance(obj, instances) and (<CoreTypeWrapper?>obj)._initialized
@@ -470,9 +472,19 @@ cdef class Vector2(CoreTypeWrapper):
         self._initialized = True
         return self
 
+    @staticmethod
+    def from_numpy(np.ndarray arr):
+        cdef Vector2 self = Vector2.__new__(Vector2)
+        self._cpp_object = cpp.Vector2(arr)
+        self._initialized = True
+        return self
+
     def __init__(self, float x=0, float y=0):
         self._cpp_object = cpp.Vector2(x, y)
         self._initialized = True
+
+    def to_numpy(self):
+        return self._cpp_object.to_numpy()
 
 
 cdef class Vector3(CoreTypeWrapper):

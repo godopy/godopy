@@ -30,7 +30,7 @@ from godot_headers.gdnative_api cimport godot_object, godot_variant
 from ..globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _cython_language_index
 
 from ..core cimport cpp_types as cpp
-from ..core cimport wrapper_types as wrappers
+from ..core cimport types as py
 from ..core.defs cimport *
 from ..core._wrapped cimport _Wrapped
 from ..core.tag_db cimport register_global_cython_type, get_instance_from_owner

@@ -2,7 +2,7 @@
 <%!
     from godot_tools.binding_generator import (
         python_module_name, is_class_type, is_enum,
-        CORE_TYPES, SPECIAL_ESCAPES,
+        CORE_TYPES, NUMPY_TYPES, SPECIAL_ESCAPES,
         remove_nested_type_prefix, clean_signature, make_cython_gdnative_type
     )
 
@@ -16,8 +16,10 @@
         if arg[3] is not None:
             assert arg[1].startswith('_')
             return arg[1][1:]
-        if is_class_type(arg[2]['type']):
+        if not is_enum(arg[2]['type']) and is_class_type(arg[2]['type']):
             return '%s._owner' % arg[1]
+        if arg[2]['type'] in NUMPY_TYPES:
+            return 'cpp.%s_from_PyObject(%s)' % (arg[2]['type'], arg[1])
         if arg[2]['type'] in ('String', 'Variant', 'Array'):
             return 'cpp.%s(%s)' % (arg[2]['type'], arg[1])
         if arg[2]['type'] in CORE_TYPES:
@@ -37,8 +39,10 @@
             return 'return ret'
         elif rt == 'String':
             return 'return ret.py_str()'
+        # elif rt in NUMPY_TYPES:
+        #    return 'return ret.to_numpy()'
         elif rt in CORE_TYPES:
-            return 'return wrappers.%s.from_cpp(ret)' % rt
+            return 'return py.%s.from_cpp(ret)' % rt
         else:
             return 'return ret'
 
@@ -64,13 +68,12 @@ from ..globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _python_la
 
 from ..core.defs cimport *
 from ..core cimport cpp_types as cpp
-from ..core cimport wrapper_types as wrappers
+from ..core cimport types as py
 from ..core._wrapped cimport _PyWrapped
 from ..core.tag_db cimport register_global_python_type, get_instance_from_owner
 from .python cimport __icalls
 
 from cpython.ref cimport Py_DECREF
-
 % for class_name, class_def, includes, forwards, methods in classes:
 
 
@@ -150,7 +153,7 @@ cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
     % endfor
 
     @staticmethod
-    cdef __init_method_bindings():
+    def __init_method_bindings():
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
         __${class_name}__mb.mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method['name']}")
     % endfor

@@ -24,6 +24,8 @@ namespace pygodot {
 bool in_editor = false;
 godot_string active_library_path;
 
+const void **array_api = NULL;
+
 void PyGodot::python_preconfig(godot_gdnative_init_options *options) {
 	PyPreConfig preconfig;
 	PyPreConfig_InitIsolatedConfig(&preconfig);
@@ -152,6 +154,15 @@ void PyGodot::python_init() {
 	ERR_FAIL_PYSTATUS(status, fail);
 
 	PyConfig_Clear(&config);
+
+	if (_import_array() == -1) {
+		PyErr_Print();
+		FATAL_PRINT("NumPy Initialization Failed.");
+		CRASH_NOW();
+		return;
+	}
+
+	array_api = (const void **)PyArray_API;
 
 	if (!commandline_script_mode) {
 		godot::Godot::print("Python {0}\nPyGodot 0.0.1a0\n", (godot::Variant)Py_GetVersion());

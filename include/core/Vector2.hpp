@@ -8,11 +8,7 @@
 #include <cmath>
 #include <stdexcept>
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include <numpy/arrayobject.h>
+#include "PythonGlobal.hpp"
 
 namespace godot {
 
@@ -225,20 +221,22 @@ struct Vector2 {
 
 	operator String() const;
 
-	inline Vector2(const PyArrayObject *arr) {
-		if (likely(PyArray_SIZE((PyArrayObject *)arr) == 2 && PyArray_NDIM((PyArrayObject *)arr) == 1 &&
-			  (PyArray_TYPE((PyArrayObject *)arr) == NPY_FLOAT || PyArray_TYPE((PyArrayObject *)arr) == NPY_DOUBLE))) {
-			x = *(real_t *)PyArray_GETPTR1((PyArrayObject *)arr, 0);
-			y = *(real_t *)PyArray_GETPTR1((PyArrayObject *)arr, 1);
+	inline Vector2(PyArrayObject *arr) {
+		PYGODOT_CHECK_NUMPY_API();
+
+		if (likely(PyArray_SIZE(arr) == 2 && PyArray_NDIM(arr) == 1 &&
+			  (PyArray_TYPE(arr) == NPY_FLOAT || PyArray_TYPE(arr) == NPY_DOUBLE))) {
+			x = *(real_t *)PyArray_GETPTR1(arr, 0);
+			y = *(real_t *)PyArray_GETPTR1(arr, 1);
 		} else {
 			// raises ValueError in Cython/Python context
 			throw std::invalid_argument("argument must be an array of two float values");
 		}
 	}
 
-	const PyObject *to_python_wrapper();
+	PyObject *to_python_wrapper();
 
-	inline const PyObject *to_numpy() {
+	inline PyObject *to_numpy() {
 		npy_intp dims[] = {2};
 		PyObject *arr = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT, (void *)this);
 		Py_INCREF(arr);

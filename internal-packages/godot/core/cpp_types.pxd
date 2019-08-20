@@ -1293,9 +1293,6 @@ cdef extern from "Vector2.hpp" namespace "godot" nogil:
 
         Vector2(real_t, real_t)
         Vector2()
-        Vector2(np.ndarray) except +ValueError
-
-        np.ndarray[np.float32_t] to_numpy()
 
         real_t& operator[](int)
         const real_t& operator[](int)
@@ -1323,7 +1320,12 @@ cdef extern from "Vector2.hpp" namespace "godot" nogil:
         real_t length()
         real_t length_squared()
 
+        Vector2(np.ndarray) except +ValueError
+
+        np.ndarray[np.float32_t] to_numpy()
         object wrap "to_python_wrapper" ()
+
+    Vector2 Vector2_from_PyObject(object) except +ValueError
 
 
 cdef extern from "Vector3.hpp" namespace "godot" nogil:
