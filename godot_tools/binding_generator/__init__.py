@@ -41,16 +41,16 @@ CPP_ESCAPES = {
 }
 
 CYTHON_ONLY_ESCAPES = {
-    'from':     'from_',
-    'with':     'with_',
-    'in':       'in_',
-    'pass':     'pass_',
-    'raise':    'raise_',
-    'global':   'global_',
-    'import':   'import_',
-    'object':   'object_',
+    'from':     '_from',
+    'with':     '_with',
+    'in':       '_in',
+    'pass':     '_pass',
+    'raise':    '_raise',
+    'global':   '_global',
+    'import':   '_import',
+    'object':   '_object',
+    'property': '_property',
     'get_singleton': '_get_singleton',  # Some API methods are in conflict with auto-generated get_singleton() methods
-    'set_singleton': '_set_singleton',
 }
 
 SPECIAL_ESCAPES = {
@@ -230,14 +230,16 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
             with open(path, 'w', encoding='utf-8') as fp:
                 fp.write(source)
         for module, _types in module_data:
-            write_python_definitions(module, _types, class_names)
+            write_python_definitions(module, _types, class_names, class_contexts)
 
 
-def write_python_definitions(python_module, _types, class_names):
+def write_python_definitions(python_module, _types, class_names, class_contexts):
     python_package_template = Template(filename=os.path.join(templates_dir, 'python_module.py.mako'))
 
     python_path = os.path.join(bindings_dir, 'python', '%s.py' % python_module)
-    python_source = python_package_template.render(class_names=[cn for cn in class_names if cn in _types])
+    classes = [ctx for ctx in class_contexts if ctx[0] in _types]
+    class_names = [cn for cn in class_names if cn in _types]
+    python_source = python_package_template.render(class_names=class_names, classes=classes)
 
     with open(python_path, 'w', encoding='utf-8') as fp:
         fp.write(python_source)
@@ -295,7 +297,7 @@ def generate_icalls_context(classes, language):
             ret = get_icall_type_name(method['return_type'])
             icalls.add((ret, args, var_arg))
 
-            method_name = escape_cython(method['name'])
+            method_name = escape_python(method['name'])
             # vararg methods have two version, `cdef` version is '_'-prefixed
             key = '#'.join([strip_name(c['name']), method_name])
             icall2methodkeys.setdefault((ret, args, var_arg), []).append(key)
@@ -423,7 +425,7 @@ def generate_class_context(class_def, language):
 
     for method in class_def['methods']:
         method_name = method['name']
-        method_name = escape_cython(method_name)
+        method_name = escape_python(method_name)
         return_type = make_cython_gdnative_type(method['return_type'], is_virtual=method['is_virtual'], is_return=True)
 
         args = []
@@ -442,7 +444,7 @@ def generate_class_context(class_def, language):
                 arg_type = make_cython_gdnative_type(arg['type'], has_default=has_default)
             else:
                 arg_type = make_python_gdnative_type(arg['type'], has_default=has_default)
-            arg_name = escape_cython(arg['name'])
+            arg_name = escape_python(arg['name'])
 
             arg_default = None
             arg_init = None
@@ -755,7 +757,8 @@ def escape_cpp(name):
     return name
 
 
-def escape_cython(name):
+def escape_python(name):
+    name = name.replace('/', '__')
     if name in CYTHON_ESCAPES:
         return CYTHON_ESCAPES[name]
 

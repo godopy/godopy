@@ -369,18 +369,49 @@ Variant::Variant(const PyObject *p_python_object) {
 	} else if (PyArray_Check((PyObject *)p_python_object)) {
 		PyArrayObject *arr = (PyArrayObject *)p_python_object;
 
-		if (PyArray_NDIM(arr) == 1 && (PyArray_TYPE(arr) == NPY_FLOAT || PyArray_TYPE(arr) == NPY_DOUBLE)) {
-			// 1-dimentional numeric arrays
+		if (PyArray_NDIM(arr) == 1 && PyArray_TYPE(arr) == NPY_UINT8) {
+			PoolByteArray _arr;
+			_arr.resize(PyArray_SIZE(arr));
+			PoolByteArray::Write _write = _arr.write();
+			for (int idx = 0; idx < _arr.size(); idx++) {
+				uint8_t *ptr = _write.ptr() + idx;
+				*ptr = *(uint8_t *)PyArray_GETPTR1(arr, idx);
+			}
 
-			// TODO: Cast this to PoolRealArray
+			godot::api->godot_variant_new_pool_byte_array(&_godot_variant, (godot_pool_byte_array *)&_arr);
 
-			// raises ValueError in Cython/Python context
-			throw std::invalid_argument("required NumPy/Godot conversion is not implemented yet");
-		} else {
-			// raises ValueError in Cython/Python context
-			throw std::invalid_argument("required NumPy/Godot conversion is not implemented yet");
-		}
+		} else if (PyArray_NDIM(arr) == 1 && PyArray_TYPE(arr) == NPY_INT) {
+			PoolIntArray _arr;
+			_arr.resize(PyArray_SIZE(arr));
+			PoolIntArray::Write _write = _arr.write();
+			for (int idx = 0; idx < _arr.size(); idx++) {
+				int *ptr = _write.ptr() + idx;
+				*ptr = *(int *)PyArray_GETPTR1(arr, idx);
+			}
+
+			godot::api->godot_variant_new_pool_int_array(&_godot_variant, (godot_pool_int_array *)&_arr);
+
+		} else if (PyArray_NDIM(arr) == 1 && (PyArray_TYPE(arr) == NPY_FLOAT || PyArray_TYPE(arr) == NPY_DOUBLE)) {
+			PoolRealArray _arr;
+			_arr.resize(PyArray_SIZE(arr));
+			PoolRealArray::Write _write = _arr.write();
+			for (int idx = 0; idx < _arr.size(); idx++) {
+				real_t *ptr = _write.ptr() + idx;
+				*ptr = *(real_t *)PyArray_GETPTR1(arr, idx);
+			}
+
+			godot::api->godot_variant_new_pool_real_array(&_godot_variant, (godot_pool_real_array *)&_arr);
+
 		// TODO: Other numpy arrays
+		} else {
+			if (PyArray_NDIM(arr) == 1) {
+				// raises ValueError in Cython/Python context
+				throw std::invalid_argument("could not convert NumPy array, only uint8, int32, float32 types are supported");
+			} else {
+				throw std::invalid_argument("could not convert NumPy array");
+			}	
+		}
+
 	} else if (PySequence_Check((PyObject *)p_python_object)) {
 		Array arr = Array(p_python_object);
 		godot::api->godot_variant_new_array(&_godot_variant, (godot_array *)&arr);
@@ -647,7 +678,7 @@ Variant::operator PyObject *() const {
 			const Array keys = dict.keys();
 			obj = PyDict_New();
 
-			for (int i; i < keys.size(); i++) {
+			for (int i = 0; i < keys.size(); i++) {
 				Variant _key = keys[i];
 				PyObject *key = _key;
 				PyObject *val = dict[_key];
@@ -661,7 +692,7 @@ Variant::operator PyObject *() const {
 			const Array arr = *this;
 			obj = PyTuple_New(arr.size());
 
-			for (int i; i < arr.size(); i++) {
+			for (int i = 0; i < arr.size(); i++) {
 				PyObject *item = arr[i];
 				// TODO: Check unlikely NULL pointers
 				PyTuple_SET_ITEM(obj, i, item);
@@ -669,7 +700,60 @@ Variant::operator PyObject *() const {
 			break;
 		}
 
-		// TODO: Add other arrays
+		case POOL_BYTE_ARRAY: {
+			PoolByteArray arr = *this;
+			npy_intp dims[] = {arr.size()};
+			obj = PyArray_SimpleNewFromData(1, dims, NPY_UINT8, (void *)arr.read().ptr());
+			break;
+		}
+
+		case POOL_INT_ARRAY: {
+			PoolIntArray arr = *this;
+			npy_intp dims[] = {arr.size()};
+			obj = PyArray_SimpleNewFromData(1, dims, NPY_INT, (void *)arr.read().ptr());
+			break;
+		}
+
+		case POOL_REAL_ARRAY: {
+			PoolRealArray arr = *this;
+			npy_intp dims[] = {arr.size()};
+			obj = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT, (void *)arr.read().ptr());
+			break;
+		}
+
+		case POOL_STRING_ARRAY: {
+			PoolStringArray arr = *this;
+			npy_intp dims[] = {arr.size()};
+			obj = PyArray_SimpleNew(1, dims, NPY_UNICODE);
+
+			for (int i = 0; i < arr.size(); i++) {
+				PyObject *item = arr[i].py_str();
+				// TODO: Check unlikely NULL pointers
+				PyArray_SETITEM((PyArrayObject *)obj, (char *)PyArray_GETPTR1((PyArrayObject *)obj, i), item);
+			}
+			break;
+		}
+
+		case POOL_VECTOR2_ARRAY: {
+			PoolVector2Array arr = *this;
+			npy_intp dims[] = {arr.size(), 2};
+			obj = PyArray_SimpleNewFromData(2, dims, NPY_FLOAT, (void *)arr.read().ptr());
+			break;
+		}
+
+		case POOL_VECTOR3_ARRAY: {
+			PoolVector3Array arr = *this;
+			npy_intp dims[] = {arr.size(), 3};
+			obj = PyArray_SimpleNewFromData(2, dims, NPY_FLOAT, (void *)arr.read().ptr());
+			break;
+		}
+
+		case POOL_COLOR_ARRAY: {
+			PoolColorArray arr = *this;
+			npy_intp dims[] = {arr.size(), 4};
+			obj = PyArray_SimpleNewFromData(2, dims, NPY_FLOAT, (void *)arr.read().ptr());
+			break;
+		}
 
 		default:
 			// raises ValueError in Cython/Python context

@@ -114,10 +114,11 @@ PyObject *Dictionary::to_python() {
 	PyObject *obj = PyDict_New();
 	const Array _keys = keys();
 
-	for (int i; i < _keys.size(); i++) {
+	for (int i = 0; i < _keys.size(); i++) {
 		Variant _key = _keys[i];
+		Variant _val = *(Variant *)godot::api->godot_dictionary_operator_index(&_godot_dictionary, (godot_variant *)&_key);
 		PyObject *key = _key;
-		PyObject *val = *(Variant *)godot::api->godot_dictionary_operator_index(&_godot_dictionary, (godot_variant *)&_key);
+		PyObject *val = _val;
 		// TODO: Check NULL pointers
 		PyDict_SetItem(obj, key, val);
 	}
