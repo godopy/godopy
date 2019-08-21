@@ -33,7 +33,7 @@ cdef extern from *:
     ctypedef bint GDCALLINGCONV_BOOL
 
 
-cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, dict TagDB) except NULL:
+cdef void *_instance_create(size_t type_tag, godot_object *instance, dict TagDB, is_instance_binding=False) except NULL:
     cdef type cls = TagDB[type_tag]
     cdef obj = cls.__new__(cls)  # Don't call __init__
 
@@ -46,7 +46,8 @@ cdef void *_instance_create(size_t type_tag, godot_object *instance, root_base, 
     if '_init' in obj.__class__.__dict__:
         obj._init()
 
-    print('instance created', obj)
+    if is_instance_binding:
+        print('instance binding CREATE', obj, hex(<size_t><void *>instance))
 
     # Cython manages refs automatically and decrements created objects on function exit,
     # therefore INCREF is required to keep the object alive.
@@ -65,25 +66,46 @@ cdef inline void __incref_python_pointer(void *ptr) nogil:
 
 cdef GDCALLINGCONV_VOID_PTR _cython_wrapper_create(void *data, const void *type_tag, godot_object *instance) nogil:
     with gil:
-        return _instance_create(<size_t>type_tag, instance, _Wrapped, CythonTagDB)
+        return _instance_create(<size_t>type_tag, instance, CythonTagDB, is_instance_binding=True)
 
 cdef GDCALLINGCONV_VOID_PTR _python_wrapper_create(void *data, const void *type_tag, godot_object *instance) nogil:
     with gil:
-        return _instance_create(<size_t>type_tag, instance, _PyWrapped, PythonTagDB)
+        return _instance_create(<size_t>type_tag, instance, PythonTagDB, is_instance_binding=True)
 
+cdef set __DESTROYED = set()
 cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
     cdef size_t _owner;
     with gil:
-        _owner = <size_t>(<_Wrapped>wrapper)._owner
-        if _owner in __instance_map:
-            del __instance_map[_owner]
-    __decref_python_pointer(wrapper)
+        if <size_t>wrapper in __DESTROYED:
+            # print("instance binding DESTROY recursive call", hex(<size_t>wrapper))
+            __DESTROYED.remove(<size_t>wrapper)
+            return
 
-cdef GDCALLINGCONV_VOID _wrapper_incref(void *data, void *wrapper) nogil:
+        print("instance binding DESTROY", hex(<size_t>wrapper), hex(<size_t>data), hex(<size_t>(<_Wrapped>wrapper)._owner))
+        _owner = <size_t>(<_Wrapped>wrapper)._owner
+        Py_DECREF(<object>wrapper)
+
+        if _owner:
+            (<_Wrapped>wrapper)._owner = NULL
+            if _owner in __instance_map:
+                del __instance_map[_owner]
+            __DESTROYED.add(<size_t>wrapper)
+            # FIXME: This will call _wrapper_destroy recursively, but this is the only way to clean up the _owner on the Godot side
+            gdapi.godot_object_destroy(<godot_object *>_owner)
+
+
+cdef GDCALLINGCONV_VOID _wrapper_incref(void *wrapper, void *owner) nogil:
+    with gil:
+       print("instance binding INCREF", hex(<size_t>wrapper), hex(<size_t>owner))
     __incref_python_pointer(wrapper)
 
-cdef GDCALLINGCONV_BOOL _wrapper_decref(void *data, void *wrapper) nogil:
-    __decref_python_pointer(wrapper)
+
+cdef GDCALLINGCONV_BOOL _wrapper_decref(void *wrapper, void *owner) nogil:
+    with gil:
+        # FIXME: This is sometimes called before DESTROY without any previous calls to INCREF
+        print("instance binding DECREF *IGNORED*", hex(<size_t>wrapper), hex(<size_t>owner))
+    # __decref_python_pointer(wrapper)
+
     return False  # FIXME
 
 
@@ -188,12 +210,12 @@ cpdef register_class(type cls):
 
 cdef void *_cython_instance_func(godot_object *instance, void *method_data) nogil:
     with gil:
-        return _instance_create(<size_t>method_data, instance, _Wrapped, CythonTagDB)
+        return _instance_create(<size_t>method_data, instance, CythonTagDB)
 
 
 cdef void *_python_instance_func(godot_object *instance, void *method_data) nogil:
     with gil:
-        return _instance_create(<size_t>method_data, instance, _PyWrapped, PythonTagDB)
+        return _instance_create(<size_t>method_data, instance, PythonTagDB)
 
 
 cdef void _destroy_func(godot_object *instance, void *method_data, void *user_data) nogil:

@@ -134,8 +134,9 @@ cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
     def ${method_name}(self${', ' if signature else ''}${clean_signature(signature, class_name)}):
     % if method_name in ('free', '__del__'):
         ## [copied from godot-cpp] dirty hack because Object::free is marked virtual but doesn't actually exist...
-        gdapi.godot_object_destroy(self._owner)
-        self._owner = NULL
+        if self._owner != NULL:
+            gdapi.godot_object_destroy(self._owner)
+            self._owner = NULL
     % elif method['has_varargs']:
         % if is_class_type(method['return_type']):
         cdef cpp.Variant __owner = __icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, cpp.Array(__var_args))
