@@ -84,8 +84,6 @@ public:
 
 	Array(const PoolColorArray &a);
 
-	Array(const PyObject *o);
-
 	template <class... Args>
 	static Array make(Args... args) {
 		return helpers::append_all(Array(), args...);
@@ -156,7 +154,11 @@ public:
 
 	void shuffle();
 
+	Array(const PyObject *o);
+
   PyObject *to_python_wrapper();
+  PyObject *to_python_tuple();
+  PyObject *to_python_list();
 
 	~Array();
 };

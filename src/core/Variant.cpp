@@ -184,12 +184,12 @@ Variant::Variant(const PyObject *p_python_object) {
 		String s = String(p_python_object);
 		godot::api->godot_variant_new_string(&_godot_variant, (godot_string *)&s);
 
-	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Vector2) {
-		godot_vector2 *p = _python_wrapper_to_vector2((PyObject *)p_python_object);
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_AABB) {
+		godot_aabb *p = _python_wrapper_to_aabb((PyObject *)p_python_object);
 		if (p) {
-			godot::api->godot_variant_new_vector2(&_godot_variant, p);
+			godot::api->godot_variant_new_aabb(&_godot_variant, p);
 		} else {
-			godot::api->godot_variant_new_nil(&_godot_variant);
+			throw std::invalid_argument("could not convert Python object to Variant");
 		}
 
 	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Array) {
@@ -200,8 +200,173 @@ Variant::Variant(const PyObject *p_python_object) {
 			godot::api->godot_variant_new_nil(&_godot_variant);
 		}
 
-		// TODO: Other Python wrappers
-	} else if (PyArray_Check(p_python_object)) {
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Basis) {
+		godot_basis *p = _python_wrapper_to_basis((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_basis(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Color) {
+		godot_color *p = _python_wrapper_to_color((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_color(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Dictionary) {
+		godot_dictionary *p = _python_wrapper_to_godot_dictionary((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_dictionary(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_NodePath) {
+		godot_node_path *p = _python_wrapper_to_nodepath((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_node_path(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Plane) {
+		godot_plane *p = _python_wrapper_to_plane((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_plane(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_PoolByteArray) {
+		godot_pool_byte_array *p = _python_wrapper_to_poolbytearray((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_pool_byte_array(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_PoolIntArray) {
+		godot_pool_int_array *p = _python_wrapper_to_poolintarray((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_pool_int_array(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_PoolRealArray) {
+		godot_pool_real_array *p = _python_wrapper_to_poolrealarray((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_pool_real_array(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_PoolStringArray) {
+		godot_pool_string_array *p = _python_wrapper_to_poolstringarray((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_pool_string_array(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_PoolVector2Array) {
+		godot_pool_vector2_array *p = _python_wrapper_to_poolvector2array((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_pool_vector2_array(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_PoolVector3Array) {
+		godot_pool_vector3_array *p = _python_wrapper_to_poolvector3array((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_pool_vector3_array(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_PoolColorArray) {
+		godot_pool_color_array *p = _python_wrapper_to_poolcolorarray((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_pool_color_array(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Quat) {
+		godot_quat *p = _python_wrapper_to_quat((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_quat(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Rect2) {
+		godot_rect2 *p = _python_wrapper_to_rect2((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_rect2(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_RID) {
+		godot_rid *p = _python_wrapper_to_rid((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_rid(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_String) {
+		godot_string *p = _python_wrapper_to_godot_string((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_string(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Transform) {
+		godot_transform *p = _python_wrapper_to_transform((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_transform(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Transform2D) {
+		godot_transform2d *p = _python_wrapper_to_transform2d((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_transform2d(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Vector2) {
+		godot_vector2 *p = _python_wrapper_to_vector2((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_vector2(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_Vector3) {
+		godot_vector3 *p = _python_wrapper_to_vector3((PyObject *)p_python_object);
+		if (p) {
+			godot::api->godot_variant_new_vector3(&_godot_variant, p);
+		} else {
+			throw std::invalid_argument("could not convert Python object to Variant");
+		}
+
+	} else if (PyObject_IsInstance((PyObject *)p_python_object, (PyObject *)PyGodotType__Wrapped)) {
+		godot_object *p = _cython_binding_to_godot_object((PyObject *)p_python_object);
+		godot::api->godot_variant_new_object(&_godot_variant, p);
+
+		// TODO: dict -> Dictionary, other iterables -> Array, array.Array -> PoolArray*, numpy.array -> PoolArray*
+
+	} else if (PyArray_Check((PyObject *)p_python_object)) {
 		PyArrayObject *arr = (PyArrayObject *)p_python_object;
 
 		if (PyArray_NDIM(arr) == 1 && (PyArray_TYPE(arr) == NPY_FLOAT || PyArray_TYPE(arr) == NPY_DOUBLE)) {
@@ -209,29 +374,32 @@ Variant::Variant(const PyObject *p_python_object) {
 
 			// TODO: Cast this to PoolRealArray
 
-			if (PyArray_SIZE(arr) == 2) {
-				Vector2 vec = Vector2(*(real_t *)PyArray_GETPTR1(arr, 0), *(real_t *)PyArray_GETPTR1(arr, 1));
-				godot::api->godot_variant_new_vector2(&_godot_variant, (godot_vector2 *)&vec);
-			} else if (PyArray_SIZE(arr) == 3) {
-				Vector3 vec = Vector3(*(real_t *)PyArray_GETPTR1(arr, 0), *(real_t *)PyArray_GETPTR1(arr, 1), *(real_t *)PyArray_GETPTR1(arr, 2));
-				godot::api->godot_variant_new_vector3(&_godot_variant, (godot_vector3 *)&vec);
-			} else if (PyArray_SIZE(arr) == 4) {
-				Quat q = Quat(*(real_t *)PyArray_GETPTR1(arr, 0), *(real_t *)PyArray_GETPTR1(arr, 1), *(real_t *)PyArray_GETPTR1(arr, 2), *(real_t *)PyArray_GETPTR1(arr, 3));
-				godot::api->godot_variant_new_quat(&_godot_variant, (godot_quat *)&q);
-			} else {
-				// raises ValueError in Cython/Python context
-				throw std::invalid_argument("required NumPy/Godot cast is not implemented yet");
-			}
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("required NumPy/Godot conversion is not implemented yet");
 		} else {
 			// raises ValueError in Cython/Python context
-			throw std::invalid_argument("required NumPy/Godot cast is not implemented yet");
+			throw std::invalid_argument("required NumPy/Godot conversion is not implemented yet");
 		}
 		// TODO: Other numpy arrays
-	} else if (PyObject_IsInstance((PyObject *)p_python_object, (PyObject *)PyGodotType__Wrapped)) {
-		godot_object *p = _cython_binding_to_godot_object((PyObject *)p_python_object);
-		godot::api->godot_variant_new_object(&_godot_variant, p);
+	} else if (PySequence_Check((PyObject *)p_python_object)) {
+		Array arr = Array(p_python_object);
+		godot::api->godot_variant_new_array(&_godot_variant, (godot_array *)&arr);
 
-		// TODO: dict -> Dictionary, other iterables -> Array, array.Array -> PoolArray*, numpy.array -> PoolArray*
+	} else if (PyMapping_Check((PyObject *)p_python_object)) {
+		Dictionary dict = Dictionary(p_python_object);
+		godot::api->godot_variant_new_dictionary(&_godot_variant, (godot_dictionary *)&dict);
+
+	} else if (PyIndex_Check((PyObject *)p_python_object)) {
+		const Py_ssize_t p_num = PyNumber_AsSsize_t((PyObject *)p_python_object, NULL);
+		godot::api->godot_variant_new_int(&_godot_variant, p_num);
+
+	} else if (PyNumber_Check((PyObject *)p_python_object)) {
+		PyObject *p_num = PyNumber_Float((PyObject *)p_python_object);
+		const double p_double = PyFloat_AsDouble((PyObject *)p_num);
+		godot::api->godot_variant_new_real(&_godot_variant, p_double);
+
+	} else if (PyObject_CheckBuffer((PyObject *)p_python_object)) {
+		throw std::invalid_argument("generic Python buffer support is not implemented yet");
 
 	} else {
 
@@ -410,64 +578,98 @@ Variant::operator PyObject *() const {
 		}
 
 		case VECTOR2: {
-			Vector2 vec = *this;
-			const npy_intp dims[] = {2};
-			obj = PyArray_SimpleNew(1, dims, NPY_FLOAT);
+			Vector2 cpp_obj = *this;
+			return _vector2_to_python_wrapper(cpp_obj);
+		}
 
-			real_t *p_x = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 0);
-			real_t *p_y = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 1);
-			*p_x = vec.x;
-			*p_y = vec.y;
-			break;
+		case RECT2: {
+			Rect2 cpp_obj = *this;
+			return _rect2_to_python_wrapper(cpp_obj);
 		}
 
 		case VECTOR3: {
-			Vector3 vec = *this;
-			const npy_intp dims[] = {3};
-			obj = PyArray_SimpleNew(1, dims, NPY_FLOAT);
-
-			real_t *p_x = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 0);
-			real_t *p_y = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 1);
-			real_t *p_z = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 2);
-			*p_x = vec.x;
-			*p_y = vec.y;
-			*p_z = vec.z;
-			break;
+			Vector3 cpp_obj = *this;
+			return _vector3_to_python_wrapper(cpp_obj);
 		}
 
-		case COLOR: {
-			Color c = *this;
-			const npy_intp dims[] = {4};
-			obj = PyArray_SimpleNew(1, dims, NPY_FLOAT);
+		case TRANSFORM2D: {
+			Transform2D cpp_obj = *this;
+			return _transform2d_to_python_wrapper(cpp_obj);
+		}
 
-			real_t *p_r = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 0);
-			real_t *p_g = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 1);
-			real_t *p_b = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 2);
-			real_t *p_a = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 3);
-			*p_r = c.r;
-			*p_g = c.g;
-			*p_b = c.b;
-			*p_a = c.a;
-			break;
+		case PLANE: {
+			Plane cpp_obj = *this;
+			return _plane_to_python_wrapper(cpp_obj);
 		}
 
 		case QUAT: {
-			Quat q = *this;
-			const npy_intp dims[] = {4};
-			obj = PyArray_SimpleNew(1, dims, NPY_FLOAT);
+			Quat cpp_obj = *this;
+			return _quat_to_python_wrapper(cpp_obj);
+		}
 
-			real_t *p_x = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 0);
-			real_t *p_y = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 1);
-			real_t *p_z = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 2);
-			real_t *p_w = (real_t *)PyArray_GETPTR1((PyArrayObject *)obj, 3);
-			*p_x = q.x;
-			*p_y = q.y;
-			*p_z = q.z;
-			*p_w = q.w;
+		case RECT3: {
+			AABB cpp_obj = *this;
+			return _aabb_to_python_wrapper(cpp_obj);
+		}
+
+		case BASIS: {
+			Basis cpp_obj = *this;
+			return _basis_to_python_wrapper(cpp_obj);
+		}
+
+		case TRANSFORM: {
+			Transform cpp_obj = *this;
+			return _transform_to_python_wrapper(cpp_obj);
+		}
+
+		case COLOR: {
+			Color cpp_obj = *this;
+			return _color_to_python_wrapper(cpp_obj);
+		}
+
+		case NODE_PATH: {
+			NodePath cpp_obj = *this;
+			return _nodepath_to_python_wrapper(cpp_obj);
+		}
+
+		case _RID: {
+			RID cpp_obj = *this;
+			return _rid_to_python_wrapper(cpp_obj);
+		}
+
+		case OBJECT: {
+			godot_object *c_obj = godot::api->godot_variant_as_object(&_godot_variant);
+			return _godot_object_to_python_binding(c_obj);
+		}
+
+		case DICTIONARY: {
+			const Dictionary dict = *this;
+			const Array keys = dict.keys();
+			obj = PyDict_New();
+
+			for (int i; i < keys.size(); i++) {
+				Variant _key = keys[i];
+				PyObject *key = _key;
+				PyObject *val = dict[_key];
+				// TODO: Check unlikely NULL pointers
+				PyDict_SetItem(obj, key, val);
+			}
 			break;
 		}
 
-		// TODO: Add more convertions
+		case ARRAY: {
+			const Array arr = *this;
+			obj = PyTuple_New(arr.size());
+
+			for (int i; i < arr.size(); i++) {
+				PyObject *item = arr[i];
+				// TODO: Check unlikely NULL pointers
+				PyTuple_SET_ITEM(obj, i, item);
+			}
+			break;
+		}
+
+		// TODO: Add other arrays
 
 		default:
 			// raises ValueError in Cython/Python context

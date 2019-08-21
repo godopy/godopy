@@ -20,7 +20,7 @@
             return '%s._owner' % arg[1]
         if arg[2]['type'] in NUMPY_TYPES:
             return 'cpp.%s_from_PyObject(%s)' % (arg[2]['type'], arg[1])
-        if arg[2]['type'] in ('String', 'Variant', 'Array'):
+        if arg[2]['type'] in ('String', 'Variant', 'Array', 'Dictionary'):
             return 'cpp.%s(%s)' % (arg[2]['type'], arg[1])
         if arg[2]['type'] in CORE_TYPES:
             return '%s._cpp_object' % arg[1]
@@ -35,12 +35,14 @@
 
         if rt == 'void':
             return ''
-        elif rt in ('Variant', 'Array'):
+        elif rt == 'Variant':
             return 'return ret'
         elif rt == 'String':
             return 'return ret.py_str()'
-        # elif rt in NUMPY_TYPES:
-        #    return 'return ret.to_numpy()'
+        elif rt == 'Array':
+            return 'return ret.to_tuple()'
+        elif rt == 'Dictionary':
+            return 'return ret.to_python()'
         elif rt in CORE_TYPES:
             return 'return py.%s.from_cpp(ret)' % rt
         else:
@@ -52,8 +54,6 @@
             return ''
         elif rt == 'Variant':
             return 'cdef object ret = <object>'
-        elif rt == 'Array':
-            return 'cdef object ret = <object><cpp.Variant>'
         elif rt in CORE_TYPES:
             return 'cdef cpp.{0} ret = '.format(rt)
         elif rt == 'bool':

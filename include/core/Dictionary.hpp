@@ -49,13 +49,16 @@ public:
 
 	int size() const;
 
-	PyObject *to_python_wrapper();
-
 	String to_json() const;
 
 	Array values() const;
 
 	~Dictionary();
+
+	Dictionary(const PyObject *other);
+
+	PyObject *to_python_wrapper();
+	PyObject *to_python();
 };
 
 } // namespace godot

@@ -18,6 +18,8 @@
             return 'cpp.Variant(%s)' % arg[1]
         if arg[2]['type'] == 'Array' and arg[2]['has_default_value']:
             return 'cpp.Array(%s)' % arg[1]
+        if arg[2]['type'] == 'Dictionary' and arg[2]['has_default_value']:
+            return 'cpp.Dictionary(%s)' % arg[1]
         if arg[2]['type'] in CORE_TYPES and arg[2]['has_default_value']:
             return '%s._cpp_object' % arg[1]
 

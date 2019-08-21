@@ -30,8 +30,6 @@ public:
 
 	int length() const;
 	const char *get_data() const;
-
-	PyObject *to_python_wrapper();
 };
 
 class String {

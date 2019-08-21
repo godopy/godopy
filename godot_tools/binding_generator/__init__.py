@@ -9,7 +9,7 @@ from mako.template import Template
 from .pxd_writer import PxdWriter, parse as parse_c_header
 
 
-PYTHON_AUTOMATIC_CAST_TYPES = ('Variant', 'Array')
+CYTHON_AUTOMATIC_CAST_TYPES = ('Variant', 'Array', 'Dictionary')
 
 # TODO: Provide numpy interface for all numeric and array Godot types
 NUMPY_TYPES = ('Vector2',)
@@ -538,7 +538,7 @@ def make_cython_gdnative_type(t, is_virtual=False, is_return=False, has_default=
         return '%s ' % strip_name(t)
     elif t == 'String':
         return 'str '
-    elif has_default and t in PYTHON_AUTOMATIC_CAST_TYPES:
+    elif has_default and t in CYTHON_AUTOMATIC_CAST_TYPES:
         return 'object '
     elif has_default and is_core_type(t):
         return 'py.%s ' % strip_name(t)
@@ -563,7 +563,11 @@ def make_python_gdnative_type(t, is_virtual=False, is_return=False, has_default=
         return '%s ' % strip_name(t)
     elif t == 'String':
         return 'str '
-    elif t in PYTHON_AUTOMATIC_CAST_TYPES:
+    elif t == 'Dictionary':
+        return 'object '
+    elif t == 'Array':
+        return 'object '
+    elif t == 'Variant':
         return 'object '
     elif t in NUMPY_TYPES:
         return 'object '
@@ -658,7 +662,7 @@ def escape_cpp_default_arg(_type, default_value):
     elif _type == 'Variant':
         return 'Variant()' if default_value == 'Null' else default_value
     elif _type == 'String':
-        return '<String><const char *>"%s"' % default_value
+        return '<String>"%s"' % default_value
     elif default_value == 'Null' or default_value == '[Object:null]':
         return 'NULL'
 

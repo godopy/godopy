@@ -1,10 +1,12 @@
 from libc.stdint cimport uint64_t, uint32_t, uint8_t, int64_t, int32_t
 from libc.stddef cimport wchar_t
 
-from godot_headers.gdnative_api cimport godot_object, godot_array, godot_vector2
+from godot_headers.gdnative_api cimport *
 
 from ._wrapped cimport _Wrapped, _PyWrapped
 from . cimport cpp_types as cpp
+
+from .tag_db cimport get_instance_from_owner
 
 cimport numpy as np
 
@@ -554,7 +556,7 @@ cdef public:
         return <object>AABB.from_cpp(_obj)
     object _godot_array_to_python_wrapper(cpp.Array _obj):
         return <object>Array.from_cpp(_obj)
-    object _godot_basis_to_python_wrapper(cpp.Basis _obj):
+    object _basis_to_python_wrapper(cpp.Basis _obj):
         return <object>Basis.from_cpp(_obj)
     object _color_to_python_wrapper(cpp.Color _obj):
         return <object>Color.from_cpp(_obj)
@@ -584,8 +586,6 @@ cdef public:
         return Rect2.from_cpp(_obj)
     object _rid_to_python_wrapper(cpp.RID _obj):
         return <object>RID.from_cpp(_obj)
-    object _charstring_to_python_wrapper(cpp.CharString _obj):
-        return <object>CharString.from_cpp(_obj)
     object _godot_string_to_python_wrapper(cpp.String _obj):
         return <object>String.from_cpp(_obj)
     object _transform_to_python_wrapper(cpp.Transform _obj):
@@ -598,18 +598,63 @@ cdef public:
         return <object>Vector3.from_cpp(_obj)
 
 
+    object _godot_object_to_cython_binding(godot_object *_owner):
+        return get_instance_from_owner(_owner);
+
+    object _godot_object_to_python_binding(godot_object *_owner):
+        return get_instance_from_owner(_owner);
+
+
     # Caller is responsible for type-checking in all
     # "*_binding_to_*" and "_python_wrapper_to_*" functions
 
     godot_object *_cython_binding_to_godot_object(object wrapped):
         return (<_Wrapped>wrapped)._owner
-
     godot_object *_python_binding_to_godot_object(object wrapped):
         return (<_PyWrapped>wrapped)._owner
 
+    godot_aabb *_python_wrapper_to_aabb(object wrapper):
+        return <godot_aabb *>&(<AABB>wrapper)._cpp_object
     godot_array *_python_wrapper_to_godot_array(object wrapper):
         return <godot_array *>&(<Array>wrapper)._cpp_object
-
+    godot_basis *_python_wrapper_to_basis(object wrapper):
+        return <godot_basis *>&(<Basis>wrapper)._cpp_object
+    godot_color *_python_wrapper_to_color(object wrapper):
+        return <godot_color *>&(<Color>wrapper)._cpp_object
+    godot_dictionary *_python_wrapper_to_godot_dictionary(object wrapper):
+        return <godot_dictionary *>&(<Dictionary>wrapper)._cpp_object
+    godot_node_path *_python_wrapper_to_nodepath(object wrapper):
+        return <godot_node_path *>&(<NodePath>wrapper)._cpp_object
+    godot_plane *_python_wrapper_to_plane(object wrapper):
+        return <godot_plane *>&(<Plane>wrapper)._cpp_object
+    godot_pool_byte_array *_python_wrapper_to_poolbytearray(object wrapper):
+        return <godot_pool_byte_array *>&(<PoolByteArray>wrapper)._cpp_object
+    godot_pool_int_array *_python_wrapper_to_poolintarray(object wrapper):
+        return <godot_pool_int_array *>&(<PoolIntArray>wrapper)._cpp_object
+    godot_pool_real_array *_python_wrapper_to_poolrealarray(object wrapper):
+        return <godot_pool_real_array *>&(<PoolRealArray>wrapper)._cpp_object
+    godot_pool_string_array *_python_wrapper_to_poolstringarray(object wrapper):
+        return <godot_pool_string_array *>&(<PoolStringArray>wrapper)._cpp_object
+    godot_pool_vector2_array *_python_wrapper_to_poolvector2array(object wrapper):
+        return <godot_pool_vector2_array *>&(<PoolVector2Array>wrapper)._cpp_object
+    godot_pool_vector3_array *_python_wrapper_to_poolvector3array(object wrapper):
+        return <godot_pool_vector3_array *>&(<PoolVector3Array>wrapper)._cpp_object
+    godot_pool_color_array *_python_wrapper_to_poolcolorarray(object wrapper):
+        return <godot_pool_color_array *>&(<PoolColorArray>wrapper)._cpp_object
+    godot_quat *_python_wrapper_to_quat(object wrapper):
+        return <godot_quat *>&(<Quat>wrapper)._cpp_object
+    godot_rect2 *_python_wrapper_to_rect2(object wrapper):
+        return <godot_rect2 *>&(<Rect2>wrapper)._cpp_object
+    godot_rid *_python_wrapper_to_rid(object wrapper):
+        return <godot_rid *>&(<RID>wrapper)._cpp_object
+    godot_string *_python_wrapper_to_godot_string(object wrapper):
+        return <godot_string *>&(<String>wrapper)._cpp_object
+    godot_transform *_python_wrapper_to_transform(object wrapper):
+        return <godot_transform *>&(<Transform>wrapper)._cpp_object
+    godot_transform2d *_python_wrapper_to_transform2d(object wrapper):
+        return <godot_transform2d *>&(<Transform2D>wrapper)._cpp_object
     godot_vector2 *_python_wrapper_to_vector2(object wrapper):
         return <godot_vector2 *>&(<Vector2>wrapper)._cpp_object
+    godot_vector3 *_python_wrapper_to_vector3(object wrapper):
+        return <godot_vector3 *>&(<Vector3>wrapper)._cpp_object
 

@@ -55,53 +55,6 @@ Array::Array(const PoolColorArray &a) {
 	godot::api->godot_array_new_pool_color_array(&_godot_array, (godot_pool_color_array *)&a);
 }
 
-Array::Array(const PyObject *o) {
-	if (Py_TYPE(o) == PyGodotWrapperType_Array) {
-		godot_array *p = _python_wrapper_to_godot_array((PyObject *)o);
-
-		if (likely(p)) {
-			godot::api->godot_array_new_copy(&_godot_array, p);
-		} else {
-			// raises ValueError in Cython/Python context
-			throw std::invalid_argument("invalid Python argument");
-		}
-
-		// TODO: Other array wrappers
-
-	} else {
-		// Not a C++ wrapper, initialize from standard Python types and protocols
-		godot::api->godot_array_new(&_godot_array);
-
-		if (PyTuple_CheckExact((PyObject *)o)) {
-			// Tuples are faster than generic sequence protocol
-			for (int i = 0; i < PyTuple_GET_SIZE(o); i++) {
-				PyObject *item = PyTuple_GET_ITEM((PyObject *)o, i);
-				append(Variant(item));
-			}
-		} else if (PySequence_Check((PyObject *)o)) {
-			for (int i = 0; i < PySequence_Length((PyObject *)o); i++) {
-				PyObject *item = PySequence_GetItem((PyObject *)o, i);
-				append(Variant(item));
-			}
-		} else if (PyIter_Check((PyObject *)o)) {
-			PyObject *iterator = PyObject_GetIter((PyObject *)o);
-			PyObject *item;
-			if (iterator) {
-				while ((item = PyIter_Next(iterator))) {
-					append(Variant(item));
-					Py_DECREF(item);
-				}
-				Py_DECREF(iterator);
-			}
-			if (PyErr_Occurred()) {
-				PyErr_Print();
-				ERR_PRINT("Python Error in Array constructor");
-			}
-		}
-	}
-
-}
-
 Variant &Array::operator[](const int idx) {
 	godot_variant *v = godot::api->godot_array_operator_index(&_godot_array, idx);
 	return *(Variant *)v;
@@ -241,6 +194,82 @@ void Array::shuffle() {
 
 Array::~Array() {
 	godot::api->godot_array_destroy(&_godot_array);
+}
+
+Array::Array(const PyObject *o) {
+	if (Py_TYPE(o) == PyGodotWrapperType_Array) {
+		godot_array *p = _python_wrapper_to_godot_array((PyObject *)o);
+
+		if (likely(p)) {
+			godot::api->godot_array_new_copy(&_godot_array, p);
+		} else {
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("invalid Python argument");
+		}
+
+		// TODO: Other array wrappers
+
+	} else {
+		// Not a C++ wrapper, initialize from standard Python types and protocols
+		godot::api->godot_array_new(&_godot_array);
+
+		if (PyTuple_CheckExact((PyObject *)o)) {
+			// Tuples are faster than generic sequence protocol
+			for (int i = 0; i < PyTuple_GET_SIZE(o); i++) {
+				PyObject *item = PyTuple_GET_ITEM((PyObject *)o, i);
+				append(Variant(item));
+			}
+		} else if (PySequence_Check((PyObject *)o)) {
+			for (int i = 0; i < PySequence_Length((PyObject *)o); i++) {
+				PyObject *item = PySequence_GetItem((PyObject *)o, i);
+				append(Variant(item));
+			}
+		} else if (PyIter_Check((PyObject *)o)) {
+			PyObject *iterator = PyObject_GetIter((PyObject *)o);
+			PyObject *item;
+			if (iterator) {
+				while ((item = PyIter_Next(iterator))) {
+					append(Variant(item));
+					Py_DECREF(item);
+				}
+				Py_DECREF(iterator);
+			}
+			if (PyErr_Occurred()) {
+				PyErr_Print();
+				ERR_PRINT("Python Error in Array constructor");
+			}
+		}
+	}
+}
+
+PyObject *Array::to_python_tuple() {
+	PyObject *obj = PyTuple_New(size());
+
+	for (int i; i < size(); i++) {
+		godot_variant *v = godot::api->godot_array_operator_index(&_godot_array, i);
+		PyObject *item = *(Variant *)v;
+		// FIXME: Check NULL pointer?
+
+		PyTuple_SET_ITEM(obj, i, item);
+	}
+
+	Py_INCREF(obj);
+	return obj;
+}
+
+PyObject *Array::to_python_list() {
+	PyObject *obj = PyList_New(size());
+
+	for (int i; i < size(); i++) {
+		godot_variant *v = godot::api->godot_array_operator_index(&_godot_array, i);
+		PyObject *item = *(Variant *)v;
+		// FIXME: Check NULL pointer?
+
+		PyList_SET_ITEM(obj, i, item);
+	}
+
+	Py_INCREF(obj);
+	return obj;
 }
 
 } // namespace godot

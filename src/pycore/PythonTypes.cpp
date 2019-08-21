@@ -10,6 +10,7 @@ namespace godot {
 
 PyObject *AABB::to_python_wrapper() { return _aabb_to_python_wrapper(*this); }
 PyObject *Array::to_python_wrapper() { return _godot_array_to_python_wrapper(*this); }
+PyObject *Basis::to_python_wrapper() { return _basis_to_python_wrapper(*this); }
 PyObject *Color::to_python_wrapper() { return _color_to_python_wrapper(*this); }
 PyObject *Dictionary::to_python_wrapper() { return _godot_dictionary_to_python_wrapper(*this); }
 PyObject *NodePath::to_python_wrapper() { return _nodepath_to_python_wrapper(*this); }
@@ -24,10 +25,9 @@ PyObject *PoolColorArray::to_python_wrapper() { return _poolcolorarray_to_python
 PyObject *Quat::to_python_wrapper() { return _quat_to_python_wrapper(*this); }
 PyObject *Rect2::to_python_wrapper() { return _rect2_to_python_wrapper(*this); }
 PyObject *RID::to_python_wrapper() { return _rid_to_python_wrapper(*this); }
-PyObject *CharString::to_python_wrapper() { return _charstring_to_python_wrapper(*this); }
 PyObject *String::to_python_wrapper() { return _godot_string_to_python_wrapper(*this); }
 PyObject *Transform::to_python_wrapper() { return _transform_to_python_wrapper(*this); }
-PyObject * Transform2D::to_python_wrapper() { return _transform2d_to_python_wrapper(*this); }
+PyObject *Transform2D::to_python_wrapper() { return _transform2d_to_python_wrapper(*this); }
 PyObject *Vector2::to_python_wrapper() { return _vector2_to_python_wrapper(*this); }
 PyObject *Vector3::to_python_wrapper() { return _vector3_to_python_wrapper(*this); }
 
