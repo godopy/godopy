@@ -120,13 +120,10 @@ from .python cimport __icalls
 
 from cpython.ref cimport Py_DECREF
 
-% if not COMPILE_PROPERTIES:
-cdef extern from "Python.h":
-    ctypedef class __builtin__.type [object PyTypeObject]:
-        cdef dict tp_dict
+from ..core._meta cimport type, PyType_Modified
+from cpython.dict cimport PyDict_Update
+% if COMPILE_PROPERTIES:
 
-    void PyType_Modified(type type)
-% else:
 from functools import partialmethod
 % endif
 % for class_name, class_def, includes, forwards, methods in classes:
@@ -212,13 +209,11 @@ cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
     ${escape_python(prop['name'])} = property(${prop_getter(prop, class_def)}, ${prop_setter(prop, class_def)})
     % endfor
     % endif
-    % if not COMPILE_PROPERTIES and class_def['properties']:
 
     @staticmethod
-    def __add_property(name, getter, setter=None):
-        (<type>${class_name}).tp_dict[name] = property(getter, setter)
+    def __add_to_type(**properties):
+        PyDict_Update((<type>${class_name}).tp_dict, properties)
         PyType_Modified(${class_name})
-    % endif
 
     @staticmethod
     def __init_method_bindings():
