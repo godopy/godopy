@@ -10,7 +10,7 @@
         enum_values.add(value_name)
         return remove_nested_type_prefix(value_name)
 %>
-from godot_headers.gdnative_api cimport godot_method_bind
+from godot_headers.gdnative_api cimport godot_method_bind, godot_object
 
 from ..core cimport cpp_types as cpp
 from ..core cimport types as py
@@ -45,6 +45,10 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
     % if method['__func_type'] == 'cdef':
     cdef ${return_type}${method_name}(self${', ' if pxd_signature else ''}${clean_signature(pxd_signature, class_name)})
+    % endif
+    % if method_name == '__call__' and class_name == 'NativeScript':
+
+    cdef godot_object *_new_instance(self)
     % endif
     % endfor
 

@@ -83,10 +83,15 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
 
     % if class_def['instanciable']:
     def __init__(self):
-        # Ensure ${class_name}() call will create a correct wrapper object
-        cdef ${class_name} delegate = ${class_name}._new()
-        self._owner = delegate._owner
-        Py_DECREF(delegate)
+        if '_preinit' in self.__class__.__dict__:
+            self.__class__._preinit(self)
+        elif self.__class__ is ${class_name}:
+            # Ensure ${class_name}() call will create a correct wrapper object
+            delegate = ${class_name}._new()
+            self._owner = (<${class_name}>delegate)._owner
+            (<${class_name}>delegate)._owner = NULL
+        else:
+            raise RuntimeError("Improperly configured '${class_name}' subclass")
 
     @staticmethod
     cdef ${class_name} _new():
@@ -117,6 +122,11 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
         return get_instance_from_owner(<godot_object *>__owner)
         % else:
         ${return_stmt}__icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, cpp.Array(__var_args))
+        % endif
+        % if method_name == '__call__' and class_name == 'NativeScript':
+
+    cdef godot_object *_new_instance(self):
+        return <godot_object *>__icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner, cpp.Array())
         % endif
     % else:
         ## not has_varargs

@@ -9,7 +9,7 @@ from godot_headers.gdnative_api cimport (
 from .core cimport cpp_types as cpp
 
 
-cdef extern from "Defs.hpp" namespace "godot":
+cdef extern from "Defs.hpp":
     cdef void WARN_PRINT(str msg)
     cdef void WARN_PRINTS(const char *msg)
     cdef void ERR_PRINT(str msg)

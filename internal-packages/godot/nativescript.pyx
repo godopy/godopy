@@ -2,8 +2,9 @@
 from godot_headers.gdnative_api cimport *
 
 from .globals cimport (
-    Godot, PyGodot,
-    gdapi, nativescript_api as nsapi, nativescript_1_1_api as ns11api,
+    Godot, PyGodot, WARN_PRINT,
+    gdapi, gdnlib, nativescript_api as nsapi, nativescript_1_1_api as ns11api,
+    _cython_language_index, _python_language_index,
     _nativescript_handle as handle
 )
 from .core.cpp_types cimport String, Variant
@@ -11,6 +12,8 @@ from .core._wrapped cimport _Wrapped, _PyWrapped
 from .core.tag_db cimport CythonTagDB, PythonTagDB, __instance_map, register_cython_type, register_python_type
 from .core.defs cimport VARIANT_OBJECT, VARIANT_NIL
 from .core.signal_arguments cimport SignalArgument
+
+from .core._meta cimport type as __modifiable_type, PyType_Modified
 
 from .bindings cimport _cython_bindings, _python_bindings
 
@@ -35,19 +38,21 @@ cdef extern from *:
 
 cdef void *_instance_create(size_t type_tag, godot_object *instance, dict TagDB, is_instance_binding=False) except NULL:
     cdef type cls = TagDB[type_tag]
-    cdef obj = cls.__new__(cls)  # Don't call __init__
+    cdef _Wrapped obj = <_Wrapped>cls.__new__(cls)  # Don't call __init__
 
     __instance_map[<size_t>instance] = obj
 
-    (<_Wrapped>obj)._owner = instance
-    (<_Wrapped>obj).___CLASS_IS_SCRIPT = True
-
-    # Check for _init in class dictionary, otherwise Object._init() will be called incorrectly
-    if '_init' in obj.__class__.__dict__:
-        obj._init()
+    obj._owner = instance
+    obj.___CLASS_IS_SCRIPT = not is_instance_binding
 
     if is_instance_binding:
         print('instance binding CREATE', obj, hex(<size_t><void *>instance))
+    else:
+        print('instance CREATE', obj, hex(<size_t>obj._owner), cls)
+
+    # Check for _init in class dictionary, otherwise Object._init() will be called incorrectly
+    if '_init' in cls.__dict__:
+        obj._init()
 
     # Cython manages refs automatically and decrements created objects on function exit,
     # therefore INCREF is required to keep the object alive.
@@ -83,21 +88,38 @@ cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
 
         print("instance binding DESTROY", hex(<size_t>wrapper), hex(<size_t>data), hex(<size_t>(<_Wrapped>wrapper)._owner))
         _owner = <size_t>(<_Wrapped>wrapper)._owner
-        Py_DECREF(<object>wrapper)
 
         if _owner:
             (<_Wrapped>wrapper)._owner = NULL
+            Py_DECREF(<object>wrapper)
+
             if _owner in __instance_map:
                 del __instance_map[_owner]
-            __DESTROYED.add(<size_t>wrapper)
-            # FIXME: This will call _wrapper_destroy recursively, but this is the only way to clean up the _owner on the Godot side
-            gdapi.godot_object_destroy(<godot_object *>_owner)
+
+            if _owner != <size_t>gdnlib:
+                __DESTROYED.add(<size_t>wrapper)
+                # FIXME: This will call _wrapper_destroy recursively, but this is the only way to clean up the _owner on the Godot side
+                gdapi.godot_object_destroy(<godot_object *>_owner)
+
+        else:
+            Py_DECREF(<object>wrapper)
+
+
+cdef void _destroy_func(godot_object *instance, void *method_data, void *user_data) nogil:
+    cdef size_t _owner = <size_t>instance
+    with gil:
+        print('instance DESTROY', hex(_owner), hex(<size_t>method_data), hex(<size_t>user_data))
+        (<_Wrapped>user_data)._owner = NULL
+        Py_DECREF(<object>user_data)
+
+        if _owner in __instance_map:
+            del __instance_map[_owner]
 
 
 cdef GDCALLINGCONV_VOID _wrapper_incref(void *wrapper, void *owner) nogil:
     with gil:
-       print("instance binding INCREF", hex(<size_t>wrapper), hex(<size_t>owner))
-    __incref_python_pointer(wrapper)
+       print("instance binding INCREF *IGNORED*", hex(<size_t>wrapper), hex(<size_t>owner))
+    # __incref_python_pointer(wrapper)
 
 
 cdef GDCALLINGCONV_BOOL _wrapper_decref(void *wrapper, void *owner) nogil:
@@ -164,8 +186,67 @@ cdef public generic_nativescript_init():
         gdlibrary._nativescript_init()
 
 
+cdef object _generate_python_init_func(cls):
+    cdef size_t owner
 
-cpdef register_class(type cls):
+    def __init__(self):
+        cdef _python_bindings.NativeScript script = _python_bindings.NativeScript._new()
+        cdef _python_bindings.GDNativeLibrary lib = \
+            <_python_bindings.GDNativeLibrary>ns11api.godot_nativescript_get_instance_binding_data(_python_language_index, <godot_object *>gdnlib)
+
+        script.set_library(lib)
+        script.set_class_name(cls.__name__)
+
+        (<_Wrapped>self)._owner = script._new_instance()
+        owner = <size_t>(<_Wrapped>self)._owner
+
+        if owner in __instance_map:
+            # Clean Python object created in script._new_instance()
+            delegate = __instance_map[owner]
+            (<_Wrapped>delegate)._owner = NULL
+
+        __instance_map[owner] = self
+
+        print('OWNER', hex(owner), hex(<size_t><void *>self))
+
+        # script._owner = NULL
+        # lib._owner = NULL
+        # __DESTROYED.add(<size_t><void *>self)  # XXX
+
+        _wrapper_destroy(NULL, <void *>script)
+
+    return __init__
+
+
+cdef object _generate_cython_preinit_func(cls):
+    cdef size_t owner
+
+    def _preinit(self):
+        cdef _cython_bindings.NativeScript script = _cython_bindings.NativeScript._new()
+        cdef _cython_bindings.GDNativeLibrary lib = \
+            <_cython_bindings.GDNativeLibrary>ns11api.godot_nativescript_get_instance_binding_data(_cython_language_index, <godot_object *>gdnlib)
+
+        script.set_library(lib)
+        script.set_class_name(cls.__name__)
+
+        (<_Wrapped>self)._owner = script._new_instance()
+        owner = <size_t>(<_Wrapped>self)._owner
+
+        if owner in __instance_map:
+            # Clean Python object created in script._new_instance()
+            delegate = __instance_map[owner]
+            (<_Wrapped>delegate)._owner = NULL
+
+        __instance_map[owner] = self
+
+        print('OWNER', hex(<size_t>(<_Wrapped>self)._owner))
+
+        _wrapper_destroy(NULL, <void *>script)
+
+    return _preinit
+
+
+cdef _register_class(__modifiable_type cls, tool_class=False):
     cdef void *method_data = <void *>cls
     cdef bint is_python = issubclass(cls, _PyWrapped)
 
@@ -186,9 +267,24 @@ cpdef register_class(type cls):
 
     print('register class', name, base)
 
-    # TODO: Set custom __init__ that woould call NativeScript.new and capture the _owner pointer from that
+    init_func_set = False
 
-    nsapi.godot_nativescript_register_class(handle, <const char *>name, <const char *>base, create, destroy)
+    if is_python and '__init__' in cls.__dict__:
+        WARN_PRINT('overwriting %r' % cls.__init__)
+    elif cls.__init__.__qualname__.startswith(cls.__name__):
+        raise RuntimeError("%r is not allowed in Godot binding subclasses" % cls.__init__.__qualname__)
+
+    if is_python:
+        cls.__init__ = _generate_python_init_func(cls)
+    else:
+        # Can't redefine __init__ after PyType_Ready()
+        cls.tp_dict['_preinit'] = _generate_cython_preinit_func(cls)
+        PyType_Modified(cls)
+
+    if tool_class:
+        nsapi.godot_nativescript_register_tool_class(handle, <const char *>name, <const char *>base, create, destroy)
+    else:
+        nsapi.godot_nativescript_register_class(handle, <const char *>name, <const char *>base, create, destroy)
 
     if is_python:
         register_python_type(cls)
@@ -196,6 +292,14 @@ cpdef register_class(type cls):
         register_cython_type(cls)
 
     cls._register_methods()
+
+
+cpdef register_class(__modifiable_type cls):
+    _register_class(cls, tool_class=False)
+
+
+cpdef register_tool_class(__modifiable_type cls):
+    _register_class(cls, tool_class=True)
 
 
 cdef void *_cython_instance_func(godot_object *instance, void *method_data) nogil:
@@ -206,14 +310,6 @@ cdef void *_cython_instance_func(godot_object *instance, void *method_data) nogi
 cdef void *_python_instance_func(godot_object *instance, void *method_data) nogil:
     with gil:
         return _instance_create(<size_t>method_data, instance, PythonTagDB)
-
-
-cdef void _destroy_func(godot_object *instance, void *method_data, void *user_data) nogil:
-    cdef size_t _owner = <size_t>instance
-    with gil:
-        if _owner in __instance_map:
-            del __instance_map[_owner]
-    __decref_python_pointer(user_data)
 
 
 cdef public object _register_python_signal(type cls, str name, tuple args):
