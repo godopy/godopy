@@ -164,11 +164,8 @@ cdef public generic_nativescript_init():
         gdlibrary._nativescript_init()
 
 
-cdef __default_registration_function(type cls):
-    cls._register_methods()
 
-
-cdef _register_class(type cls, methods_registration_function registration_func):
+cpdef register_class(type cls):
     cdef void *method_data = <void *>cls
     cdef bint is_python = issubclass(cls, _PyWrapped)
 
@@ -198,14 +195,7 @@ cdef _register_class(type cls, methods_registration_function registration_func):
     else:
         register_cython_type(cls)
 
-    if methods_registration_function is _regfunc_classobj:
-        registration_func(cls)
-    elif methods_registration_function is _regfunc_static:
-        registration_func()
-
-
-cpdef register_class(type cls):
-    _register_class(cls, __default_registration_function)
+    cls._register_methods()
 
 
 cdef void *_cython_instance_func(godot_object *instance, void *method_data) nogil:
@@ -226,7 +216,7 @@ cdef void _destroy_func(godot_object *instance, void *method_data, void *user_da
     __decref_python_pointer(user_data)
 
 
-cdef register_signal(type cls, str name, object args=()):
+cdef public object _register_python_signal(type cls, str name, tuple args):
     cdef String _name = String(name)
 
     cdef godot_signal signal = [
@@ -257,8 +247,8 @@ cdef register_signal(type cls, str name, object args=()):
         gdapi.godot_free(signal.args)
 
 
-def register_python_signal(type cls, str name, *args):
-    register_signal(cls, name, args)
+def register_signal(type cls, str name, *args):
+    _register_python_signal(cls, name, args)
 
 
 cdef inline _set_signal_argument(godot_signal_argument *sigarg, object _arg):
@@ -293,12 +283,9 @@ cdef inline _set_signal_argument(godot_signal_argument *sigarg, object _arg):
         sigarg.default_value = deref(<godot_variant *>&_def_val)
 
 
-cdef register_property(type cls, const char *name, object default_value,
-                       godot_method_rpc_mode rpc_mode=GODOT_METHOD_RPC_MODE_DISABLED,
-                       godot_property_usage_flags usage=GODOT_PROPERTY_USAGE_DEFAULT,
-                       godot_property_hint hint=GODOT_PROPERTY_HINT_NONE,
-                       str hint_string=''):
-    cdef String _hint_string = String(hint_string)
+cdef public object _register_python_property(type cls, const char *name, object default_value, godot_method_rpc_mode rpc_mode,
+                                             godot_property_usage_flags usage, godot_property_hint hint, String _hint_string):
+    # cdef String _hint_string = String(hint_string)
     cdef Variant def_val = <Variant>default_value
 
     usage = <godot_property_usage_flags>(<int>usage | GODOT_PROPERTY_USAGE_SCRIPT_VARIABLE)
@@ -354,17 +341,17 @@ cdef void _property_setter(godot_object *object, void *method_data, void *self_d
         setattr(self, prop_name, <object>_value)
 
 
-def register_python_property(type cls, str name, object default_value,
-                             godot_method_rpc_mode rpc_mode=GODOT_METHOD_RPC_MODE_DISABLED,
-                             godot_property_usage_flags usage=GODOT_PROPERTY_USAGE_DEFAULT,
-                             godot_property_hint hint=GODOT_PROPERTY_HINT_NONE,
-                             str hint_string=''):
-    register_property(cls, name, default_value, rpc_mode, usage, hint, hint_string)
+def register_property(type cls, str name, object default_value,
+                      godot_method_rpc_mode rpc_mode=GODOT_METHOD_RPC_MODE_DISABLED,
+                      godot_property_usage_flags usage=GODOT_PROPERTY_USAGE_DEFAULT,
+                      godot_property_hint hint=GODOT_PROPERTY_HINT_NONE,
+                      str hint_string=''):
+    _register_python_property(cls, name, default_value, rpc_mode, usage, hint, String(hint_string))
 
 
 ctypedef godot_variant (*__godot_wrapper_method)(godot_object *, void *, void *, int, godot_variant **) nogil
 
-cdef _register_python_method(type cls, const char *name, object method, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
+cdef public object _register_python_method(type cls, const char *name, object method, godot_method_rpc_mode rpc_type):
     Py_INCREF(method)
     cdef godot_instance_method m = [<__godot_wrapper_method>_python_method_wrapper, <void *>method, _python_method_free]
     cdef godot_method_attributes attrs = [rpc_type]
@@ -373,7 +360,7 @@ cdef _register_python_method(type cls, const char *name, object method, godot_me
     nsapi.godot_nativescript_register_method(handle, <const char *>class_name, name, attrs, m)
 
 
-def register_python_method(type cls, str method_name, *, object method=None, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
+def register_method(type cls, str method_name, object method=None, godot_method_rpc_mode rpc_type=GODOT_METHOD_RPC_MODE_DISABLED):
     if method is None:
         method = getattr(cls, method_name)
     cdef bytes _method_name = method_name.encode('utf-8')
