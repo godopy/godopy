@@ -6,7 +6,7 @@ from godot_headers.gdnative_api cimport *
 from ._wrapped cimport _Wrapped, _PyWrapped
 from . cimport cpp_types as cpp
 
-from .tag_db cimport get_instance_from_owner
+from .tag_db cimport get_python_instance
 
 cimport numpy as np
 
@@ -599,10 +599,10 @@ cdef public:
 
 
     object _godot_object_to_cython_binding(godot_object *_owner):
-        return get_instance_from_owner(_owner);
+        return get_python_instance(_owner);
 
     object _godot_object_to_python_binding(godot_object *_owner):
-        return get_instance_from_owner(_owner);
+        return get_python_instance(_owner);
 
 
     # Caller is responsible for type-checking in all

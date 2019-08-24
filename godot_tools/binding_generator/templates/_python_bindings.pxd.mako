@@ -15,15 +15,9 @@ cdef struct __${class_name}__method_bindings:
     % endif
 
 cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
-    % if class_def['instanciable']:
-
-    @staticmethod
-    cdef ${class_name} _new()
+    % if class_name == 'NativeScript':
+    cdef godot_object *_new_instance(self)
     % else:
     pass
-    % endif
-    % if class_name == 'NativeScript':
-
-    cdef godot_object *_new_instance(self)
     % endif
 % endfor

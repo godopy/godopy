@@ -36,11 +36,6 @@ cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
     @staticmethod
     cdef object get_singleton()
     % endif
-    % if class_def['instanciable']:
-
-    @staticmethod
-    cdef ${class_name} _new()
-    % endif
 
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
     % if method['__func_type'] == 'cdef':

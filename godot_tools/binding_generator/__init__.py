@@ -41,6 +41,7 @@ CPP_ESCAPES = {
 }
 
 CYTHON_ONLY_ESCAPES = {
+    'new':      '_new',
     'from':     '_from',
     'with':     '_with',
     'in':       '_in',
@@ -54,8 +55,7 @@ CYTHON_ONLY_ESCAPES = {
 }
 
 SPECIAL_ESCAPES = {
-    'new': '__call__',
-    'free': '__del__'
+    'new': '__call__'
 }
 
 CYTHON_ESCAPES = {**CPP_ESCAPES, **CYTHON_ONLY_ESCAPES}

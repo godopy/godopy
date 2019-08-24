@@ -2,13 +2,11 @@ from godot_headers.gdnative_api cimport (
     godot_method_rpc_mode, godot_property_usage_flags, godot_property_hint
 )
 
-from .core._meta cimport type as __modifiable_type
-
 cdef extern from "Godot.hpp" namespace "godot":
     void register_cpp_class "godot::register_class" [T] ()
 
-cpdef register_class(__modifiable_type cls)
-cpdef register_tool_class(__modifiable_type cls)
+cpdef register_class(type cls)
+cpdef register_tool_class(type cls)
 
 cdef extern from "PyGodot.hpp" namespace "pygodot":
     object register_method[M](

@@ -109,19 +109,24 @@
         return escape_python(setter)
 %>
 from godot_headers.gdnative_api cimport godot_object, godot_variant
-from ..globals cimport Godot, gdapi, nativescript_1_1_api as ns11api, _python_language_index
+from ..globals cimport Godot, WARN_PRINT, gdapi, nativescript_1_1_api as ns11api, _python_language_index as PYTHON_IDX
 
 from ..core.defs cimport *
 from ..core cimport cpp_types as cpp
 from ..core cimport types as py
 from ..core._wrapped cimport _PyWrapped
-from ..core.tag_db cimport register_global_python_type, get_instance_from_owner
+from ..core.tag_db cimport (
+    register_global_python_type, get_python_instance,
+    register_godot_instance, unregister_godot_instance, is_godot_instance_protected
+)
 from .python cimport __icalls
 
 from cpython.ref cimport Py_DECREF
 
-from ..core._meta cimport type, PyType_Modified
+from ..core._meta cimport __tp_dict, PyType_Modified
 from cpython.dict cimport PyDict_Update
+
+from ..core._debug cimport __ob_refcnt
 % if COMPILE_PROPERTIES:
 
 from functools import partialmethod
@@ -149,36 +154,44 @@ cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
         return __${class_name}___singleton
 
     % endif
-    def __cinit__(self):
     % if class_def['singleton']:
+    def __cinit__(self):
         self._owner = gdapi.godot_global_get_singleton("${class_name}")
         self.___CLASS_IS_SCRIPT = False
         self.___CLASS_IS_SINGLETON = True
         self.___CLASS_BINDING_LEVEL = 2
     % else:
-    % if class_def['base_class']:
-        pass
-    % else:
+    % if not class_def['base_class']:
+    def __cinit__(self):
+        print('CINIT', self)
         self._owner = NULL
         self.___CLASS_IS_SCRIPT = False
         self.___CLASS_IS_SINGLETON = False
         self.___CLASS_BINDING_LEVEL = 2
-    % endif  ## base_class/else
+    % if class_def['instanciable']:
+
+    def __dealloc__(self):
+        print('DEALLOC', self, __ob_refcnt(self))
+        if self._owner and not is_godot_instance_protected(<size_t>self._owner):
+            print('DESTROY %s %r' % (hex(<size_t>self._owner), self))
+            gdapi.godot_object_destroy(self._owner)
+            unregister_godot_instance(self._owner)
+            self._owner = NULL
+    % endif  ## instanciable
+    % endif  ## not base_class
     % endif  ## singleton/else
 
     % if class_def['instanciable']:
     def __init__(self):
         if self.__class__ is ${class_name}:
-            # Ensure ${class_name}() call will create a correct wrapper object
-            delegate = ${class_name}._new()
-            self._owner = (<${class_name}>delegate)._owner
-            (<${class_name}>delegate)._owner = NULL
+            self._owner = gdapi.godot_get_class_constructor("${class_name}")()
+            ## delegate = <${class_name}>ns11api.godot_nativescript_get_instance_binding_data(PYTHON_IDX, _owner)
+            ## assert (<_Wrapped>delegate)._owner == _owner, <size_t>(<_Wrapped>delegate)._owner
+            ## (<_Wrapped>self)._owner = _owner
+            register_godot_instance(self._owner, self)
+            print('INIT %s %r' % (hex(<size_t>self._owner), self), __ob_refcnt(self))
         else:
             raise RuntimeError("Improperly configured '${class_name}' subclass")
-
-    @staticmethod
-    cdef ${class_name} _new():
-        return <${class_name}>ns11api.godot_nativescript_get_instance_binding_data(_python_language_index, gdapi.godot_get_class_constructor("${class_def['name']}")())
 
     % else:
     def __init__(self):
@@ -187,15 +200,20 @@ cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
     % endif
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
     def ${method_name}(self${', ' if signature else ''}${clean_signature(signature, class_name)}):
-    % if method_name in ('free', '__del__'):
+    % if method_name == 'free':
         ## [copied from godot-cpp] dirty hack because Object::free is marked virtual but doesn't actually exist...
-        if self._owner != NULL:
+        if self._owner:
+            if is_godot_instance_protected(<size_t>self._owner):
+                WARN_PRINT('%r (godot_object *%s) instance is protected' % (self, hex(<size_t>self._owner)))
+                return
+            print('DESTROY %s %r' % (hex(<size_t>self._owner), self))
             gdapi.godot_object_destroy(self._owner)
+            unregister_godot_instance(self._owner)
             self._owner = NULL
     % elif method['has_varargs']:
         % if is_class_type(method['return_type']):
         cdef cpp.Variant __owner = __icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, cpp.Array(__var_args))
-        return get_instance_from_owner(<godot_object *>__owner)
+        return get_python_instance(<godot_object *>__owner)
         % else:
         ${return_variable(method)}__icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, cpp.Array(__var_args))
         ${make_return(method)}
@@ -220,7 +238,7 @@ cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
 
     @staticmethod
     def __add_to_type(**properties):
-        PyDict_Update((<type>${class_name}).tp_dict, properties)
+        PyDict_Update(__tp_dict(${class_name}), properties)
         PyType_Modified(${class_name})
 
     @staticmethod
