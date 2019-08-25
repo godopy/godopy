@@ -17,6 +17,23 @@
         enum_values.add(value_name)
         return remove_nested_type_prefix(value_name)
 
+    singleton_map = {}
+
+    def get_class_name(name, cls):
+        if cls['singleton']:
+            singleton_map[name] = name + 'Class'
+            return name + 'Class'
+        return name
+
+    def get_base_name(name):
+        if not name:
+            return '_PyWrapped'
+
+        if name in singleton_map:
+            return singleton_map[name]
+
+        return name
+
     def make_arg(arg):
         if arg[3] is not None:
             assert arg[1].startswith('_')
@@ -117,7 +134,8 @@ from ..core cimport types as py
 from ..core._wrapped cimport _PyWrapped
 from ..core.tag_db cimport (
     register_global_python_type, get_python_instance,
-    register_godot_instance, unregister_godot_instance, is_godot_instance_protected
+    register_godot_instance, unregister_godot_instance,
+    protect_godot_instance, is_godot_instance_protected
 )
 from .python cimport __icalls
 
@@ -135,35 +153,40 @@ from functools import partialmethod
 
 
 % if class_def['singleton']:
-cdef object __${class_name}___singleton = None
+${class_name} = None
 
 % endif
 % if methods:
 cdef __${class_name}__method_bindings __${class_name}__mb
 
 % endif
-cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
+cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['base_class'])}):
     % if class_def['singleton']:
     @staticmethod
     def get_singleton():
-        global __${class_name}___singleton
+        global ${class_name}
 
-        if __${class_name}___singleton is None:
-            __${class_name}___singleton = ${class_name}.__new__(${class_name})
+        if ${class_name} is None:
+            ${class_name} = ${class_name}Class.__new__(${class_name}Class)
 
-        return __${class_name}___singleton
+        return ${class_name}
 
     % endif
     % if class_def['singleton']:
     def __cinit__(self):
+        % if class_name == 'GlobalConstants':
+        self._owner = NULL
+        % else:
         self._owner = gdapi.godot_global_get_singleton("${class_name}")
+        if self._owner:
+            protect_godot_instance(<size_t>self._owner)
+        % endif
         self.___CLASS_IS_SCRIPT = False
         self.___CLASS_IS_SINGLETON = True
         self.___CLASS_BINDING_LEVEL = 2
     % else:
     % if not class_def['base_class']:
     def __cinit__(self):
-        print('CINIT', self)
         self._owner = NULL
         self.___CLASS_IS_SCRIPT = False
         self.___CLASS_IS_SINGLETON = False
@@ -171,7 +194,6 @@ cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
     % if class_def['instanciable']:
 
     def __dealloc__(self):
-        print('DEALLOC', self, __ob_refcnt(self))
         if self._owner and not is_godot_instance_protected(<size_t>self._owner):
             print('DESTROY %s %r' % (hex(<size_t>self._owner), self))
             gdapi.godot_object_destroy(self._owner)
@@ -237,16 +259,27 @@ cdef class ${class_name}(${class_def['base_class'] or '_PyWrapped'}):
     % endif
 
     @staticmethod
-    def __add_to_type(**properties):
-        PyDict_Update(__tp_dict(${class_name}), properties)
-        PyType_Modified(${class_name})
+    def __finalize_type(**properties):
+        cdef dict __type_dict = __tp_dict(${get_class_name(class_name, class_def)})
+        if __type_dict.get('___TYPE_READY', False):
+            raise RuntimeError("'${class_name}' is already initialized")
+
+        PyDict_Update(__type_dict, properties)
+        __type_dict['___TYPE_READY'] = True
+        PyType_Modified(${get_class_name(class_name, class_def)})
 
     @staticmethod
     def __init_method_bindings():
+    % if class_def['singleton']:
+        global ${class_name}
+
+        ${class_name} = ${class_name}Class.__new__(${class_name}Class)
+
+    % endif
     % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
         __${class_name}__mb.mb_${method_name} = gdapi.godot_method_bind_get_method("${class_def['name']}", "${method['name']}")
     % endfor
-    % if not methods:
+    % if not methods and not class_def['singleton']:
         pass
     % endif
 
@@ -266,11 +299,11 @@ ${python_module_name(class_name).upper()}_${name} = ${value}
 
 cdef __init_method_bindings():
 % for class_name, class_def, includes, forwards, methods in classes:
-    ${class_name}.__init_method_bindings()
+    ${get_class_name(class_name, class_def)}.__init_method_bindings()
 % endfor
 
 
 cdef __register_types():
 % for class_name, class_def, includes, forwards, methods in classes:
-    register_global_python_type(${class_name}, ${repr(class_def['name'])})
+    register_global_python_type(${get_class_name(class_name, class_def)}, ${repr(class_def['name'])})
 % endfor

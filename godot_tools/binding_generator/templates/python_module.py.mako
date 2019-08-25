@@ -4,6 +4,12 @@
 
     DYNAMIC_PROPERTIES = True
 
+    def class_name(cls):
+        name = cls['name'].lstrip('_')
+        if cls['singleton']:
+            return name + 'Class'
+        return name
+
     def prop_getter(prop, class_def):
         getter = prop['getter']
         index = prop['index']
@@ -28,9 +34,9 @@
             return 'Texture.get_height'
 
         if index >= 0:
-            return 'partialmethod(%s.%s, %d)' % (class_def['name'].lstrip('_'), escape_python(getter), index)
+            return 'partialmethod(%s.%s, %d)' % (class_name(class_def), escape_python(getter), index)
 
-        return '%s.%s' % (class_def['name'].lstrip('_'), escape_python(getter))
+        return '%s.%s' % (class_name(class_def), escape_python(getter))
 
     def prop_setter(prop, class_def):
         setter = prop['setter']
@@ -45,9 +51,9 @@
             return ''
 
         if index >= 0:
-            return 'partialmethod(%s.%s, %d)' % (class_def['name'].lstrip('_'), escape_python(setter), index)
+            return 'partialmethod(%s.%s, %d)' % (class_name(class_def), escape_python(setter), index)
 
-        return '%s.%s' % (class_def['name'].lstrip('_'), escape_python(setter))
+        return '%s.%s' % (class_name(class_def), escape_python(setter))
 %>
 import enum
 % if DYNAMIC_PROPERTIES:
@@ -56,7 +62,12 @@ from functools import partialmethod
 % endif
 from godot.bindings._python_bindings import (
 % for class_name in class_names:
+    % if classes[class_name]['singleton']:
+    ${class_name}Class,
     ${class_name},
+    % else:
+    ${class_name},
+    % endif
 % endfor
 )
 
@@ -66,9 +77,9 @@ __all__ = (
 % endfor
 )
 
-% for class_name, class_def, includes, forwards, methods in classes:
+% for class_name, class_def in classes.items():
 % if (DYNAMIC_PROPERTIES and class_def['properties']) or class_def['enums'] or class_def['constants']:
-${class_name}.__add_to_type(
+${class_name}${'Class' if class_def['singleton'] else ''}.__finalize_type(
 ## FIXME: RootMotionView has an incomplete API, no methods are defined
 % if DYNAMIC_PROPERTIES and class_def['properties'] and class_def['name'] not in ('RootMotionView',):
 % for prop in class_def['properties']:
@@ -91,5 +102,8 @@ ${class_name}.__add_to_type(
 % endfor
 )
 % endif  ## if props or enums or constants
-
+% if class_def['singleton']:
+if ${class_name} is None:
+    ${class_name} = ${class_name}Class.get_singleton()
+% endif
 % endfor  ## classes

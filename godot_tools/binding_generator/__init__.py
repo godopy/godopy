@@ -148,10 +148,11 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
 
     classes.sort(key=lambda c: c['weight'], reverse=True)
 
-    tools_types = set(strip_name(c['name']) for c in classes if c['api_type'] == 'tools')
-    node_types = set(['Node', 'TreeItem', *clsdict['Node']['child_classes']]) - tools_types
-    resource_types = set(['Resource', 'TriangleMesh', *clsdict['Resource']['child_classes']]) - tools_types
-    core_api_types = set(strip_name(c['name']) for c in classes) - tools_types - node_types - resource_types
+    singleton_types = set(strip_name(c['name']) for c in classes if c['singleton'])
+    tools_types = set(strip_name(c['name']) for c in classes if c['api_type'] == 'tools') - singleton_types
+    node_types = set(['Node', 'TreeItem', *clsdict['Node']['child_classes']]) - tools_types - singleton_types
+    resource_types = set(['Resource', 'TriangleMesh', *clsdict['Resource']['child_classes']]) - tools_types - singleton_types
+    core_api_types = set(strip_name(c['name']) for c in classes) - tools_types - node_types - resource_types - singleton_types
 
     if generate_cython or generate_python:
         if generate_cython and generate_python:
@@ -162,12 +163,14 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
             bindings_name = 'Python'
 
         echo("Generating %s bindings…" % bindings_name)
+        echo('Singleton classes: %d' % len(singleton_types))
         echo('Node classes: %d' % len(node_types))
         echo('Resource classes: %d' % len(resource_types))
         echo('Core API classes: %d' % len(core_api_types))
         echo('Tools classes: %d' % len(tools_types))
 
     module_data = (
+        ('singletons', singleton_types),
         ('nodes', node_types),
         ('resources', resource_types),
         ('core', core_api_types),
@@ -176,14 +179,15 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
 
     if generate_cpp:
         # C++ bindings
+        class_contexts = [generate_class_context(c, 'cpp') for c in classes]
         cpp_bindings_template = Template(filename=os.path.join(templates_dir, '_cpp_bindings.pxd.mako'))
         cpp_path = os.path.join(bindings_dir, '_cpp_bindings.pxd')
-        cpp_source = cpp_bindings_template.render(classes=[generate_class_context(c, 'cpp') for c in classes])
+        cpp_source = cpp_bindings_template.render(classes=class_contexts)
         with open(cpp_path, 'w', encoding='utf-8') as fp:
             fp.write(cpp_source)
 
         for module, _types in module_data:
-            write_cpp_definitions(module, _types, class_names)
+            write_cpp_definitions(module, _types, class_names, class_contexts)
 
     if generate_cython:
         class_contexts = [generate_class_context(c, 'cython') for c in classes]
@@ -207,7 +211,7 @@ def generate(generate_cpp=True, generate_cython=True, generate_python=True, echo
                 fp.write(source)
 
         for module, _types in module_data:
-            write_cython_definitions(module, _types, class_names)
+            write_cython_definitions(module, _types, class_names, class_contexts)
 
     if generate_python:
         class_contexts = [generate_class_context(c, 'python') for c in classes]
@@ -237,7 +241,7 @@ def write_python_definitions(python_module, _types, class_names, class_contexts)
     python_package_template = Template(filename=os.path.join(templates_dir, 'python_module.py.mako'))
 
     python_path = os.path.join(bindings_dir, 'python', '%s.py' % python_module)
-    classes = [ctx for ctx in class_contexts if ctx[0] in _types]
+    classes = {ctx[0]: ctx[1] for ctx in class_contexts if ctx[0] in _types}
     class_names = [cn for cn in class_names if cn in _types]
     python_source = python_package_template.render(class_names=class_names, classes=classes)
 
@@ -245,21 +249,25 @@ def write_python_definitions(python_module, _types, class_names, class_contexts)
         fp.write(python_source)
 
 
-def write_cython_definitions(cython_module, _types, class_names):
+def write_cython_definitions(cython_module, _types, class_names, class_contexts):
     cython_package_template = Template(filename=os.path.join(templates_dir, 'cython_module.pxd.mako'))
 
-    cpp_path = os.path.join(bindings_dir, 'cython', '%s.pxd' % cython_module)
-    cpp_source = cython_package_template.render(class_names=[cn for cn in class_names if cn in _types])
+    cython_path = os.path.join(bindings_dir, 'cython', '%s.pxd' % cython_module)
+    classes = {ctx[0]: ctx[1] for ctx in class_contexts if ctx[0] in _types}
+    class_names = [cn for cn in class_names if cn in _types]
+    cython_source = cython_package_template.render(class_names=class_names, classes=classes)
 
-    with open(cpp_path, 'w', encoding='utf-8') as fp:
-        fp.write(cpp_source)
+    with open(cython_path, 'w', encoding='utf-8') as fp:
+        fp.write(cython_source)
 
 
-def write_cpp_definitions(cpp_module, _types, class_names):
+def write_cpp_definitions(cpp_module, _types, class_names, class_contexts):
     cpp_package_template = Template(filename=os.path.join(templates_dir, 'cpp_module.pxd.mako'))
 
     cpp_path = os.path.join(bindings_dir, 'cpp', '%s.pxd' % cpp_module)
-    cpp_source = cpp_package_template.render(class_names=[cn for cn in class_names if cn in _types])
+    classes = {ctx[0]: ctx[1] for ctx in class_contexts if ctx[0] in _types}
+    class_names = [cn for cn in class_names if cn in _types]
+    cpp_source = cpp_package_template.render(class_names=class_names, classes=classes)
 
     with open(cpp_path, 'w', encoding='utf-8') as fp:
         fp.write(cpp_source)
@@ -603,7 +611,7 @@ def generate_cppclass_context(class_def):
         args = []
         sigs = []
         pxd_sigs = []
-        has_default_argument = False
+        # has_default_argument = False
 
         for arg in method['arguments']:
             arg_type = make_cpp_gdnative_type(arg['type'])
@@ -611,9 +619,10 @@ def generate_cppclass_context(class_def):
 
             arg_default = None
 
-            if arg['has_default_value'] or has_default_argument:
-                arg_default = escape_cpp_default_arg(arg['type'], arg['default_value'])
-                has_default_argument = True
+            # FIXME: Cython does not work correctly with default C++ arguments yet
+            # if arg['has_default_value'] or has_default_argument:
+            #     arg_default = escape_cpp_default_arg(arg['type'], arg['default_value'])
+            #     has_default_argument = True
 
             if arg_default is not None:
                 pxd_sig = 'const %s%s=*' % (arg_type, arg_name)

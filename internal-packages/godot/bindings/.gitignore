@@ -6,15 +6,19 @@
 /cpp/tools.pxd
 /cpp/nodes.pxd
 /cpp/resources.pxd
+/cpp/singletons.pxd
 
 /cython/__icalls.pxd
 /cython/core.pxd
 /cython/tools.pxd
 /cython/nodes.pxd
 /cython/resources.pxd
+/cython/singletons.pyx
+/cython/singletons.pxd
 
 /python/__icalls.pxd
 /python/core.py
 /python/tools.py
 /python/nodes.py
 /python/resources.py
+/python/singletons.py

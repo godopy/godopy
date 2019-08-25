@@ -4,10 +4,11 @@ cdef public generic_gdnative_singleton():
     from importlib import import_module
 
     # Method bindings are not initialized yet
-    _cython_bindings.ProjectSettings.__init_method_bindings()
+    _cython_bindings.ProjectSettingsClass.__init_method_bindings()
 
-    cdef _cython_bindings.ProjectSettings ps = _cython_bindings.ProjectSettings.get_singleton()
-    gdlibrary_name = <object>ps.get_setting('python/config/gdnlib_module')
+    assert _cython_bindings.ProjectSettings is not None
+
+    gdlibrary_name = <object>_cython_bindings.ProjectSettings.get_setting('python/config/gdnlib_module')
     gdlibrary = import_module(gdlibrary_name)
 
     if hasattr(gdlibrary, '_gdnative_singleton'):

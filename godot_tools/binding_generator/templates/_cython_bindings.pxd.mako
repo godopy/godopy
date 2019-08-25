@@ -9,6 +9,23 @@
     def clean_value_name(value_name):
         enum_values.add(value_name)
         return remove_nested_type_prefix(value_name)
+
+    singleton_map = {}
+
+    def get_class_name(name, cls):
+        if cls['singleton']:
+            singleton_map[name] = name + 'Class'
+            return name + 'Class'
+        return name
+
+    def get_base_name(name):
+        if not name:
+            return '_Wrapped'
+
+        if name in singleton_map:
+            return singleton_map[name]
+
+        return name
 %>
 from godot_headers.gdnative_api cimport godot_method_bind, godot_object
 
@@ -20,15 +37,19 @@ from ..core._wrapped cimport _Wrapped
 cdef __register_types()
 cdef __init_method_bindings()
 % for class_name, class_def, includes, forwards, methods in classes:
+% if class_def['singleton']:
 
-    % if methods:
+cdef ${class_name}Class ${class_name}
+% endif
+
+% if methods:
 cdef struct __${class_name}__method_bindings:
-        % for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
+% for method_name, method, return_type, pxd_signature, signature, args, return_stmt, init_args in methods:
     godot_method_bind *mb_${method_name}
-        % endfor
-    % endif
+% endfor
+% endif
 
-cdef class ${class_name}(${class_def['base_class'] or '_Wrapped'}):
+cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['base_class'])}):
     @staticmethod
     cdef __init_method_bindings()
     % if class_def['singleton']:
