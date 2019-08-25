@@ -106,6 +106,13 @@ cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
 
         if _owner == 0:
             print("instance binding DESTROY no owner", <object>wrapper, __ob_refcnt(<object>wrapper))
+            if __ob_refcnt(<object>wrapper) > expected_refcnt:
+                WARN_PRINT("Possible memory leak: reference count for %r is too large: expected %d, got %d" %
+                           (<object>wrapper, expected_refcnt, __ob_refcnt(<object>wrapper)))
+            elif __ob_refcnt(<object>wrapper) < expected_refcnt:
+                WARN_PRINT("Reference count for %r is too small: expected %d, got %d" %
+                           (<object>wrapper, expected_refcnt, __ob_refcnt(<object>wrapper)))
+            Py_CLEAR(p_wrapper)
             return
 
         print(
