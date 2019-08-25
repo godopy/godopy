@@ -54,8 +54,10 @@ static inline ${sig} {
 
   % if ret != 'void':
   % if is_class_type(ret):
-  if (ret)
-    return (PyObject *)godot::nativescript_1_1_api->godot_nativescript_get_instance_binding_data(godot::_RegisterState::python_language_index, ret);
+  if (ret) {
+    ret = (PyObject *)godot::nativescript_1_1_api->godot_nativescript_get_instance_binding_data(godot::_RegisterState::python_language_index, ret);
+    Py_XINCREF(ret);
+  }
   return ret;
   % else:
   return ret;

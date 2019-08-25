@@ -25,5 +25,3 @@ cdef clear_cython()
 cdef clear_python()
 cdef clear_instance_map()
 
-cdef protect_godot_instance(size_t godot_instance_tag)
-cdef bint is_godot_instance_protected(size_t godot_instance_tag) except -1

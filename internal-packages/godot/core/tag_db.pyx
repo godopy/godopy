@@ -14,15 +14,6 @@ from ..core._wrapped cimport _Wrapped
 cdef dict __CythonTagDB = {}
 cdef dict __PythonTagDB = {}
 cdef dict __instance_map = {}
-cdef set __protected_godot_instances = {<size_t>gdnlib}
-
-
-cdef protect_godot_instance(size_t godot_instance_tag):
-    __protected_godot_instances.add(godot_instance_tag)
-
-
-cdef bint is_godot_instance_protected(size_t godot_instance_tag) except -1:
-    return godot_instance_tag in __protected_godot_instances
 
 
 cdef register_cython_type(type cls):

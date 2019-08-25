@@ -54,8 +54,7 @@ from ..core.defs cimport *
 from ..core._wrapped cimport _Wrapped
 from ..core.tag_db cimport (
     register_global_cython_type, get_python_instance,
-    register_godot_instance, unregister_godot_instance,
-    protect_godot_instance, is_godot_instance_protected
+    register_godot_instance, unregister_godot_instance
 )
 from .cython cimport __icalls
 
@@ -91,9 +90,8 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
         self._owner = NULL
         % else:
         self._owner = gdapi.godot_global_get_singleton("${class_name}")
-        if self._owner:
-            protect_godot_instance(<size_t>self._owner)
         % endif
+        self._owner_allocated = False
         self.___CLASS_IS_SCRIPT = False
         self.___CLASS_IS_SINGLETON = True
         self.___CLASS_BINDING_LEVEL = 1
@@ -101,27 +99,47 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
     % if not class_def['base_class']:
     def __cinit__(self):
         self._owner = NULL
+        self._owner_allocated = False
         self.___CLASS_IS_SCRIPT = False
         self.___CLASS_IS_SINGLETON = False
         self.___CLASS_BINDING_LEVEL = 1
     % if class_def['instanciable']:
 
     def __dealloc__(self):
-        if self._owner and not is_godot_instance_protected(<size_t>self._owner):
+        cdef godot_object *owner = self._owner
+
+        if owner and self._owner_allocated:
             print('DESTROY %s %r' % (hex(<size_t>self._owner), self))
-            gdapi.godot_object_destroy(self._owner)
-            unregister_godot_instance(self._owner)
             self._owner = NULL
+            gdapi.godot_object_destroy(owner)
+            unregister_godot_instance(owner)
     % endif  ## instanciable
-    % endif  ## not base_class
+    % elif class_def['name'] == 'Reference':
+    def __dealloc__(self):
+        cdef bint should_destroy = False
+        cdef godot_object *owner = self._owner
+
+        print('REF DEALLOC', hex(<size_t>owner), self, self._owner_allocated)
+
+        if owner and self._owner_allocated:
+            print('UNREF', hex(<size_t>owner), self)
+            should_destroy = self.unreference()
+
+        if owner and should_destroy:
+            print('DESTROY REF', hex(<size_t>owner), self)
+            self._owner = NULL
+            gdapi.godot_object_destroy(owner)
+            unregister_godot_instance(owner)
+    % endif  ## not base_class/elif reference
     % endif  ## singleton/else
 
     % if class_def['instanciable']:
-    def __init__(self):
+    def __init__(self, external_reference=False):
         if '_preinit' in self.__class__.__dict__:
             self.__class__._preinit(self)
         elif self.__class__ is ${class_name}:
             self._owner = gdapi.godot_get_class_constructor("${class_name}")()
+            self._owner_allocated = not external_reference
             register_godot_instance(self._owner, self)
             print('INIT %s %r' % (hex(<size_t>self._owner), self))
         else:
@@ -139,14 +157,16 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
     cdef ${return_type}${method_name}(self${', ' if signature else ''}${clean_signature(signature, class_name)}):
     % endif
     % if method_name == 'free':
-        if self._owner:
-            if is_godot_instance_protected(<size_t>self._owner):
-                WARN_PRINT('%r (godot_object *%s) instance is protected' % (self, hex(<size_t>self._owner)))
-                return
-            print('DESTROY %s %r' % (hex(<size_t>self._owner), self))
-            gdapi.godot_object_destroy(self._owner)
-            unregister_godot_instance(self._owner)
+        cdef godot_object *owner = self._owner
+        if owner:
+            if not self._owner_allocated:
+                # WARN_PRINT("Can't free Godot-managed instance %r (godot_object *%s)" % (self, hex(<size_t>self._owner)))
+                pass
             self._owner = NULL
+            print('DESTROY %s %r' % (hex(<size_t>owner), self))
+            gdapi.godot_object_destroy(owner)
+            unregister_godot_instance(owner)
+
     % elif method['has_varargs']:
         % if is_class_type(method['return_type']):
         cdef cpp.Variant __owner = __icalls.${icall_names[class_name + '#' + method_name]}(__${class_name}__mb.mb_${method_name}, self._owner${', %s' % ', '.join(make_arg(a) for a in args) if args else ''}, cpp.Array(__var_args))

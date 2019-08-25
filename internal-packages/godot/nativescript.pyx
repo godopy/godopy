@@ -12,7 +12,7 @@ from .core._wrapped cimport _Wrapped, _PyWrapped
 from .core.tag_db cimport (
     register_cython_type, register_python_type, get_cython_type, get_python_type,
     register_godot_instance, unregister_godot_instance, is_godot_instance_registered, replace_python_instance,
-    clear_cython, clear_python, clear_instance_map, protect_godot_instance, is_godot_instance_protected
+    clear_cython, clear_python, clear_instance_map
 )
 from .core.defs cimport VARIANT_OBJECT, VARIANT_NIL
 from .core.signal_arguments cimport SignalArgument
@@ -30,7 +30,7 @@ from cpython.ref cimport Py_INCREF, Py_DECREF, Py_CLEAR, Py_XINCREF, Py_XDECREF
 
 from cython.operator cimport dereference as deref
 
-DEF INSTANCE_BINDING_REFCNT_HOOKS = True
+DEF INSTANCE_BINDING_REFCNT_HOOKS = False
 
 cdef extern from *:
     """
@@ -46,23 +46,35 @@ cdef extern from *:
 cdef _cython_bindings.GDNativeLibrary cython_gdnlib = None
 cdef _python_bindings.GDNativeLibrary python_gdnlib = None
 
+# cdef set __CYTHON_REFS = set()
+# cdef set __PYTHON_REFS = set()
 
 cdef void *_instance_create(size_t type_tag, godot_object *instance, language_index, is_instance_binding=False) except NULL:
     cdef bint is_python = language_index == PYTHON_IDX
     cdef type cls = get_python_type(type_tag) if is_python else get_cython_type(type_tag)
+
+    # cdef bint is_python_reference = issubclass(cls, _python_bindings.Reference)
+    # cdef bint is_cython_reference = issubclass(cls, _cython_bindings.Reference)
 
     cdef _Wrapped obj = <_Wrapped>cls.__new__(cls)
 
     register_godot_instance(instance, obj)
 
     obj._owner = instance
+    obj._owner_allocated = False
     obj.___CLASS_IS_SCRIPT = not is_instance_binding
 
+    # if is_python_reference and not <void *>obj._owner == gdnlib:
+    #     __PYTHON_REFS.add(<size_t>obj._owner)
+    # elif is_cython_reference and not <void *>obj._owner == gdnlib:
+    #     __CYTHON_REFS.add(<size_t>obj._owner)
+
     if is_instance_binding:
-        print('instance binding CREATE', obj, hex(<size_t>obj._owner), cls)
+        if <void *>obj._owner != gdnlib:
+            obj._owner_allocated = True
+        print('instance binding CREATE', obj, hex(<size_t>obj._owner), cls, __ob_refcnt(obj), obj._owner_allocated)
     else:
-        protect_godot_instance(<size_t>instance)
-        print('instance CREATE', obj, hex(<size_t>instance), cls)
+        print('instance CREATE', obj, hex(<size_t>instance), cls, __ob_refcnt(obj))
 
     # Check for _init in class dictionary, otherwise Object._init() will be called incorrectly
     if '_init' in cls.__dict__:
@@ -78,58 +90,43 @@ cdef GDCALLINGCONV_VOID_PTR _cython_wrapper_create(void *data, const void *type_
     with gil:
         return _instance_create(<size_t>type_tag, instance, CYTHON_IDX, is_instance_binding=True)
 
+
 cdef GDCALLINGCONV_VOID_PTR _python_wrapper_create(void *data, const void *type_tag, godot_object *instance) nogil:
     with gil:
         return _instance_create(<size_t>type_tag, instance, PYTHON_IDX, is_instance_binding=True)
 
-cdef set __DESTROYED = set()
+
 cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
     cdef size_t _owner;
     cdef PyObject *p_wrapper = <PyObject *>wrapper
     cdef int expected_refcnt = 1
 
     with gil:
-        if <size_t>wrapper in __DESTROYED:
-            # print("instance binding DESTROY recursive call", hex(<size_t>wrapper))
-            __DESTROYED.remove(<size_t>wrapper)
-            return
-
         _owner = <size_t>(<_Wrapped>wrapper)._owner
 
+        if _owner == 0:
+            print("instance binding DESTROY no owner", <object>wrapper, __ob_refcnt(<object>wrapper))
+            return
+
         print(
-            "instance binding DESTROY",
-            hex(<size_t>wrapper), __ob_refcnt(<object>wrapper), hex(_owner),
-            is_godot_instance_registered(_owner)
+            "instance binding DESTROY", <object>wrapper, __ob_refcnt(<object>wrapper),
+            hex(_owner), is_godot_instance_registered(_owner)
         )
 
-        if _owner:
-            if is_godot_instance_registered(_owner):
-                expected_refcnt += 1
-            (<_Wrapped>wrapper)._owner = NULL
+        if is_godot_instance_registered(_owner):
+            expected_refcnt += 1
 
-            if p_wrapper.ob_refcnt > expected_refcnt:
-                WARN_PRINT("Possible memory leak: reference count for %r is too large: expected %d, got %d" %
-                           (<object>wrapper, expected_refcnt, p_wrapper.ob_refcnt))
-            elif p_wrapper.ob_refcnt < expected_refcnt:
-                WARN_PRINT("Reference count for %r is too small: expected at least %d, got %d" %
-                           (<object>wrapper, expected_refcnt, p_wrapper.ob_refcnt))
+        if __ob_refcnt(<object>wrapper) > expected_refcnt:
+            WARN_PRINT("Possible memory leak: reference count for %r is too large: expected %d, got %d" %
+                       (<object>wrapper, expected_refcnt, __ob_refcnt(<object>wrapper)))
+        elif __ob_refcnt(<object>wrapper) < expected_refcnt:
+            WARN_PRINT("Reference count for %r is too small: expected at least %d, got %d" %
+                       (<object>wrapper, expected_refcnt, __ob_refcnt(<object>wrapper)))
 
-            unregister_godot_instance(<godot_object *>_owner)
-            Py_CLEAR(p_wrapper)
+        unregister_godot_instance(<godot_object *>_owner)
+        Py_CLEAR(p_wrapper)
 
-            if not is_godot_instance_protected(_owner):
-                __DESTROYED.add(<size_t>wrapper)
-                # FIXME: This will call _wrapper_destroy recursively, but this is the only way to clean up the _owner on the Godot side
-                gdapi.godot_object_destroy(<godot_object *>_owner)
-
-        else:
-            if p_wrapper.ob_refcnt > expected_refcnt:
-                WARN_PRINT("Possible memory leak: reference count for %r is too large: expected %d, got %d" %
-                           (<object>wrapper, expected_refcnt, p_wrapper.ob_refcnt))
-            elif p_wrapper.ob_refcnt < expected_refcnt:
-                WARN_PRINT("Reference count for %r is too small: expected at least %d, got %d" %
-                           (<object>wrapper, expected_refcnt, p_wrapper.ob_refcnt))
-            Py_CLEAR(p_wrapper)
+        (<_Wrapped>wrapper)._owner = NULL
 
 
 cdef void _destroy_func(godot_object *instance, void *method_data, void *user_data) nogil:
@@ -137,7 +134,7 @@ cdef void _destroy_func(godot_object *instance, void *method_data, void *user_da
     cdef PyObject *p_wrapper = <PyObject *>user_data
 
     with gil:
-        print('instance DESTROY', hex(<size_t>user_data), __ob_refcnt(<object>user_data), is_godot_instance_registered(_owner))
+        print('instance DESTROY', <object>user_data, __ob_refcnt(<object>user_data), is_godot_instance_registered(_owner))
         (<_Wrapped>user_data)._owner = NULL
 
         unregister_godot_instance(<godot_object *>_owner)
@@ -154,6 +151,7 @@ cdef void _python_method_free(void *method_data) nogil:
 IF INSTANCE_BINDING_REFCNT_HOOKS:
     cdef GDCALLINGCONV_VOID _wrapper_incref(void *wrapper, void *owner) nogil:
         cdef PyObject *p_wrapper = <PyObject *>wrapper
+        cdef size_t _owner = <size_t>owner
 
         with gil:
             Py_XINCREF(p_wrapper)
@@ -161,7 +159,9 @@ IF INSTANCE_BINDING_REFCNT_HOOKS:
 
     cdef GDCALLINGCONV_BOOL _wrapper_decref(void *wrapper, void *owner) nogil:
         cdef PyObject *p_wrapper = <PyObject *>wrapper
+        cdef size_t _owner = <size_t>owner
         cdef int min_refcount = 2
+        cdef bool ret
 
         with gil:
             if p_wrapper == NULL:
@@ -171,14 +171,30 @@ IF INSTANCE_BINDING_REFCNT_HOOKS:
             if is_godot_instance_registered(<size_t>owner):
                 min_refcount += 1
 
-            if p_wrapper.ob_refcnt < min_refcount:
-                if owner != gdnlib:  # Ignore known warnings about GDNativeLibrary objects
-                    WARN_PRINT("Reference count for %r is too small to decrement: expected at least %d, got %d" %
-                               (<object>wrapper, min_refcount, p_wrapper.ob_refcnt))
+            if __ob_refcnt(<object>wrapper) < min_refcount:
+                WARN_PRINT("Reference count for %r is too small to decrement: expected at least %d, got %d" %
+                           (<object>wrapper, min_refcount, __ob_refcnt(<object>wrapper)))
             else:
                 Py_XDECREF(p_wrapper)
 
-            return p_wrapper.ob_refcnt <= min_refcount
+            # should_destroy = False
+
+            # if _owner in __PYTHON_REFS:
+            #     print('UNREF PYTHON', <object>wrapper, hex(_owner))
+            #     should_destroy = (<_python_bindings.Reference>wrapper).unreference()
+            #     print('UNREFED', should_destroy)
+            # elif _owner in __CYTHON_REFS:
+            #     print('UNREF CYTHON', <object>wrapper, hex(_owner))
+            #     should_destroy = (<_cython_bindings.Reference>wrapper).unreference()
+            #     print('UNREFED', should_destroy)
+
+            # if should_destroy:
+            #     unregister_godot_instance(<godot_object *>_owner)
+            #     Py_CLEAR(p_wrapper)
+            #     return True
+
+            ret = (__ob_refcnt(<object>wrapper) <= min_refcount)
+            return ret
 
 
 cdef public cython_nativescript_init():
@@ -286,10 +302,8 @@ cdef object _generate_python_init_func(cls):
     cdef size_t owner
 
     def __init__(self):
-        cdef _python_bindings.NativeScript script = _python_bindings.NativeScript()
+        cdef _python_bindings.NativeScript script = _python_bindings.NativeScript(external_reference=True)
         cdef size_t script_owner = <size_t>script._owner
-
-        protect_godot_instance(script_owner)
 
         assert python_gdnlib is not None, python_gdnlib
 
@@ -313,10 +327,8 @@ cdef object _generate_cython_preinit_func(cls):
     cdef size_t owner
 
     def _preinit(self):
-        cdef _cython_bindings.NativeScript script = _cython_bindings.NativeScript()
+        cdef _cython_bindings.NativeScript script = _cython_bindings.NativeScript(external_reference=True)
         cdef size_t script_owner = <size_t>script._owner
-
-        protect_godot_instance(script_owner)
 
         assert cython_gdnlib is not None, cython_gdnlib
 
@@ -352,6 +364,11 @@ cdef _register_class(type cls, tool_class=False):
     destroy.destroy_func = &_destroy_func
     destroy.method_data = method_data
 
+    if len(cls.__bases__) > 1:
+        raise RuntimeError("Multiple inheritance is not allowed in Godot binding subclasses")
+    elif not cls.__bases__:
+        raise RuntimeError("Godot binding base class is required")
+
     cdef bytes name = cls.__name__.encode('utf-8')
     cdef bytes base = cls.__bases__[0].__name__.encode('utf-8')
 
@@ -360,9 +377,11 @@ cdef _register_class(type cls, tool_class=False):
     init_func_set = False
 
     if is_python and '__init__' in cls.__dict__:
-        WARN_PRINT('overwriting %r' % cls.__init__)
+        WARN_PRINT("overwriting %r, please use '_init' instead of '__init__'" % cls.__init__)
+        cls._init = __init__
     elif cls.__init__.__qualname__.startswith(cls.__name__):
-        raise RuntimeError("%r is not allowed in Godot binding subclasses" % cls.__init__.__qualname__)
+        raise RuntimeError("%r is not allowed in Godot binding subclasses, did you mean %r" %
+                           (cls.__init__.__qualname__, cls.__init__.__qualname__.replace('__init__', '_init')))
 
     if is_python:
         cls.__init__ = _generate_python_init_func(cls)
