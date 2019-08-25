@@ -26,10 +26,11 @@ from libcpp cimport nullptr
 from libc.string cimport memset
 from cpython.object cimport PyObject, PyTypeObject
 from cpython.tuple cimport PyTuple_New, PyTuple_SET_ITEM
-from cpython.ref cimport Py_INCREF, Py_DECREF, Py_CLEAR
+from cpython.ref cimport Py_INCREF, Py_DECREF, Py_CLEAR, Py_XINCREF, Py_XDECREF
 
 from cython.operator cimport dereference as deref
 
+DEF INSTANCE_BINDING_REFCNT_HOOKS = True
 
 cdef extern from *:
     """
@@ -85,6 +86,7 @@ cdef set __DESTROYED = set()
 cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
     cdef size_t _owner;
     cdef PyObject *p_wrapper = <PyObject *>wrapper
+    cdef int expected_refcnt = 1
 
     with gil:
         if <size_t>wrapper in __DESTROYED:
@@ -101,7 +103,16 @@ cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
         )
 
         if _owner:
+            if is_godot_instance_registered(_owner):
+                expected_refcnt += 1
             (<_Wrapped>wrapper)._owner = NULL
+
+            if p_wrapper.ob_refcnt > expected_refcnt:
+                WARN_PRINT("Possible memory leak: reference count for %r is too large: expected %d, got %d" %
+                           (<object>wrapper, expected_refcnt, p_wrapper.ob_refcnt))
+            elif p_wrapper.ob_refcnt < expected_refcnt:
+                WARN_PRINT("Reference count for %r is too small: expected at least %d, got %d" %
+                           (<object>wrapper, expected_refcnt, p_wrapper.ob_refcnt))
 
             unregister_godot_instance(<godot_object *>_owner)
             Py_CLEAR(p_wrapper)
@@ -112,6 +123,12 @@ cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
                 gdapi.godot_object_destroy(<godot_object *>_owner)
 
         else:
+            if p_wrapper.ob_refcnt > expected_refcnt:
+                WARN_PRINT("Possible memory leak: reference count for %r is too large: expected %d, got %d" %
+                           (<object>wrapper, expected_refcnt, p_wrapper.ob_refcnt))
+            elif p_wrapper.ob_refcnt < expected_refcnt:
+                WARN_PRINT("Reference count for %r is too small: expected at least %d, got %d" %
+                           (<object>wrapper, expected_refcnt, p_wrapper.ob_refcnt))
             Py_CLEAR(p_wrapper)
 
 
@@ -134,17 +151,58 @@ cdef void _python_method_free(void *method_data) nogil:
         Py_CLEAR(p_method)
 
 
+IF INSTANCE_BINDING_REFCNT_HOOKS:
+    cdef GDCALLINGCONV_VOID _wrapper_incref(void *wrapper, void *owner) nogil:
+        cdef PyObject *p_wrapper = <PyObject *>wrapper
+
+        with gil:
+            Py_XINCREF(p_wrapper)
+
+
+    cdef GDCALLINGCONV_BOOL _wrapper_decref(void *wrapper, void *owner) nogil:
+        cdef PyObject *p_wrapper = <PyObject *>wrapper
+        cdef int min_refcount = 2
+
+        with gil:
+            if p_wrapper == NULL:
+                WARN_PRINT('NULL pointer in DECREF')
+                return False
+
+            if is_godot_instance_registered(<size_t>owner):
+                min_refcount += 1
+
+            if p_wrapper.ob_refcnt < min_refcount:
+                if owner != gdnlib:  # Ignore known warnings about GDNativeLibrary objects
+                    WARN_PRINT("Reference count for %r is too small to decrement: expected at least %d, got %d" %
+                               (<object>wrapper, min_refcount, p_wrapper.ob_refcnt))
+            else:
+                Py_XDECREF(p_wrapper)
+
+            return p_wrapper.ob_refcnt <= min_refcount
+
+
 cdef public cython_nativescript_init():
     global cython_gdnlib
 
-    cdef godot_instance_binding_functions binding_funcs = [
-        &_cython_wrapper_create,
-        &_wrapper_destroy,
-        NULL,  # &_wrapper_incref,
-        NULL,  # &_wrapper_decref,
-        NULL,  # void *data
-        NULL   # void (*free_func)(void *)
-    ]
+    IF INSTANCE_BINDING_REFCNT_HOOKS:
+        cdef godot_instance_binding_functions binding_funcs = [
+            &_cython_wrapper_create,
+            &_wrapper_destroy,
+            &_wrapper_incref,
+            &_wrapper_decref,
+            NULL,  # void *data
+            NULL   # void (*free_func)(void *)
+        ]
+    ELSE:
+        cdef godot_instance_binding_functions binding_funcs = [
+            &_cython_wrapper_create,
+            &_wrapper_destroy,
+            NULL,  # &_wrapper_incref,
+            NULL,  # &_wrapper_decref,
+            NULL,  # void *data
+            NULL   # void (*free_func)(void *)
+        ]
+
 
     cdef int language_index = ns11api.godot_nativescript_register_instance_binding_data_functions(binding_funcs)
 
@@ -161,22 +219,34 @@ cdef public cython_nativescript_init():
 
 cdef public cython_nativescript_terminate():
     global cython_gdnlib
-    cython_gdnlib = None
+
     clear_instance_map()
     clear_cython()
+
+    cython_gdnlib = None
 
 
 cdef public python_nativescript_init():
     global python_gdnlib
 
-    cdef godot_instance_binding_functions binding_funcs = [
-        &_python_wrapper_create,
-        &_wrapper_destroy,
-        NULL,  # &_wrapper_incref,
-        NULL,  # &_wrapper_decref,
-        NULL,  # void *data
-        NULL   # void (*free_func)(void *)
-    ]
+    IF INSTANCE_BINDING_REFCNT_HOOKS:
+        cdef godot_instance_binding_functions binding_funcs = [
+            &_python_wrapper_create,
+            &_wrapper_destroy,
+            &_wrapper_incref,
+            &_wrapper_decref,
+            NULL,  # void *data
+            NULL   # void (*free_func)(void *)
+        ]
+    ELSE:
+        cdef godot_instance_binding_functions binding_funcs = [
+            &_python_wrapper_create,
+            &_wrapper_destroy,
+            NULL,  # &_wrapper_incref,
+            NULL,  # &_wrapper_decref,
+            NULL,  # void *data
+            NULL   # void (*free_func)(void *)
+        ]
 
     cdef int language_index = ns11api.godot_nativescript_register_instance_binding_data_functions(binding_funcs)
 
@@ -193,9 +263,11 @@ cdef public python_nativescript_init():
 
 cdef public python_nativescript_terminate():
     global python_gdnlib
-    python_gdnlib = None
+
     clear_instance_map()
     clear_python()
+
+    python_gdnlib = None
 
 
 cdef public generic_nativescript_init():
@@ -220,6 +292,7 @@ cdef object _generate_python_init_func(cls):
         protect_godot_instance(script_owner)
 
         assert python_gdnlib is not None, python_gdnlib
+
         script.set_library(python_gdnlib)
         script.set_class_name(cls.__name__)
 
@@ -246,6 +319,7 @@ cdef object _generate_cython_preinit_func(cls):
         protect_godot_instance(script_owner)
 
         assert cython_gdnlib is not None, cython_gdnlib
+
         script.set_library(cython_gdnlib)
         script.set_class_name(cls.__name__)
 
