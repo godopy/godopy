@@ -8,6 +8,7 @@
 #include <cmath>
 #include <stdexcept>
 
+#define NO_IMPORT_ARRAY
 #include "PythonGlobal.hpp"
 
 namespace godot {
@@ -222,10 +223,7 @@ struct Vector2 {
 	operator String() const;
 
 	inline Vector2(PyArrayObject *arr) {
-		PYGODOT_CHECK_NUMPY_API();
-
-		if (likely(PyArray_SIZE(arr) == 2 && PyArray_NDIM(arr) == 1 &&
-			  (PyArray_TYPE(arr) == NPY_FLOAT || PyArray_TYPE(arr) == NPY_DOUBLE))) {
+		if (likely(PyArray_SIZE(arr) == 2 && PyArray_NDIM(arr) == 1 && PyArray_ISFLOAT(arr))) {
 			x = *(real_t *)PyArray_GETPTR1(arr, 0);
 			y = *(real_t *)PyArray_GETPTR1(arr, 1);
 		} else {
@@ -235,13 +233,7 @@ struct Vector2 {
 	}
 
 	PyObject *to_python_wrapper();
-
-	inline PyObject *to_numpy() {
-		npy_intp dims[] = {2};
-		PyObject *arr = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT, (void *)this);
-		Py_INCREF(arr);
-		return arr;
-	}
+	PyObject *to_numpy();
 };
 
 inline Vector2 operator*(real_t p_scalar, const Vector2 &p_vec) {

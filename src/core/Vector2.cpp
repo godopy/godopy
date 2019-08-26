@@ -58,4 +58,11 @@ Vector2::operator String() const {
 	return String::num(x) + ", " + String::num(y);
 }
 
+PyObject *Vector2::to_numpy() {
+	npy_intp dims[] = {2};
+	PyObject *arr = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT, (void *)this);
+	Py_XINCREF(arr);
+	return arr;
+}
+
 } // namespace godot

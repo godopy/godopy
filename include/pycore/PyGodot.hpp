@@ -1,6 +1,7 @@
 #ifndef PYGODOT_HPP
 #define PYGODOT_HPP
 
+#define NO_IMPORT_ARRAY
 #include "PythonGlobal.hpp"
 
 #include "Godot.hpp"

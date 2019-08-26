@@ -5,7 +5,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-// typedef struct __pyx_obj_5godot_10core_types_GodotRID *_python_rid_wrapper;
+
 
 namespace godot {
 

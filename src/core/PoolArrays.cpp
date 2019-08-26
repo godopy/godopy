@@ -2,11 +2,11 @@
 #include "Color.hpp"
 #include "Defs.hpp"
 #include "GodotGlobal.hpp"
-#include "String.hpp"
-#include "Vector2.hpp"
-#include "Vector3.hpp"
+#include "CoreTypes.hpp"
 
 #include <gdnative/pool_arrays.h>
+
+#include <internal-packages/godot/core/types.hpp>
 
 namespace godot {
 
@@ -26,6 +26,87 @@ PoolByteArray &PoolByteArray::operator=(const PoolByteArray &p_other) {
 
 PoolByteArray::PoolByteArray(const Array &array) {
 	godot::api->godot_pool_byte_array_new_with_array(&_godot_array, (godot_array *)&array);
+}
+
+PoolByteArray::PoolByteArray(PyObject *obj) {
+	if (Py_TYPE(obj) == PyGodotWrapperType_PoolByteArray) {
+		godot::api->godot_pool_byte_array_new_copy(&_godot_array, _python_wrapper_to_poolbytearray(obj));
+
+  } else if (PyArray_Check(obj)) {
+		PyArrayObject *arr = (PyArrayObject *)obj;
+
+		if (likely(PyArray_NDIM(arr) == 1 && PyArray_TYPE(arr) == NPY_UINT8)) {
+			godot::api->godot_pool_byte_array_new(&_godot_array);
+			godot::api->godot_pool_byte_array_resize(&_godot_array, PyArray_SIZE(arr));
+			godot_pool_byte_array_write_access *_write_access = godot::api->godot_pool_byte_array_write(&_godot_array);
+
+			const uint8_t *dst = godot::api->godot_pool_byte_array_write_access_ptr(_write_access);
+			memcpy((void *)dst, (void *)PyArray_GETPTR1(arr, 0), PyArray_SIZE(arr));
+
+			godot::api->godot_pool_byte_array_write_access_destroy(_write_access);
+
+		} else {
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("argument must be an array of bytes");
+		}
+	} else if (PyBytes_Check(obj)) {
+		godot::api->godot_pool_byte_array_new(&_godot_array);
+		godot::api->godot_pool_byte_array_resize(&_godot_array, PyBytes_GET_SIZE(obj));
+		godot_pool_byte_array_write_access *_write_access = godot::api->godot_pool_byte_array_write(&_godot_array);
+
+		const uint8_t *ptr = godot::api->godot_pool_byte_array_write_access_ptr(_write_access);
+		memcpy((void *)ptr, (void *)PyBytes_AS_STRING(obj), PyBytes_GET_SIZE(obj));
+
+		godot::api->godot_pool_byte_array_write_access_destroy(_write_access);
+
+	} else if (PyByteArray_Check(obj)) {
+		godot::api->godot_pool_byte_array_new(&_godot_array);
+		godot::api->godot_pool_byte_array_resize(&_godot_array, PyByteArray_GET_SIZE(obj));
+		godot_pool_byte_array_write_access *_write_access = godot::api->godot_pool_byte_array_write(&_godot_array);
+
+		const uint8_t *ptr = godot::api->godot_pool_byte_array_write_access_ptr(_write_access);
+		memcpy((void *)ptr, (void *)PyByteArray_AS_STRING(obj), PyByteArray_GET_SIZE(obj));
+
+		godot::api->godot_pool_byte_array_write_access_destroy(_write_access);
+
+	} else if (PyObject_CheckBuffer(obj)) {
+		throw std::invalid_argument("PoolByteArray construction from  generic Python buffers is not implemented yet");
+
+	} else if (PySequence_Check(obj)) {
+		godot::api->godot_pool_byte_array_new(&_godot_array);
+		int _size = PySequence_Length(obj);
+		godot::api->godot_pool_byte_array_resize(&_godot_array, _size);
+		godot_pool_byte_array_write_access *_write_access = godot::api->godot_pool_byte_array_write(&_godot_array);
+
+		uint8_t *ptr = godot::api->godot_pool_byte_array_write_access_ptr(_write_access);
+
+		for (int i = 0; i < _size; i++) {
+			PyObject *item = PySequence_GetItem(obj, i);
+			*(ptr + i) = PyNumber_AsSsize_t(item, NULL);
+		}
+
+		godot::api->godot_pool_byte_array_write_access_destroy(_write_access);
+
+	} else {
+		throw std::invalid_argument("could not convert Python object");
+	}
+}
+
+PoolByteArray::PoolByteArray(PyArrayObject *arr) {
+	if (likely(PyArray_NDIM(arr) == 1 && PyArray_TYPE(arr) == NPY_UINT8)) {
+		godot::api->godot_pool_byte_array_new(&_godot_array);
+		godot::api->godot_pool_byte_array_resize(&_godot_array, PyArray_SIZE(arr));
+		godot_pool_byte_array_write_access *_write_access = godot::api->godot_pool_byte_array_write(&_godot_array);
+		uint8_t *dst = godot::api->godot_pool_byte_array_write_access_ptr(_write_access);
+		uint8_t *src = (uint8_t *)PyArray_GETPTR1(arr, 0);
+
+		memcpy((void *)dst, (void *)src, PyArray_SIZE(arr));
+
+		godot::api->godot_pool_byte_array_write_access_destroy(_write_access);
+	} else {
+		// raises ValueError in Cython/Python context
+		throw std::invalid_argument("argument must be an array of bytes");
+	}
 }
 
 PoolByteArray::Read PoolByteArray::read() const {

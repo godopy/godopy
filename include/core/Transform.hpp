@@ -8,7 +8,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-// typedef struct __pyx_obj_5godot_10core_types_GodotTransform *_python_transform_wrapper;
+
 
 namespace godot {
 

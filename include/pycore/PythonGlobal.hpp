@@ -4,20 +4,21 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+// #define NO_IMPORT_ARRAY
+#ifndef PY_ARRAY_UNIQUE_SYMBOL
+#define PY_ARRAY_UNIQUE_SYMBOL PYGODOT_ARRAY_API
+#endif
+
+#ifndef NPY_NO_DEPRECATED_API
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#endif
 #include <numpy/arrayobject.h>
 
 #include <gdnative_api_struct.gen.h>
 
-#define PYGODOT_CHECK_NUMPY_API() { \
-	if (unlikely(!PyArray_API)) { \
-		PyArray_API = (void **)pygodot::array_api; \
-	} \
-}
-
 namespace pygodot {
 
-extern "C" const void **array_api;
+// extern "C" const void **array_api;
 
 class PyGodot {
 

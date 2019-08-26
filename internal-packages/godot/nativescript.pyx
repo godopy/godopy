@@ -243,8 +243,8 @@ cdef public cython_nativescript_init():
 cdef public cython_nativescript_terminate():
     global cython_gdnlib
 
-    clear_instance_map()
     clear_cython()
+    clear_instance_map()
 
     cython_gdnlib = None
 
@@ -285,9 +285,15 @@ cdef public python_nativescript_init():
 
 
 cdef public python_nativescript_terminate():
+    import gc
+
     global python_gdnlib
 
-    clear_instance_map()
+    # Some Python objects may depend on Godot objects (eg PoolArray accessors)
+    # and they must be collected before NativeScript is terminated,
+    # otherwise Python would try to collect them during PyFinalizeEx which will cause a SIGSEGV on exit
+    gc.collect()
+
     clear_python()
 
     python_gdnlib = None

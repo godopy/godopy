@@ -10,6 +10,7 @@
 #include <iostream>
 #include <stdexcept>
 
+#define NO_IMPORT_ARRAY
 #include "PythonGlobal.hpp"
 #include <internal-packages/godot/core/types.hpp>
 
@@ -164,8 +165,6 @@ Variant::Variant(const PoolColorArray &p_color_array) {
 }
 
 Variant::Variant(const PyObject *p_python_object) {
-	PYGODOT_CHECK_NUMPY_API();
-
 	if (p_python_object == Py_None) {
 		// Py_XDECREF(p_python_object); // XXX
 		godot::api->godot_variant_new_nil(&_godot_variant);
@@ -183,6 +182,20 @@ Variant::Variant(const PyObject *p_python_object) {
 	} else if (PyUnicode_Check(p_python_object) || PyBytes_Check(p_python_object)) {
 		String s = String(p_python_object);
 		godot::api->godot_variant_new_string(&_godot_variant, (godot_string *)&s);
+
+	} else if (PyByteArray_Check(p_python_object)) {
+		godot_pool_byte_array *p;
+		godot::api->godot_pool_byte_array_new(p);
+		godot::api->godot_pool_byte_array_resize(p, PyByteArray_GET_SIZE(p_python_object));
+		godot_pool_byte_array_write_access *_write_access = godot::api->godot_pool_byte_array_write(p);
+
+		const uint8_t *ptr = godot::api->godot_pool_byte_array_write_access_ptr(_write_access);
+		memcpy((void *)ptr, (void *)PyByteArray_AS_STRING(p_python_object), PyByteArray_GET_SIZE(p_python_object));
+
+		godot::api->godot_variant_new_pool_byte_array(&_godot_variant, p);
+
+		godot::api->godot_pool_byte_array_write_access_destroy(_write_access);
+		godot::api->godot_pool_byte_array_destroy(p);
 
 	} else if (Py_TYPE(p_python_object) == PyGodotWrapperType_AABB) {
 		godot_aabb *p = _python_wrapper_to_aabb((PyObject *)p_python_object);
@@ -372,44 +385,148 @@ Variant::Variant(const PyObject *p_python_object) {
 		if (PyArray_NDIM(arr) == 1 && PyArray_TYPE(arr) == NPY_UINT8) {
 			PoolByteArray _arr;
 			_arr.resize(PyArray_SIZE(arr));
-			PoolByteArray::Write _write = _arr.write();
-			for (int idx = 0; idx < _arr.size(); idx++) {
-				uint8_t *ptr = _write.ptr() + idx;
-				*ptr = *(uint8_t *)PyArray_GETPTR1(arr, idx);
-			}
+
+			uint8_t *dst = _arr.write().ptr();
+			uint8_t *src = (uint8_t *)PyArray_GETPTR1(arr, 0);
+
+			memcpy((void *)dst, (void *)src, PyArray_SIZE(arr));
+
+			// for (int idx = 0; idx < _arr.size(); idx++) {
+			// 	*(dst + idx) = *(uint8_t *)PyArray_GETPTR1(arr, idx);
+			// }
 
 			godot::api->godot_variant_new_pool_byte_array(&_godot_variant, (godot_pool_byte_array *)&_arr);
 
-		} else if (PyArray_NDIM(arr) == 1 && PyArray_TYPE(arr) == NPY_INT) {
+		} else if (PyArray_NDIM(arr) == 1 && PyArray_ISINTEGER(arr)) {
+			if (PyArray_TYPE(arr) != NPY_INT) {
+				WARN_PRINT("Possible data loss: casting unknown integer array to 32-bit signed integers");
+			}
+
 			PoolIntArray _arr;
 			_arr.resize(PyArray_SIZE(arr));
-			PoolIntArray::Write _write = _arr.write();
-			for (int idx = 0; idx < _arr.size(); idx++) {
-				int *ptr = _write.ptr() + idx;
-				*ptr = *(int *)PyArray_GETPTR1(arr, idx);
+
+			int *dst = _arr.write().ptr();
+			int *src = (int *)PyArray_GETPTR1(arr, 0);
+
+			if (PyArray_NBYTES(arr) == (long)(PyArray_SIZE(arr) * sizeof(int))) {
+				memcpy((void *)dst, (void *)src, PyArray_NBYTES(arr));
+			} else {
+				for (int idx = 0; idx < _arr.size(); idx++) {
+					*(dst + idx) = *(int *)PyArray_GETPTR1(arr, idx);
+				}
 			}
 
 			godot::api->godot_variant_new_pool_int_array(&_godot_variant, (godot_pool_int_array *)&_arr);
 
-		} else if (PyArray_NDIM(arr) == 1 && (PyArray_TYPE(arr) == NPY_FLOAT || PyArray_TYPE(arr) == NPY_DOUBLE)) {
+		} else if (PyArray_NDIM(arr) == 1 && PyArray_ISFLOAT(arr)) {
+			if (PyArray_TYPE(arr) == NPY_DOUBLE) {
+				WARN_PRINT("Possible data loss: casting 64-bit float array to 32 bits");
+			} else if (PyArray_TYPE(arr) != NPY_FLOAT) {
+				WARN_PRINT("Possible data loss: casting unknown float array to 32 bit floats");
+			}
+
 			PoolRealArray _arr;
 			_arr.resize(PyArray_SIZE(arr));
-			PoolRealArray::Write _write = _arr.write();
-			for (int idx = 0; idx < _arr.size(); idx++) {
-				real_t *ptr = _write.ptr() + idx;
-				*ptr = *(real_t *)PyArray_GETPTR1(arr, idx);
+
+			float *dst = _arr.write().ptr();
+
+			if (PyArray_TYPE(arr) == NPY_FLOAT && PyArray_NBYTES(arr) == (long)(PyArray_SIZE(arr) * sizeof(float))) {
+				float *src = (float *)PyArray_GETPTR1(arr, 0);
+				memcpy((void *)dst, (void *)src, PyArray_NBYTES(arr));
+			} else {
+				for (int idx = 0; idx < _arr.size(); idx++) {
+					*(dst + idx) = *(float *)PyArray_GETPTR1(arr, idx);
+				}
 			}
 
 			godot::api->godot_variant_new_pool_real_array(&_godot_variant, (godot_pool_real_array *)&_arr);
 
-		// TODO: Other numpy arrays
+		} else if (PyArray_NDIM(arr) == 1 && PyArray_ISSTRING(arr)) {
+			PoolStringArray _arr;
+			_arr.resize(PyArray_SIZE(arr));
+
+			String *ptr = _arr.write().ptr();
+
+			for (int idx = 0; idx < _arr.size(); idx++) {
+				PyObject *item = PyArray_GETITEM(arr, (const char *)PyArray_GETPTR1(arr, idx));
+				// TODO: Check NULL pointer
+				*(ptr + idx) = String(item);
+			}
+
+			godot::api->godot_variant_new_pool_string_array(&_godot_variant, (godot_pool_string_array *)&_arr);
+
+		} else if (PyArray_NDIM(arr) == 1) {
+			Array _arr;
+
+			for (int idx = 0; idx < _arr.size(); idx++) {
+				PyObject *item = PyArray_GETITEM(arr, (const char *)PyArray_GETPTR1(arr, idx));
+				// TODO: Check NULL pointer
+				_arr.append(Variant(item));
+			}
+
+			godot::api->godot_variant_new_array(&_godot_variant, (godot_array *)&_arr);
+
+		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISFLOAT(arr) && PyArray_DIM(arr, 1) == 2) {
+			if (PyArray_TYPE(arr) == NPY_DOUBLE) {
+				WARN_PRINT("Possible data loss: casting 64-bit float array to 32 bits");
+			} else if (PyArray_TYPE(arr) != NPY_FLOAT) {
+				WARN_PRINT("Possible data loss: casting unknown float array to 32 bit floats");
+			}
+
+			PoolVector2Array _arr;
+			npy_intp _size = PyArray_DIM(arr, 0);
+
+			_arr.resize(_size);
+			Vector2 *dst = _arr.write().ptr();
+
+			for (int idx = 0; idx < _arr.size(); idx++) {
+				*(dst + idx) = Vector2(*(real_t *)PyArray_GETPTR2(arr, idx, 0), *(real_t *)PyArray_GETPTR2(arr, idx, 1));
+			}
+
+			godot::api->godot_variant_new_pool_vector2_array(&_godot_variant, (godot_pool_vector2_array *)&_arr);
+
+		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISFLOAT(arr) && PyArray_DIM(arr, 1) == 3) {
+			if (PyArray_TYPE(arr) == NPY_DOUBLE) {
+				WARN_PRINT("Possible data loss: casting 64-bit float array to 32 bits");
+			} else if (PyArray_TYPE(arr) != NPY_FLOAT) {
+				WARN_PRINT("Possible data loss: casting unknown float array to 32 bit floats");
+			}
+
+			PoolVector3Array _arr;
+			npy_intp _size = PyArray_DIM(arr, 0);
+
+			_arr.resize(_size);
+			Vector3 *dst = _arr.write().ptr();
+
+			for (int idx = 0; idx < _arr.size(); idx++) {
+				*(dst + idx) = Vector3(*(real_t *)PyArray_GETPTR2(arr, idx, 0), *(real_t *)PyArray_GETPTR2(arr, idx, 1),
+				                       *(real_t *)PyArray_GETPTR2(arr, idx, 2));
+			}
+
+			godot::api->godot_variant_new_pool_vector3_array(&_godot_variant, (godot_pool_vector3_array *)&_arr);
+
+		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISFLOAT(arr) && PyArray_DIM(arr, 1) == 4) {
+			if (PyArray_TYPE(arr) == NPY_DOUBLE) {
+				WARN_PRINT("Possible data loss: casting 64-bit float array to 32 bits");
+			} else if (PyArray_TYPE(arr) != NPY_FLOAT) {
+				WARN_PRINT("Possible data loss: casting unknown float array to 32 bit floats");
+			}
+
+			PoolColorArray _arr;
+			npy_intp _size = PyArray_DIM(arr, 0);
+
+			_arr.resize(_size);
+			Color *dst = _arr.write().ptr();
+
+			for (int idx = 0; idx < _arr.size(); idx++) {
+				*(dst + idx) = Color(*(real_t *)PyArray_GETPTR2(arr, idx, 0), *(real_t *)PyArray_GETPTR2(arr, idx, 1),
+				                     *(real_t *)PyArray_GETPTR2(arr, idx, 2), *(real_t *)PyArray_GETPTR2(arr, idx, 3));
+			}
+
+			godot::api->godot_variant_new_pool_color_array(&_godot_variant, (godot_pool_color_array *)&_arr);
+
 		} else {
-			if (PyArray_NDIM(arr) == 1) {
-				// raises ValueError in Cython/Python context
-				throw std::invalid_argument("could not convert NumPy array, only uint8, int32, float32 types are supported");
-			} else {
-				throw std::invalid_argument("could not convert NumPy array");
-			}	
+			throw std::invalid_argument("could not convert NumPy array");
 		}
 
 	} else if (PySequence_Check((PyObject *)p_python_object)) {
@@ -583,8 +700,6 @@ Variant::operator godot_object *() const {
 Variant::operator PyObject *() const {
 	PyObject *obj;
 
-	PYGODOT_CHECK_NUMPY_API();
-
 	switch (get_type()) {
 		case NIL:
 			obj = Py_None;
@@ -701,24 +816,18 @@ Variant::operator PyObject *() const {
 		}
 
 		case POOL_BYTE_ARRAY: {
-			PoolByteArray arr = *this;
-			npy_intp dims[] = {arr.size()};
-			obj = PyArray_SimpleNewFromData(1, dims, NPY_UINT8, (void *)arr.read().ptr());
-			break;
+			PoolByteArray cpp_obj = *this;
+			return _poolbytearray_to_python_wrapper(cpp_obj);
 		}
 
 		case POOL_INT_ARRAY: {
-			PoolIntArray arr = *this;
-			npy_intp dims[] = {arr.size()};
-			obj = PyArray_SimpleNewFromData(1, dims, NPY_INT, (void *)arr.read().ptr());
-			break;
+			PoolIntArray cpp_obj = *this;
+			return _poolintarray_to_python_wrapper(cpp_obj);
 		}
 
 		case POOL_REAL_ARRAY: {
-			PoolRealArray arr = *this;
-			npy_intp dims[] = {arr.size()};
-			obj = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT, (void *)arr.read().ptr());
-			break;
+			PoolRealArray cpp_obj = *this;
+			return _poolrealarray_to_python_wrapper(cpp_obj);
 		}
 
 		case POOL_STRING_ARRAY: {
@@ -735,24 +844,18 @@ Variant::operator PyObject *() const {
 		}
 
 		case POOL_VECTOR2_ARRAY: {
-			PoolVector2Array arr = *this;
-			npy_intp dims[] = {arr.size(), 2};
-			obj = PyArray_SimpleNewFromData(2, dims, NPY_FLOAT, (void *)arr.read().ptr());
-			break;
+			PoolVector2Array cpp_obj = *this;
+			return _poolvector2array_to_python_wrapper(cpp_obj);
 		}
 
 		case POOL_VECTOR3_ARRAY: {
-			PoolVector3Array arr = *this;
-			npy_intp dims[] = {arr.size(), 3};
-			obj = PyArray_SimpleNewFromData(2, dims, NPY_FLOAT, (void *)arr.read().ptr());
-			break;
+			PoolVector3Array cpp_obj = *this;
+			return _poolvector3array_to_python_wrapper(cpp_obj);
 		}
 
 		case POOL_COLOR_ARRAY: {
-			PoolColorArray arr = *this;
-			npy_intp dims[] = {arr.size(), 4};
-			obj = PyArray_SimpleNewFromData(2, dims, NPY_FLOAT, (void *)arr.read().ptr());
-			break;
+			PoolColorArray cpp_obj = *this;
+			return _poolcolorarray_to_python_wrapper(cpp_obj);
 		}
 
 		default:

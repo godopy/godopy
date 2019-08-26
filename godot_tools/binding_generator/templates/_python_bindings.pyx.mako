@@ -2,7 +2,7 @@
 <%!
     from godot_tools.binding_generator import (
         python_module_name, is_class_type, is_enum, escape_python,
-        CORE_TYPES, NUMPY_TYPES, SPECIAL_ESCAPES,
+        CORE_TYPES, NUMPY_TYPES, NUMPY_CAST_TYPES, SPECIAL_ESCAPES,
         remove_nested_type_prefix, clean_signature, make_cython_gdnative_type
     )
 
@@ -65,6 +65,8 @@
             return 'return ret.to_tuple()'
         elif rt == 'Dictionary':
             return 'return ret.to_python()'
+        elif rt in NUMPY_CAST_TYPES:
+            return 'return ret.to_numpy()'
         elif rt in CORE_TYPES:
             return 'return py.%s.from_cpp(ret)' % rt
         else:
@@ -196,7 +198,7 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
         cdef godot_object *owner = self._owner
 
         if owner and self._owner_allocated:
-            print('DESTROY %s %r' % (hex(<size_t>owner), self))
+            # print('DESTROY %s %r' % (hex(<size_t>owner), self))
             self._owner = NULL
             gdapi.godot_object_destroy(owner)
             unregister_godot_instance(owner)
@@ -206,15 +208,15 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
         cdef bint should_destroy = False
         cdef godot_object *owner = self._owner
 
-        print('REF DEALLOC', hex(<size_t>owner), self, self._owner_allocated)
+        # print('REF DEALLOC', hex(<size_t>owner), self, self._owner_allocated)
 
         if owner and self._owner_allocated:
-            print('UNREF', hex(<size_t>owner), self)
+            # print('UNREF', hex(<size_t>owner), self)
             should_destroy = self.unreference()
 
         if owner and should_destroy:
             self._owner = NULL
-            print('DESTROY REF', hex(<size_t>owner), self)
+            # print('DESTROY REF', hex(<size_t>owner), self)
             gdapi.godot_object_destroy(owner)
             unregister_godot_instance(owner)
     % endif  ## not base_class
@@ -226,7 +228,7 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
             self._owner = gdapi.godot_get_class_constructor("${class_name}")()
             self._owner_allocated = not external_reference
             register_godot_instance(self._owner, self)
-            print('INIT %s %r' % (hex(<size_t>self._owner), self), __ob_refcnt(self))
+            # print('INIT %s %r' % (hex(<size_t>self._owner), self), __ob_refcnt(self))
         else:
             raise RuntimeError("Improperly configured '${class_name}' subclass")
 
@@ -244,7 +246,7 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
                 # WARN_PRINT("Can't free Godot-managed instance %r (godot_object *%s)" % (self, hex(<size_t>self._owner)))
                 pass
             self._owner = NULL
-            print('DESTROY %s %r' % (hex(<size_t>owner), self))
+            # print('DESTROY %s %r' % (hex(<size_t>owner), self))
             gdapi.godot_object_destroy(owner)
             unregister_godot_instance(owner)
 

@@ -8,11 +8,6 @@
 
 #include "String.hpp"
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-
-// typedef struct __pyx_obj_5godot_10core_types_GodotArray *_python_array_wrapper;
-
 namespace godot {
 
 namespace helpers {

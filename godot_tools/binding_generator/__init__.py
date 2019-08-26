@@ -12,7 +12,9 @@ from .pxd_writer import PxdWriter, parse as parse_c_header
 CYTHON_AUTOMATIC_CAST_TYPES = ('Variant', 'Array', 'Dictionary')
 
 # TODO: Provide numpy interface for all numeric and array Godot types
-NUMPY_TYPES = ('Vector2',)
+NUMPY_TYPES = ('Vector2', 'PoolByteArray')
+
+NUMPY_CAST_TYPES = ()
 
 CORE_TYPES = (
     'Basis', 'Color', 'Dictionary', 'Error', 'NodePath', 'Plane',

@@ -1,5 +1,6 @@
 /* Default generic gdnlib, may be replaced by custom builds */
 
+#define NO_IMPORT_ARRAY
 #include "PythonGlobal.hpp"
 #include "GodotGlobal.hpp"
 #include "Defs.hpp"

@@ -6,8 +6,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-// typedef struct __pyx_obj_5godot_10core_types_GodotCharString *_python_charstring_wrapper;
-// typedef struct __pyx_obj_5godot_10core_types_GodotString *_python_string_wrapper;
 
 namespace godot {
 

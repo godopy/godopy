@@ -1,7 +1,5 @@
+#define NO_IMPORT_ARRAY
 #include "PythonGlobal.hpp"
-
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include <numpy/arrayobject.h>
 
 #include "CoreTypes.hpp"
 #include <internal-packages/godot/core/types.hpp>
@@ -31,12 +29,22 @@ PyObject *Transform2D::to_python_wrapper() { return _transform2d_to_python_wrapp
 PyObject *Vector2::to_python_wrapper() { return _vector2_to_python_wrapper(*this); }
 PyObject *Vector3::to_python_wrapper() { return _vector3_to_python_wrapper(*this); }
 
+PoolByteArray PoolByteArray_from_PyObject(PyObject *obj) {
+  if (Py_TYPE(obj) == PyGodotWrapperType_PoolByteArray) {
+    return *(PoolByteArray *)_python_wrapper_to_poolbytearray(obj);
+  }
+
+  if (PyArray_Check(obj)) {
+    return PoolByteArray((PyArrayObject *)obj);
+  } else {
+    return PoolByteArray(obj);
+  }
+}
+
 Vector2 Vector2_from_PyObject(PyObject *obj) {
 	if (Py_TYPE(obj) == PyGodotWrapperType_Vector2) {
 		return *(Vector2 *)_python_wrapper_to_vector2(obj);
 	}
-
-	PYGODOT_CHECK_NUMPY_API();
 
 	if (PyArray_Check(obj)) {
 		return Vector2((PyArrayObject *)obj);

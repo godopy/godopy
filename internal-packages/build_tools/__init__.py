@@ -35,6 +35,10 @@ def pygodot_cython():
         if pyinit_src_symbol in line:
             line = line.replace(pyinit_src_symbol, pyinit_dst_symbol)
 
+        # Undefined by #define NO_IMPORT_ARRAY
+        if '_import_array()' in line:
+            line = line.replace('_import_array()', '0')
+
         # Fix variable declarations with GDCALLINGCONV, GDCALLINGCONV is valid only for functions
         if line.lstrip().startswith('GDCALLINGCONV_'):
             line = re.sub(r'^(\s+)(GDCALLINGCONV_VOID_PTR)(\s\w+;)$', r'\1void *\3', line)

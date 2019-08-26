@@ -9,7 +9,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-// typedef struct __pyx_obj_5godot_10core_types_GodotRect2 *_python_rect2_wrapper;
+
 
 namespace godot {
 

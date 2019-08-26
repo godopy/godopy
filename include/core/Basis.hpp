@@ -9,7 +9,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-// typedef struct __pyx_obj_5godot_10core_types_GodotBasis *_python_basis_wrapper;
+
 
 namespace godot {
 

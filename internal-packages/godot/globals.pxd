@@ -55,6 +55,10 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
     int _python_language_index "godot::_RegisterState::python_language_index"
 
 
+# cdef extern from "PythonGlobal.hpp":
+#     cdef void PYGODOT_CHECK_NUMPY_API()
+
+
 cdef extern from "PythonGlobal.hpp" namespace "pygodot":
     cdef cppclass PyGodot:
         @staticmethod

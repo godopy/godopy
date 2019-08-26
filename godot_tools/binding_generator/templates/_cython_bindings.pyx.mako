@@ -109,7 +109,7 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
         cdef godot_object *owner = self._owner
 
         if owner and self._owner_allocated:
-            print('DESTROY %s %r' % (hex(<size_t>self._owner), self))
+            # print('DESTROY %s %r' % (hex(<size_t>self._owner), self))
             self._owner = NULL
             gdapi.godot_object_destroy(owner)
             unregister_godot_instance(owner)
@@ -119,14 +119,14 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
         cdef bint should_destroy = False
         cdef godot_object *owner = self._owner
 
-        print('REF DEALLOC', hex(<size_t>owner), self, self._owner_allocated)
+        # print('REF DEALLOC', hex(<size_t>owner), self, self._owner_allocated)
 
         if owner and self._owner_allocated:
-            print('UNREF', hex(<size_t>owner), self)
+            # print('UNREF', hex(<size_t>owner), self)
             should_destroy = self.unreference()
 
         if owner and should_destroy:
-            print('DESTROY REF', hex(<size_t>owner), self)
+            # print('DESTROY REF', hex(<size_t>owner), self)
             self._owner = NULL
             gdapi.godot_object_destroy(owner)
             unregister_godot_instance(owner)
@@ -141,7 +141,7 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
             self._owner = gdapi.godot_get_class_constructor("${class_name}")()
             self._owner_allocated = not external_reference
             register_godot_instance(self._owner, self)
-            print('INIT %s %r' % (hex(<size_t>self._owner), self))
+            # print('INIT %s %r' % (hex(<size_t>self._owner), self))
         else:
             raise RuntimeError("Improperly configured '${class_name}' subclass")
 
@@ -163,7 +163,7 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
                 # WARN_PRINT("Can't free Godot-managed instance %r (godot_object *%s)" % (self, hex(<size_t>self._owner)))
                 pass
             self._owner = NULL
-            print('DESTROY %s %r' % (hex(<size_t>owner), self))
+            # print('DESTROY %s %r' % (hex(<size_t>owner), self))
             gdapi.godot_object_destroy(owner)
             unregister_godot_instance(owner)
 

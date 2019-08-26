@@ -4,8 +4,17 @@ from libcpp cimport bool
 
 from godot_headers.gdnative_api cimport godot_object, godot_char_type
 
+# These #defines must be declared *before* #include <numpy/array_object.h>
 cdef extern from *:
-    "#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION"
+    '''\
+#define NO_IMPORT_ARRAY
+#ifndef PY_ARRAY_UNIQUE_SYMBOL
+#define PY_ARRAY_UNIQUE_SYMBOL PYGODOT_ARRAY_API
+#endif
+#ifndef NPY_NO_DEPRECATED_API
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#endif
+    '''
 
 cimport numpy as np
 
@@ -547,8 +556,11 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         uint8_t operator[](const int idx)
         int size()
 
+        PoolByteArray(object) except +*
+        PoolByteArray(np.ndarray) except +
         object wrap "to_python_wrapper" () except +*
 
+    PoolByteArray PoolByteArray_from_PyObject(object) except +ValueError
 
     cdef cppclass PoolIntArray:
         cppclass Read:

@@ -1,5 +1,7 @@
 from . cimport cpp_types as cpp
+from godot_headers.gdnative_api cimport godot_pool_array_read_access, godot_pool_array_write_access
 
+from numpy cimport npy_intp
 
 cdef class CoreTypeWrapper:
     cdef bint _initialized
@@ -18,10 +20,7 @@ cdef class AABB(CoreTypeWrapper):
     @staticmethod
     cdef AABB from_cpp(cpp.AABB _cpp_object)
 
-cdef class ArrayBase(CoreTypeWrapper):
-    pass
-
-cdef class Array(ArrayBase):
+cdef class Array(CoreTypeWrapper):
     cdef cpp.Array _cpp_object
     @staticmethod
     cdef Array from_cpp(cpp.Array _cpp_object)
@@ -51,40 +50,56 @@ cdef class Plane(CoreTypeWrapper):
     @staticmethod
     cdef Plane from_cpp(cpp.Plane _cpp_object)
 
-cdef class PoolArrayBase(ArrayBase):
+cdef class PoolArray(CoreTypeWrapper):
     pass
 
-cdef class PoolByteArray(PoolArrayBase):
+# Pool*Array*Access classes bind to Godot C API directly
+cdef class PoolArrayReadAccess:
+    cdef godot_pool_array_read_access *_read_access
+    cdef npy_intp _size
+
+
+cdef class PoolArrayWriteAccess:
+    cdef godot_pool_array_write_access *_write_access
+    cdef npy_intp _size
+
+cdef class PoolByteArrayReadAccess(PoolArrayReadAccess):
+    pass
+
+cdef class PoolByteArrayWriteAccess(PoolArrayWriteAccess):
+    pass
+
+cdef class PoolByteArray(PoolArray):
     cdef cpp.PoolByteArray _cpp_object
     @staticmethod
     cdef PoolByteArray from_cpp(cpp.PoolByteArray _cpp_object)
 
-cdef class PoolIntArray(PoolArrayBase):
+cdef class PoolIntArray(PoolArray):
     cdef cpp.PoolIntArray _cpp_object
     @staticmethod
     cdef PoolIntArray from_cpp(cpp.PoolIntArray _cpp_object)
 
-cdef class PoolRealArray(PoolArrayBase):
+cdef class PoolRealArray(PoolArray):
     cdef cpp.PoolRealArray _cpp_object
     @staticmethod
     cdef PoolRealArray from_cpp(cpp.PoolRealArray _cpp_object)
 
-cdef class PoolStringArray(PoolArrayBase):
+cdef class PoolStringArray(PoolArray):
     cdef cpp.PoolStringArray _cpp_object
     @staticmethod
     cdef PoolStringArray from_cpp(cpp.PoolStringArray _cpp_object)
 
-cdef class PoolVector2Array(PoolArrayBase):
+cdef class PoolVector2Array(PoolArray):
     cdef cpp.PoolVector2Array _cpp_object
     @staticmethod
     cdef PoolVector2Array from_cpp(cpp.PoolVector2Array _cpp_object)
 
-cdef class PoolVector3Array(PoolArrayBase):
+cdef class PoolVector3Array(PoolArray):
     cdef cpp.PoolVector3Array _cpp_object
     @staticmethod
     cdef PoolVector3Array from_cpp(cpp.PoolVector3Array _cpp_object)
 
-cdef class PoolColorArray(PoolArrayBase):
+cdef class PoolColorArray(PoolArray):
     cdef cpp.PoolColorArray _cpp_object
     @staticmethod
     cdef PoolColorArray from_cpp(cpp.PoolColorArray _cpp_object)
