@@ -96,8 +96,8 @@ cdef class CythonExample(nodes.Sprite):
         register_method(CythonExample, '_process', CythonExample._process)
 ```
 
-Note that `Vector2` is a native C++ type.
-
+Note that `Vector2` is a native C++ type and `register_method` is a C++ template that wraps
+low level C function pointers. This completely eliminates any Python runtime overhead.
 
 ...
 
