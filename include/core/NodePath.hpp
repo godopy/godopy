@@ -39,7 +39,7 @@ public:
 
 	String get_concatenated_subnames() const;
 
-	PyObject *to_python_wrapper();
+	PyObject *py_wrap() const;
 
 	operator String() const;
 

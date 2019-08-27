@@ -57,7 +57,7 @@ public:
 	bool operator!=(const Plane &p_plane) const;
 	operator String() const;
 
-	PyObject *to_python_wrapper();
+	PyObject *py_wrap() const;
 
 	inline Plane() { d = 0; }
 	inline Plane(real_t p_a, real_t p_b, real_t p_c, real_t p_d) :

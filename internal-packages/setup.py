@@ -3,12 +3,14 @@ from setuptools import setup
 packages = [
     'godot_headers',
     'godot', 'godot.core', 'godot.bindings', 'godot.bindings.python',
+    'pygodot',
     'build_tools'
 ]
 
 package_data = {
     'godot_headers': ['*.pxd'],
     'godot': ['*.pxd'],
+    'pygodot': ['*.pxd'],
     'godot.core': ['*.pxd'],
     'godot.bindings': [
         '*.pxd',

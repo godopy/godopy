@@ -72,9 +72,9 @@ cdef void *_instance_create(size_t type_tag, godot_object *instance, language_in
     if is_instance_binding:
         if <void *>obj._owner != gdnlib:
             obj._owner_allocated = True
-        print('instance binding CREATE', obj, hex(<size_t>obj._owner), cls, __ob_refcnt(obj), obj._owner_allocated)
-    else:
-        print('instance CREATE', obj, hex(<size_t>instance), cls, __ob_refcnt(obj))
+        # print('instance binding CREATE', obj, hex(<size_t>obj._owner), cls, __ob_refcnt(obj), obj._owner_allocated)
+    # else:
+    #     print('instance CREATE', obj, hex(<size_t>instance), cls, __ob_refcnt(obj))
 
     # Check for _init in class dictionary, otherwise Object._init() will be called incorrectly
     if '_init' in cls.__dict__:
@@ -105,7 +105,7 @@ cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
         _owner = <size_t>(<_Wrapped>wrapper)._owner
 
         if _owner == 0:
-            print("instance binding DESTROY no owner", <object>wrapper, __ob_refcnt(<object>wrapper))
+            # print("instance binding DESTROY no owner", <object>wrapper, __ob_refcnt(<object>wrapper))
             if __ob_refcnt(<object>wrapper) > expected_refcnt:
                 WARN_PRINT("Possible memory leak: reference count for %r is too large: expected %d, got %d" %
                            (<object>wrapper, expected_refcnt, __ob_refcnt(<object>wrapper)))
@@ -115,10 +115,10 @@ cdef GDCALLINGCONV_VOID _wrapper_destroy(void *data, void *wrapper) nogil:
             Py_CLEAR(p_wrapper)
             return
 
-        print(
-            "instance binding DESTROY", <object>wrapper, __ob_refcnt(<object>wrapper),
-            hex(_owner), is_godot_instance_registered(_owner)
-        )
+        # print(
+        #     "instance binding DESTROY", <object>wrapper, __ob_refcnt(<object>wrapper),
+        #     hex(_owner), is_godot_instance_registered(_owner)
+        # )
 
         if is_godot_instance_registered(_owner):
             expected_refcnt += 1
@@ -141,7 +141,7 @@ cdef void _destroy_func(godot_object *instance, void *method_data, void *user_da
     cdef PyObject *p_wrapper = <PyObject *>user_data
 
     with gil:
-        print('instance DESTROY', <object>user_data, __ob_refcnt(<object>user_data), is_godot_instance_registered(_owner))
+        # print('instance DESTROY', <object>user_data, __ob_refcnt(<object>user_data), is_godot_instance_registered(_owner))
         (<_Wrapped>user_data)._owner = NULL
 
         unregister_godot_instance(<godot_object *>_owner)
@@ -323,7 +323,7 @@ cdef object _generate_python_init_func(cls):
         script.set_library(python_gdnlib)
         script.set_class_name(cls.__name__)
 
-        print('SCRIPT', hex(script_owner), __ob_refcnt(script))
+        # print('SCRIPT', hex(script_owner), __ob_refcnt(script))
 
         cdef godot_object *owner = script._new_instance()
         (<_Wrapped>self)._owner = owner;
@@ -331,7 +331,7 @@ cdef object _generate_python_init_func(cls):
         # Clean Python object created in script._new_instance()
         replace_python_instance(owner, self)
 
-        print('OWNER', hex(<size_t>owner), __ob_refcnt(script), self, __ob_refcnt(self))
+        # print('OWNER', hex(<size_t>owner), __ob_refcnt(script), self, __ob_refcnt(self))
 
     return __init__
 
@@ -348,7 +348,7 @@ cdef object _generate_cython_preinit_func(cls):
         script.set_library(cython_gdnlib)
         script.set_class_name(cls.__name__)
 
-        print('SCRIPT', hex(script_owner), __ob_refcnt(script))
+        # print('SCRIPT', hex(script_owner), __ob_refcnt(script))
 
         cdef godot_object *owner = script._new_instance()
         (<_Wrapped>self)._owner = owner;
@@ -356,7 +356,7 @@ cdef object _generate_cython_preinit_func(cls):
         # Clean Python object created in script._new_instance()
         replace_python_instance(owner, self)
 
-        print('OWNER', hex(<size_t>owner), __ob_refcnt(script), self, __ob_refcnt(self))
+        # print('OWNER', hex(<size_t>owner), __ob_refcnt(script), self, __ob_refcnt(self))
 
     return _preinit
 
@@ -385,7 +385,7 @@ cdef _register_class(type cls, tool_class=False):
     cdef bytes name = cls.__name__.encode('utf-8')
     cdef bytes base = cls.__bases__[0].__name__.encode('utf-8')
 
-    print('register class', name, base)
+    # print('register class', name, base)
 
     init_func_set = False
 
@@ -477,7 +477,7 @@ cdef inline _set_signal_argument(godot_signal_argument *sigarg, object _arg):
     _name = <String>arg.name
     gdapi.godot_string_new_copy(&sigarg.name, <godot_string *>&_name)
 
-    print('set arg', arg.name, arg.type, VARIANT_OBJECT)
+    # print('set arg', arg.name, arg.type, VARIANT_OBJECT)
     sigarg.type = arg.type
 
     if arg.hint_string:
@@ -522,7 +522,7 @@ cdef public object _register_python_property(type cls, const char *name, object 
     cdef str property_data = name
     Py_INCREF(property_data)
 
-    print('prop registered', name, __ob_refcnt(property_data))
+    # print('prop registered', name, __ob_refcnt(property_data))
 
     cdef godot_property_set_func set_func = [NULL, NULL, NULL]
     set_func.method_data = <void *>property_data

@@ -110,13 +110,13 @@ Dictionary::Dictionary(const PyObject *other) {
 	}
 }
 
-PyObject *Dictionary::to_python() {
+PyObject *Dictionary::py_dict() const {
 	PyObject *obj = PyDict_New();
 	const Array _keys = keys();
 
 	for (int i = 0; i < _keys.size(); i++) {
 		Variant _key = _keys[i];
-		Variant _val = *(Variant *)godot::api->godot_dictionary_operator_index(&_godot_dictionary, (godot_variant *)&_key);
+		Variant _val = *(Variant *)godot::api->godot_dictionary_operator_index((godot_dictionary *)&_godot_dictionary, (godot_variant *)&_key);
 		PyObject *key = _key;
 		PyObject *val = _val;
 		// TODO: Check NULL pointers

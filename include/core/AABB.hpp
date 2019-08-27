@@ -10,8 +10,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-// typedef struct __pyx_obj_5godot_10core_types_GodotAABB *_python_aabb_wrapper;
-
 namespace godot {
 
 class AABB {
@@ -73,7 +71,7 @@ public:
 	void project_range_in_plane(const Plane &p_plane, real_t &r_min, real_t &r_max) const;
 	void expand_to(const Vector3 &p_vector); /** expand to contain a point if necesary */
 
-	PyObject *to_python_wrapper();
+	PyObject *py_wrap() const;
 
 	operator String() const;
 

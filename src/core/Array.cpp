@@ -242,11 +242,11 @@ Array::Array(const PyObject *o) {
 	}
 }
 
-PyObject *Array::to_python_tuple() {
+PyObject *Array::py_tuple() const {
 	PyObject *obj = PyTuple_New(size());
 
 	for (int i; i < size(); i++) {
-		godot_variant *v = godot::api->godot_array_operator_index(&_godot_array, i);
+		godot_variant *v = godot::api->godot_array_operator_index((godot_array *)&_godot_array, i);
 		PyObject *item = *(Variant *)v;
 		// FIXME: Check NULL pointer?
 
@@ -257,11 +257,11 @@ PyObject *Array::to_python_tuple() {
 	return obj;
 }
 
-PyObject *Array::to_python_list() {
+PyObject *Array::py_list() const {
 	PyObject *obj = PyList_New(size());
 
 	for (int i; i < size(); i++) {
-		godot_variant *v = godot::api->godot_array_operator_index(&_godot_array, i);
+		godot_variant *v = godot::api->godot_array_operator_index((godot_array *)&_godot_array, i);
 		PyObject *item = *(Variant *)v;
 		// FIXME: Check NULL pointer?
 

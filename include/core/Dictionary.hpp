@@ -54,8 +54,8 @@ public:
 
 	Dictionary(const PyObject *other);
 
-	PyObject *to_python_wrapper();
-	PyObject *to_python();
+	PyObject *py_wrap() const;
+	PyObject *py_dict() const;
 };
 
 } // namespace godot

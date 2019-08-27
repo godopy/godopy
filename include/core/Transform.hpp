@@ -75,7 +75,7 @@ public:
 
 	void set(real_t xx, real_t xy, real_t xz, real_t yx, real_t yy, real_t yz, real_t zx, real_t zy, real_t zz, real_t tx, real_t ty, real_t tz);
 
-	PyObject *to_python_wrapper();
+	PyObject *py_wrap() const;
 
 	operator String() const;
 

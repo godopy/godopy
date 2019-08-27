@@ -218,20 +218,6 @@ CharString String::ascii(bool p_extended) const {
 	return ret;
 }
 
-PyObject *String::py_str() const {
-	PyObject *ret = PyUnicode_FromWideChar(unicode_str(), length());
-
-	Py_XINCREF(ret);
-	return ret;
-}
-
-PyObject *String::py_bytes() const {
-	PyObject *ret = PyBytes_FromString(utf8().get_data());
-
-	Py_XINCREF(ret);
-	return ret;
-}
-
 String operator+(const char *a, const String &b) {
 	return String(a) + b;
 }
@@ -615,6 +601,20 @@ String String::trim_suffix(const String &suffix) const {
 	String new_string;
 	new_string._godot_string = godot::core_1_1_api->godot_string_trim_suffix(&_godot_string, &suffix._godot_string);
 	return new_string;
+}
+
+PyObject *String::py_str() const {
+	PyObject *ret = PyUnicode_FromWideChar(unicode_str(), length());
+
+	Py_XINCREF(ret);
+	return ret;
+}
+
+PyObject *String::py_bytes() const {
+	PyObject *ret = PyBytes_FromString(utf8().get_data());
+
+	Py_XINCREF(ret);
+	return ret;
 }
 
 } // namespace godot

@@ -394,7 +394,7 @@ public:
 
 	void set_orthogonal_index(int p_index); // down below
 
-	PyObject *to_python_wrapper();
+	PyObject *py_wrap() const;
 
 	operator String() const;
 

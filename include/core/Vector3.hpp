@@ -8,10 +8,12 @@
 #include "String.hpp"
 
 #include <cmath>
+#include <stdexcept>
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-
+#ifndef NO_IMPORT_ARRAY
+#define NO_IMPORT_ARRAY
+#endif
+#include "PythonGlobal.hpp"
 
 namespace godot {
 
@@ -266,10 +268,24 @@ struct Vector3 {
 		return v;
 	}
 
-	PyObject *to_python_wrapper();
+	inline Vector3(PyArrayObject *arr) {
+		if (likely(PyArray_SIZE(arr) == 3 && PyArray_NDIM(arr) == 1 && PyArray_ISFLOAT(arr))) {
+			x = *(real_t *)PyArray_GETPTR1(arr, 0);
+			y = *(real_t *)PyArray_GETPTR1(arr, 1);
+			z = *(real_t *)PyArray_GETPTR1(arr, 1);
+		} else {
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("argument must be an array of two float values");
+		}
+	}
+
+	PyObject *py_wrap() const;
+	PyObject *py_ndarray() const;
 
 	operator String() const;
 };
+
+Vector3 Vector3_from_PyObject(PyObject *obj);
 
 inline Vector3 operator*(real_t p_scalar, const Vector3 &p_vec) {
 	return p_vec * p_scalar;

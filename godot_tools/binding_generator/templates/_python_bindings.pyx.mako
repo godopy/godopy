@@ -62,11 +62,11 @@
         elif rt == 'String':
             return 'return ret.py_str()'
         elif rt == 'Array':
-            return 'return ret.to_tuple()'
+            return 'return ret.py_tuple()'
         elif rt == 'Dictionary':
-            return 'return ret.to_python()'
+            return 'return ret.py_dict()'
         elif rt in NUMPY_CAST_TYPES:
-            return 'return ret.to_numpy()'
+            return 'return ret.py_ndarray()'
         elif rt in CORE_TYPES:
             return 'return py.%s.from_cpp(ret)' % rt
         else:

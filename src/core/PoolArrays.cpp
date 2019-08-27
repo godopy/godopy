@@ -109,6 +109,18 @@ PoolByteArray::PoolByteArray(PyArrayObject *arr) {
 	}
 }
 
+PoolByteArray PoolByteArray_from_PyObject(PyObject *obj) {
+  if (Py_TYPE(obj) == PyGodotWrapperType_PoolByteArray) {
+    return *(PoolByteArray *)_python_wrapper_to_poolbytearray(obj);
+  }
+
+  if (PyArray_Check(obj)) {
+    return PoolByteArray((PyArrayObject *)obj);
+  } else {
+    return PoolByteArray(obj);
+  }
+}
+
 PoolByteArray::Read PoolByteArray::read() const {
 	Read read;
 	read._read_access = godot::api->godot_pool_byte_array_read(&_godot_array);

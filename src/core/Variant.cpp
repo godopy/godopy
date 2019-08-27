@@ -10,7 +10,9 @@
 #include <iostream>
 #include <stdexcept>
 
+#ifndef NO_IMPORT_ARRAY
 #define NO_IMPORT_ARRAY
+#endif
 #include "PythonGlobal.hpp"
 #include <internal-packages/godot/core/types.hpp>
 

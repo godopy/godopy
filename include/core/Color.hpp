@@ -101,7 +101,7 @@ public:
 
 	bool operator<(const Color &p_color) const; //used in set keys
 
-	 PyObject *to_python_wrapper();
+	 PyObject *py_wrap() const;
 
 	operator String() const;
 

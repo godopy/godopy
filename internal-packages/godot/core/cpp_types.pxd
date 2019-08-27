@@ -4,19 +4,7 @@ from libcpp cimport bool
 
 from godot_headers.gdnative_api cimport godot_object, godot_char_type
 
-# These #defines must be declared *before* #include <numpy/array_object.h>
-cdef extern from *:
-    '''\
-#define NO_IMPORT_ARRAY
-#ifndef PY_ARRAY_UNIQUE_SYMBOL
-#define PY_ARRAY_UNIQUE_SYMBOL PYGODOT_ARRAY_API
-#endif
-#ifndef NPY_NO_DEPRECATED_API
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#endif
-    '''
-
-cimport numpy as np
+from pygodot cimport numpy as np
 
 cdef extern from "Defs.hpp":
     ctypedef float real_t
@@ -134,7 +122,7 @@ cdef extern from "AABB.hpp" namespace "godot" nogil:
         AABB() except +
         AABB(const Vector3 &pos, const Vector3 &size) except+
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Object.hpp" namespace "godot" nogil:
@@ -215,9 +203,9 @@ cdef extern from "Array.hpp" namespace "godot" nogil:
         void shuffle()
 
         Array(object) except +
-        object wrap "to_python_wrapper" () except +*
-        object to_tuple "to_python_tuple" () except +
-        object to_list "to_python_list" () except +
+        object py_wrap() except +*
+        object py_tuple() except +
+        object py_list() except +
 
 
 cdef extern from "Basis.hpp" namespace "godot" nogil:
@@ -281,8 +269,6 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         Vector3 snapped(const float by)
 
         # String operator String()
-
-        object wrap "to_python_wrapper" () except +*
 
     cdef cppclass Basis:
         # ColumnVector3[0] x
@@ -368,7 +354,7 @@ cdef extern from "Basis.hpp" namespace "godot" nogil:
         Basis diagonalize()
 
         # Quat operator Quat()
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Color.hpp" namespace "godot" nogil:
@@ -428,7 +414,7 @@ cdef extern from "Color.hpp" namespace "godot" nogil:
         Color(float, float, float)
         Color(float, float, float, float)
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Dictionary.hpp" namespace "godot" nogil:
@@ -453,8 +439,8 @@ cdef extern from "Dictionary.hpp" namespace "godot" nogil:
         Array values()
 
         Dictionary(object) except +
-        object wrap "to_python_wrapper" () except +*
-        object to_python() except +
+        object py_wrap() except +*
+        object py_dict() except +*
 
 
 cdef extern from "NodePath.hpp" namespace "godot" nogil:
@@ -477,7 +463,7 @@ cdef extern from "NodePath.hpp" namespace "godot" nogil:
 
         bint operator==(const NodePath&)
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Plane.hpp" namespace "godot" nogil:
@@ -524,7 +510,7 @@ cdef extern from "Plane.hpp" namespace "godot" nogil:
         Plane(const Vector3 &point1, const Vector3 &point2,
               const Vector3 &point3, ClockDirection dir=CLOCKWISE) except +
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from * namespace "godot":
@@ -558,7 +544,11 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
 
         PoolByteArray(object) except +*
         PoolByteArray(np.ndarray) except +
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
+        object py_read() except +*
+        object py_write() except +*
+        np.ndarray[np.uint8_t] py_ndarray() except +*
+        np.ndarray[np.uint8_t] py_ndarray(bint) except +*
 
     PoolByteArray PoolByteArray_from_PyObject(object) except +ValueError
 
@@ -587,7 +577,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         int operator[](const int idx)
         int size()
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
     cdef cppclass PoolRealArray:
@@ -615,7 +605,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         real_t operator[](const int idx)
         int size()
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
     cdef cppclass PoolStringArray:
@@ -643,7 +633,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const String operator[](const int idx)
         int size()
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
     cdef cppclass PoolVector2Array:
@@ -671,7 +661,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector2 operator[](const int idx)
         int size()
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
     cdef cppclass PoolVector3Array:
@@ -699,7 +689,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector3 operator[](const int idx)
         int size()
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
     cdef cppclass PoolColorArray:
@@ -727,7 +717,7 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Color operator[](const int idx)
         int size()
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Quat.hpp" namespace "godot" nogil:
@@ -782,7 +772,7 @@ cdef extern from "Quat.hpp" namespace "godot" nogil:
         Quat(const Vector3 &v0, const Vector3 &v1) except +
         Quat() except +
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Rect2.hpp" namespace "godot" nogil:
@@ -824,7 +814,7 @@ cdef extern from "Rect2.hpp" namespace "godot" nogil:
         Rect2(real_t x, real_t y, real_t width, real_t height) except +
         Rect2(const Point2 &position, const Size2 &size) except +
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Ref.hpp" namespace "godot" nogil:
@@ -868,7 +858,7 @@ cdef extern from "RID.hpp" namespace "godot" nogil:
         bint operator<=(const RID&)
         bint operator>=(const RID&)
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "String.hpp" namespace "godot" nogil:
@@ -926,8 +916,6 @@ cdef extern from "String.hpp" namespace "godot" nogil:
         char *alloc_c_string()
         CharString utf8()
         CharString ascii(bint extended=False)
-        str py_str()
-        bytes py_bytes()
 
         bint begins_with(String&)
         bint begins_with_char_array(const char*)
@@ -999,7 +987,9 @@ cdef extern from "String.hpp" namespace "godot" nogil:
         String trim_prefix(const String &prefix)
         String trim_suffix(const String &suffix)
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
+        str py_str() except +*
+        bytes py_bytes() except +*
 
 
 cdef extern from "Transform.hpp" namespace "godot" nogil:
@@ -1064,7 +1054,7 @@ cdef extern from "Transform.hpp" namespace "godot" nogil:
         Transform(const Basis &basis, const Vector3 &origin) except +
         Transform() except +
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Transform2D.hpp" namespace "godot" nogil:
@@ -1121,7 +1111,7 @@ cdef extern from "Transform2D.hpp" namespace "godot" nogil:
         Transform2D(real_t rot, Vector2 &pos) except +
         Transform2D() except +
 
-        object wrap "to_python_wrapper" () except +*
+        object py_wrap() except +*
 
 
 cdef extern from "Variant.hpp" namespace "godot" nogil:
@@ -1335,12 +1325,12 @@ cdef extern from "Vector2.hpp" namespace "godot" nogil:
         real_t length()
         real_t length_squared()
 
-        Vector2(np.ndarray) except +ValueError
+        Vector2(np.ndarray) except +
 
-        np.ndarray[np.float32_t] to_numpy()
-        object wrap "to_python_wrapper" () except +*
+        np.ndarray[np.float32_t] py_ndarray()
+        object py_wrap() except +*
 
-    Vector2 Vector2_from_PyObject(object) except +ValueError
+    Vector2 Vector2_from_PyObject(object) except +*
 
 
 cdef extern from "Vector3.hpp" namespace "godot" nogil:
@@ -1404,10 +1394,14 @@ cdef extern from "Vector3.hpp" namespace "godot" nogil:
         Vector3 snapped(const float by)
 
         # String operator String()
-        object wrap "to_python_wrapper" () except +*
+
+        Vector3(np.ndarray) except +
+
+        np.ndarray[np.float32_t] py_ndarray()
+        object py_wrap() except +*
 
     Vector3 vec3_cross(const Vector3 &a, Vector3 &b)
-
+    Vector3 Vector3_from_PyObject(object) except +*
 
 cdef extern from "Wrapped.hpp" namespace "godot" nogil:
     cdef cppclass __cpp_internal_Wrapped "godot::_Wrapped":

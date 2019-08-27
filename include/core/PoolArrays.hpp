@@ -11,7 +11,9 @@
 
 #include <gdnative/pool_arrays.h>
 
+#ifndef NO_IMPORT_ARRAY
 #define NO_IMPORT_ARRAY
+#endif
 #include "PythonGlobal.hpp"
 
 namespace godot {
@@ -115,7 +117,10 @@ public:
 
 	PoolByteArray(PyObject *obj);
 	PoolByteArray(PyArrayObject *arr);
-	PyObject *to_python_wrapper();
+	PyObject *py_wrap() const;
+	PyObject *py_read() const;
+	PyObject *py_write() const;
+	PyObject *py_ndarray(bool readonly = true) const;
 
 	~PoolByteArray();
 };
@@ -216,10 +221,15 @@ public:
 
 	int size() const;
 
-	PyObject *to_python_wrapper();
+	// PoolIntArray(PyObject *obj);
+	// PoolIntArray(PyArrayObject *arr);
+	PyObject *py_wrap() const;
+	// PyObject *py_ndarray(bool readonly = true) const;
 
 	~PoolIntArray();
 };
+
+// PoolIntArray PoolIntArray_from_PyObject(PyObject *obj);
 
 class PoolRealArray {
 	godot_pool_real_array _godot_array;
@@ -315,10 +325,15 @@ public:
 
 	int size() const;
 
-	PyObject *to_python_wrapper();
+	// PoolRealArray(PyObject *obj);
+	// PoolRealArray(PyArrayObject *arr);
+	PyObject *py_wrap() const;
+	// PyObject *py_ndarray(bool readonly = true) const;
 
 	~PoolRealArray();
 };
+
+// PoolRealArray PoolRealArray_from_PyObject(PyObject *obj);
 
 class PoolStringArray {
 	godot_pool_string_array _godot_array;
@@ -414,10 +429,15 @@ public:
 
 	int size() const;
 
-	PyObject *to_python_wrapper();
+	// PoolStringArray(PyObject *obj);
+	// PoolStringArray(PyArrayObject *arr);
+	PyObject *py_wrap() const;
+	// PyObject *py_ndarray(bool readonly = true) const;
 
 	~PoolStringArray();
 };
+
+// PoolStringArray PoolStringArray_from_PyObject(PyObject *obj);
 
 class PoolVector2Array {
 	godot_pool_vector2_array _godot_array;
@@ -513,10 +533,15 @@ public:
 
 	int size() const;
 
-	PyObject *to_python_wrapper();
+	// PoolVector2Array(PyObject *obj);
+	// PoolVector2Array(PyArrayObject *arr);
+	PyObject *py_wrap() const;
+	// PyObject *py_ndarray(bool readonly = true) const;
 
 	~PoolVector2Array();
 };
+
+// PoolVector2Array PoolVector2Array_from_PyObject(PyObject *obj);
 
 class PoolVector3Array {
 	godot_pool_vector3_array _godot_array;
@@ -612,10 +637,15 @@ public:
 
 	int size() const;
 
-	PyObject *to_python_wrapper();
+	// PoolVector3Array(PyObject *obj);
+	// PoolVector3Array(PyArrayObject *arr);
+	PyObject *py_wrap() const;
+	// PyObject *py_ndarray(bool readonly = true) const;
 
 	~PoolVector3Array();
 };
+
+// PoolVector3Array PoolVector3Array_from_PyObject(PyObject *obj);
 
 class PoolColorArray {
 	godot_pool_color_array _godot_array;
@@ -711,10 +741,15 @@ public:
 
 	int size() const;
 
-	PyObject *to_python_wrapper();
+	// PoolColorArray(PyObject *obj);
+	// PoolColorArray(PyArrayObject *arr);
+	PyObject *py_wrap() const;
+	// PyObject *py_ndarray(bool readonly = true) const;
 
 	~PoolColorArray();
 };
+
+// PoolColorArray PoolColorArray_from_PyObject(PyObject *obj);
 
 } // namespace godot
 

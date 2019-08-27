@@ -72,8 +72,6 @@ public:
 	char *alloc_c_string() const;
 	CharString utf8() const;
 	CharString ascii(bool p_extended = false) const;
-	PyObject *py_str() const;
-	PyObject *py_bytes() const;
 
 	bool begins_with(String &s) const;
 	bool begins_with_char_array(const char *p_char_array) const;
@@ -145,7 +143,9 @@ public:
 	String trim_prefix(const String &prefix) const;
 	String trim_suffix(const String &suffix) const;
 
-	PyObject *to_python_wrapper();
+	PyObject *py_wrap() const;
+	PyObject *py_str() const;
+	PyObject *py_bytes() const;
 };
 
 String operator+(const char *a, const String &b);

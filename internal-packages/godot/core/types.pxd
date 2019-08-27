@@ -1,7 +1,7 @@
 from . cimport cpp_types as cpp
 from godot_headers.gdnative_api cimport godot_pool_array_read_access, godot_pool_array_write_access
 
-from numpy cimport npy_intp
+from pygodot cimport numpy as np
 
 cdef class CoreTypeWrapper:
     cdef bint _initialized
@@ -56,23 +56,42 @@ cdef class PoolArray(CoreTypeWrapper):
 # Pool*Array*Access classes bind to Godot C API directly
 cdef class PoolArrayReadAccess:
     cdef godot_pool_array_read_access *_read_access
-    cdef npy_intp _size
+    cdef np.npy_intp _size
 
 
 cdef class PoolArrayWriteAccess:
     cdef godot_pool_array_write_access *_write_access
-    cdef npy_intp _size
+    cdef np.npy_intp _size
 
 cdef class PoolByteArrayReadAccess(PoolArrayReadAccess):
-    pass
+    cpdef np.ndarray[np.uint8_t] to_numpy(self, object base=*)
 
 cdef class PoolByteArrayWriteAccess(PoolArrayWriteAccess):
-    pass
+    cpdef np.ndarray[np.uint8_t] to_numpy(self, object base=*)
 
 cdef class PoolByteArray(PoolArray):
     cdef cpp.PoolByteArray _cpp_object
+
     @staticmethod
     cdef PoolByteArray from_cpp(cpp.PoolByteArray _cpp_object)
+
+    @staticmethod
+    cdef np.ndarray[np.uint8_t] from_cpp_to_numpy(cpp.PoolByteArray _cpp_object, readonly=*)
+
+    @staticmethod
+    cdef PoolByteArray _from_numpy(np.ndarray arr)
+
+    @staticmethod
+    cdef object from_cpp_to_pyreadaccess(cpp.PoolByteArray _cpp_object)
+
+    @staticmethod
+    cdef object from_cpp_to_pywriteaccess(cpp.PoolByteArray _cpp_object)
+
+    cdef cpp.PoolByteArray to_cpp(self)
+    cpdef PoolByteArrayReadAccess read(self)
+    cpdef PoolByteArrayWriteAccess write(self)
+    cpdef np.ndarray[np.uint8_t] to_numpy(self, readonly=*)
+
 
 cdef class PoolIntArray(PoolArray):
     cdef cpp.PoolIntArray _cpp_object

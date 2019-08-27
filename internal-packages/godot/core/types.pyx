@@ -11,16 +11,12 @@ from . cimport cpp_types as cpp
 
 from .tag_db cimport get_python_instance
 
-cimport numpy as np
+from pygodot cimport numpy as np
 
 from cpython.ref cimport Py_INCREF
 from cpython.object cimport PyObject, PyTypeObject
 from cython.operator cimport dereference as deref
 
-# np.import_array()
-
-cdef extern from "numpy/arrayobject.h":
-    cdef PyTypeObject PyArray_Type
 
 def is_godot_wrapper_instance(object obj, object instances):
     return isinstance(obj, instances) and (<CoreTypeWrapper?>obj)._initialized
@@ -84,7 +80,7 @@ cdef class Array(CoreTypeWrapper):
         elif is_godot_wrapper_instance(other, PoolColorArray):
             self._cpp_object = cpp.Array((<PoolByteArray>other)._cpp_object)
         else:
-            raise self._init_value_error(other)
+            self._cpp_object = cpp.Array(other)
 
         self._initialized = True
 
@@ -105,6 +101,12 @@ cdef class Array(CoreTypeWrapper):
     # def __setitem__(self, int item, object value):
     #     self._internal_check()
     #     self._cpp_object[<const int>item] = <const cpp.Variant &>value
+
+    def to_tuple(self):
+        return self._cpp_object.py_tuple()
+
+    def to_list(self):
+        return self._cpp_object.py_list()
 
 
 cdef class Basis(CoreTypeWrapper):
@@ -153,7 +155,7 @@ cdef class Dictionary(CoreTypeWrapper):
         self._initialized = True
         return self
 
-    def __init__(self, other=None, **kwargs):
+    def __init__(self, object other=None, **kwargs):
         if other is not None:
             self._cpp_object = cpp.Dictionary(other)
             # TODO: add kwargs
@@ -164,7 +166,7 @@ cdef class Dictionary(CoreTypeWrapper):
         self._initialized = True
 
     def to_dict(self):
-        return self._cpp_object.to_python()
+        return self._cpp_object.py_dict()
 
 
 cdef class NodePath(CoreTypeWrapper):
@@ -197,22 +199,17 @@ cdef class PoolArray(CoreTypeWrapper):
     pass
 
 
-# @cython.trashcan(True)
-# @cython.no_gc_clear
-# @cython.no_gc
+@cython.no_gc_clear
 cdef class PoolArrayReadAccess:
     pass
 
 
-# @cython.trashcan(True)
-# @cython.no_gc_clear
-# @cython.no_gc
+@cython.no_gc_clear
 cdef class PoolArrayWriteAccess:
     pass
 
 
-# @cython.no_gc_clear
-# @cython.no_gc
+@cython.no_gc_clear
 cdef class PoolByteArrayReadAccess(PoolArrayReadAccess):
     def __cinit__(self, PoolByteArray parent):
         cdef godot_pool_byte_array *arr = <godot_pool_byte_array *>&parent._cpp_object
@@ -222,22 +219,18 @@ cdef class PoolByteArrayReadAccess(PoolArrayReadAccess):
     def __dealloc__(self):
         gdapi.godot_pool_byte_array_read_access_destroy(self._read_access)
 
-    def to_numpy(self):
-        # PYGODOT_CHECK_NUMPY_API()
-
+    cpdef np.ndarray[np.uint8_t] to_numpy(self, object base=None):
         cdef np.npy_intp *dims = &self._size;
         cdef const uint8_t *ptr = gdapi.godot_pool_byte_array_read_access_ptr(self._read_access)
 
-        cdef np.ndarray arr = np.PyArray_New(<type>&PyArray_Type, 1, dims, np.NPY_UINT8, NULL,
-                                             <void *>ptr, sizeof(uint8_t), np.NPY_ARRAY_CARRAY_RO, <object>NULL);
+        cdef np.ndarray arr = np.array_new_simple_readonly(1, dims, np.NPY_UINT8, <void *>ptr)
 
-
-        np.set_array_base(arr, self)
+        np.set_array_base(arr, base or self)
+        print('BASE', np.get_array_base(arr))
         return arr
 
 
-# @cython.no_gc_clear
-# @cython.no_gc
+@cython.no_gc_clear
 cdef class PoolByteArrayWriteAccess(PoolArrayWriteAccess):
     def __cinit__(self, PoolByteArray parent):
         cdef godot_pool_byte_array *arr = <godot_pool_byte_array *>&parent._cpp_object
@@ -247,16 +240,14 @@ cdef class PoolByteArrayWriteAccess(PoolArrayWriteAccess):
     def __dealloc__(self):
         gdapi.godot_pool_byte_array_write_access_destroy(self._write_access)
 
-    def to_numpy(self):
-        # PYGODOT_CHECK_NUMPY_API()
-
+    cpdef np.ndarray[np.uint8_t] to_numpy(self, object base=None):
         cdef np.npy_intp *dims = &self._size;
         cdef const uint8_t *ptr = gdapi.godot_pool_byte_array_write_access_ptr(self._write_access)
 
-        cdef np.ndarray arr = np.PyArray_New(<type>&PyArray_Type, 1, dims, np.NPY_UINT8, NULL,
-                                             <void *>ptr, sizeof(uint8_t), np.NPY_ARRAY_CARRAY, <object>NULL);
+        cdef np.ndarray arr = np.array_new_simple(1, dims, np.NPY_UINT8, <void *>ptr)
 
-        np.set_array_base(arr, self)
+        np.set_array_base(arr, base or self)
+        print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -269,13 +260,32 @@ cdef class PoolByteArray(PoolArray):
         return self
 
     @staticmethod
-    def from_numpy(np.ndarray arr):
+    cdef np.ndarray[np.uint8_t] from_cpp_to_numpy(cpp.PoolByteArray _cpp_object, readonly=False):
+        cdef PoolByteArray base = PoolByteArray.from_cpp(_cpp_object)
+        return base.to_numpy(readonly=readonly)
+
+    @staticmethod
+    cdef object from_cpp_to_pyreadaccess(cpp.PoolByteArray _cpp_object):
+        cdef PoolByteArray base = PoolByteArray.from_cpp(_cpp_object)
+        return base.read()
+
+    @staticmethod
+    cdef object from_cpp_to_pywriteaccess(cpp.PoolByteArray _cpp_object):
+        cdef PoolByteArray base = PoolByteArray.from_cpp(_cpp_object)
+        return base.write()
+
+    @staticmethod
+    cdef PoolByteArray _from_numpy(np.ndarray arr):
         cdef PoolByteArray self = PoolByteArray.__new__(PoolByteArray)
         self._cpp_object = cpp.PoolByteArray(arr)
         self._initialized = True
         return self
 
-    def __init__(self, other=None):
+    @staticmethod
+    def from_numpy(np.ndarray arr):
+        return PoolByteArray._from_numpy(arr)
+
+    def __init__(self, object other=None):
         if other is None:
             self._cpp_object = cpp.PoolByteArray()
         elif is_godot_wrapper_instance(other, PoolByteArray):
@@ -289,11 +299,21 @@ cdef class PoolByteArray(PoolArray):
 
         self._initialized = True
 
-    def read(self):
+    cdef cpp.PoolByteArray to_cpp(self):
+        self._internal_check()
+        return self._cpp_object
+
+    cpdef PoolByteArrayReadAccess read(self):
         return PoolByteArrayReadAccess(self)
 
-    def write(self):
+    cpdef PoolByteArrayWriteAccess write(self):
         return PoolByteArrayWriteAccess(self)
+
+    cpdef np.ndarray[np.uint8_t] to_numpy(self, readonly=True):
+        if readonly:
+            return self.read().to_numpy(base=self)
+        else:
+            return self.write().to_numpy(base=self)
 
 
 cdef class PoolIntArray(PoolArray):
@@ -580,7 +600,7 @@ cdef class Vector2(CoreTypeWrapper):
         self._initialized = True
 
     def to_numpy(self):
-        return self._cpp_object.to_numpy()
+        return self._cpp_object.py_ndarray()
 
 
 cdef class Vector3(CoreTypeWrapper):
@@ -591,10 +611,19 @@ cdef class Vector3(CoreTypeWrapper):
         self._initialized = True
         return self
 
+    @staticmethod
+    def from_numpy(np.ndarray arr):
+        cdef Vector3 self = Vector3.__new__(Vector3)
+        self._cpp_object = cpp.Vector3(arr)
+        self._initialized = True
+        return self
+
     def __init__(self, float x=0, float y=0, float z=0):
         self._cpp_object = cpp.Vector3(x, y, z)
         self._initialized = True
 
+    def to_numpy(self):
+        return self._cpp_object.py_ndarray()
 
 cdef public:
     # ctypedef AABB _python_aabb_wrapper
@@ -660,8 +689,18 @@ cdef public:
         return <object>NodePath.from_cpp(_obj)
     object _plane_to_python_wrapper(cpp.Plane _obj):
         return <object>Plane.from_cpp(_obj)
+
     object _poolbytearray_to_python_wrapper(cpp.PoolByteArray _obj):
         return <object>PoolByteArray.from_cpp(_obj)
+    object _poolbytearray_to_python_read(cpp.PoolByteArray _obj):
+        return <object>PoolByteArray.from_cpp_to_pyreadaccess(_obj)
+    object _poolbytearray_to_python_write(cpp.PoolByteArray _obj):
+        return <object>PoolByteArray.from_cpp_to_pywriteaccess(_obj)
+    object _poolbytearray_to_numpy(cpp.PoolByteArray _obj):
+        return <object>PoolByteArray.from_cpp_to_numpy(_obj)
+    object _poolbytearray_to_numpy_ro(cpp.PoolByteArray _obj):
+        return <object>PoolByteArray.from_cpp_to_numpy(_obj, readonly=True)
+
     object _poolintarray_to_python_wrapper(cpp.PoolIntArray _obj):
         return <object>PoolIntArray.from_cpp(_obj)
     object _poolrealarray_to_python_wrapper(cpp.PoolRealArray _obj):

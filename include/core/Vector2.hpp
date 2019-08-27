@@ -8,7 +8,9 @@
 #include <cmath>
 #include <stdexcept>
 
+#ifndef NO_IMPORT_ARRAY
 #define NO_IMPORT_ARRAY
+#endif
 #include "PythonGlobal.hpp"
 
 namespace godot {
@@ -232,8 +234,8 @@ struct Vector2 {
 		}
 	}
 
-	PyObject *to_python_wrapper();
-	PyObject *to_numpy();
+	PyObject *py_wrap() const;
+	PyObject *py_ndarray() const;
 };
 
 inline Vector2 operator*(real_t p_scalar, const Vector2 &p_vec) {

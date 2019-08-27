@@ -4,13 +4,12 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-// #define NO_IMPORT_ARRAY
 #ifndef PY_ARRAY_UNIQUE_SYMBOL
 #define PY_ARRAY_UNIQUE_SYMBOL PYGODOT_ARRAY_API
 #endif
 
 #ifndef NPY_NO_DEPRECATED_API
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define NPY_NO_DEPRECATED_API 0x0000000D
 #endif
 #include <numpy/arrayobject.h>
 

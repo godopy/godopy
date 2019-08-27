@@ -151,9 +151,9 @@ public:
 
 	Array(const PyObject *o);
 
-  PyObject *to_python_wrapper();
-  PyObject *to_python_tuple();
-  PyObject *to_python_list();
+  PyObject *py_wrap() const;
+  PyObject *py_tuple() const;
+  PyObject *py_list() const;
 
 	~Array();
 };
