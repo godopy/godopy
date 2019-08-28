@@ -385,82 +385,25 @@ Variant::Variant(const PyObject *p_python_object) {
 		PyArrayObject *arr = (PyArrayObject *)p_python_object;
 
 		if (PyArray_NDIM(arr) == 1 && PyArray_TYPE(arr) == NPY_UINT8) {
-			PoolByteArray _arr;
-			_arr.resize(PyArray_SIZE(arr));
-
-			uint8_t *dst = _arr.write().ptr();
-			uint8_t *src = (uint8_t *)PyArray_GETPTR1(arr, 0);
-
-			memcpy((void *)dst, (void *)src, PyArray_SIZE(arr));
-
-			// for (int idx = 0; idx < _arr.size(); idx++) {
-			// 	*(dst + idx) = *(uint8_t *)PyArray_GETPTR1(arr, idx);
-			// }
-
+			PoolByteArray _arr = PoolByteArray(arr);
 			godot::api->godot_variant_new_pool_byte_array(&_godot_variant, (godot_pool_byte_array *)&_arr);
 
 		} else if (PyArray_NDIM(arr) == 1 && PyArray_ISINTEGER(arr)) {
-			if (PyArray_TYPE(arr) != NPY_INT) {
-				WARN_PRINT("Possible data loss: casting unknown integer array to 32-bit signed integers");
-			}
-
-			PoolIntArray _arr;
-			_arr.resize(PyArray_SIZE(arr));
-
-			int *dst = _arr.write().ptr();
-			int *src = (int *)PyArray_GETPTR1(arr, 0);
-
-			if (PyArray_NBYTES(arr) == (long)(PyArray_SIZE(arr) * sizeof(int))) {
-				memcpy((void *)dst, (void *)src, PyArray_NBYTES(arr));
-			} else {
-				for (int idx = 0; idx < _arr.size(); idx++) {
-					*(dst + idx) = *(int *)PyArray_GETPTR1(arr, idx);
-				}
-			}
-
+			PoolIntArray _arr(arr);
 			godot::api->godot_variant_new_pool_int_array(&_godot_variant, (godot_pool_int_array *)&_arr);
 
 		} else if (PyArray_NDIM(arr) == 1 && PyArray_ISFLOAT(arr)) {
-			if (PyArray_TYPE(arr) == NPY_DOUBLE) {
-				WARN_PRINT("Possible data loss: casting 64-bit float array to 32 bits");
-			} else if (PyArray_TYPE(arr) != NPY_FLOAT) {
-				WARN_PRINT("Possible data loss: casting unknown float array to 32 bit floats");
-			}
-
-			PoolRealArray _arr;
-			_arr.resize(PyArray_SIZE(arr));
-
-			float *dst = _arr.write().ptr();
-
-			if (PyArray_TYPE(arr) == NPY_FLOAT && PyArray_NBYTES(arr) == (long)(PyArray_SIZE(arr) * sizeof(float))) {
-				float *src = (float *)PyArray_GETPTR1(arr, 0);
-				memcpy((void *)dst, (void *)src, PyArray_NBYTES(arr));
-			} else {
-				for (int idx = 0; idx < _arr.size(); idx++) {
-					*(dst + idx) = *(float *)PyArray_GETPTR1(arr, idx);
-				}
-			}
-
+			PoolRealArray _arr(arr);
 			godot::api->godot_variant_new_pool_real_array(&_godot_variant, (godot_pool_real_array *)&_arr);
 
 		} else if (PyArray_NDIM(arr) == 1 && PyArray_ISSTRING(arr)) {
-			PoolStringArray _arr;
-			_arr.resize(PyArray_SIZE(arr));
-
-			String *ptr = _arr.write().ptr();
-
-			for (int idx = 0; idx < _arr.size(); idx++) {
-				PyObject *item = PyArray_GETITEM(arr, (const char *)PyArray_GETPTR1(arr, idx));
-				// TODO: Check NULL pointer
-				*(ptr + idx) = String(item);
-			}
-
+			PoolStringArray _arr(arr);
 			godot::api->godot_variant_new_pool_string_array(&_godot_variant, (godot_pool_string_array *)&_arr);
 
 		} else if (PyArray_NDIM(arr) == 1) {
 			Array _arr;
 
-			for (int idx = 0; idx < _arr.size(); idx++) {
+			for (int idx = 0; idx < PyArray_SIZE(arr); idx++) {
 				PyObject *item = PyArray_GETITEM(arr, (const char *)PyArray_GETPTR1(arr, idx));
 				// TODO: Check NULL pointer
 				_arr.append(Variant(item));
@@ -468,63 +411,16 @@ Variant::Variant(const PyObject *p_python_object) {
 
 			godot::api->godot_variant_new_array(&_godot_variant, (godot_array *)&_arr);
 
-		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISFLOAT(arr) && PyArray_DIM(arr, 1) == 2) {
-			if (PyArray_TYPE(arr) == NPY_DOUBLE) {
-				WARN_PRINT("Possible data loss: casting 64-bit float array to 32 bits");
-			} else if (PyArray_TYPE(arr) != NPY_FLOAT) {
-				WARN_PRINT("Possible data loss: casting unknown float array to 32 bit floats");
-			}
-
-			PoolVector2Array _arr;
-			npy_intp _size = PyArray_DIM(arr, 0);
-
-			_arr.resize(_size);
-			Vector2 *dst = _arr.write().ptr();
-
-			for (int idx = 0; idx < _arr.size(); idx++) {
-				*(dst + idx) = Vector2(*(real_t *)PyArray_GETPTR2(arr, idx, 0), *(real_t *)PyArray_GETPTR2(arr, idx, 1));
-			}
-
+		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISNUMBER(arr) && PyArray_DIM(arr, 1) == 2) {
+			PoolVector2Array _arr = PoolVector2Array(arr);
 			godot::api->godot_variant_new_pool_vector2_array(&_godot_variant, (godot_pool_vector2_array *)&_arr);
 
-		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISFLOAT(arr) && PyArray_DIM(arr, 1) == 3) {
-			if (PyArray_TYPE(arr) == NPY_DOUBLE) {
-				WARN_PRINT("Possible data loss: casting 64-bit float array to 32 bits");
-			} else if (PyArray_TYPE(arr) != NPY_FLOAT) {
-				WARN_PRINT("Possible data loss: casting unknown float array to 32 bit floats");
-			}
-
-			PoolVector3Array _arr;
-			npy_intp _size = PyArray_DIM(arr, 0);
-
-			_arr.resize(_size);
-			Vector3 *dst = _arr.write().ptr();
-
-			for (int idx = 0; idx < _arr.size(); idx++) {
-				*(dst + idx) = Vector3(*(real_t *)PyArray_GETPTR2(arr, idx, 0), *(real_t *)PyArray_GETPTR2(arr, idx, 1),
-				                       *(real_t *)PyArray_GETPTR2(arr, idx, 2));
-			}
-
+		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISNUMBER(arr) && PyArray_DIM(arr, 1) == 3) {
+			PoolVector3Array _arr = PoolVector3Array(arr);
 			godot::api->godot_variant_new_pool_vector3_array(&_godot_variant, (godot_pool_vector3_array *)&_arr);
 
-		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISFLOAT(arr) && PyArray_DIM(arr, 1) == 4) {
-			if (PyArray_TYPE(arr) == NPY_DOUBLE) {
-				WARN_PRINT("Possible data loss: casting 64-bit float array to 32 bits");
-			} else if (PyArray_TYPE(arr) != NPY_FLOAT) {
-				WARN_PRINT("Possible data loss: casting unknown float array to 32 bit floats");
-			}
-
-			PoolColorArray _arr;
-			npy_intp _size = PyArray_DIM(arr, 0);
-
-			_arr.resize(_size);
-			Color *dst = _arr.write().ptr();
-
-			for (int idx = 0; idx < _arr.size(); idx++) {
-				*(dst + idx) = Color(*(real_t *)PyArray_GETPTR2(arr, idx, 0), *(real_t *)PyArray_GETPTR2(arr, idx, 1),
-				                     *(real_t *)PyArray_GETPTR2(arr, idx, 2), *(real_t *)PyArray_GETPTR2(arr, idx, 3));
-			}
-
+		} else if (PyArray_NDIM(arr) == 2 && PyArray_ISNUMBER(arr) && PyArray_DIM(arr, 1) == 4) {
+			PoolColorArray _arr = PoolColorArray(arr);
 			godot::api->godot_variant_new_pool_color_array(&_godot_variant, (godot_pool_color_array *)&_arr);
 
 		} else {
@@ -833,16 +729,8 @@ Variant::operator PyObject *() const {
 		}
 
 		case POOL_STRING_ARRAY: {
-			PoolStringArray arr = *this;
-			npy_intp dims[] = {arr.size()};
-			obj = PyArray_SimpleNew(1, dims, NPY_UNICODE);
-
-			for (int i = 0; i < arr.size(); i++) {
-				PyObject *item = arr[i].py_str();
-				// TODO: Check unlikely NULL pointers
-				PyArray_SETITEM((PyArrayObject *)obj, (char *)PyArray_GETPTR1((PyArrayObject *)obj, i), item);
-			}
-			break;
+			PoolStringArray cpp_obj = *this;
+			return _poolstringarray_to_numpy(cpp_obj);
 		}
 
 		case POOL_VECTOR2_ARRAY: {

@@ -2,7 +2,7 @@
 <%!
     from godot_tools.binding_generator import (
         python_module_name, is_class_type, is_enum, escape_python,
-        CORE_TYPES, NUMPY_TYPES, NUMPY_CAST_TYPES, SPECIAL_ESCAPES,
+        CORE_TYPES, HAS_TYPE_CONVERTORS, NUMPY_CAST_TYPES, SPECIAL_ESCAPES,
         remove_nested_type_prefix, clean_signature, make_cython_gdnative_type
     )
 
@@ -40,12 +40,12 @@
             return arg[1][1:]
         if not is_enum(arg[2]['type']) and is_class_type(arg[2]['type']):
             return '%s._owner' % arg[1]
-        if arg[2]['type'] in NUMPY_TYPES:
+        if arg[2]['type'] in HAS_TYPE_CONVERTORS:
             return 'cpp.%s_from_PyObject(%s)' % (arg[2]['type'], arg[1])
         if arg[2]['type'] in ('String', 'Variant', 'Array', 'Dictionary'):
             return 'cpp.%s(%s)' % (arg[2]['type'], arg[1])
         if arg[2]['type'] in CORE_TYPES:
-            return '%s._cpp_object' % arg[1]
+            return '%s.to_cpp()' % arg[1]
 
         return arg[1]
 

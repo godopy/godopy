@@ -24,23 +24,24 @@
         return name
 
     def make_arg(arg):
+        t = arg[2]['type']
         if arg[3] is not None:
             assert arg[1].startswith('_')
             return arg[1][1:]
-        if is_class_type(arg[2]['type']):
+        elif is_class_type(arg[2]['type']):
             return '%s._owner' % arg[1]
-        if arg[2]['type'] == 'String':
+        elif t == 'String':
             return 'cpp.String(%s)' % arg[1]
-        if arg[2]['type'] == 'Variant' and arg[2]['has_default_value']:
+        elif t == 'Variant' and arg[2]['has_default_value']:
             return 'cpp.Variant(%s)' % arg[1]
-        if arg[2]['type'] == 'Array' and arg[2]['has_default_value']:
+        elif t == 'Array' and arg[2]['has_default_value']:
             return 'cpp.Array(%s)' % arg[1]
-        if arg[2]['type'] == 'Dictionary' and arg[2]['has_default_value']:
+        elif t == 'Dictionary' and arg[2]['has_default_value']:
             return 'cpp.Dictionary(%s)' % arg[1]
-        if arg[2]['type'] in CORE_TYPES and arg[2]['has_default_value']:
-            return '%s._cpp_object' % arg[1]
-
-        return arg[1]
+        elif t in CORE_TYPES and arg[2]['has_default_value']:
+            return '%s.to_cpp()' % arg[1]
+        else:
+            return arg[1]
 
     def make_default_arg_type(arg_type):
         return arg_type.rstrip('*').rstrip().replace('const ', '')

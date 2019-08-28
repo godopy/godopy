@@ -120,7 +120,7 @@ public:
 	PyObject *py_wrap() const;
 	PyObject *py_read() const;
 	PyObject *py_write() const;
-	PyObject *py_ndarray(bool readonly = true) const;
+	PyObject *py_ndarray(bool writable = false) const;
 
 	~PoolByteArray();
 };
@@ -221,15 +221,17 @@ public:
 
 	int size() const;
 
-	// PoolIntArray(PyObject *obj);
-	// PoolIntArray(PyArrayObject *arr);
+	PoolIntArray(PyObject *obj);
+	PoolIntArray(PyArrayObject *arr);
 	PyObject *py_wrap() const;
-	// PyObject *py_ndarray(bool readonly = true) const;
+	PyObject *py_read() const;
+	PyObject *py_write() const;
+	PyObject *py_ndarray(bool writable = false) const;
 
 	~PoolIntArray();
 };
 
-// PoolIntArray PoolIntArray_from_PyObject(PyObject *obj);
+PoolIntArray PoolIntArray_from_PyObject(PyObject *obj);
 
 class PoolRealArray {
 	godot_pool_real_array _godot_array;
@@ -325,15 +327,17 @@ public:
 
 	int size() const;
 
-	// PoolRealArray(PyObject *obj);
-	// PoolRealArray(PyArrayObject *arr);
+	PoolRealArray(PyObject *obj);
+	PoolRealArray(PyArrayObject *arr);
 	PyObject *py_wrap() const;
-	// PyObject *py_ndarray(bool readonly = true) const;
+	PyObject *py_read() const;
+	PyObject *py_write() const;
+	PyObject *py_ndarray(bool writable = false) const;
 
 	~PoolRealArray();
 };
 
-// PoolRealArray PoolRealArray_from_PyObject(PyObject *obj);
+PoolRealArray PoolRealArray_from_PyObject(PyObject *obj);
 
 class PoolStringArray {
 	godot_pool_string_array _godot_array;
@@ -429,15 +433,17 @@ public:
 
 	int size() const;
 
-	// PoolStringArray(PyObject *obj);
-	// PoolStringArray(PyArrayObject *arr);
+	PoolStringArray(PyObject *obj);
+	PoolStringArray(PyArrayObject *arr);
 	PyObject *py_wrap() const;
-	// PyObject *py_ndarray(bool readonly = true) const;
+	PyObject *py_read() const;
+	PyObject *py_write() const;
+	PyObject *py_ndarray(bool writable = false) const;
 
 	~PoolStringArray();
 };
 
-// PoolStringArray PoolStringArray_from_PyObject(PyObject *obj);
+PoolStringArray PoolStringArray_from_PyObject(PyObject *obj);
 
 class PoolVector2Array {
 	godot_pool_vector2_array _godot_array;
@@ -533,15 +539,17 @@ public:
 
 	int size() const;
 
-	// PoolVector2Array(PyObject *obj);
-	// PoolVector2Array(PyArrayObject *arr);
+	PoolVector2Array(PyObject *obj);
+	PoolVector2Array(PyArrayObject *arr);
 	PyObject *py_wrap() const;
-	// PyObject *py_ndarray(bool readonly = true) const;
+	PyObject *py_read() const;
+	PyObject *py_write() const;
+	PyObject *py_ndarray(bool writable = false) const;
 
 	~PoolVector2Array();
 };
 
-// PoolVector2Array PoolVector2Array_from_PyObject(PyObject *obj);
+PoolVector2Array PoolVector2Array_from_PyObject(PyObject *obj);
 
 class PoolVector3Array {
 	godot_pool_vector3_array _godot_array;
@@ -637,15 +645,17 @@ public:
 
 	int size() const;
 
-	// PoolVector3Array(PyObject *obj);
-	// PoolVector3Array(PyArrayObject *arr);
+	PoolVector3Array(PyObject *obj);
+	PoolVector3Array(PyArrayObject *arr);
 	PyObject *py_wrap() const;
-	// PyObject *py_ndarray(bool readonly = true) const;
+	PyObject *py_read() const;
+	PyObject *py_write() const;
+	PyObject *py_ndarray(bool writable = false) const;
 
 	~PoolVector3Array();
 };
 
-// PoolVector3Array PoolVector3Array_from_PyObject(PyObject *obj);
+PoolVector3Array PoolVector3Array_from_PyObject(PyObject *obj);
 
 class PoolColorArray {
 	godot_pool_color_array _godot_array;
@@ -741,15 +751,17 @@ public:
 
 	int size() const;
 
-	// PoolColorArray(PyObject *obj);
-	// PoolColorArray(PyArrayObject *arr);
+	PoolColorArray(PyObject *obj);
+	PoolColorArray(PyArrayObject *arr);
 	PyObject *py_wrap() const;
-	// PyObject *py_ndarray(bool readonly = true) const;
+	PyObject *py_read() const;
+	PyObject *py_write() const;
+	PyObject *py_ndarray(bool writable = false) const;
 
 	~PoolColorArray();
 };
 
-// PoolColorArray PoolColorArray_from_PyObject(PyObject *obj);
+PoolColorArray PoolColorArray_from_PyObject(PyObject *obj);
 
 } // namespace godot
 

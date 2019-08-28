@@ -12,25 +12,29 @@ cdef extern from *:
 #endif
     '''
 
+from libc.stddef cimport wchar_t
+
 from cpython cimport object as cpython
 from cpython cimport ref
 
-cdef extern from "numpy/arrayobject.h":
-    cdef cpython.PyTypeObject PyArray_Type
-
 from numpy cimport *
 
+ctypedef wchar_t npy_unicode
+ctypedef npy_unicode unicode_t
 
-cdef inline object array_new(type cls, int nd, npy_intp *dims, int typenum, npy_intp *strides, void *data, int itemsize, int flags):
-    return PyArray_New(cls, nd, dims, typenum, strides, data, itemsize, flags, <object>NULL)
+
+cdef extern from "numpy/arrayobject.h":
+    cdef int PyArray_SETITEM(ndarray arr, char *itemptr, object obj) except -1
+
+    cdef void PyArray_CLEARFLAGS(ndarray arr, int flags)
 
 
 cdef inline object array_new_simple(int nd, npy_intp *dims, int typenum, void *data):
-    return PyArray_New(<type>&PyArray_Type, nd, dims, typenum, NULL, data, 0, NPY_ARRAY_CARRAY, <object>NULL)
+    return PyArray_New(ndarray, nd, dims, typenum, NULL, data, 0, NPY_ARRAY_CARRAY, <object>NULL)
 
 
 cdef inline object array_new_simple_readonly(int nd, npy_intp *dims, int typenum, void *data):
-    return PyArray_New(<type>&PyArray_Type, nd, dims, typenum, NULL, data, 0, NPY_ARRAY_CARRAY_RO, <object>NULL)
+    return PyArray_New(ndarray, nd, dims, typenum, NULL, data, 0, NPY_ARRAY_CARRAY_RO, <object>NULL)
 
 
 cdef inline void set_array_base(ndarray arr, object base):

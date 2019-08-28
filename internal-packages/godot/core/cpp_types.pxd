@@ -416,6 +416,7 @@ cdef extern from "Color.hpp" namespace "godot" nogil:
 
         object py_wrap() except +*
 
+    Color Color_from_PyObject(object) except +*
 
 cdef extern from "Dictionary.hpp" namespace "godot" nogil:
     cdef cppclass Dictionary:
@@ -547,10 +548,10 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         object py_wrap() except +*
         object py_read() except +*
         object py_write() except +*
-        np.ndarray[np.uint8_t] py_ndarray() except +*
-        np.ndarray[np.uint8_t] py_ndarray(bint) except +*
+        np.ndarray py_ndarray() except +*
+        np.ndarray py_ndarray(bint) except +*
 
-    PoolByteArray PoolByteArray_from_PyObject(object) except +ValueError
+    PoolByteArray PoolByteArray_from_PyObject(object) except +*
 
     cdef cppclass PoolIntArray:
         cppclass Read:
@@ -577,7 +578,15 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         int operator[](const int idx)
         int size()
 
+        PoolIntArray(object) except +*
+        PoolIntArray(np.ndarray) except +
         object py_wrap() except +*
+        object py_read() except +*
+        object py_write() except +*
+        np.ndarray py_ndarray() except +*
+        np.ndarray py_ndarray(bint) except +*
+
+    PoolIntArray PoolIntArray_from_PyObject(object) except +*
 
 
     cdef cppclass PoolRealArray:
@@ -605,7 +614,15 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         real_t operator[](const int idx)
         int size()
 
+        PoolRealArray(object) except +*
+        PoolRealArray(np.ndarray) except +
         object py_wrap() except +*
+        object py_read() except +*
+        object py_write() except +*
+        np.ndarray py_ndarray() except +*
+        np.ndarray py_ndarray(bint) except +*
+
+    PoolRealArray PoolRealArray_from_PyObject(object) except +*
 
 
     cdef cppclass PoolStringArray:
@@ -633,7 +650,15 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const String operator[](const int idx)
         int size()
 
+        PoolStringArray(object) except +*
+        PoolStringArray(np.ndarray) except +
         object py_wrap() except +*
+        object py_read() except +*
+        object py_write() except +*
+        np.ndarray py_ndarray() except +*
+        np.ndarray py_ndarray(bint) except +*
+
+    PoolStringArray PoolStringArray_from_PyObject(object) except +*
 
 
     cdef cppclass PoolVector2Array:
@@ -661,7 +686,15 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector2 operator[](const int idx)
         int size()
 
+        PoolVector2Array(object) except +*
+        PoolVector2Array(np.ndarray) except +
         object py_wrap() except +*
+        object py_read() except +*
+        object py_write() except +*
+        np.ndarray py_ndarray() except +*
+        np.ndarray py_ndarray(bint) except +*
+
+    PoolVector2Array PoolVector2Array_from_PyObject(object) except +*
 
 
     cdef cppclass PoolVector3Array:
@@ -689,7 +722,15 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Vector3 operator[](const int idx)
         int size()
 
+        PoolVector3Array(object) except +*
+        PoolVector3Array(np.ndarray) except +
         object py_wrap() except +*
+        object py_read() except +*
+        object py_write() except +*
+        np.ndarray py_ndarray() except +*
+        np.ndarray py_ndarray(bint) except +*
+
+    PoolVector3Array PoolVector3Array_from_PyObject(object) except +*
 
 
     cdef cppclass PoolColorArray:
@@ -717,7 +758,15 @@ cdef extern from "PoolArrays.hpp" namespace "godot" nogil:
         const Color operator[](const int idx)
         int size()
 
+        PoolColorArray(object) except +*
+        PoolColorArray(np.ndarray) except +
         object py_wrap() except +*
+        object py_read() except +*
+        object py_write() except +*
+        np.ndarray py_ndarray() except +*
+        np.ndarray py_ndarray(bint) except +*
+
+    PoolColorArray PoolColorArray_from_PyObject(object) except +*
 
 
 cdef extern from "Quat.hpp" namespace "godot" nogil:
@@ -1327,7 +1376,7 @@ cdef extern from "Vector2.hpp" namespace "godot" nogil:
 
         Vector2(np.ndarray) except +
 
-        np.ndarray[np.float32_t] py_ndarray()
+        np.ndarray py_ndarray()
         object py_wrap() except +*
 
     Vector2 Vector2_from_PyObject(object) except +*
@@ -1397,7 +1446,7 @@ cdef extern from "Vector3.hpp" namespace "godot" nogil:
 
         Vector3(np.ndarray) except +
 
-        np.ndarray[np.float32_t] py_ndarray()
+        np.ndarray py_ndarray()
         object py_wrap() except +*
 
     Vector3 vec3_cross(const Vector3 &a, Vector3 &b)

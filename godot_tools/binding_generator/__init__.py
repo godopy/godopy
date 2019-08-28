@@ -11,10 +11,14 @@ from .pxd_writer import PxdWriter, parse as parse_c_header
 
 CYTHON_AUTOMATIC_CAST_TYPES = ('Variant', 'Array', 'Dictionary')
 
-# TODO: Provide numpy interface for all numeric and array Godot types
-NUMPY_TYPES = ('Vector2', 'PoolByteArray')
 
-NUMPY_CAST_TYPES = ()
+HAS_TYPE_CONVERTORS = (
+    'Color', 'Vector2', 'Vector3', 'PoolByteArray', 'PoolIntArray',
+    'PoolRealArray', 'PoolStringArray', 'PoolVector2Array',
+    'PoolVector3Array', 'PoolColorArray'
+)
+
+NUMPY_CAST_TYPES = ('PoolStringArray',)
 
 CORE_TYPES = (
     'Basis', 'Color', 'Dictionary', 'Error', 'NodePath', 'Plane',
@@ -581,7 +585,7 @@ def make_python_gdnative_type(t, is_virtual=False, is_return=False, has_default=
         return 'object '
     elif t == 'Variant':
         return 'object '
-    elif t in NUMPY_TYPES:
+    elif t in HAS_TYPE_CONVERTORS:
         return 'object '
     elif is_core_type(t):
         return 'py.%s ' % strip_name(t)

@@ -4,12 +4,16 @@
 #include <gdnative/color.h>
 
 #include <cmath>
+#include <stdexcept>
 
 #include "String.hpp"
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
+#ifndef NO_IMPORT_ARRAY
+#define NO_IMPORT_ARRAY
+#endif
+#include "PythonGlobal.hpp"
 
+#include "Defs.hpp"
 
 namespace godot {
 
@@ -101,8 +105,6 @@ public:
 
 	bool operator<(const Color &p_color) const; //used in set keys
 
-	 PyObject *py_wrap() const;
-
 	operator String() const;
 
 	/**
@@ -124,7 +126,28 @@ public:
 		b = p_b;
 		a = p_a;
 	}
+
+	inline Color(PyArrayObject *arr) {
+		if (likely((PyArray_SIZE(arr) == 3 || PyArray_SIZE(arr) == 4) && PyArray_NDIM(arr) == 1 && PyArray_ISFLOAT(arr))) {
+			r = *(float *)PyArray_GETPTR1(arr, 0);
+			g = *(float *)PyArray_GETPTR1(arr, 1);
+			b = *(float *)PyArray_GETPTR1(arr, 2);
+			if (PyArray_SIZE(arr) > 3) {
+				a =  *(float *)PyArray_GETPTR1(arr, 3);
+			} else {
+				a = 1.0;
+			}
+		} else {
+			// raises ValueError in Cython/Python context
+			throw std::invalid_argument("argument must be an array of 3 or 4 float values");
+		}
+	}
+
+	PyObject *py_wrap() const;
+	PyObject *py_ndarray() const;
 };
+
+Color Color_from_PyObject(PyObject *obj);
 
 } // namespace godot
 
