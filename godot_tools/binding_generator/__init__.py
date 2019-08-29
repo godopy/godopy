@@ -512,6 +512,7 @@ def generate_class_context(class_def, language):
             ))
 
         if method['name'] in SPECIAL_ESCAPES:
+            return_stmt += '<object>'
             prepared_methods.append((
                 SPECIAL_ESCAPES[method['name']], defmethod, return_type,
                 '<no-pxd>', ', '.join(def_sigs),

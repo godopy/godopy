@@ -76,7 +76,7 @@ class PythonExample(nodes.Sprite):
         self._position[0] = self.amplitude + (self.amplitude * math.sin(self.time_passed * 2.0))
         self._position[1] = self.amplitude + (self.amplitude * math.cos(self.time_passed * 1.5))
 
-        self.set_position(self._position)
+        self.set_position(self._position)  # Vector2 instance would also work
 
         self.time_emit += delta
 
