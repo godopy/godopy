@@ -6,9 +6,9 @@ from .enums import ExtType
 from .extensions import GDNativeBuildExt
 
 
-def godot_setup(godot_project, *, library, extensions, package=None, binary_path=None):
+def godot_setup(godot_project, *, library, extensions, **kwargs):
     modules = [
-        GodotProject(godot_project, package=package, binary_path=binary_path),
+        GodotProject(godot_project, **kwargs),
         library,
         *extensions
     ]
@@ -21,7 +21,7 @@ def godot_setup(godot_project, *, library, extensions, package=None, binary_path
 
 
 class GodotProject(Extension):
-    def __init__(self, name, package=None, *, binary_path=None):
+    def __init__(self, name, package=None, *, binary_path=None, set_development_path=False):
         if package is None:
             package = '_' + name
 
@@ -30,6 +30,7 @@ class GodotProject(Extension):
 
         self.python_package = package
         self.binary_path = binary_path
+        self.set_development_path = set_development_path
         self._gdnative_type = ExtType.PROJECT
         super().__init__(name, sources=[])
 

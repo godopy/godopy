@@ -79,7 +79,7 @@ extern "C" void GDN_EXPORT pygodot_gdnative_terminate(godot_gdnative_terminate_o
 
 extern "C" void GDN_EXPORT pygodot_nativescript_init(void *handle) {
   printf("NATIVESCRIPT INIT\n");
-  // godot::Godot::nativescript_init(handle);  // C++ bindings
+  godot::Godot::nativescript_init(handle);  // C++ bindings
   ___python_init();
   pygodot::PyGodot::nativescript_init(handle);
 
@@ -97,5 +97,5 @@ extern "C" void GDN_EXPORT pygodot_gdnative_singleton() {
 
 extern "C" void GDN_EXPORT pygodot_nativescript_terminate(void *handle) {
   pygodot::PyGodot::nativescript_terminate(handle);
-  // godot::Godot::nativescript_terminate(handle); // C++ bindings
+  godot::Godot::nativescript_terminate(handle); // C++ bindings
 }

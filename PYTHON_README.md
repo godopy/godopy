@@ -5,12 +5,35 @@
 The pure Python API is differs from the Cython API in the following ways:
 * Compilation is not required
 * Python wrappers should be used in place of native C++ classes
-* GDNative library file must be called exactly `gdlibrary.py` and located in a directory which contains the target
-Godot project
 
 ## Getting started
 
-Please follow the instructions from [Cython intro](/CYTHON_INTRO.md#getting-started) to build PyGodot.
+### Prerequisites
+
+[**Build latest version of Godot**](https://godot.readthedocs.io/en/latest/development/compiling/index.html)
+
+TODO: Describe Python 3 requirement
+
+### Setting up a new project
+
+The instructions below assume using git for managing your project.
+
+```
+$ mkdir gdnative-python-example
+$ cd gdnative-python-example
+$ git clone --recursive https://github.com/ivhilaire/pygodot
+```
+
+If your project is an existing repository, use git submodule instead:
+```
+$ git submodule add https://github.com/ivhilaire/pygodot
+$ git submodule update --init --recursive
+```
+
+Build PyGodot and set up a development environment for your platform:
+- [MacOS](BUILD_MACOS.md)
+- [Linux](BUILD_LINUX.md)
+- [Windows](BUILD_WINDOWS.md)
 
 Simple `pip install pygodot` setup will be available in the future versions.
 
@@ -26,79 +49,102 @@ We’ll come back to that later.
 Back in the top-level project folder, we’re also going to create a subfolder called `_demo`
 in which we’ll place our Python files.
 
-You should now have `demo`, `PyGodot` and `_demo` directories in your PyGodot project.
+You should now have `demo`, `pygodot`, `_demo` and `toolbox` directories in your PyGodot project.
 
-Place an empty file `__init__.py` inside the `_demo` folder:
-```
-$ touch _demo/__init__.py
-```
-
-This will turn our `_demo` folder into a Python [package](https://docs.python.org/3/glossary.html#term-regular-package).
 
 In the `_demo` folder, we’ll start with creating our Python module for the GDNative node we’ll be creating.
-We will name it `gdexample.py`:
+We will name it `python_example.py`:
 ```py
-from pygodot import gdnative, nodes
-from math import sin, cos
+import math
+import numpy as np
+
+from godot.bindings.python import nodes
+from godot.core.types import Vector2
+from godot.core.signal_arguments import SignalArgumentObject, SignalArgumentVector2
+from godot.nativescript import register_method, register_property, register_signal
 
 
-class GDExample(nodes.Sprite):
+class PythonExample(nodes.Sprite):
     def __init__(self):
         self.time_passed = 0.0
+        self.amplitude = 10
+        self._position = np.array([0, 0], dtype=np.float32)
 
     def _process(self, delta):
         self.time_passed += delta
 
-        new_position = (10.0 + (10.0 * sin(self.time_passed * 2.0)),
-                        10.0 + (10.0 * cos(self.time_passed * 1.5)))
+        self._position[0] = self.amplitude + (self.amplitude * math.sin(self.time_passed * 2.0))
+        self._position[1] = self.amplitude + (self.amplitude * math.cos(self.time_passed * 1.5))
 
-        self.set_position(new_position)
+        self.set_position(self._position)
 
-    @classmethod
+        self.time_emit += delta
+
+        if self.time_emit >= 2:
+            self.emit_signal('position_changed', self, Vector2.from_numpy(self._position))
+            self.time_emit = 0
+
+    @staticmethod
     def _register_methods(cls):
-        gdnative.register_method(cls, cls._process)
+        register_method(PythonExample, '_process')
+        register_property(PythonExample, 'amplitude', 10)
+
+        register_signal(PythonExample, 'position_changed',
+                        SignalArgumentObject('node'), SignalArgumentVector2('new_position'))
 ```
 
-There is one more Python source file we need, it should be named `gdlibrary.py` and placed in the top level directory,
-just above the Godot project.  Our GDNative plugin can contain multiple NativeScripts, each with their
-own Python module like we’ve implemented `GDExample` up above. What we need now is a small bit of code
-that tells Godot about all the NativeScripts in our GDNative plugin.
+There is one more Python file we need, it should be named `__init__.py`.  Our GDNative plugin can contain
+multiple NativeScripts, each with their own Python module like we’ve implemented `PythonExample` up above.
+What we need now is a small bit of code that tells Godot about all the NativeScripts in our GDNative plugin.
 
 ```py
-from pygodot.gdnative import register_class
-from _demo.gdexample import GDExample
+from godot.nativescript import register_class
+from . import python_example
 
 
-def nativescript_init():
-    register_class(GDExample)
+def _nativescript_init():
+    register_class(python_example.PythonExample)
 ```
 
 ### Creating Godot extension nodes
 
-Create `setup.py` in the root directory:
+Create `godot_setup.py` in the root directory:
 ```py
-from setuptools import setup
-from pygodot.build import GodotProject, get_cmdclass
-from pygodot.build.extensions import GenericGDNativeLibrary, NativeScript
+from godot_tools.setup import godot_setup
+from godot_tools.setup.libraries import GenericGDNativeLibrary
+from godot_tools.setup.extensions import NativeScript
 
 
-setup(
-    name='demo',
-    version='0.0.1',
-    packages=['_demo'],
-    ext_modules=[
-        GodotProject('demo', shadow='_demo', binary_path='.bin'),
-        GenericGDNativeLibrary('bin/_gdexample.gdnlib'),
-        NativeScript('gdexample.gdns', classname='GDExample')
-    ],
-    cmdclass=get_cmdclass()
+godot_setup(
+    godot_project='demo',
+    package='_demo',
+    # set_development_path=True,
+    library=GenericGDNativeLibrary('gdexample.gdnlib', singleton=False),
+    extensions=[
+        NativeScript('python_example.gdns', class_name='PythonExample', python_sources=['python_example.py'])
+    ]
 )
 ```
 
 Now we can execute the setup script and create our GDNative extensions:
 
 ```
-$ pipenv shell
-$ python setup.py develop
-$ exit
+$ python godot_setup.py install
 ```
+
+
+### Using the GDNative module
+
+Time to jump back into Godot. We load up the main scene we created way back in the beginning and
+now add a Sprite to our scene:
+
+[picture]
+
+We’re going to assign the Godot logo to this sprite as our texture, disable the `centered` property and drag
+our `cython_example.gdns` file onto the `script` property of the sprite:
+
+[picture]
+
+We’re finally ready to run the project:
+
+[picture]

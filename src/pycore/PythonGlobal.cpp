@@ -76,11 +76,17 @@ void PyGodot::python_init() {
 	godot::String main_module_path = settings->globalize_path(settings->get_setting("python/config/module_search_path/main"));
 	godot::String extended_module_path = settings->has_setting("python/config/module_search_path/extended") ?
 		settings->globalize_path(settings->get_setting("python/config/module_search_path/extended")) : "";
+
+	godot::String development_module_path = settings->has_setting("python/config/module_search_path/development") ?
+		settings->get_setting("python/config/module_search_path/development") : "";
+
 	godot::String binary_module_path = ((godot::String *)&active_library_path)->get_base_dir();
 
 	godot::api->godot_string_destroy(&active_library_path);
 
 	bool commandline_script_mode = false;
+
+	bool write_bytecode = false;
 
 #ifdef _WIN32
 
@@ -125,12 +131,21 @@ void PyGodot::python_init() {
 	// status = PyConfig_SetString(&config, &config.pycache_prefix, L"");
 	// ERR_FAIL_PYSTATUS(status, fail);
 
+	if (development_module_path != "") {
+		status = PyWideStringList_Append(&config.module_search_paths, development_module_path.unicode_str());
+		ERR_FAIL_PYSTATUS(status, fail);
+
+		write_bytecode = true;
+	}
+
 	status = PyWideStringList_Append(&config.module_search_paths, main_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
-	if (extended_module_path != "" && (in_editor || commandline_script_mode)) {
+
+	if (extended_module_path != "" && (in_editor || commandline_script_mode || development_module_path != "")) {
 		status = PyWideStringList_Append(&config.module_search_paths, extended_module_path.unicode_str());
 		ERR_FAIL_PYSTATUS(status, fail);
 	}
+
 	status = PyWideStringList_Append(&config.module_search_paths, binary_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
 
@@ -139,7 +154,7 @@ void PyGodot::python_init() {
 	config.site_import = 0;
 	config.faulthandler = 0;
 	config.buffered_stdio = 1;
-	config.write_bytecode = 0;  // TODO: Enable bytecode if possible, set pycache_prefix
+	config.write_bytecode = write_bytecode;  // TODO: Enable bytecode if possible, set pycache_prefix
 	config.use_environment = 0;
 	config.user_site_directory = 0;
 	config.install_signal_handlers = 0;

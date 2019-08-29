@@ -144,7 +144,7 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
             register_godot_instance(self._owner, self)
             # print('INIT %s %r' % (hex(<size_t>self._owner), self))
         else:
-            raise RuntimeError("Improperly configured '${class_name}' subclass")
+            raise RuntimeError("Improperly configured or unregistered '${class_name}' subclass %r." % self.__class__)
 
     % else:
     def __init__(self):

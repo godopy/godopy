@@ -97,24 +97,20 @@ class GDNativeBuildExt(build_ext):
 
         print(source)
         assert os.path.exists(source)
+
         print(target, os.path.exists(target), os.path.islink(target))
 
-        # TODO: Copy, don't link
-        if os.path.islink(target) and os.readlink(target) == source and not self.force:
-            print('skip linking "%s"' % make_relative_path(target))
+        if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
+            print('skip copying "%s"' % make_relative_path(target))
             return
-
-        # Remove if the target is not a correct symlink
-        if (os.path.exists(target) or os.path.islink(target)) and not self.dry_run:
-            os.unlink(target)
 
         target_dir = os.path.dirname(target)
         if not os.path.exists(target_dir) and not self.dry_run:
             os.makedirs(target_dir)
 
-        print('linking "%s"' % make_relative_path(target))
+        print('copying "%s"' % make_relative_path(target))
         if not self.dry_run:
-            os.symlink(source, target)
+            shutil.copy2(source, target)
 
     def run_build(self):
         cpp_lib_template = Template(filename=os.path.join(templates_dir, 'gdlibrary.cpp.mako'))
@@ -270,7 +266,7 @@ class GDNativeBuildExt(build_ext):
                 elif root == 'site':
                     basedir = self.python_dependencies['site_dir']
                 elif root == 'local':
-                    basedir = os.getcwd()
+                    basedir = root_dir
                     fn = fn.replace('%PROJECT%', self.godot_project.python_package)
                 else:
                     basedir = None
@@ -369,12 +365,13 @@ class GDNativeBuildExt(build_ext):
         if extra_mainlib is not None:
             so_files.append(('mainlib', extra_mainlib))
 
-        python_package_path = os.path.join(self.godot_project.python_package, '__init__.py')
-        if os.path.exists(python_package_path):
-            py_files.append(('local', os.path.join('%PROJECT%', '__init__.py')))
-        else:
-            py_files.append((None, os.path.join(self.godot_project.python_package, '__init__.py')))
-        dirs.add(self.godot_project.python_package)
+        if not self.godot_project.set_development_path:
+            python_package_path = os.path.join(self.godot_project.python_package, '__init__.py')
+            if os.path.exists(python_package_path):
+                py_files.append(('local', os.path.join('%PROJECT%', '__init__.py')))
+            else:
+                py_files.append((None, os.path.join(self.godot_project.python_package, '__init__.py')))
+            dirs.add(self.godot_project.python_package)
 
         for dirpath, dirnames, filenames in os.walk(lib_dir):
             dirpath = dirpath[len(lib_dir):].lstrip(os.sep)
@@ -526,6 +523,8 @@ class GDNativeBuildExt(build_ext):
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
         context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+        if self.godot_project.set_development_path:
+            context['development_path'] = os.path.realpath(root_dir)
 
         so_files = self.python_dependencies['so_files']
         deps = [main_zip_res, tools_zip_res,
@@ -594,6 +593,8 @@ class GDNativeBuildExt(build_ext):
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
         context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+        if self.godot_project.set_development_path:
+            context['development_path'] = os.path.realpath(root_dir)
 
         so_files = self.python_dependencies['so_files']
         deps = [main_zip_res, tools_zip_res,
@@ -629,7 +630,9 @@ class GDNativeBuildExt(build_ext):
 
         self.make_godot_resource('gdns.mako', make_resource_path(godot_root, gdns_path), context)
         self.collect_sources(ext.sources)
-        self.collect_dynamic_sources(ext._dynamic_sources)
+
+        if not self.godot_project.set_development_path:
+            self.collect_dynamic_sources(ext._dynamic_sources)
 
     def make_godot_resource(self, template_filename, path, context):
         template = Template(filename=os.path.join(templates_dir, template_filename))
