@@ -1,10 +1,7 @@
 # Pure Python API
 
-**DOES NOT WORK YET**
-
-The pure Python API is differs from the Cython API in the following ways:
-* Compilation is not required
-* Python wrappers should be used in place of native C++ classes
+Direct support for Python files is planned for future versions.
+Currently NativeScript (.gdns) wrappers are required.
 
 ## Getting started
 

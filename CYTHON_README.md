@@ -104,7 +104,7 @@ low level C function pointers. This completely eliminates any Python runtime ove
 There is one more Cython file we need, `__init__.pyx`.  Our GDNative plugin can contain
 multiple NativeScripts implemented in C++, Cython or pure Python, each with their own files like we’ve implemented `CythonExample` up above. What we need now is a small bit of code that tells Godot about all the NativeScripts in our GDNative plugin.
 
-```pyx
+```cython
 from godot.nativescript cimport register_class
 
 from . cimport cython_example
@@ -115,7 +115,7 @@ cdef public _pygodot_nativescript_init():
 ```
 
 It is possible to register plain C++ NativeScript classes too. Here's an example:
-```pyx
+```cython
 from godot.nativescript cimport register_cpp_class
 from godot.bindings.cpp cimport nodes
 
@@ -128,7 +128,7 @@ cdef public _pygodot_nativescript_init():
 > This will register a C++ class from the [C++ tutorial](https://docs.godotengine.org/en/latest/tutorials/plugins/gdnative/gdnative-cpp-example.html)
 
 Also, is is possible to mix pure Python classes with Cython classes:
-```pyx
+```cython
 from godot.nativescript cimport register_class
 from godot.bindings.cpp cimport nodes
 

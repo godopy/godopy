@@ -9,12 +9,12 @@ The bindings are a work in progress. Some planned features are missing and the e
 ## Features
 
 - Compilation of Cython and Python code to GDNative binaries
-- Generic GDNative library for pure Python code without any native code compilation
-- Dynamic loading of Python code and dynamic NativeScript extensions
-- Ability to write Cython methods that work as fast as native C++ methods
+- Running Python code from NativeScript extensions
+- Writing Cython methods that run as fast as native C++ methods
 - Two specialized sets (Cython and Python) of automatically generatated bindings to the full Godot API
 - [Cython] Access to the complete official C++ API from Cython programming language
-- [Cython] Automatic type conversions between `Variant` and `PyObject *`, `String` and `str`, etc.
+- [Cython] Automatic type conversions between Godot and Python types
+- NumPy array access to core Godot types
 
 This project consists of two parts:
 - [**Cython API**](CYTHON_README.md)
