@@ -132,20 +132,24 @@ void PyGodot::python_init() {
 	// ERR_FAIL_PYSTATUS(status, fail);
 
 	if (development_module_path != "") {
+		godot::Godot::print("set DEV Python path: {0}", development_module_path);
 		status = PyWideStringList_Append(&config.module_search_paths, development_module_path.unicode_str());
 		ERR_FAIL_PYSTATUS(status, fail);
 
 		write_bytecode = true;
 	}
 
+	godot::Godot::print("set MAIN Python path: {0}", main_module_path);
 	status = PyWideStringList_Append(&config.module_search_paths, main_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
 
 	if (extended_module_path != "" && (in_editor || commandline_script_mode || development_module_path != "")) {
+		godot::Godot::print("set EXT python path: {0}", extended_module_path);
 		status = PyWideStringList_Append(&config.module_search_paths, extended_module_path.unicode_str());
 		ERR_FAIL_PYSTATUS(status, fail);
 	}
 
+	godot::Godot::print("set BIN python path: {0}", binary_module_path);
 	status = PyWideStringList_Append(&config.module_search_paths, binary_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
 

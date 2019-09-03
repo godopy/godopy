@@ -1172,7 +1172,7 @@ cdef class String(CoreTypeWrapper):
     def __repr__(self):
         if self._initialized:
             return 'String(%r)' % self._cpp_object.py_str()
-        return super().__repr__(self).replace('String', 'Uninitialized String')
+        return super().__repr__()
 
     def __str__(self):
         if self._initialized:

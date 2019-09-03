@@ -9,7 +9,7 @@
 #include <internal-packages/godot/gdnative.hpp>
 
 PyMODINIT_FUNC PyInit_godot__core___wrapped();
-PyMODINIT_FUNC PyInit_godot__core__signal_arguments();
+PyMODINIT_FUNC PyInit_godot__core__signals();
 PyMODINIT_FUNC PyInit_godot__core__tag_db();
 PyMODINIT_FUNC PyInit_godot__core__types();
 PyMODINIT_FUNC PyInit_godot__bindings___cython_bindings();
@@ -40,7 +40,7 @@ static void ___python_init() {
 
   PyImport_AppendInittab("_pygodot", PyInit__pygodot);
   PyImport_AppendInittab("__pygodot_internal__godot__core___wrapped", PyInit_godot__core___wrapped);
-  PyImport_AppendInittab("__pygodot_internal__godot__core__signal_arguments", PyInit_godot__core__signal_arguments);
+  PyImport_AppendInittab("__pygodot_internal__godot__core__signals", PyInit_godot__core__signals);
   PyImport_AppendInittab("__pygodot_internal__godot__core__tag_db", PyInit_godot__core__tag_db);
   PyImport_AppendInittab("__pygodot_internal__godot__core__types", PyInit_godot__core__types);
   PyImport_AppendInittab("__pygodot_internal__godot__bindings___cython_bindings", PyInit_godot__bindings___cython_bindings);
@@ -55,7 +55,7 @@ static void ___python_init() {
 
   // Importing of Cython modules is required to correctly initialize them
   mod = PyImport_ImportModule("__pygodot_internal__godot__core___wrapped"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
-  mod = PyImport_ImportModule("__pygodot_internal__godot__core__signal_arguments"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__pygodot_internal__godot__core__signals"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__pygodot_internal__godot__core__tag_db"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__pygodot_internal__godot__core__types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__pygodot_internal__godot__bindings___cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);

@@ -34,6 +34,8 @@ cdef register_python_type(type cls):
     cdef size_t type_tag = <size_t><void *>cls
     cdef bytes name = cls.__name__.encode('utf-8')
 
+    # print('register_python_type', name, hex(type_tag))
+
     ns11api.godot_nativescript_set_type_tag(handle, <const char *>name, <void *>type_tag)
 
     cls.__godot_api_name__ = cls.__name__

@@ -1,7 +1,7 @@
 import os
-import re
 import sys
 import math
+import glob
 import shutil
 import hashlib
 import zipfile
@@ -25,11 +25,26 @@ templates_dir = os.path.join(tools_root, 'setup', 'templates')
 
 
 class NativeScript(Extension):
-    def __init__(self, name, *, sources=None, python_sources=None, class_name=None):
+    def __init__(self, name, *, addon_prefix=None, sources=None, python_sources=None, class_name=None):
         self._gdnative_type = ExtType.NATIVESCRIPT
         self._nativescript_classname = class_name
         self._dynamic_sources = python_sources or []
+
+        self._addon_prefix = addon_prefix
+
         super().__init__(name, sources=(sources or []))
+
+
+class Addon(Extension):
+    def __init__(self, name, *, data_files=None, editor_only=True, **kwargs):
+        self.python_package = name
+        self._gdnative_type = ExtType.ADDON
+
+        self._data_file_patterns = data_files or []
+        self._editor_only = editor_only
+        self._addon_metadata = kwargs
+
+        super().__init__(name, sources=[])
 
 
 # TODO:
@@ -38,6 +53,7 @@ class NativeScript(Extension):
 # * Optionally allow to compress all binary Python extensions to .pak files (uncompress to user:// at runtime)
 class GDNativeBuildExt(build_ext):
     godot_project = None
+    addons = {}
     gdnative_library_path = None
     generic_setup = False
 
@@ -51,6 +67,7 @@ class GDNativeBuildExt(build_ext):
     }
 
     godot_resources = {}
+    godot_resource_files = {}
     python_dependencies = {}
 
     def run(self):
@@ -76,6 +93,20 @@ class GDNativeBuildExt(build_ext):
             self.write_target_file(os.path.join(self.godot_project.name, res_path), content,
                                    pretty_path='res://%s' % res_path, is_editable_resource=True)
 
+        for res_path, source in self.godot_resource_files.items():
+            target = os.path.join(self.godot_project.name, res_path)
+            if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
+                print('skip copying "%s"' % make_relative_path(target))
+                continue
+
+            target_dir = os.path.dirname(target)
+            if not os.path.exists(target_dir) and not self.dry_run:
+                os.makedirs(target_dir)
+
+            print('copying "%s"' % make_relative_path(target))
+            if not self.dry_run:
+                shutil.copy2(source, target)
+
         self.package_dependencies()
 
         setup_script = self.gdnative_library_path.replace('.gdnlib', '__setup.gd')
@@ -95,10 +126,10 @@ class GDNativeBuildExt(build_ext):
         source = os.path.join(self.build_context['pygodot_bindings_path'], self.build_context['pygodot_library_name'])
         target = self.build_context['target']
 
-        print(source)
+        # print(source)
         assert os.path.exists(source)
 
-        print(target, os.path.exists(target), os.path.islink(target))
+        # print(target, os.path.exists(target), os.path.islink(target))
 
         if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
             print('skip copying "%s"' % make_relative_path(target))
@@ -179,8 +210,8 @@ class GDNativeBuildExt(build_ext):
         main_zip_path = os.path.join(self.godot_project.name, self.godot_project.binary_path, '%s.pak' % basename)
         tools_zip_path = os.path.join(self.godot_project.name, self.godot_project.binary_path, '%s-dev.pak' % basename)
 
-        self._make_zip(main_zip_path, 'py_files')
-        self._make_zip(tools_zip_path, 'py_files_dev')
+        self._make_zip(main_zip_path, 'py_files', 'zip_dirs')
+        self._make_zip(tools_zip_path, 'py_files_dev', 'zip_dirs_dev')
 
         if self.dry_run:
             return
@@ -203,7 +234,7 @@ class GDNativeBuildExt(build_ext):
 
             subprocess.run(cmd, check=True)
 
-    def _make_zip(self, zippath, files):
+    def _make_zip(self, zippath, files, dirs):
         print('byte-compiling and compressing Python dependencies into "res://%s"' % zippath)
         if self.dry_run:
             return
@@ -214,7 +245,7 @@ class GDNativeBuildExt(build_ext):
 
         verbosity = 1
 
-        for d in sorted(self.python_dependencies['zip_dirs']):
+        for d in sorted(self.python_dependencies[dirs]):
             for target_dir in (os.path.join(builddir_src, d), os.path.join(builddir_dst, d)):
                 if not os.path.isdir(target_dir):
                     os.makedirs(target_dir)
@@ -267,7 +298,6 @@ class GDNativeBuildExt(build_ext):
                     basedir = self.python_dependencies['site_dir']
                 elif root == 'local':
                     basedir = root_dir
-                    fn = fn.replace('%PROJECT%', self.godot_project.python_package)
                 else:
                     basedir = None
 
@@ -279,6 +309,7 @@ class GDNativeBuildExt(build_ext):
                 else:
                     src = os.path.join(basedir, fn)
                     changed = not os.path.exists(pre_dst) or os.stat(src).st_mtime != os.stat(pre_dst).st_mtime
+                    # print(src, pre_dst, changed)
                     if changed:
                         shutil.copy2(src, pre_dst)
 
@@ -348,6 +379,7 @@ class GDNativeBuildExt(build_ext):
         self.python_dependencies['py_files_for_bin_dev'] = py_files_for_bin_dev = []
 
         self.python_dependencies['zip_dirs'] = dirs = set()
+        self.python_dependencies['zip_dirs_dev'] = dirs_dev = set()
         self.python_dependencies['bin_dirs'] = so_dirs = set()
 
         mainlib = None
@@ -365,14 +397,6 @@ class GDNativeBuildExt(build_ext):
         if extra_mainlib is not None:
             so_files.append(('mainlib', extra_mainlib))
 
-        if not self.godot_project.set_development_path:
-            python_package_path = os.path.join(self.godot_project.python_package, '__init__.py')
-            if os.path.exists(python_package_path):
-                py_files.append(('local', os.path.join('%PROJECT%', '__init__.py')))
-            else:
-                py_files.append((None, os.path.join(self.godot_project.python_package, '__init__.py')))
-            dirs.add(self.godot_project.python_package)
-
         for dirpath, dirnames, filenames in os.walk(lib_dir):
             dirpath = dirpath[len(lib_dir):].lstrip(os.sep)
             skip = False
@@ -388,7 +412,7 @@ class GDNativeBuildExt(build_ext):
             if skip:
                 continue
             has_files = False
-            has_ed_files = False
+            has_dev_files = False
             for fn in filenames:
                 if not is_python_source(fn):
                     continue
@@ -399,14 +423,16 @@ class GDNativeBuildExt(build_ext):
                             is_tool = True
                             break
                 if is_tool:
-                    has_ed_files = True
+                    has_dev_files = True
                     py_files_dev.append(('lib', os.path.join(dirpath, fn)))
                 else:
                     has_files = True
                     py_files.append(('lib', os.path.join(dirpath, fn)))
 
-            if has_files or has_ed_files:
+            if has_files:
                 dirs.add(dirpath)
+            elif has_dev_files:
+                dirs_dev.add(dirpath)
 
         for fn in os.listdir(dynload_dir):
             if not is_python_ext(fn):
@@ -433,6 +459,7 @@ class GDNativeBuildExt(build_ext):
             if skip:
                 continue
             has_files = False
+            has_dev_files = False
             has_so_files = False
             for fn in filenames:
                 if is_python_source(fn):
@@ -443,10 +470,11 @@ class GDNativeBuildExt(build_ext):
                         if dirpath.startswith(tooldir):
                             is_tool = True
                             break
-                    has_files = True
                     if is_tool:
+                        has_dev_files = True
                         py_files_dev.append(('site', os.path.join(dirpath, fn)))
                     else:
+                        has_files = True
                         py_files.append(('site', os.path.join(dirpath, fn)))
                 elif is_python_ext(fn):
                     has_so_files = True
@@ -457,6 +485,8 @@ class GDNativeBuildExt(build_ext):
                         so_files_dev.append(('site', os.path.join(dirpath, fn)))
             if has_files:
                 dirs.add(dirpath)
+            if has_dev_files:
+                dirs_dev.add(dirpath)
             if has_so_files:
                 so_dirs.add('_' + dirpath)
 
@@ -613,10 +643,17 @@ class GDNativeBuildExt(build_ext):
 
     def collect_godot_nativescript_data(self, ext):
         if not self.gdnative_library_path:
-            sys.stderr.write("Can't build a NativeScript extension without a GDNative library.\n")
-            sys.exit(1)
+            raise SystemExit("Can't build a NativeScript extension without a GDNative library.")
 
-        ext_name = self.godot_project.get_setuptools_name(ext.name, validate='.gdns')
+        addon = None
+
+        if ext._addon_prefix:
+            try:
+                addon = self.addons[ext._addon_prefix]
+            except KeyError:
+                raise SystemExit("Addon %r was not found" % ext._addon_prefix)
+
+        ext_name = self.godot_project.get_setuptools_name(ext.name, addon and addon.name, validate='.gdns')
         ext_path = self.get_ext_fullpath(ext_name)
         godot_root = ensure_godot_project_path(ext_path)
 
@@ -629,16 +666,35 @@ class GDNativeBuildExt(build_ext):
         context = dict(gdnlib_resource=self.gdnative_library_path, classname=classname)
 
         self.make_godot_resource('gdns.mako', make_resource_path(godot_root, gdns_path), context)
-        self.collect_sources(ext.sources)
+        self.collect_sources(ext.sources, addon)
 
         if not self.godot_project.set_development_path:
-            self.collect_dynamic_sources(ext._dynamic_sources)
+            self.collect_dynamic_sources(ext._dynamic_sources, addon)
+
+    def collect_godot_addon_data(self, ext):
+        self.addons[ext.name] = ext
+        config_path = os.path.join('addons', ext.name, 'plugin.cfg')
+
+        context = {
+            **ext._addon_metadata,
+            'name': ext._addon_metadata.get('name', ext.name),
+            'script': ext._addon_metadata.get('script', ext.name + '.gdns'),
+        }
+
+        for pattern in ext._data_file_patterns:
+            for fn in glob.glob(os.path.join(ext.name, pattern)):
+                self.make_godot_file_resource(fn, os.path.join('addons', fn))
+
+        self.make_godot_resource('plugin.cfg.mako', config_path, context)
 
     def make_godot_resource(self, template_filename, path, context):
         template = Template(filename=os.path.join(templates_dir, template_filename))
         self.godot_resources[path] = template.render(**context)
 
-    def collect_sources(self, sources):
+    def make_godot_file_resource(self, src_path, path):
+        self.godot_resource_files[path] = src_path
+
+    def collect_sources(self, sources, addon=None):
         cpp_sources = []
 
         for pyx_source in sources:
@@ -673,9 +729,32 @@ class GDNativeBuildExt(build_ext):
             source = os.path.join(self.godot_project.python_package, cpp_source)
             self.build_context['cpp_sources'].append(make_relative_path(source))
 
-    def collect_dynamic_sources(self, sources):
+    def collect_dynamic_sources(self, sources, addon):
+        prefix = addon and addon.name or self.godot_project.python_package
+
+        append_init_file = False
+
+        if addon and addon._editor_only:
+            collection = self.python_dependencies['py_files_dev']
+            if prefix not in self.python_dependencies['zip_dirs_dev']:
+                self.python_dependencies['zip_dirs_dev'].add(prefix)
+                append_init_file = True
+        else:
+            collection = self.python_dependencies['py_files']
+            if prefix not in self.python_dependencies['zip_dirs']:
+                self.python_dependencies['zip_dirs'].add(prefix)
+                append_init_file = True
+
+        if append_init_file:
+            init_file = os.path.join(prefix, '__init__.py')
+
+            if os.path.exists(init_file):
+                collection.append(('local', init_file))
+            else:
+                collection.append((None, init_file))
+
         for source in sources:
-            self.python_dependencies['py_files'].append(('local', os.path.join('%PROJECT%', source)))
+            collection.append(('local', os.path.join(prefix, source)))
 
 
 def ensure_godot_project_path(path):

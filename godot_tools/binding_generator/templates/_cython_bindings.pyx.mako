@@ -135,12 +135,12 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
     % endif  ## singleton/else
 
     % if class_def['instanciable']:
-    def __init__(self, external_reference=False):
+    def __init__(self, own_memory=False):
         if '_preinit' in self.__class__.__dict__:
             self.__class__._preinit(self)
         elif self.__class__ is ${class_name}:
             self._owner = gdapi.godot_get_class_constructor("${class_name}")()
-            self._owner_allocated = not external_reference
+            self._owner_allocated = own_memory
             register_godot_instance(self._owner, self)
             # print('INIT %s %r' % (hex(<size_t>self._owner), self))
         else:

@@ -15,7 +15,7 @@ from .core.tag_db cimport (
     clear_cython, clear_python, clear_instance_map
 )
 from .core.defs cimport VARIANT_OBJECT, VARIANT_NIL
-from .core.signal_arguments cimport SignalArgument
+from .core.signals cimport SignalArgument
 
 from .core._meta cimport __tp_dict, PyType_Modified
 from .core._debug cimport __ob_refcnt
@@ -53,8 +53,8 @@ cdef void *_instance_create(size_t type_tag, godot_object *instance, language_in
     cdef bint is_python = language_index == PYTHON_IDX
     cdef type cls = get_python_type(type_tag) if is_python else get_cython_type(type_tag)
 
-    # cdef bint is_python_reference = issubclass(cls, _python_bindings.Reference)
-    # cdef bint is_cython_reference = issubclass(cls, _cython_bindings.Reference)
+    cdef bint is_python_reference = issubclass(cls, _python_bindings.Reference)
+    cdef bint is_cython_reference = issubclass(cls, _cython_bindings.Reference)
 
     cdef _Wrapped obj = <_Wrapped>cls.__new__(cls)
 
@@ -70,9 +70,9 @@ cdef void *_instance_create(size_t type_tag, godot_object *instance, language_in
     #     __CYTHON_REFS.add(<size_t>obj._owner)
 
     if is_instance_binding:
-        if <void *>obj._owner != gdnlib:
+        if <void *>obj._owner != gdnlib and (is_python_reference or is_cython_reference):
             obj._owner_allocated = True
-        # print('instance binding CREATE', obj, hex(<size_t>obj._owner), cls, __ob_refcnt(obj), obj._owner_allocated)
+    #     print('instance binding CREATE', obj, hex(<size_t>obj._owner), cls, __ob_refcnt(obj), obj._owner_allocated)
     # else:
     #     print('instance CREATE', obj, hex(<size_t>instance), cls, __ob_refcnt(obj))
 
@@ -311,11 +311,9 @@ cdef public generic_nativescript_init():
         gdlibrary._nativescript_init()
 
 
-cdef object _generate_python_init_func(cls):
-    cdef size_t owner
-
-    def __init__(self):
-        cdef _python_bindings.NativeScript script = _python_bindings.NativeScript(external_reference=True)
+cdef object _generate_python_get_script_func(cls):
+    def _get_script() -> _python_bindings.NativeScript:
+        cdef _python_bindings.NativeScript script = _python_bindings.NativeScript(own_memory=False)
         cdef size_t script_owner = <size_t>script._owner
 
         assert python_gdnlib is not None, python_gdnlib
@@ -323,24 +321,14 @@ cdef object _generate_python_init_func(cls):
         script.set_library(python_gdnlib)
         script.set_class_name(cls.__name__)
 
-        # print('SCRIPT', hex(script_owner), __ob_refcnt(script))
+        return script
 
-        cdef godot_object *owner = script._new_instance()
-        (<_Wrapped>self)._owner = owner;
-
-        # Clean Python object created in script._new_instance()
-        replace_python_instance(owner, self)
-
-        # print('OWNER', hex(<size_t>owner), __ob_refcnt(script), self, __ob_refcnt(self))
-
-    return __init__
+    return _get_script
 
 
-cdef object _generate_cython_preinit_func(cls):
-    cdef size_t owner
-
-    def _preinit(self):
-        cdef _cython_bindings.NativeScript script = _cython_bindings.NativeScript(external_reference=True)
+cdef object _generate_cython_get_script_func(cls):
+    def _get_script() -> _cython_bindings.NativeScript:
+        cdef _cython_bindings.NativeScript script = _cython_bindings.NativeScript(own_memory=False)
         cdef size_t script_owner = <size_t>script._owner
 
         assert cython_gdnlib is not None, cython_gdnlib
@@ -348,15 +336,46 @@ cdef object _generate_cython_preinit_func(cls):
         script.set_library(cython_gdnlib)
         script.set_class_name(cls.__name__)
 
+        return script
+
+    return _get_script
+
+
+cdef object _generate_python_init_func(cls):
+    cdef size_t owner
+
+    def __init__(self, own_memory=False):
+        cdef _python_bindings.NativeScript script = cls._get_script()
+
         # print('SCRIPT', hex(script_owner), __ob_refcnt(script))
 
         cdef godot_object *owner = script._new_instance()
         (<_Wrapped>self)._owner = owner;
+        (<_Wrapped>self)._owner_allocated = own_memory
 
         # Clean Python object created in script._new_instance()
         replace_python_instance(owner, self)
 
-        # print('OWNER', hex(<size_t>owner), __ob_refcnt(script), self, __ob_refcnt(self))
+        # print(self, 'OWNER', hex(<size_t>owner), __ob_refcnt(script), self, __ob_refcnt(self))
+
+    return __init__
+
+
+
+cdef object _generate_cython_preinit_func(cls):
+    cdef size_t owner
+
+    def _preinit(self, own_memory=False):
+        cdef _cython_bindings.NativeScript script = cls._get_script()
+
+        cdef godot_object *owner = script._new_instance()
+        (<_Wrapped>self)._owner = owner;
+        (<_Wrapped>self)._owner_allocated = own_memory
+
+        # Clean Python object created in script._new_instance()
+        replace_python_instance(owner, self)
+
+        # print(self, 'OWNER', hex(<size_t>owner), __ob_refcnt(script), self, __ob_refcnt(self))
 
     return _preinit
 
@@ -397,8 +416,10 @@ cdef _register_class(type cls, tool_class=False):
                            (cls.__init__.__qualname__, cls.__init__.__qualname__.replace('__init__', '_init')))
 
     if is_python:
+        cls._get_script = staticmethod(_generate_python_get_script_func(cls))
         cls.__init__ = _generate_python_init_func(cls)
     else:
+        __tp_dict(cls)['_get_script'] = staticmethod(_generate_cython_get_script_func(cls))
         __tp_dict(cls)['_preinit'] = _generate_cython_preinit_func(cls)
         PyType_Modified(cls)
 
@@ -452,6 +473,7 @@ cdef public object _register_python_signal(type cls, str name, tuple args):
         _set_signal_argument(&signal.args[i], arg)
 
     cdef bytes class_name = cls.__name__.encode('utf-8')
+    # print('register_signal', class_name, name)
     nsapi.godot_nativescript_register_signal(handle, <const char *>class_name, &signal)
 
     for i, arg in enumerate(args):
@@ -603,6 +625,9 @@ cdef Variant _python_method_wrapper(godot_object *instance, void *method_data, v
         self = <object>self_data
         method = <object>method_data
 
+        if not (<_Wrapped>self)._owner:
+            WARN_PRINT("%r has undefined Godot instance" % self)
+            (<_Wrapped>self)._owner = instance  # XXX: tool classes may have _owner set to NULL incorrectly
+
         # Variant casts from PyObject* are defined in Variant::Variant(const PyObject*) constructor
         return <Variant>method(self, *__parse_args(num_args, args))
-

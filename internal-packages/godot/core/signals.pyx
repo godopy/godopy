@@ -11,6 +11,9 @@ cdef class SignalArgument:
         self.usage = usage
         self.default_value = default_value
 
+    def as_dict(self):
+        return {self.name: self.type}
+
 
 cdef class SignalArgumentNil(SignalArgument):
     def __cinit__(self, str name):

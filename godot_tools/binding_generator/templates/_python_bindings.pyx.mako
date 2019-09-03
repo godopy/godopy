@@ -39,7 +39,7 @@
             assert arg[1].startswith('_')
             return arg[1][1:]
         if not is_enum(arg[2]['type']) and is_class_type(arg[2]['type']):
-            return '%s._owner' % arg[1]
+            return '(<_Wrapped>%s)._owner' % arg[1]
         if arg[2]['type'] in HAS_TYPE_CONVERTORS:
             return 'cpp.%s_from_PyObject(%s)' % (arg[2]['type'], arg[1])
         if arg[2]['type'] in ('String', 'Variant', 'Array', 'Dictionary'):
@@ -58,7 +58,7 @@
         if rt == 'void':
             return ''
         elif rt == 'Variant':
-            return 'return ret'
+            return 'return <object>ret'
         elif rt == 'String':
             return 'return ret.py_str()'
         elif rt == 'Array':
@@ -77,7 +77,7 @@
         if rt == 'void':
             return ''
         elif rt == 'Variant':
-            return 'cdef object ret = <object>'
+            return 'cdef cpp.Variant ret = '
         elif rt in CORE_TYPES:
             return 'cdef cpp.{0} ret = '.format(rt)
         elif rt == 'bool':
@@ -133,7 +133,7 @@ from ..globals cimport Godot, WARN_PRINT, gdapi, nativescript_1_1_api as ns11api
 from ..core.defs cimport *
 from ..core cimport cpp_types as cpp
 from ..core cimport types as py
-from ..core._wrapped cimport _PyWrapped
+from ..core._wrapped cimport _PyWrapped, _Wrapped
 from ..core.tag_db cimport (
     register_global_python_type, get_python_instance,
     register_godot_instance, unregister_godot_instance
@@ -223,10 +223,10 @@ cdef class ${get_class_name(class_name, class_def)}(${get_base_name(class_def['b
     % endif  ## singleton/else
 
     % if class_def['instanciable']:
-    def __init__(self, external_reference=False):
+    def __init__(self, own_memory=False):
         if self.__class__ is ${class_name}:
             self._owner = gdapi.godot_get_class_constructor("${class_name}")()
-            self._owner_allocated = not external_reference
+            self._owner_allocated = own_memory
             register_godot_instance(self._owner, self)
             # print('INIT %s %r' % (hex(<size_t>self._owner), self), __ob_refcnt(self))
         else:

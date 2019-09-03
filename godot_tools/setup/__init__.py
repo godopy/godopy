@@ -6,10 +6,13 @@ from .enums import ExtType
 from .extensions import GDNativeBuildExt
 
 
-def godot_setup(godot_project, *, library, extensions, **kwargs):
+def godot_setup(godot_project, *, library, extensions, addons=None, **kwargs):
+    if addons is None:
+        addons = ()
     modules = [
         GodotProject(godot_project, **kwargs),
         library,
+        *addons,
         *extensions
     ]
 
@@ -34,7 +37,7 @@ class GodotProject(Extension):
         self._gdnative_type = ExtType.PROJECT
         super().__init__(name, sources=[])
 
-    def get_setuptools_name(self, name, validate=None):
+    def get_setuptools_name(self, name, addon_prefix=None, validate=None):
         dirname, fullbasename = os.path.split(name)
         basename, extension = os.path.splitext(fullbasename)
 
@@ -42,4 +45,11 @@ class GodotProject(Extension):
             sys.stderr.write("\"%s\" extension was expected for \"%s\".\n" % (validate, name))
             sys.exit(1)
 
-        return os.path.join(self.name, dirname, basename)
+        parts = [self.name]
+        if addon_prefix:
+            parts += ['addons', addon_prefix]
+
+        if dirname:
+            parts.append(dirname)
+
+        return os.path.join(*parts, basename)

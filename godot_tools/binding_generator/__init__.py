@@ -577,6 +577,7 @@ def make_python_gdnative_type(t, is_virtual=False, is_return=False, has_default=
     if is_enum(t):
         return 'int '
     elif is_class_type(t):
+        # return 'object '
         return '%s ' % strip_name(t)
     elif t == 'String':
         return 'str '
