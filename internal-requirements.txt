@@ -1,3 +1,2 @@
 ./deps/numpy
 ipython==7.7.0
-./internal-packages

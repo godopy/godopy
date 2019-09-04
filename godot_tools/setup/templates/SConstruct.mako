@@ -24,7 +24,7 @@ else:
 
 opts = Variables([], ARGUMENTS)
 
-opts.Add(EnumVariable('target', "Compilation target", 'debug', ['d', 'debug', 'r', 'release']))
+opts.Add(EnumVariable('target', "Compilation target", 'release', ['d', 'debug', 'r', 'release']))
 opts.Add(EnumVariable('platform', "Compilation platform", host_platform, ['windows', 'x11', 'linux', 'osx']))
 opts.Add(EnumVariable('p', "Compilation target, alias for 'platform'", host_platform, ['windows', 'linux', 'osx']))
 opts.Add(BoolVariable('use_llvm', "Use the LLVM / Clang compiler", 'no'))
@@ -126,11 +126,16 @@ elif env['platform'] == 'windows':
         env.Append(CPPDEFINES=['NDEBUG'])
         env.Append(CCFLAGS=['-O2', '-EHsc', '-MD'])
 
-binpath = os.path.join(pygodot_bindings_path, 'buildenv', 'Scripts' if sys.platform == 'win32' else 'bin')
+cython_builder = os.path.join(
+    pygodot_bindings_path,
+    'buildenv',
+    'Scripts' if sys.platform == 'win32' else 'bin',
+    'pygodot_cython.exe' if sys.platform == 'win32' else 'pygodot_cython'
+)
 
 env.Append(BUILDERS={
     # 'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath)
-    'CythonSource': Builder(action='%s/pygodot_cython $SOURCE $TARGET' % binpath)
+    'CythonSource': Builder(action='%s $SOURCE $TARGET' % cython_builder)
 })
 
 # make sure our binding library is properly includes

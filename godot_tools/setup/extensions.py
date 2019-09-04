@@ -47,6 +47,9 @@ class Addon(Extension):
         super().__init__(name, sources=[])
 
 
+# TODO: Make target configurable
+build_target = 'release'
+
 # TODO:
 # * Allow users to exclude Python dependencies with glob patterns
 # * Encapsulate Python packaging into a separate class and let users create custom classes
@@ -156,7 +159,7 @@ class GDNativeBuildExt(build_ext):
         scons = os.path.join(sys.prefix, 'Scripts', 'scons') if sys.platform == 'win32' else 'scons'
 
         if not self.dry_run:
-            self.spawn([scons])
+            self.spawn([scons, 'target=%s' % build_target])
 
     def write_target_file(self, path, content, pretty_path=None, is_editable_resource=False):
         if pretty_path is None:
@@ -598,7 +601,7 @@ class GDNativeBuildExt(build_ext):
         base_name = dst_name_parts[0]
         dst_name_parts[0] = 'lib' + dst_name_parts[0]
         dst_fullname = dst_name_parts[0] + get_dylib_ext()
-        staticlib_name = 'libpygodot.%s.debug.64' % platform_suffix(platform)
+        staticlib_name = 'libpygodot.%s.%s.64' % (platform_suffix(platform), build_target)
 
         binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform_suffix(platform), dst_fullname)
 
@@ -800,7 +803,7 @@ def is_python_source(fn):
 
 
 def is_python_ext(fn):
-    return fn.endswith('.so') or fn.endswith('.pyd')
+    return fn.endswith('.so') or fn.endswith('.pyd') or fn.endswith('.dll')
 
 
 def get_dylib_ext():

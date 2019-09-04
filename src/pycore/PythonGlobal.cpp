@@ -89,7 +89,10 @@ void PyGodot::python_init() {
 	bool write_bytecode = false;
 
 #ifdef _WIN32
-
+	// main_module_path = main_module_path.replace("/", "\\");
+	// extended_module_path = extended_module_path.replace("/", "\\");
+	// development_module_path = development_module_path.replace("/", "\\");
+	// binary_module_path = binary_module_path.replace("/", "\\");
 #elif __APPLE__
 
 #else

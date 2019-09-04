@@ -59,7 +59,7 @@ opts.Add(BoolVariable(
 opts.Add(EnumVariable(
     'target',
     'Compilation target',
-    'debug',
+    'release',
     allowed_values=('debug', 'release'),
     ignorecase=2
 ))
@@ -224,11 +224,15 @@ elif env['platform'] == 'windows':
             '-static-libstdc++',
         ])
 
-binpath = os.path.join('buildenv', 'Scripts' if sys.platform == 'win32' else 'bin')
+cython_builder = os.path.join(
+    'buildenv',
+    'Scripts' if sys.platform == 'win32' else 'bin',
+    'pygodot_cython.exe' if sys.platform == 'win32' else 'pygodot_cython'
+)
 
 env.Append(BUILDERS={
     # 'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath),
-    'CythonSource': Builder(action='%s/pygodot_cython $SOURCE $TARGET' % binpath)
+    'CythonSource': Builder(action='%s $SOURCE $TARGET' % cython_builder)
 })
 
 env.Append(CPPPATH=[
