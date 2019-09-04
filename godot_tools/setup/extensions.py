@@ -338,7 +338,10 @@ class GDNativeBuildExt(build_ext):
                         "from py_compile import compile; compile(%r, %r, dfile=%r)" % (pre_dst, dst, fn)
                     ]
 
-                    subprocess.run(cmd, check=True, capture_output=True)
+                    if sys.version_info >= (3, 7):
+                        subprocess.run(cmd, check=True, capture_output=True)
+                    else:
+                        subprocess.run(cmd, check=True)
                     shutil.copystat(pre_dst, dst)
                 else:
                     if verbosity > 1:

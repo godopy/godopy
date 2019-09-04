@@ -27,7 +27,10 @@ $ cd ..
 $ python3 -m venv toolbox
 $ source toolbox/bin/activate
 (toolbox) $ pip install -r pygodot/bootstrap-requirements.txt
+(toolbox) $ deactivate
+$ source toolbox/bin/activate
 (toolbox) $ cd pygodot
+(toolbox) $ ./clean.sh
 (toolbox) $ ./bootstrap.py
 (toolbox) $ scons  # scons -j4 only_cython=yes && scons -j4
 (toolbox) $ pip install -e .

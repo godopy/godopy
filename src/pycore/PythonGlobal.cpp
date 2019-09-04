@@ -89,13 +89,12 @@ void PyGodot::python_init() {
 	bool write_bytecode = false;
 
 #ifdef _WIN32
-	// main_module_path = main_module_path.replace("/", "\\");
-	// extended_module_path = extended_module_path.replace("/", "\\");
-	// development_module_path = development_module_path.replace("/", "\\");
-	// binary_module_path = binary_module_path.replace("/", "\\");
+
 #elif __APPLE__
 
 #else
+	// printf("dlopen %s\n", ((godot::String *)&active_library_path)->utf8().get_data());
+
 	// Make Python symbols available for core Python extension modules on Linux
 	// Idea from https://stackoverlow.com/questions/11842920/undefined-symbol-pyexc-importerror-when-embedding-python-in-c#11847653
 	const void *___so_handle = dlopen(((godot::String *)&active_library_path)->utf8().get_data(), RTLD_LAZY | RTLD_GLOBAL);
