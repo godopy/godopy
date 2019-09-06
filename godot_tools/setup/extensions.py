@@ -12,10 +12,8 @@ from setuptools.command.build_ext import build_ext
 
 from mako.template import Template
 
-from godot_tools.cli import is_internal_path
-
 from ..version import get_version
-from ..utils import get_godot_executable
+from ..utils import get_godot_executable, is_internal_path
 
 from .enums import ExtType
 

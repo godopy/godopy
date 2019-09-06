@@ -49,7 +49,7 @@ entry_points = {'console_scripts': ['pygodot=godot_tools.cli:pygodot', 'bindgen=
 install_requires = [
     'Mako',
     'scons',
-    'Click'  # TODO: Use argparse
+    'Click'
 ]
 
 setup_requires = [

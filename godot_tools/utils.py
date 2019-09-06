@@ -26,3 +26,7 @@ def crossplat_exe_glob(godot_build_dir, pattern):
         pattern += '.exe'
 
     return glob.glob(os.path.join(godot_build_dir, 'bin', pattern))
+
+
+def is_internal_path(path):
+    return path.startswith('internal-packages') or path.startswith('src')

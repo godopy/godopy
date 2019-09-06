@@ -24,14 +24,15 @@ def godot_setup(godot_project, *, library, extensions, addons=None, **kwargs):
 
 
 class GodotProject(Extension):
-    def __init__(self, name, package=None, *, binary_path=None, set_development_path=False):
-        if package is None:
-            package = '_' + name
+    def __init__(self, name, python_package=None, *, binary_path=None, set_development_path=False):
+        if python_package is None:
+            dir, name = os.path.split(name)
+            python_package = name if dir else '_' + name
 
         if binary_path is None:
             binary_path = '.bin'
 
-        self.python_package = package
+        self.python_package = python_package
         self.binary_path = binary_path
         self.set_development_path = set_development_path
         self._gdnative_type = ExtType.PROJECT

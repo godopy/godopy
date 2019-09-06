@@ -6,8 +6,6 @@ from collections import defaultdict
 
 from mako.template import Template
 
-from .pxd_writer import PxdWriter, parse as parse_c_header
-
 
 CYTHON_AUTOMATIC_CAST_TYPES = ('Variant', 'Array', 'Dictionary')
 
@@ -75,6 +73,8 @@ templates_dir = os.path.join(root_dir, 'godot_tools', 'binding_generator', 'temp
 
 
 def write_api_pxd(echo=print):
+    from .pxd_writer import PxdWriter, parse as parse_c_header
+
     output_dir = os.path.join(root_dir, 'internal-packages', 'godot_headers')
 
     if not os.path.isdir(output_dir):
