@@ -67,11 +67,15 @@ def build_python():
         os.environ['LDFLAGS'] = (
             '-L/usr/local/opt/openssl/lib '
             '-L/usr/local/opt/sqlite/lib '
+            '-L/usr/local/opt/zlib/lib '
+            '-L/usr/local/opt/readline/lib '
         )
 
         os.environ['CPPFLAGS'] = (
             '-I/usr/local/opt/openssl/include '
             '-I/usr/local/opt/sqlite/include '
+            '-I/usr/local/opt/zlib/include '
+            '-I/usr/local/opt/readline/include '
         )
     else:
         os.environ['CFLAGS'] = '-fPIC'

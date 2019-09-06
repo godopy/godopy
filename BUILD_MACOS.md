@@ -1,6 +1,6 @@
 ## Installing dependencies
 ```
-brew install python3 openssl sqlite3
+brew install python3 openssl sqlite3 zlib readline
 ```
 
 ## Setting environment variables
@@ -18,6 +18,7 @@ $ deps/python/build/bin/python3 -m venv buildenv
 $ source buildenv/bin/activate
 (buildenv) $ pip install deps/cython
 (buildenv) $ pip install -r internal-requirements.txt
+(buildenv) $ # Use pip to install any Python dependencies you want
 (buildenv) $ deactivate
 $ cd ..
 ```
