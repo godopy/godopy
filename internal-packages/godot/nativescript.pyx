@@ -244,9 +244,12 @@ cdef public cython_nativescript_terminate():
     global cython_gdnlib
 
     clear_cython()
-    clear_instance_map()
 
     cython_gdnlib = None
+
+
+cdef public global_nativescript_terminate():
+    clear_instance_map()
 
 
 cdef public python_nativescript_init():

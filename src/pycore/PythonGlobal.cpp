@@ -18,6 +18,7 @@ extern "C" PyObject *cython_nativescript_init();
 extern "C" PyObject *cython_nativescript_terminate();
 extern "C" PyObject *python_nativescript_init();
 extern "C" PyObject *python_nativescript_terminate();
+extern "C" PyObject *global_nativescript_terminate();
 
 namespace pygodot {
 
@@ -236,6 +237,10 @@ void PyGodot::nativescript_terminate(void *handle, bool terminate_cython, bool t
 		}
 
 		godot::nativescript_1_1_api->godot_nativescript_unregister_instance_binding_data_functions(godot::_RegisterState::cython_language_index);
+	}
+
+	if (global_nativescript_terminate() == NULL) {
+		if (PyErr_Occurred()) PyErr_Print();
 	}
 }
 

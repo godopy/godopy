@@ -50,6 +50,7 @@ class Addon(Extension):
 # TODO: Make target configurable
 build_target = 'release'
 
+
 # TODO:
 # * Allow users to exclude Python dependencies with glob patterns
 # * Encapsulate Python packaging into a separate class and let users create custom classes
@@ -258,6 +259,7 @@ class GDNativeBuildExt(build_ext):
                     reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_dev'])
                     if root == 'site']
         _total = len(self.python_dependencies[files])
+
         so_shims_written = set()
         with zipfile.ZipFile(zippath, 'w', zipfile.ZIP_DEFLATED) as _zip:
             for root, fn_so in so_shims:
@@ -272,6 +274,10 @@ class GDNativeBuildExt(build_ext):
                 dst = os.path.join(builddir_dst, fnc)
                 pre_dst = os.path.join(builddir_src, fn)
 
+                pre_dst_dir = os.path.dirname(pre_dst)
+                if not os.path.isdir(pre_dst_dir):
+                    os.makedirs(pre_dst_dir)
+
                 with open(pre_dst, 'w', encoding='utf-8') as fp:
                     shim_tmpl = (
                         "import _{1} as ___mod\n\n"
@@ -280,6 +286,8 @@ class GDNativeBuildExt(build_ext):
                     )
                     fp.write(shim_tmpl.format(bin_dir, os.path.join(inner_dir, import_name).replace(os.sep, '.')))
 
+                assert os.path.exists(pre_dst), pre_dst
+
                 cmd = [
                     self.python_dependencies['executable'],
                     '-c',
@@ -287,6 +295,7 @@ class GDNativeBuildExt(build_ext):
                 ]
 
                 subprocess.run(cmd, check=True)
+                assert os.path.exists(dst), dst
                 shutil.copystat(pre_dst, dst)
 
                 with open(dst, 'rb') as fp_src:
@@ -312,9 +321,11 @@ class GDNativeBuildExt(build_ext):
                 else:
                     src = os.path.join(basedir, fn)
                     changed = not os.path.exists(pre_dst) or os.stat(src).st_mtime != os.stat(pre_dst).st_mtime
-                    # print(src, pre_dst, changed)
+
                     if changed:
                         shutil.copy2(src, pre_dst)
+
+                assert os.path.exists(pre_dst), pre_dst
 
                 fnc = fn + 'c'
                 dst = os.path.join(builddir_dst, fnc)
@@ -342,6 +353,9 @@ class GDNativeBuildExt(build_ext):
                         subprocess.run(cmd, check=True, capture_output=True)
                     else:
                         subprocess.run(cmd, check=True)
+
+                    assert os.path.exists(dst), dst
+
                     shutil.copystat(pre_dst, dst)
                 else:
                     if verbosity > 1:
@@ -352,6 +366,8 @@ class GDNativeBuildExt(build_ext):
                             _prev_ratio = _ratio
 
                 if fnc not in so_shims_written:
+                    assert os.path.exists(dst), dst
+
                     with open(dst, 'rb') as fp_src:
                         with _zip.open(fnc, 'w') as fp_dst:
                             fp_dst.write(fp_src.read())
@@ -614,6 +630,7 @@ class GDNativeBuildExt(build_ext):
 
         self.build_context['pygodot_library_name'] = staticlib_name
         self.build_context['target'] = make_relative_path(binext_path)
+        self.build_context['singleton'] = ext._gdnative_options.get('singleton', False)
 
         dst_name = dst_name_parts[0]
         self.build_context['library_name'] = dst_name
