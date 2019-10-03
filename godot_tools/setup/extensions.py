@@ -92,11 +92,11 @@ class GDNativeBuildExt(build_ext):
             self.run_build()
 
         for res_path, content in self.godot_resources.items():
-            self.write_target_file(os.path.join(self.godot_project.name, res_path), content,
+            self.write_target_file(os.path.join(self.godot_project.path_prefix, res_path), content,
                                    pretty_path='res://%s' % res_path, is_editable_resource=True)
 
         for res_path, source in self.godot_resource_files.items():
-            target = os.path.join(self.godot_project.name, res_path)
+            target = os.path.join(self.godot_project.path_prefix, res_path)
             if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
                 print('skip copying "%s"' % make_relative_path(target))
                 continue
@@ -116,13 +116,13 @@ class GDNativeBuildExt(build_ext):
         if not self.dry_run:
             subprocess.run([
                 get_godot_executable(),
-                '--path', self.godot_project.name,
+                '--path', self.godot_project.path_prefix,
                 '-s', 'res://%s' % setup_script
             ], check=True)
 
         print('removing "res://%s"' % setup_script)
         if not self.dry_run:
-            os.unlink(os.path.join(self.godot_project.name, setup_script))
+            os.unlink(os.path.join(self.godot_project.path_prefix, setup_script))
 
     def run_copylib(self):
         source = os.path.join(self.build_context['pygodot_bindings_path'], self.build_context['pygodot_library_name'])
@@ -187,7 +187,7 @@ class GDNativeBuildExt(build_ext):
                 fp.write(content)
 
     def package_dependencies(self):
-        binroot = os.path.join(self.godot_project.name, self.godot_project.binary_path, platform_suffix(get_platform()))
+        binroot = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, platform_suffix(get_platform()))
 
         for d in sorted(self.python_dependencies['bin_dirs']):
             target_dir = os.path.join(binroot, d)
@@ -209,8 +209,8 @@ class GDNativeBuildExt(build_ext):
 
         _, gdnlib_name = os.path.split(self.gdnative_library_path)
         basename, _ = os.path.splitext(gdnlib_name)
-        main_zip_path = os.path.join(self.godot_project.name, self.godot_project.binary_path, '%s.pak' % basename)
-        tools_zip_path = os.path.join(self.godot_project.name, self.godot_project.binary_path, '%s-dev.pak' % basename)
+        main_zip_path = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, '%s.pak' % basename)
+        tools_zip_path = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, '%s-dev.pak' % basename)
 
         self._make_zip(main_zip_path, 'py_files', 'zip_dirs')
         self._make_zip(tools_zip_path, 'py_files_dev', 'zip_dirs_dev')

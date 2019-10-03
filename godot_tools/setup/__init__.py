@@ -24,9 +24,10 @@ def godot_setup(godot_project, *, library, extensions, addons=None, **kwargs):
 
 
 class GodotProject(Extension):
-    def __init__(self, name, python_package=None, *, binary_path=None, set_development_path=False):
+    def __init__(self, name, python_package=None, *, binary_path=None, set_development_path=False, **kwargs):
+        dir, name = os.path.split(name)
+
         if python_package is None:
-            dir, name = os.path.split(name)
             python_package = name if dir else '_' + name
 
         if binary_path is None:
@@ -36,7 +37,11 @@ class GodotProject(Extension):
         self.binary_path = binary_path
         self.set_development_path = set_development_path
         self._gdnative_type = ExtType.PROJECT
-        super().__init__(name, sources=[])
+
+        self.path_prefix = os.path.join(dir, name)
+        self.project_name = kwargs.get('project_name', name)
+
+        super().__init__(os.path.join(dir, name, 'project.godot'), sources=[])
 
     def get_setuptools_name(self, name, addon_prefix=None, validate=None):
         dirname, fullbasename = os.path.split(name)
@@ -46,7 +51,7 @@ class GodotProject(Extension):
             sys.stderr.write("\"%s\" extension was expected for \"%s\".\n" % (validate, name))
             sys.exit(1)
 
-        parts = [self.name]
+        parts = [self.path_prefix]
         if addon_prefix:
             parts += ['addons', addon_prefix]
 
