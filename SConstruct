@@ -6,6 +6,48 @@ import os
 if not hasattr(sys, 'version_info') or sys.version_info < (3, 6):
     raise SystemExit("PyGodot requires Python version 3.6 or above.")
 
+# Workaround for MinGW. See:
+# http://www.scons.org/wiki/LongCmdLinesOnWin32
+if (os.name=="nt"):
+    import subprocess
+    
+    def mySubProcess(cmdline,env):
+        #print "SPAWNED : " + cmdline
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        proc = subprocess.Popen(cmdline, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, startupinfo=startupinfo, shell = False, env = env)
+        data, err = proc.communicate()
+        rv = proc.wait()
+        if rv:
+            print("=====")
+            print(err.decode("utf-8"))
+            print("=====")
+        return rv
+        
+    def mySpawn(sh, escape, cmd, args, env):
+                        
+        newargs = ' '.join(args[1:])
+        cmdline = cmd + " " + newargs
+        
+        rv=0
+        if len(cmdline) > 32000 and cmd.endswith("ar") :
+            cmdline = cmd + " " + args[1] + " " + args[2] + " "
+            for i in range(3,len(args)) :
+                rv = mySubProcess( cmdline + args[i], env )
+                if rv :
+                    break	
+        else:				
+            rv = mySubProcess( cmdline, env )
+            
+        return rv
+
+def add_sources(sources, dir, extension):
+    for f in os.listdir(dir):
+        if f.endswith('.' + extension):
+            sources.append(dir + '/' + f)
+
+
 # Try to detect the host platform automatically.
 # This is used if no `platform` argument is passed
 if sys.platform.startswith('linux'):
@@ -26,7 +68,7 @@ opts.Add(EnumVariable(
     'platform',
     'Target platform',
     host_platform,
-    allowed_values=('linux', 'osx', 'windows'),
+    allowed_values=('linux', 'osx', 'windows', 'android'),
     ignorecase=2
 ))
 opts.Add(EnumVariable(
@@ -85,13 +127,34 @@ opts.Add(BoolVariable(
     'Generate GDNative API bindings',
     False
 ))
+opts.Add(EnumVariable(
+    'android_arch',
+    'Target Android architecture',
+    'armv7',
+    ['armv7','arm64v8','x86','x86_64']
+))
+opts.Add(
+    'android_api_level',
+    'Target Android API level',
+    '18' if ARGUMENTS.get("android_arch", 'armv7') in ['armv7', 'x86'] else '21'
+)
+opts.Add(
+    'ANDROID_NDK_ROOT',
+    'Path to your Android NDK installation. By default, uses ANDROID_NDK_ROOT from your defined environment variables.',
+    os.environ.get("ANDROID_NDK_ROOT", None)
+)
 
-env = Environment()
+env = Environment(ENV = os.environ)
 opts.Update(env)
 Help(opts.GenerateHelpText(env))
 
 is64 = sys.maxsize > 2**32
-if env['TARGET_ARCH'] == 'amd64' or env['TARGET_ARCH'] == 'emt64' or env['TARGET_ARCH'] == 'x86_64':
+if (
+    env['TARGET_ARCH'] == 'amd64' or
+    env['TARGET_ARCH'] == 'emt64' or
+    env['TARGET_ARCH'] == 'x86_64' or
+    env['TARGET_ARCH'] == 'arm64-v8a'
+):
     is64 = True
 
 if env['bits'] == 'default':
@@ -104,9 +167,8 @@ python_internal_env = os.path.join('buildenv', 'lib', 'python3.8', 'site-package
 # This makes sure to keep the session environment variables on Windows.
 # This way, you can run SCons in a Visual Studio 2017 prompt and it will find
 # all the required tools
-if host_platform == 'windows':
+if host_platform == 'windows' and env['platform'] != 'android':
     bits = env['bits']
-
     if env['bits'] == '64':
         env = Environment(TARGET_ARCH='amd64')
     elif env['bits'] == '32':
@@ -223,12 +285,70 @@ elif env['platform'] == 'windows':
             '-static-libgcc',
             '-static-libstdc++',
         ])
+elif env['platform'] == 'android':
+    if host_platform == 'windows':
+        env = env.Clone(tools=['mingw'])
+        env["SPAWN"] = mySpawn
+    
+    # Verify NDK root
+    if not 'ANDROID_NDK_ROOT' in env:
+        raise ValueError("To build for Android, ANDROID_NDK_ROOT must be defined. Please set ANDROID_NDK_ROOT to the root folder of your Android NDK installation.")
+    
+    # Validate API level
+    api_level = int(env['android_api_level'])
+    if env['android_arch'] in ['x86_64', 'arm64v8'] and api_level < 21:
+        print("WARN: 64-bit Android architectures require an API level of at least 21; setting android_api_level=21")
+        env['android_api_level'] = '21'
+        api_level = 21
+    
+    # Setup toolchain
+    toolchain = env['ANDROID_NDK_ROOT'] + "/toolchains/llvm/prebuilt/"
+    if host_platform == "windows":
+        toolchain += "windows"
+        import platform as pltfm
+        if pltfm.machine().endswith("64"):
+            toolchain += "-x86_64"
+    elif host_platform == "linux":
+        toolchain += "linux-x86_64"
+    elif host_platform == "osx":
+        toolchain += "darwin-x86_64"
+    env.PrependENVPath('PATH', toolchain + "/bin") # This does nothing half of the time, but we'll put it here anyways
+
+    # Get architecture info
+    arch_info_table = {
+        "armv7" : {
+            "march":"armv7-a", "target":"armv7a-linux-androideabi", "tool_path":"arm-linux-androideabi", "compiler_path":"armv7a-linux-androideabi",
+            "ccflags" : ['-mfpu=neon']
+            },
+        "arm64v8" : {
+            "march":"armv8-a", "target":"aarch64-linux-android", "tool_path":"aarch64-linux-android", "compiler_path":"aarch64-linux-android",
+            "ccflags" : []
+            },
+        "x86" : {
+            "march":"i686", "target":"i686-linux-android", "tool_path":"i686-linux-android", "compiler_path":"i686-linux-android",
+            "ccflags" : ['-mstackrealign']
+            },
+        "x86_64" : {"march":"x86-64", "target":"x86_64-linux-android", "tool_path":"x86_64-linux-android", "compiler_path":"x86_64-linux-android",
+            "ccflags" : []
+        }
+    }
+    arch_info = arch_info_table[env['android_arch']]
+
+    # Setup tools
+    env['CC'] = toolchain + "/bin/clang"
+    env['CXX'] = toolchain + "/bin/clang++"
+    env['AR'] = toolchain + "/bin/" + arch_info['tool_path'] + "-ar"
+
+    env.Append(CCFLAGS=['--target=' + arch_info['target'] + env['android_api_level'], '-march=' + arch_info['march'], '-fPIC'])#, '-fPIE', '-fno-addrsig', '-Oz'])
+    env.Append(CCFLAGS=arch_info['ccflags'])
 
 cython_builder = os.path.join(
     'buildenv',
     'Scripts' if sys.platform == 'win32' else 'bin',
     'pygodot_cython.exe' if sys.platform == 'win32' else 'pygodot_cython'
 )
+
+os.environ['PYTHONPATH'] = python_internal_env
 
 env.Append(BUILDERS={
     # 'CythonSource': Builder(action='%s/cython --fast-fail -3 --cplus -o $TARGET $SOURCE' % binpath),
@@ -274,7 +394,9 @@ gdlib_sources = [
     'src/pylib/gdlibrary.cpp'
 ]
 
-static_target_name = 'bin/libpygodot.%(platform)s.%(target)s.%(bits)s%(LIBSUFFIX)s' % env
+env['bits_suffix'] = env['bits'] if env['platform'] != 'android' else env['android_arch']
+
+static_target_name = 'bin/libpygodot.%(platform)s.%(target)s.%(bits_suffix)s%(LIBSUFFIX)s' % env
 
 # if env['target_extension']:
 #     # Library name was generated by setuptools

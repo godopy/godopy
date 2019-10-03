@@ -29,10 +29,17 @@ int _RegisterState::python_language_index;
 
 const godot_gdnative_core_api_struct *api = nullptr;
 const godot_gdnative_core_1_1_api_struct *core_1_1_api = nullptr;
+const godot_gdnative_core_1_2_api_struct *core_1_2_api = nullptr;
 
 const godot_gdnative_ext_nativescript_api_struct *nativescript_api = nullptr;
 const godot_gdnative_ext_nativescript_1_1_api_struct *nativescript_1_1_api = nullptr;
 const godot_gdnative_ext_pluginscript_api_struct *pluginscript_api = nullptr;
+
+const godot_gdnative_ext_android_api_struct *android_api = nullptr;
+const godot_gdnative_ext_arvr_api_struct *arvr_api = nullptr;
+const godot_gdnative_ext_videodecoder_api_struct *videodecoder_api = nullptr;
+const godot_gdnative_ext_net_api_struct *net_api = nullptr;
+const godot_gdnative_ext_net_3_2_api_struct *net_3_2_api = nullptr;
 
 const void *gdnlib = NULL;
 
@@ -86,6 +93,8 @@ void Godot::gdnative_init(godot_gdnative_init_options *options) {
 	while (core_extension && core_extension != prev_extension) {
 		if (core_extension->version.major == 1 && core_extension->version.minor == 1) {
 			godot::core_1_1_api = (const godot_gdnative_core_1_1_api_struct *)core_extension;
+		} else if (core_extension->version.major == 1 && core_extension->version.minor == 2) {
+			godot::core_1_2_api = (const godot_gdnative_core_1_2_api_struct *)core_extension;
 		}
 		prev_extension = core_extension;
 		core_extension = core_extension->next;
@@ -108,11 +117,38 @@ void Godot::gdnative_init(godot_gdnative_init_options *options) {
 				}
 			} break;
 			case GDNATIVE_EXT_PLUGINSCRIPT: {
-				godot:pluginscript_api = (const godot_gdnative_ext_pluginscript_api_struct *)godot::api->extensions[i];
+				godot::pluginscript_api = (const godot_gdnative_ext_pluginscript_api_struct *)godot::api->extensions[i];
 			} break;
+			case GDNATIVE_EXT_ANDROID: {
+				godot::android_api = (const godot_gdnative_ext_android_api_struct *)godot::api->extensions[i];
+			} break;
+			case GDNATIVE_EXT_ARVR: {
+				godot::arvr_api = (const godot_gdnative_ext_arvr_api_struct *)godot::api->extensions[i];
+			} break;
+			case GDNATIVE_EXT_VIDEODECODER: {
+				godot::videodecoder_api = (const godot_gdnative_ext_videodecoder_api_struct *)godot::api->extensions[i];
+			} break;
+			case GDNATIVE_EXT_NET: {
+				godot::net_api = (const godot_gdnative_ext_net_api_struct *)godot::api->extensions[i];
+
+				const godot_gdnative_api_struct *extension = godot::net_api->next;
+
+				while (extension) {
+					if (extension->version.major == 3 && extension->version.minor == 2) {
+						godot::net_3_2_api = (const godot_gdnative_ext_net_3_2_api_struct *)extension;
+					}
+
+					extension = extension->next;
+				}
+			} break;
+
 			default: break;
 		}
 	}
+
+	// register these now
+	___register_types();
+	___init_method_bindings();
 }
 
 void Godot::gdnative_terminate(godot_gdnative_terminate_options *options) {
@@ -131,9 +167,6 @@ void Godot::nativescript_init(void *handle) {
 	binding_funcs.free_instance_binding_data = wrapper_destroy;
 
 	godot::_RegisterState::language_index = godot::nativescript_1_1_api->godot_nativescript_register_instance_binding_data_functions(binding_funcs);
-
-	___register_types();
-	___init_method_bindings();
 }
 
 void Godot::nativescript_terminate(void *handle) {
