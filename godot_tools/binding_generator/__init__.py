@@ -98,7 +98,8 @@ def write_api_pxd(echo=print):
 
     extra_cpp_args = ['-I', '.']
     if sys.platform == 'darwin':
-        extra_cpp_args += ['-I', "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"]
+        # TODO: Use 'xcode-select -p' output
+        extra_cpp_args += ['-I', "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"]
 
     p = PxdWriter(fname)
     p.visit(parse_c_header(code, extra_cpp_args=extra_cpp_args))

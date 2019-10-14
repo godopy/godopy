@@ -101,8 +101,7 @@ void PyGodot::python_init() {
 	const void *___so_handle = dlopen(((godot::String *)&active_library_path)->utf8().get_data(), RTLD_LAZY | RTLD_GLOBAL);
 #endif
 
-	status = PyConfig_InitIsolatedConfig(&config);
-	ERR_FAIL_PYSTATUS(status, fail);
+	PyConfig_InitIsolatedConfig(&config);
 
 	status = PyConfig_SetString(&config, &config.program_name, executable.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
