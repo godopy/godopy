@@ -31,8 +31,8 @@ $ source toolbox/bin/activate
 (toolbox) $ deactivate
 $ source toolbox/bin/activate
 (toolbox) $ cd pygodot
-(toolbox) $ ./clean.sh
 (toolbox) $ ./bootstrap.py
+(toolbox) $ ./clean.sh
 (toolbox) $ scons  # scons -j4 only_cython=yes && scons -j4
 (toolbox) $ pip install -e .
 (toolbox) $ cd ..
