@@ -1,2 +1,2 @@
-./deps/numpy
+numpy==1.17.4
 ipython==7.7.0

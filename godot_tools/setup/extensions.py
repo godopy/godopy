@@ -282,6 +282,7 @@ class GDNativeBuildExt(build_ext):
                         "for ___name in dir(___mod):\n"
                         "    globals()[___name] = getattr(___mod, ___name)\n"
                     )
+
                     fp.write(shim_tmpl.format(bin_dir, os.path.join(inner_dir, import_name).replace(os.sep, '.')))
 
                 assert os.path.exists(pre_dst), pre_dst
@@ -374,6 +375,8 @@ class GDNativeBuildExt(build_ext):
             print()
 
     def collect_dependencies(self):
+        # TODO: NumPy dependencies in .dynlibs
+
         if sys.platform == 'win32':
             py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
             py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv'))
