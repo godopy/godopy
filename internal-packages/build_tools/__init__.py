@@ -14,13 +14,13 @@ def pygodot_cython():
     header_path = outfile_path.replace('.cpp', '.hpp')
 
     from Cython.Compiler import Options
-    from Cython.Compiler.Main import compile
+    from Cython.Compiler.Main import compile, default_options, CompilationOptions
 
     directives = {
         'c_string_encoding': 'utf-8'
     }
 
-    options = Options.CompilationOptions(Options.default_options, compiler_directives=directives)
+    options = CompilationOptions(default_options, compiler_directives=directives)
 
     Options.fast_fail = True
     options.output_file = tempfile

@@ -17,7 +17,6 @@ $ cd pygodot
 $ ./internal_python_build.py
 $ deps/python/build/bin/python3 -m venv buildenv
 $ source buildenv/bin/activate
-(buildenv) $ pip install deps/cython
 (buildenv) $ pip install -r internal-requirements.txt
 (buildenv) $ deactivate
 $ cd ..
@@ -29,11 +28,7 @@ $ cd ..
 $ python3 -m venv toolbox
 $ source toolbox/bin/activate
 (toolbox) $ pip install -r pygodot/bootstrap-requirements.txt
-(toolbox) $ deactivate
-$ source toolbox/bin/activate
-(toolbox) $ cd pygodot
-(toolbox) $ ./bootstrap.py
-(toolbox) $ ./clean.sh
+(toolbox) $ ./bootstrap.py && ./clean.sh
 (toolbox) $ scons  # scons -j4 only_cython=yes && scons -j4
 (toolbox) $ pip install -e .
 (toolbox) $ cd ..

@@ -1,2 +1,4 @@
+Cython==0.29.14
 numpy==1.17.4
-ipython==7.7.0
+scikit-image==0.16.2
+ipython==7.10.2

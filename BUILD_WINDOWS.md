@@ -20,7 +20,6 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 > .\deps\python\PCbuild\amd64\python.exe -m venv .\buildenv
 > .\buildenv\Scripts\activate
 (buildenv) > cp .\deps\python\PC\pyconfig.h .\buildenv\Include\
-(buildenv) > pip install deps\cython
 (buildenv) > pip install -r internal-requirements.txt
 (buildenv) > deactivate
 > cd ..
