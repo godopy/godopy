@@ -756,6 +756,11 @@ class GDNativeBuildExt(build_ext):
     def collect_dynamic_sources(self, sources, addon):
         prefix = addon and addon.name or self.godot_project.python_package
 
+        if sources:
+            dirname = os.path.dirname(sources[0])
+            if dirname:
+                prefix = os.path.join(prefix, dirname)
+
         append_init_file = False
 
         if addon and addon._editor_only:
@@ -778,7 +783,7 @@ class GDNativeBuildExt(build_ext):
                 collection.append((None, init_file))
 
         for source in sources:
-            collection.append(('local', os.path.join(prefix, source)))
+            collection.append(('local', os.path.join(prefix, os.path.basename(source))))
 
 
 def ensure_godot_project_path(path):
