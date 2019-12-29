@@ -16,11 +16,12 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 ## Building internal Python interpreter and libraries
 ```
 > cd pygodot
-> python internal_python_build.py
+> python build_python.py
 > .\deps\python\PCbuild\amd64\python.exe -m venv .\buildenv
 > .\buildenv\Scripts\activate
 (buildenv) > cp .\deps\python\PC\pyconfig.h .\buildenv\Include\
-(buildenv) > pip install -r internal-requirements.txt
+(buildenv) > pip install -r batteries.txt
+(buildenv) > # Use pip to install any Python dependencies you want
 (buildenv) > deactivate
 > cd ..
 ```

@@ -14,10 +14,11 @@ export GODOT_BUILD=<path to Godot source folder>
 ## Building internal Python interpreter and libraries
 ```
 $ cd pygodot
-$ ./internal_python_build.py
+$ ./build_python.py
 $ deps/python/build/bin/python3 -m venv buildenv
 $ source buildenv/bin/activate
-(buildenv) $ pip install -r internal-requirements.txt
+(buildenv) $ pip install -r batteries.txt
+(buildenv) $ # Use pip to install any Python dependencies you want
 (buildenv) $ deactivate
 $ cd ..
 ```

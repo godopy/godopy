@@ -204,6 +204,9 @@ class GDNativeBuildExt(build_ext):
 
             src = os.path.join(basedir, fn)
             dst = os.path.join(binroot, inner_so_path(root, fn))
+            dstdir = os.path.dirname(dst)
+            if not os.path.isdir(dstdir) and not self.dry_run:
+                os.makedirs(dstdir)
             if not os.path.exists(dst) and not self.dry_run:
                 shutil.copy2(src, dst)
 
@@ -264,6 +267,12 @@ class GDNativeBuildExt(build_ext):
                 base_fn, so_ext = os.path.splitext(fn_so)
                 fn = base_fn + '.py'
                 inner_dir, import_name = os.path.split(base_fn)
+
+                if os.path.basename(inner_dir).startswith('.'):
+                    # Helper libraries not intended for import
+                    # TODO: mv path/to/.bin/osx/_numpy/.dylibs path/to/.bin/osx/
+                    continue
+
                 bin_dir = '/' + os.path.join(unprefixed_binroot, inner_dir)
                 import_name = import_name.split('.')[0]
 
@@ -277,10 +286,23 @@ class GDNativeBuildExt(build_ext):
                     os.makedirs(pre_dst_dir)
 
                 with open(pre_dst, 'w', encoding='utf-8') as fp:
+                    # TODO: Fix NumPy 1.18 initialization and remove hacks
                     shim_tmpl = (
-                        "import _{1} as ___mod\n\n"
-                        "for ___name in dir(___mod):\n"
-                        "    globals()[___name] = getattr(___mod, ___name)\n"
+                        "try:\n"
+                        "    import _{1} as ___mod\n\n"
+                        "    for ___name in dir(___mod):\n"
+                        "        globals()[___name] = getattr(___mod, ___name, None)\n"
+                        "except Exception as ex:\n"
+                        "    print('Error ignored during \\'{1}\\' extension init: %s' % ex)\n"
+                        "    RandomState = None\n"
+                        "    Philox = None\n"
+                        "    PCG64 = None\n"
+                        "    SFC64 = None\n"
+                        "    Generator = None\n"
+                        "    MT19937 = None\n"
+                        "    default_rng = None\n"
+                        "    SeedSequence = None\n"
+                        "    BitGenerator = None\n"
                     )
 
                     fp.write(shim_tmpl.format(bin_dir, os.path.join(inner_dir, import_name).replace(os.sep, '.')))
@@ -829,7 +851,11 @@ def is_python_source(fn):
 
 
 def is_python_ext(fn):
-    return fn.endswith('.so') or fn.endswith('.pyd') or fn.endswith('.dll')
+    return fn.endswith('.so') or fn.endswith('.pyd') or fn.endswith('.dll') or fn.endswith('.dylib')
+
+
+def is_generic_dylib(fn):
+    return os.sep + '.' in fn
 
 
 def get_dylib_ext():
@@ -843,6 +869,8 @@ def get_dylib_ext():
 def inner_so_path(root, fn):
     parts = fn.split('.')
     if root == 'site':
+        if is_generic_dylib(fn):
+            return '_' + fn
         return '_%s.%s' % (parts[0], parts[-1])
     return '%s.%s' % (parts[0], parts[-1])
 
