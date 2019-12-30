@@ -59,7 +59,7 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
 #     cdef void PYGODOT_CHECK_NUMPY_API()
 
 
-cdef extern from "PythonGlobal.hpp" namespace "pygodot":
+cdef extern from "PythonGlobal.hpp" namespace "godopy":
     cdef cppclass PyGodot:
         @staticmethod
         void set_cython_language_index(int)

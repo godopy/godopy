@@ -19,7 +19,7 @@ except ImportError:
     raise SystemExit("Required packages were not found. Please install them from 'requirements.txt'.")
 
 root_dir = os.path.abspath(os.path.dirname(__file__))
-headers_dir = os.path.join(root_dir, 'internal-packages', 'godot_headers')
+headers_dir = os.path.join(root_dir, 'batteries', 'godot_headers')
 cwd = os.path.abspath(os.getcwd())
 
 prefix = os.path.join(root_dir, 'buildenv')
@@ -51,11 +51,6 @@ def copy_headers():
 
 if __name__ == '__main__':
     from binding_generator import generate_bindings
-    # from internal_python_build import build_python
-
-    # if not os.path.exists(prefix) and sys.platform != 'win32':
-    #     # Windows build would kill all other Python processes
-    #     build_python()
 
     copy_headers()
 

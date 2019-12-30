@@ -11,7 +11,7 @@ from . cimport cpp_types as cpp
 
 from .tag_db cimport get_python_instance
 
-from pygodot cimport numpy as np
+from godopy cimport numpy as np
 
 from cpython.ref cimport Py_INCREF
 from cpython.object cimport PyObject, PyTypeObject, Py_LT, Py_EQ, Py_GT, Py_LE, Py_NE, Py_GE

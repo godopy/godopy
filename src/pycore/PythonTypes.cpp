@@ -4,7 +4,7 @@
 #include "PythonGlobal.hpp"
 
 #include "CoreTypes.hpp"
-#include <internal-packages/godot/core/types.hpp>
+#include <batteries/godot/core/types.hpp>
 
 namespace godot {
 

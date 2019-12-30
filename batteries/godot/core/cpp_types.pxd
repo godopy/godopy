@@ -4,7 +4,7 @@ from libcpp cimport bool
 
 from godot_headers.gdnative_api cimport godot_object, godot_char_type
 
-from pygodot cimport numpy as np
+from godopy cimport numpy as np
 
 cdef extern from "Defs.hpp":
     ctypedef float real_t

@@ -8,7 +8,7 @@
 
 #include "Godot.hpp"
 
-namespace pygodot {
+namespace godopy {
 
 typedef godot_variant (*__godot_wrapper_method)(godot_object *, void *, void *, int, godot_variant **);
 
@@ -114,6 +114,6 @@ PyObject *register_property(PyTypeObject *cls, const char *name, PyObject *defau
 
 PyObject *register_signal(PyTypeObject *cls, PyObject *name, PyObject *args);
 
-} // namespace pygodot
+} // namespace godopy
 
 #endif // PYGODOT_HPP

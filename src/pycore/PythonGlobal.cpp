@@ -20,7 +20,7 @@ extern "C" PyObject *python_nativescript_init();
 extern "C" PyObject *python_nativescript_terminate();
 extern "C" PyObject *global_nativescript_terminate();
 
-namespace pygodot {
+namespace godopy {
 
 bool in_editor = false;
 godot_string active_library_path;
@@ -251,4 +251,4 @@ void PyGodot::set_python_language_index(int language_index) {
 	godot::_RegisterState::python_language_index = language_index;
 }
 
-} // namespace pygodot
+} // namespace godopy

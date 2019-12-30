@@ -8,7 +8,7 @@ classes = []
 
 
 def generate_bindings(path):
-    from godot_tools import binding_generator as pygodot_generator
+    from godot_tools import binding_generator as godopy_generator
 
     global classes
     classes = json.load(open(path))
@@ -38,8 +38,8 @@ def generate_bindings(path):
     init_method_bindings_file = open("src/gen/__init_method_bindings.cpp", "w+")
     init_method_bindings_file.write(generate_init_method_bindings(classes))
 
-    pygodot_generator.write_api_pxd()
-    pygodot_generator.generate(preloaded_classes=classes)
+    godopy_generator.write_api_pxd()
+    godopy_generator.generate(preloaded_classes=classes)
 
 
 def is_reference_type(t):

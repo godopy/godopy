@@ -44,7 +44,7 @@ package_data = {
     ]
 }
 
-entry_points = {'console_scripts': ['pygodot=godot_tools.cli:pygodot', 'bindgen=godot_tools.cli:bindgen']}
+entry_points = {'console_scripts': ['godopy=godot_tools.cli:godopy', 'bindgen=godot_tools.cli:bindgen']}
 
 install_requires = [
     'Mako',
@@ -60,13 +60,13 @@ setup_requires = [
 ]
 
 setup(
-    name='pygodot',
+    name='godopy',
     version=version,
     python_requires='>=3.6',
     packages=packages,
     package_data=package_data,
     cmdclass={'build_ext': BuildGDNativeExt},
-    ext_modules=[GDNativeExtension('_pygodot')],
+    ext_modules=[GDNativeExtension('_godopy')],
     install_requires=install_requires,
     setup_requires=setup_requires,
     entry_points=entry_points

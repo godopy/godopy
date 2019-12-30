@@ -3,7 +3,7 @@ import os
 import re
 
 
-def pygodot_cython():
+def godopy_cython():
     source, outfile_path = sys.argv[1:]
     pyinit_src_symbol = 'PyInit_' + os.path.basename(outfile_path[:-4])
     pyinit_dst_symbol = 'PyInit_' + strip_internal_path(outfile_path).replace(os.sep, '__')[:-4]
@@ -70,4 +70,4 @@ def strip_internal_path(path):
 
 
 def is_internal_path(path):
-    return path.startswith('internal-packages') or path.startswith('src')
+    return path.startswith('batteries') or path.startswith('src')

@@ -3,14 +3,14 @@ from setuptools import setup
 packages = [
     'godot_headers',
     'godot', 'godot.core', 'godot.bindings', 'godot.bindings.python',
-    'pygodot',
+    'godopy',
     'build_tools'
 ]
 
 package_data = {
     'godot_headers': ['*.pxd'],
     'godot': ['*.pxd'],
-    'pygodot': ['*.pxd'],
+    'godopy': ['*.pxd'],
     'godot.core': ['*.pxd'],
     'godot.bindings': [
         '*.pxd',
@@ -24,11 +24,11 @@ install_requires = [
     'numpy',
 ]
 
-entry_points = {'console_scripts': ['pygodot_cython=build_tools:pygodot_cython']}
+entry_points = {'console_scripts': ['godopy_cython=build_tools:godopy_cython']}
 
 
 setup(
-    name='pygodot-internal-packages',
+    name='godopy-batteries',
     version='0.0.1a',
     python_requires='>=3.8',
     packages=packages,

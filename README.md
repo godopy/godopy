@@ -1,6 +1,8 @@
-# PyGodot
+# GodoPy
 
-Python and Cython bindings to the [Godot game engine](http://godotengine.org/).
+[Python](https://www.python.org/) and [Cython](https://cython.readthedocs.io/en/latest/src/quickstart/overview.html)
+bindings to the [Godot game engine](http://godotengine.org/)
+were core Godot data types are represented by [NumPy](https://numpy.org/) arrays.
 
 ## Work in progress
 

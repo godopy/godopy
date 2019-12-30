@@ -3,7 +3,7 @@ from godot_headers cimport gdnative_api as gdnative
 
 from ._wrapped cimport _Wrapped
 
-from pygodot cimport numpy as np
+from godopy cimport numpy as np
 
 cdef class CoreTypeWrapper:
     cdef bint _initialized

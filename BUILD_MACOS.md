@@ -12,22 +12,22 @@ export GODOT_BUILD=<path to Godot source folder>
 
 ## Building internal Python interpreter and libraries
 ```
-$ cd pygodot
+$ cd godopy
 $ ./build_python.py
 $ deps/python/build/bin/python3 -m venv buildenv
 $ source buildenv/bin/activate
-(buildenv) $ pip install -r batteries.txt
+(buildenv) $ pip install -r batteries/requirements.txt
 (buildenv) $ # Use pip to install any Python dependencies you want
 (buildenv) $ deactivate
 $ cd ..
 ```
 
-## Setting up PyGodot development environment
+## Setting up GodoPy development environment
 ```
 $ python3 -m venv toolbox
 $ source toolbox/bin/activate
-(toolbox) $ pip install -r pygodot/bootstrap-requirements.txt
-(toolbox) $ cd pygodot
+(toolbox) $ pip install -r godopy/requirements.txt
+(toolbox) $ cd godopy
 (toolbox) $ ./bootstrap.py && ./clean.sh
 (toolbox) $ scons  # scons -j4 only_cython=yes && scons -j4
 (toolbox) $ pip install -e .
@@ -36,9 +36,3 @@ $ source toolbox/bin/activate
 > When you finish working with a virtual environment, run `deactivate` command
 > Cython installation before other packages ensures that their build process will use the same version of Cython
 > If you want a faster parallel initial build, build with "only_cython=yes" first, otherwise the required headers will be missing
-
-
-## Additional steps
-```
-(toolbox) $ cp -R pygodot/buildenv/lib/python3.8/site-packages/numpy/.dylibs <godot-project-path>/.bin/osx/_numpy
-```

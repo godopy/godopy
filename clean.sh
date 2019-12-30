@@ -1,5 +1,5 @@
-rm internal-packages/godot/*.cpp
-rm internal-packages/godot/core/*.cpp
-rm internal-packages/godot/bindings/*.cpp
+rm batteries/godot/*.cpp
+rm batteries/godot/core/*.cpp
+rm batteries/godot/bindings/*.cpp
 . buildenv/bin/activate
-pip install ./internal-packages
+pip install ./batteries

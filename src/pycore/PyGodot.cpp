@@ -1,8 +1,8 @@
 #include "PyGodot.hpp"
 
-#include <internal-packages/godot/nativescript.hpp>
+#include <batteries/godot/nativescript.hpp>
 
-namespace pygodot {
+namespace godopy {
 
 PyObject *register_method(PyTypeObject *cls, const char *name, PyObject *method_ptr, godot_method_rpc_mode rpc_type) {
   PyObject *ret = _register_python_method(cls, name, method_ptr, rpc_type);

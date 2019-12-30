@@ -15,28 +15,28 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 
 ## Building internal Python interpreter and libraries
 ```
-> cd pygodot
+> cd godopy
 > python build_python.py
 > .\deps\python\PCbuild\amd64\python.exe -m venv .\buildenv
 > .\buildenv\Scripts\activate
 (buildenv) > cp .\deps\python\PC\pyconfig.h .\buildenv\Include\
-(buildenv) > pip install -r batteries.txt
+(buildenv) > pip install -r batteries/requirements.txt
 (buildenv) > # Use pip to install any Python dependencies you want
 (buildenv) > deactivate
 > cd ..
 ```
 
 
-## Setting up PyGodot development environment
+## Setting up GodoPy development environment
 ```
 > python -m venv toolbox
 > .\toolbox\Scripts\activate
-(toolbox) > pip install -r pygodot\bootstrap-requirements.txt
-(toolbox) > cd pygodot
+(toolbox) > pip install -r godopy\requirements.txt
+(toolbox) > cd godopy
 (toolbox) > python bootstrap.py
 (toolbox) > deactivate
 > .\buildenv\Scripts\activate
-(buildenv) > pip install .\internal-packages
+(buildenv) > pip install .\batteries
 (buildenv) > deactivate
 > ..\toolbox\Scripts\activate
 (toolbox) > scons

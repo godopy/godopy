@@ -14,7 +14,7 @@
 #define NO_IMPORT_ARRAY
 #endif
 #include "PythonGlobal.hpp"
-#include <internal-packages/godot/core/types.hpp>
+#include <batteries/godot/core/types.hpp>
 
 namespace godot {
 

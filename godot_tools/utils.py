@@ -29,4 +29,4 @@ def crossplat_exe_glob(godot_build_dir, pattern):
 
 
 def is_internal_path(path):
-    return path.startswith('internal-packages') or path.startswith('src')
+    return path.startswith('batteries') or path.startswith('src')

@@ -7,7 +7,7 @@
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include <internal-packages/godot/core/types.hpp>
+#include <batteries/godot/core/types.hpp>
 
 namespace godot {
 

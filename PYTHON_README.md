@@ -18,12 +18,12 @@ The instructions below assume using git for managing your project.
 ```
 $ mkdir gdnative-python-example
 $ cd gdnative-python-example
-$ git clone --recursive https://github.com/ivhilaire/pygodot
+$ git clone --recursive https://github.com/godopy/godopy
 ```
 
 If your project is an existing repository, use git submodule instead:
 ```
-$ git submodule add https://github.com/ivhilaire/pygodot
+$ git submodule add https://github.com/godopy/godopy
 $ git submodule update --init --recursive
 ```
 
@@ -32,7 +32,7 @@ Build PyGodot and set up a development environment for your platform:
 - [Linux](BUILD_LINUX.md)
 - [Windows](BUILD_WINDOWS.md)
 
-Simple `pip install pygodot` setup will be available in the future versions.
+Simple `pip install godopy` setup will be available in the future versions.
 
 ### Creating pure Python GDNative extension
 
@@ -46,7 +46,7 @@ We’ll come back to that later.
 Back in the top-level project folder, we’re also going to create a subfolder called `_demo`
 in which we’ll place our Python files.
 
-You should now have `demo`, `pygodot`, `_demo` and `toolbox` directories in your PyGodot project.
+You should now have `demo`, `godopy`, `_demo` and `toolbox` directories in your PyGodot project.
 
 
 In the `_demo` folder, we’ll start with creating our Python module for the GDNative node we’ll be creating.

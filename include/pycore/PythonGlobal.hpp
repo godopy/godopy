@@ -15,7 +15,7 @@
 
 #include <gdnative_api_struct.gen.h>
 
-namespace pygodot {
+namespace godopy {
 
 // extern "C" const void **array_api;
 
@@ -33,6 +33,6 @@ public:
 	static void set_python_language_index(int language_index);
 };
 
-} // namespace pygodot
+} // namespace godopy
 
 #endif

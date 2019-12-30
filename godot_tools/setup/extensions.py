@@ -61,8 +61,8 @@ class GDNativeBuildExt(build_ext):
 
     build_context = {
         '__version__': get_version(),
-        'godot_headers_path': os.path.normpath(os.path.join(tools_root, '..', 'internal-packages', 'godot_headers')),
-        'pygodot_bindings_path': os.path.dirname(tools_root),
+        'godot_headers_path': os.path.normpath(os.path.join(tools_root, '..', 'batteries', 'godot_headers')),
+        'godopy_bindings_path': os.path.dirname(tools_root),
         'singleton': False,
         'pyx_sources': [],
         'cpp_sources': []
@@ -125,7 +125,7 @@ class GDNativeBuildExt(build_ext):
             os.unlink(os.path.join(self.godot_project.path_prefix, setup_script))
 
     def run_copylib(self):
-        source = os.path.join(self.build_context['pygodot_bindings_path'], self.build_context['pygodot_library_name'])
+        source = os.path.join(self.build_context['godopy_bindings_path'], self.build_context['godopy_library_name'])
         target = self.build_context['target']
 
         # print(source)
@@ -577,13 +577,13 @@ class GDNativeBuildExt(build_ext):
 
         dst_dir, dst_fullname = os.path.split(ext_path)
         dst_name_parts = dst_fullname.split('.')
-        src_name = '.'.join(['_pygodot', *dst_name_parts[1:]])
+        src_name = '.'.join(['_godopy', *dst_name_parts[1:]])
 
         binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform_suffix(platform), dst_fullname)
 
-        self.build_context['pygodot_library_name'] = src_name
+        self.build_context['godopy_library_name'] = src_name
         self.build_context['target'] = binext_path
-        self.build_context['library_name'] = '_pygodot'
+        self.build_context['library_name'] = '_godopy'
 
         base_name = dst_name_parts[0]
         gdnlib_respath = make_resource_path(godot_root, os.path.join(dst_dir, base_name + '.gdnlib'))
@@ -593,7 +593,7 @@ class GDNativeBuildExt(build_ext):
 
         context = dict(singleton=False, load_once=True, reloadable=False)
         context.update(ext._gdnative_options)
-        context['symbol_prefix'] = 'pygodot_'
+        context['symbol_prefix'] = 'godopy_'
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
@@ -643,7 +643,7 @@ class GDNativeBuildExt(build_ext):
         base_name = dst_name_parts[0]
         dst_name_parts[0] = 'lib' + dst_name_parts[0]
         dst_fullname = dst_name_parts[0] + get_dylib_ext()
-        staticlib_name = 'libpygodot.%s.%s.64' % (platform_suffix(platform), build_target)
+        staticlib_name = 'libgodopy.%s.%s.64' % (platform_suffix(platform), build_target)
 
         binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform_suffix(platform), dst_fullname)
 
@@ -651,7 +651,7 @@ class GDNativeBuildExt(build_ext):
         self.build_context['cpp_library_path'] = \
             os.path.join(self.godot_project.python_package, cpp_library_dir, '__gdinit__.cpp')
 
-        self.build_context['pygodot_library_name'] = staticlib_name
+        self.build_context['godopy_library_name'] = staticlib_name
         self.build_context['target'] = make_relative_path(binext_path)
         self.build_context['singleton'] = ext._gdnative_options.get('singleton', False)
 
@@ -664,7 +664,7 @@ class GDNativeBuildExt(build_ext):
 
         context = dict(singleton=False, load_once=True, reloadable=False)
         context.update(ext._gdnative_options)
-        context['symbol_prefix'] = 'pygodot_'
+        context['symbol_prefix'] = 'godopy_'
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)

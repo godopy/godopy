@@ -19,16 +19,16 @@ The instructions below assume using git for managing your project.
 ```
 $ mkdir gdnative-cython-example
 $ cd gdnative-cython-example
-$ git clone --recursive https://github.com/ivhilaire/pygodot
+$ git clone --recursive https://github.com/godopy/godopy
 ```
 
 If your project is an existing repository, use git submodule instead:
 ```
-$ git submodule add https://github.com/ivhilaire/pygodot
+$ git submodule add https://github.com/godopy/godopy
 $ git submodule update --init --recursive
 ```
 
-Build PyGodot and set up a development environment for your platform:
+Build GodoPy and set up a development environment for your platform:
 - [MacOS](BUILD_MACOS.md)
 - [Linux](BUILD_LINUX.md)
 - [Windows](BUILD_WINDOWS.md)
@@ -39,7 +39,7 @@ Build PyGodot and set up a development environment for your platform:
 Now it’s time to build an actual extension. We’ll start by creating an empty Godot project
 in which we’ll place a few files.
 
-Open Godot and create a new project. For this example, we will place it in a folder called `demo` inside our PyGodot project’s folder structure.
+Open Godot and create a new project. For this example, we will place it in a folder called `demo` inside our GodoPy project’s folder structure.
 
 In our demo project, we’ll create a scene containing a Node2D called “Main” and we’ll save it as `main.tscn`.
 We’ll come back to that later.
@@ -47,7 +47,7 @@ We’ll come back to that later.
 Back in the top-level project folder, we’re also going to create a subfolder called `_demo`
 in which we’ll place our source files.
 
-You should now have `demo`, `pygodot`, `_demo` and `toolbox` directories in your PyGodot project.
+You should now have `demo`, `godopy`, `_demo` and `toolbox` directories in your GodoPy project.
 
 Place an empty file `__init__.pxd` inside the `_demo` folder, Cython requires this in order to perform C-level imports:
 ```
@@ -110,7 +110,7 @@ from godot.nativescript cimport register_class
 from . cimport cython_example
 
 
-cdef public _pygodot_nativescript_init():
+cdef public _godopy_nativescript_init():
     register_class(cython_example.CythonExample)
 ```
 
@@ -122,7 +122,7 @@ from godot.bindings.cpp cimport nodes
 cdef extern from "gdexample.h" namespace "godot" nogil:
     cdef cppclass GDExample(nodes.Sprite)
 
-cdef public _pygodot_nativescript_init():
+cdef public _godopy_nativescript_init():
     register_cpp_class[GDExample]()
 ```
 > This will register a C++ class from the [C++ tutorial](https://docs.godotengine.org/en/latest/tutorials/plugins/gdnative/gdnative-cpp-example.html)
@@ -141,7 +141,7 @@ from _demo cimport cython_example
 allow_pure_python_imports('_demo')
 from _demo import python_example
 
-cdef public _pygodot_nativescript_init():
+cdef public _godopy_nativescript_init():
     register_class(cython_example.CythonExample)
     register_class(python_example.PythonExample)
 ```

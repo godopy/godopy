@@ -11,7 +11,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 @click.group(invoke_without_command=True)
 @click.pass_context
 @click.option('--version', '-V', is_flag=True)
-def pygodot(ctx, version):
+def godopy(ctx, version):
     cmdname = os.path.basename(sys.argv[0])
 
     if version or not ctx.invoked_subcommand:
@@ -24,7 +24,7 @@ def pygodot(ctx, version):
         sys.exit(0)
 
 
-@pygodot.add_command
+@godopy.add_command
 @click.command()
 @click.argument('path')
 def new_project(path):
