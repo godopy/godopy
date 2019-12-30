@@ -44,6 +44,11 @@ def godopy_cython():
             line = re.sub(r'^(\s+)(GDCALLINGCONV_VOID_PTR)(\s\w+;)$', r'\1void *\3', line)
             line = re.sub(r'^(\s+)(GDCALLINGCONV_VOID)(\s\w+;)$', r'\1void\3', line)
             line = re.sub(r'^(\s+)(GDCALLINGCONV_BOOL)(\s\w+;)$', r'\1bool\3', line)
+
+        # Remove "tp_print" deprecation warnings
+        if line.strip() == '#if PY_VERSION_HEX >= 0x030800b4 && PY_VERSION_HEX < 0x03090000':
+            line = line.replace('PY_VERSION_HEX >= 0x030800b4 && PY_VERSION_HEX < 0x03090000', 'PY_VERSION_HEX < 0x030800b1')
+
         return line
 
     with open(outfile_path, 'w', encoding='utf-8') as outfile:
