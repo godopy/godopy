@@ -64,6 +64,7 @@ class GDNativeBuildExt(build_ext):
         'godot_headers_path': os.path.normpath(os.path.join(tools_root, '..', 'batteries', 'godot_headers')),
         'godopy_bindings_path': os.path.dirname(tools_root),
         'singleton': False,
+        'gdnative_options': False,
         'pyx_sources': [],
         'cpp_sources': []
     }
@@ -148,6 +149,7 @@ class GDNativeBuildExt(build_ext):
     def run_build(self):
         cpp_lib_template = Template(filename=os.path.join(templates_dir, 'gdlibrary.cpp.mako'))
         cpp_lib_path = self.build_context['cpp_library_path']
+
         self.write_target_file(cpp_lib_path, cpp_lib_template.render(**self.build_context))
 
         self.build_context['cpp_sources'].append(make_relative_path(self.build_context['cpp_library_path']))
@@ -293,7 +295,7 @@ class GDNativeBuildExt(build_ext):
                         "    for ___name in dir(___mod):\n"
                         "        globals()[___name] = getattr(___mod, ___name, None)\n"
                         "except Exception as ex:\n"
-                        "    print('Error ignored during \\'{1}\\' extension init: %s' % ex)\n"
+                        "    # print('Error ignored during \\'{1}\\' extension init: %s' % ex)\n"
                         "    RandomState = None\n"
                         "    Philox = None\n"
                         "    PCG64 = None\n"
@@ -654,6 +656,7 @@ class GDNativeBuildExt(build_ext):
         self.build_context['godopy_library_name'] = staticlib_name
         self.build_context['target'] = make_relative_path(binext_path)
         self.build_context['singleton'] = ext._gdnative_options.get('singleton', False)
+        self.build_context['gdnative_options'] = ext._gdnative_options.get('gdnative_options', False)
 
         dst_name = dst_name_parts[0]
         self.build_context['library_name'] = dst_name
@@ -685,7 +688,7 @@ class GDNativeBuildExt(build_ext):
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
-        self.collect_sources([library_source] + ext.sources)
+        self.collect_sources(ext.sources + [library_source])
 
     def collect_godot_nativescript_data(self, ext):
         if not self.gdnative_library_path:
@@ -712,7 +715,7 @@ class GDNativeBuildExt(build_ext):
         context = dict(gdnlib_resource=self.gdnative_library_path, classname=classname)
 
         self.make_godot_resource('gdns.mako', make_resource_path(godot_root, gdns_path), context)
-        self.collect_sources(ext.sources, addon)
+        self.collect_sources(ext.sources, addon, prepend=True)
 
         if not self.godot_project.set_development_path:
             self.collect_dynamic_sources(ext._dynamic_sources, addon)
@@ -740,8 +743,9 @@ class GDNativeBuildExt(build_ext):
     def make_godot_file_resource(self, src_path, path):
         self.godot_resource_files[path] = src_path
 
-    def collect_sources(self, sources, addon=None):
+    def collect_sources(self, sources, addon=None, prepend=False):
         cpp_sources = []
+        pyx_sources = []
 
         for pyx_source in sources:
             if pyx_source.endswith('.cpp'):
@@ -764,7 +768,7 @@ class GDNativeBuildExt(build_ext):
             else:
                 modname = '.'.join([*dir_components, name])
 
-            self.build_context['pyx_sources'].append({
+            pyx_sources.append({
                 'name': modname,
                 'symbol_name': modname.replace('.', '__'),
                 'cpp': target,
@@ -774,6 +778,11 @@ class GDNativeBuildExt(build_ext):
         for cpp_source in cpp_sources:
             source = os.path.join(self.godot_project.python_package, cpp_source)
             self.build_context['cpp_sources'].append(make_relative_path(source))
+
+        if prepend:
+            self.build_context['pyx_sources'] = pyx_sources + self.build_context['pyx_sources']
+        else:
+            self.build_context['pyx_sources'] += pyx_sources
 
     def collect_dynamic_sources(self, sources, addon):
         prefix = addon and addon.name or self.godot_project.python_package

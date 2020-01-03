@@ -21,12 +21,17 @@ PyMODINIT_FUNC PyInit_godot__utils();
 PyMODINIT_FUNC PyInit_${mod['symbol_name']}(void);
 % endfor
 
+% if gdnative_options:
+static godot_gdnative_init_options gdnative_options;
+extern "C" PyObject *_godopy_nativescript_init(godot_gdnative_init_options *);
+% if singleton:
+extern "C" PyObject *_godopy_gdnative_singleton(godot_gdnative_init_options *);
+% endif
+% else:
 extern "C" PyObject *_godopy_nativescript_init();
 % if singleton:
 extern "C" PyObject *_godopy_gdnative_singleton();
 % endif
-% if gdnative_init:
-extern "C" PyObject *_godopy_gdnative_init(godot_gdnative_init_options *)
 % endif
 
 static bool __python_initialized = false;
@@ -53,7 +58,7 @@ static void ___python_init() {
   PyImport_AppendInittab("__godopy_internal__godot__nativescript", PyInit_godot__nativescript);
   PyImport_AppendInittab("__godopy_internal__godot__gdnative", PyInit_godot__gdnative);
 
-% for mod in reversed(pyx_sources):
+% for mod in pyx_sources:
   PyImport_AppendInittab("__godopy_internal__${mod['symbol_name']}", PyInit_${mod['symbol_name']});
 % endfor
   godopy::PyGodot::python_init();
@@ -71,7 +76,7 @@ static void ___python_init() {
   mod = PyImport_ImportModule("__godopy_internal__godot__nativescript"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__godopy_internal__godot__gdnative"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 
-% for mod in reversed(pyx_sources):
+% for mod in pyx_sources:
   mod = PyImport_ImportModule("__godopy_internal__${mod['symbol_name']}"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 % endfor
 
@@ -82,8 +87,8 @@ extern "C" void GDN_EXPORT godopy_gdnative_init(godot_gdnative_init_options *o) 
   godot::Godot::gdnative_init(o);
   godopy::PyGodot::python_preconfig(o);
 
-% if gdnative_init:
-  PyObject *result = _godopy_gdnative_init(o); ERR_FAIL_PYTHON_NULL(result);
+% if gdnative_options:
+  gdnative_options.in_editor = o->in_editor;
 % endif
 }
 
@@ -98,13 +103,21 @@ extern "C" void GDN_EXPORT godopy_nativescript_init(void *handle) {
   ___python_init();
   godopy::PyGodot::nativescript_init(handle);
 
+% if gdnative_options:
+  PyObject *result = _godopy_nativescript_init(&gdnative_options); ERR_FAIL_PYTHON_NULL(result); Py_DECREF(result);
+% else:
   PyObject *result = _godopy_nativescript_init(); ERR_FAIL_PYTHON_NULL(result); Py_DECREF(result);
+% endif
 }
 
 extern "C" void GDN_EXPORT godopy_gdnative_singleton() {
   ___python_init();
 % if singleton:
+% if gdnative_options:
+  PyObject *result = _godopy_gdnative_singleton(&gdnative_options); ERR_FAIL_PYTHON_NULL(result); Py_DECREF(result);
+% else:
   PyObject *result = _godopy_gdnative_singleton(); ERR_FAIL_PYTHON_NULL(result); Py_DECREF(result);
+% endif
 % endif
 }
 
