@@ -56,7 +56,7 @@ static inline ${sig} {
   % if is_class_type(ret):
   if (ret) {
     ret = (PyObject *)godot::nativescript_1_1_api->godot_nativescript_get_instance_binding_data(godot::_RegisterState::cython_language_index, ret);
-    ## Py_XINCREF(ret);  FIXME: This incref is needed only in pure Python context
+    Py_XINCREF(ret);
   }
   return ret;
   % else:
