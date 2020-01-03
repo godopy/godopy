@@ -49,6 +49,10 @@ def godopy_cython():
         if line.strip() == '#if PY_VERSION_HEX >= 0x030800b4 && PY_VERSION_HEX < 0x03090000':
             line = line.replace('PY_VERSION_HEX >= 0x030800b4 && PY_VERSION_HEX < 0x03090000', 'PY_VERSION_HEX < 0x030800b1')
 
+        # FIXME: undeclared identifier, looks like a bug in Cython
+        if line.strip() == '__Pyx_CppExn2PyErr();':
+            line = ''
+
         return line
 
     with open(outfile_path, 'w', encoding='utf-8') as outfile:
