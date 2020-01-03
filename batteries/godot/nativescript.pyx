@@ -30,6 +30,10 @@ from cpython.ref cimport Py_INCREF, Py_DECREF, Py_CLEAR, Py_XINCREF, Py_XDECREF
 
 from cython.operator cimport dereference as deref
 
+
+import gc
+
+
 DEF INSTANCE_BINDING_REFCNT_HOOKS = False
 
 cdef extern from *:
@@ -288,8 +292,6 @@ cdef public python_nativescript_init():
 
 
 cdef public python_nativescript_terminate():
-    import gc
-
     global python_gdnlib
 
     # Some Python objects may depend on Godot objects (eg PoolArray accessors)
