@@ -219,6 +219,7 @@ def generate_class_header(used_classes, c):
             # default arguments
             def escape_default_arg(_type, default_value):
                 if _type == "Color":
+                    return "Color(0,0,0)"  # temporary hack to protect from errors in upstream defs
                     return "Color(" + default_value + ")"
                 if _type == "bool" or _type == "int":
                     return default_value.lower()
