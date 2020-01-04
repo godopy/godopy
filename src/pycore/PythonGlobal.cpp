@@ -25,9 +25,7 @@ namespace godopy {
 bool in_editor = false;
 godot_string active_library_path;
 
-// const void **array_api = NULL;
-
-void PyGodot::python_preconfig(godot_gdnative_init_options *options) {
+void GodoPy::python_preconfig(godot_gdnative_init_options *options) {
 	PyPreConfig preconfig;
 	PyPreConfig_InitIsolatedConfig(&preconfig);
 
@@ -46,7 +44,7 @@ void PyGodot::python_preconfig(godot_gdnative_init_options *options) {
 
 #define ERR_FAIL_PYSTATUS(status, label) if (PyStatus_Exception(status)) goto label
 
-void PyGodot::python_init() {
+void GodoPy::python_init() {
 	// In singleton configuration this function is called before 'nativescript_init' and method bindings are not set
 	godot::OS::___init_method_bindings();
 	godot::ProjectSettings::___init_method_bindings();
@@ -75,7 +73,7 @@ void PyGodot::python_init() {
 	}
 
 	godot::String main_module_path = settings->globalize_path(settings->get_setting("python/config/module_search_path/main"));
-	godot::String extended_module_path = settings->has_setting("python/config/module_search_path/extended") ?
+	godot::String tool_module_path = settings->has_setting("python/config/module_search_path/extended") ?
 		settings->globalize_path(settings->get_setting("python/config/module_search_path/extended")) : "";
 
 	godot::String development_module_path = settings->has_setting("python/config/module_search_path/development") ?
@@ -145,9 +143,9 @@ void PyGodot::python_init() {
 	status = PyWideStringList_Append(&config.module_search_paths, main_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
 
-	if (extended_module_path != "" && (in_editor || commandline_script_mode || development_module_path != "")) {
-		godot::Godot::print("set EXT python path: {0}", extended_module_path);
-		status = PyWideStringList_Append(&config.module_search_paths, extended_module_path.unicode_str());
+	if (tool_module_path != "" && (in_editor || commandline_script_mode || development_module_path != "")) {
+		godot::Godot::print("set TOOL python path: {0}", tool_module_path);
+		status = PyWideStringList_Append(&config.module_search_paths, tool_module_path.unicode_str());
 		ERR_FAIL_PYSTATUS(status, fail);
 	}
 
@@ -183,10 +181,18 @@ void PyGodot::python_init() {
 		return;
 	}
 
-	// array_api = (const void **)PyArray_API;
+	// Initializes the GIL, required for threading
+	PyEval_InitThreads();
+
+	// Python can run in a multithreaded environment.  Limitations:
+	// * Pure Python code is single threaded, it can't run concurently in multiple threads.
+	// * Something must release the GIL in its "_process" method.  Otherwise threaded code
+	//   may not have a chance to execute.  Cython syntax is "with nogil:". Even "with nogil: pass" will do the trick
+	// Non-limitations:
+	// * Python code runs concurently with non-Python code without issues
 
 	if (!commandline_script_mode) {
-		godot::Godot::print("Python {0}\nPyGodot 0.0.1a0\n", (godot::Variant)Py_GetVersion());
+		godot::Godot::print("Python {0}\nGodoPy 0.0.1\n", (godot::Variant)Py_GetVersion());
 	}
 
 	return;
@@ -197,13 +203,14 @@ fail:
 	Py_ExitStatusException(status);
 }
 
-void PyGodot::python_terminate() {
+void GodoPy::python_terminate() {
 	if (Py_IsInitialized()) {
+
 		Py_FinalizeEx();
 	}
 }
 
-void PyGodot::nativescript_init(void *handle, bool init_cython, bool init_python) {
+void GodoPy::nativescript_init(void *handle, bool init_cython, bool init_python) {
 	godot::_RegisterState::nativescript_handle = handle;
 
 	if (init_cython) {
@@ -221,7 +228,7 @@ void PyGodot::nativescript_init(void *handle, bool init_cython, bool init_python
 	}
 }
 
-void PyGodot::nativescript_terminate(void *handle, bool terminate_cython, bool terminate_python) {
+void GodoPy::nativescript_terminate(void *handle, bool terminate_cython, bool terminate_python) {
 	if (terminate_python) {
 		if (python_nativescript_terminate() == NULL) {
 			if (PyErr_Occurred()) PyErr_Print();
@@ -243,11 +250,11 @@ void PyGodot::nativescript_terminate(void *handle, bool terminate_cython, bool t
 	}
 }
 
-void PyGodot::set_cython_language_index(int language_index) {
+void GodoPy::set_cython_language_index(int language_index) {
 	godot::_RegisterState::cython_language_index = language_index;
 }
 
-void PyGodot::set_python_language_index(int language_index) {
+void GodoPy::set_python_language_index(int language_index) {
 	godot::_RegisterState::python_language_index = language_index;
 }
 

@@ -19,7 +19,7 @@ namespace godopy {
 
 // extern "C" const void **array_api;
 
-class PyGodot {
+class GodoPy {
 
 public:
 	static void python_preconfig(godot_gdnative_init_options *o);

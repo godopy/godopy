@@ -60,7 +60,7 @@ cdef extern from "GodotGlobal.hpp" namespace "godot" nogil:
 
 
 cdef extern from "PythonGlobal.hpp" namespace "godopy":
-    cdef cppclass PyGodot:
+    cdef cppclass GodoPy:
         @staticmethod
         void set_cython_language_index(int)
 

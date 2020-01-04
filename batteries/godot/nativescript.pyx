@@ -2,7 +2,7 @@
 from godot_headers.gdnative_api cimport *
 
 from .globals cimport (
-    Godot, PyGodot, WARN_PRINT,
+    Godot, GodoPy, WARN_PRINT,
     gdapi, gdnlib, nativescript_api as nsapi, nativescript_1_1_api as ns11api,
     _cython_language_index as CYTHON_IDX, _python_language_index as PYTHON_IDX,
     _nativescript_handle as handle
@@ -233,7 +233,7 @@ cdef public cython_nativescript_init():
 
     cdef int language_index = ns11api.godot_nativescript_register_instance_binding_data_functions(binding_funcs)
 
-    PyGodot.set_cython_language_index(language_index)
+    GodoPy.set_cython_language_index(language_index)
 
     _cython_bindings.__register_types()
     _cython_bindings.__init_method_bindings()
@@ -280,7 +280,7 @@ cdef public python_nativescript_init():
 
     cdef int language_index = ns11api.godot_nativescript_register_instance_binding_data_functions(binding_funcs)
 
-    PyGodot.set_python_language_index(language_index)
+    GodoPy.set_python_language_index(language_index)
 
     _python_bindings.__register_types()
     _python_bindings.__init_method_bindings()

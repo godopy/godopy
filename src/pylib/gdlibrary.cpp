@@ -22,7 +22,7 @@ static bool __python_initialized = false;
 static PyModuleDef _godopymodule = {
   PyModuleDef_HEAD_INIT,
   "_godopy",
-  "PyGodot Generic GDNative extension",
+  "GodoPy Generic GDNative extension",
   -1,
 };
 
@@ -49,7 +49,7 @@ static void ___python_init() {
   PyImport_AppendInittab("__godopy_internal__godot__nativescript", PyInit_godot__nativescript);
   PyImport_AppendInittab("__godopy_internal__godot__gdnative", PyInit_godot__gdnative);
 
-  godopy::PyGodot::python_init();
+  godopy::GodoPy::python_init();
 
   PyObject *mod = NULL;
 
@@ -69,19 +69,20 @@ static void ___python_init() {
 
 extern "C" void GDN_EXPORT godopy_gdnative_init(godot_gdnative_init_options *o) {
     godot::Godot::gdnative_init(o);
-    godopy::PyGodot::python_preconfig(o);
+    godopy::GodoPy::python_preconfig(o);
 }
 
 extern "C" void GDN_EXPORT godopy_gdnative_terminate(godot_gdnative_terminate_options *o) {
   godot::Godot::gdnative_terminate(o);
-  godopy::PyGodot::python_terminate();
+
+  godopy::GodoPy::python_terminate();
 }
 
 extern "C" void GDN_EXPORT godopy_nativescript_init(void *handle) {
   printf("NATIVESCRIPT INIT\n");
   godot::Godot::nativescript_init(handle);  // C++ bindings
   ___python_init();
-  godopy::PyGodot::nativescript_init(handle);
+  godopy::GodoPy::nativescript_init(handle);
 
   PyObject *result = generic_nativescript_init();
   ERR_FAIL_PYTHON_NULL(result);
@@ -96,6 +97,6 @@ extern "C" void GDN_EXPORT godopy_gdnative_singleton() {
 }
 
 extern "C" void GDN_EXPORT godopy_nativescript_terminate(void *handle) {
-  godopy::PyGodot::nativescript_terminate(handle);
+  godopy::GodoPy::nativescript_terminate(handle);
   godot::Godot::nativescript_terminate(handle); // C++ bindings
 }

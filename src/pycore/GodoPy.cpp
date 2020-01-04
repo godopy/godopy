@@ -1,4 +1,4 @@
-#include "PyGodot.hpp"
+#include "GodoPy.hpp"
 
 #include <batteries/godot/nativescript.hpp>
 

@@ -8,7 +8,7 @@ cdef extern from "Godot.hpp" namespace "godot":
 cpdef register_class(type cls)
 cpdef register_tool_class(type cls)
 
-cdef extern from "PyGodot.hpp" namespace "godopy":
+cdef extern from "GodoPy.hpp" namespace "godopy":
     object register_method[M](
         type cls,
         const char *name,
