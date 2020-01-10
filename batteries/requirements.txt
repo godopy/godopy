@@ -1,4 +1,4 @@
 Cython==0.29.14
-numpy==1.18.0
-scikit-image==0.16.2
-jupyter==1.0.0
+numpy==1.18.1
+ipython==7.11.1
+# scikit-image==0.16.2
