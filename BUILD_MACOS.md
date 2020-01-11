@@ -14,11 +14,11 @@ export GODOT_BUILD=<path to Godot source folder>
 ```
 $ cd godopy
 $ ./build_python.py
-$ deps/python/build/bin/python3 -m venv buildenv
-$ source buildenv/bin/activate
-(buildenv) $ pip install -r batteries/requirements.txt
-(buildenv) $ # Use pip to install any Python dependencies you want
-(buildenv) $ deactivate
+$ deps/python/build/bin/python3 -m venv venv
+$ source venv/bin/activate
+(venv) $ pip install -r batteries/requirements.txt
+(venv) $ # Use pip to install any Python dependencies you want
+(venv) $ deactivate
 $ cd ..
 ```
 

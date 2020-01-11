@@ -162,7 +162,7 @@ if env['bits'] == 'default':
 
 python_include = 'python3.8d' if env['python_debug'] else 'python3.8'
 python_lib = 'python3.8d' if env['python_debug'] else 'python3.8'
-python_internal_env = os.path.join('buildenv', 'lib', 'python3.8', 'site-packages')
+python_internal_env = os.path.join('venv', 'lib', 'python3.8', 'site-packages')
 
 # This makes sure to keep the session environment variables on Windows.
 # This way, you can run SCons in a Visual Studio 2017 prompt and it will find
@@ -176,7 +176,7 @@ if host_platform == 'windows' and env['platform'] != 'android':
 
     opts.Update(env)
     env['bits'] = bits
-    python_internal_env = os.path.join('buildenv', 'Lib', 'site-packages')
+    python_internal_env = os.path.join('venv', 'Lib', 'site-packages')
 
 if env['platform'] == 'linux':
     if env['use_llvm']:
@@ -343,7 +343,7 @@ elif env['platform'] == 'android':
     env.Append(CCFLAGS=arch_info['ccflags'])
 
 cython_builder = os.path.join(
-    'buildenv',
+    'venv',
     'Scripts' if sys.platform == 'win32' else 'bin',
     'godopy_cython.exe' if sys.platform == 'win32' else 'godopy_cython'
 )

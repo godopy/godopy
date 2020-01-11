@@ -54,7 +54,7 @@ if env['platform'] == '':
 
 python_include = 'python3.8d' if env['python_debug'] else 'python3.8'
 python_lib = 'python3.8d' if env['python_debug'] else 'python3.8'
-python_internal_env = os.path.join(godopy_bindings_path, 'buildenv', 'lib', 'python3.8', 'site-packages')
+python_internal_env = os.path.join(godopy_bindings_path, 'venv', 'lib', 'python3.8', 'site-packages')
 
 if env['platform'] == "osx":
     # Use Clang on macOS by default
@@ -107,7 +107,7 @@ elif env['platform'] == 'linux':
         env.Append(CCFLAGS=['-g', '-O3'])
 
 elif env['platform'] == 'windows':
-    python_internal_env = os.path.join(godopy_bindings_path, 'buildenv', 'Lib', 'site-packages')
+    python_internal_env = os.path.join(godopy_bindings_path, 'venv', 'Lib', 'site-packages')
 
     env.Append(LIBPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'PC')])
@@ -128,7 +128,7 @@ elif env['platform'] == 'windows':
 
 cython_builder = os.path.join(
     godopy_bindings_path,
-    'buildenv',
+    'venv',
     'Scripts' if sys.platform == 'win32' else 'bin',
     'godopy_cython.exe' if sys.platform == 'win32' else 'godopy_cython'
 )

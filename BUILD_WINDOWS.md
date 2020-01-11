@@ -17,12 +17,12 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 ```
 > cd godopy
 > python build_python.py
-> .\deps\python\PCbuild\amd64\python.exe -m venv .\buildenv
-> .\buildenv\Scripts\activate
-(buildenv) > cp .\deps\python\PC\pyconfig.h .\buildenv\Include\
-(buildenv) > pip install -r batteries/requirements.txt
-(buildenv) > # Use pip to install any Python dependencies you want
-(buildenv) > deactivate
+> .\deps\python\PCbuild\amd64\python.exe -m venv .\venv
+> .\venv\Scripts\activate
+(venv) > cp .\deps\python\PC\pyconfig.h .\venv\Include\
+(venv) > pip install -r batteries/requirements.txt
+(venv) > # Use pip to install any Python dependencies you want
+(venv) > deactivate
 > cd ..
 ```
 
@@ -35,9 +35,9 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 (toolbox) > cd godopy
 (toolbox) > python bootstrap.py
 (toolbox) > deactivate
-> .\buildenv\Scripts\activate
-(buildenv) > pip install .\batteries
-(buildenv) > deactivate
+> .\venv\Scripts\activate
+(venv) > pip install .\batteries
+(venv) > deactivate
 > ..\toolbox\Scripts\activate
 (toolbox) > scons
 (toolbox) > pip install -e .

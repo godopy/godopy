@@ -48,6 +48,8 @@ class Addon(Extension):
 # TODO: Make target configurable
 build_target = 'release'
 
+TOOL_PACKAGES = ('Cython', 'IPython', 'ipython_genutils', 'jedi', 'parso', 'pexpect', 'traitlets', 'ptyprocess')
+
 
 # TODO:
 # * Allow users to exclude Python dependencies with glob patterns
@@ -196,7 +198,7 @@ class GDNativeBuildExt(build_ext):
             if not os.path.isdir(target_dir) and not self.dry_run:
                 os.makedirs(target_dir)
 
-        for root, fn in reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_dev']):
+        for root, fn in reversed(self.python_dependencies['so_files']):
             if root == 'dynload':
                 basedir = self.python_dependencies['dynload_dir']
             elif root == 'site':
@@ -215,17 +217,17 @@ class GDNativeBuildExt(build_ext):
         _, gdnlib_name = os.path.split(self.gdnative_library_path)
         basename, _ = os.path.splitext(gdnlib_name)
         main_zip_path = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, '%s.pak' % basename)
-        tools_zip_path = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, '%s-dev.pak' % basename)
+        # tools_zip_path = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, '%s-dev.pak' % basename)
 
         self._make_zip(main_zip_path, 'py_files', 'zip_dirs')
-        self._make_zip(tools_zip_path, 'py_files_dev', 'zip_dirs_dev')
+        # self._make_zip(tools_zip_path, 'py_files_dev', 'zip_dirs_dev')
 
         if self.dry_run:
             return
 
         builddir_src = os.path.join('build', '_bin.py_files')
 
-        for path in self.python_dependencies['py_files_for_bin'] + self.python_dependencies['py_files_for_bin_dev']:
+        for path in self.python_dependencies['py_files_for_bin']:
             d, fn = os.path.split(path)
             assert fn == '__init__.py', fn
             src_dir = os.path.join(builddir_src, d)
@@ -259,7 +261,7 @@ class GDNativeBuildExt(build_ext):
 
         _prev_ratio = 0
         so_shims = [(root, fn) for root, fn in
-                    reversed(self.python_dependencies['so_files'] + self.python_dependencies['so_files_dev'])
+                    reversed(self.python_dependencies['so_files'])
                     if root == 'site']
         _total = len(self.python_dependencies[files])
 
@@ -403,7 +405,7 @@ class GDNativeBuildExt(build_ext):
 
         if sys.platform == 'win32':
             py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
-            py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv'))
+            py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'venv'))
             self.python_dependencies['bin_dir'] = bin_dir = os.path.join(py_base_dir, 'PCBuild', 'amd64')
             self.python_dependencies['mainlib_dir'] = mainlib_dir = bin_dir
             self.python_dependencies['lib_dir'] = lib_dir = os.path.join(py_base_dir, 'Lib')
@@ -411,7 +413,7 @@ class GDNativeBuildExt(build_ext):
             self.python_dependencies['site_dir'] = site_dir = os.path.join(py_venv_dir, 'Lib', 'site-packages')
         else:
             py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
-            py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'buildenv'))
+            py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'venv'))
             self.python_dependencies['bin_dir'] = bin_dir = os.path.join(py_base_dir, 'build', 'bin')
             self.python_dependencies['mainlib_dir'] = mainlib_dir = os.path.join(py_base_dir, 'build', 'lib')
             self.python_dependencies['lib_dir'] = lib_dir = os.path.join(mainlib_dir, 'python3.8')
@@ -421,12 +423,12 @@ class GDNativeBuildExt(build_ext):
         self.python_dependencies['py_files'] = py_files = []
         self.python_dependencies['so_files'] = so_files = []
         self.python_dependencies['py_files_for_bin'] = py_files_for_bin = []
-        self.python_dependencies['py_files_dev'] = py_files_dev = []
-        self.python_dependencies['so_files_dev'] = so_files_dev = []
-        self.python_dependencies['py_files_for_bin_dev'] = py_files_for_bin_dev = []
+        # self.python_dependencies['py_files_dev'] = py_files_dev = []
+        # self.python_dependencies['so_files_dev'] = so_files_dev = []
+        # self.python_dependencies['py_files_for_bin_dev'] = py_files_for_bin_dev = []
 
         self.python_dependencies['zip_dirs'] = dirs = set()
-        self.python_dependencies['zip_dirs_dev'] = dirs_dev = set()
+        # self.python_dependencies['zip_dirs_dev'] = dirs_dev = set()
         self.python_dependencies['bin_dirs'] = so_dirs = set()
 
         mainlib = None
@@ -459,7 +461,7 @@ class GDNativeBuildExt(build_ext):
             if skip:
                 continue
             has_files = False
-            has_dev_files = False
+            # has_dev_files = False
             for fn in filenames:
                 if not is_python_source(fn):
                     continue
@@ -470,22 +472,24 @@ class GDNativeBuildExt(build_ext):
                             is_tool = True
                             break
                 if is_tool:
-                    has_dev_files = True
-                    py_files_dev.append(('lib', os.path.join(dirpath, fn)))
+                    pass
+                    # has_dev_files = True
+                    # py_files_dev.append(('lib', os.path.join(dirpath, fn)))
                 else:
                     has_files = True
                     py_files.append(('lib', os.path.join(dirpath, fn)))
 
             if has_files:
                 dirs.add(dirpath)
-            elif has_dev_files:
-                dirs_dev.add(dirpath)
+            # elif has_dev_files:
+            #     dirs_dev.add(dirpath)
 
         for fn in os.listdir(dynload_dir):
             if not is_python_ext(fn):
                 continue
             if 'test' in fn:
-                so_files_dev.append(('dynload', fn))
+                pass
+                # so_files_dev.append(('dynload', fn))
             else:
                 so_files.append(('dynload', fn))
 
@@ -506,40 +510,45 @@ class GDNativeBuildExt(build_ext):
             if skip:
                 continue
             has_files = False
-            has_dev_files = False
+            # has_dev_files = False
             has_so_files = False
             for fn in filenames:
                 if is_python_source(fn):
                     # if dirpath.startswith('traitlets') or dirpath.startswith('jedi'):
                     #     continue
-                    is_tool = dirpath.endswith('tests')  # or 'testing' in dirpath
-                    for tooldir in ('Cython', 'IPython', 'ipython_genutils', 'jedi', 'parso', 'pexpect', 'traitlets', 'ptyprocess'):
+                    is_tool = False  # dirpath.endswith('tests')  # or 'testing' in dirpath
+                    for tooldir in TOOL_PACKAGES:
                         if dirpath.startswith(tooldir):
                             is_tool = True
                             break
                     if is_tool:
-                        has_dev_files = True
-                        py_files_dev.append(('site', os.path.join(dirpath, fn)))
+                        pass
+                        # has_dev_files = True
+                        # py_files_dev.append(('site', os.path.join(dirpath, fn)))
                     else:
                         has_files = True
                         py_files.append(('site', os.path.join(dirpath, fn)))
                 elif is_python_ext(fn):
                     has_so_files = True
                     has_files = True
-                    if 'tests' not in fn and '_dummy' not in fn and not dirpath.startswith('Cython'):
+                    if '_dummy' not in fn and not dirpath.startswith('Cython'):
                         so_files.append(('site', os.path.join(dirpath, fn)))
-                    else:
-                        so_files_dev.append(('site', os.path.join(dirpath, fn)))
+                    # else:
+                    #     so_files_dev.append(('site', os.path.join(dirpath, fn)))
             if has_files:
                 dirs.add(dirpath)
-            if has_dev_files:
-                dirs_dev.add(dirpath)
+            # if has_dev_files:
+            #     dirs_dev.add(dirpath)
             if has_so_files:
                 so_dirs.add('_' + dirpath)
 
         bin_package_dirs = {''}
-        bin_package_dev_dirs = {''}
-        for packages_set, files in ((bin_package_dirs, so_files), (bin_package_dev_dirs, so_files_dev)):
+        # bin_package_dev_dirs = {''}
+        packages_sets = (
+            (bin_package_dirs, so_files),
+            # (bin_package_dev_dirs, so_files_dev)
+        )
+        for packages_set, files in packages_sets:
             for root, fn in reversed(files):
                 if root == 'site':
                     prefix = '_'
@@ -555,7 +564,7 @@ class GDNativeBuildExt(build_ext):
                         cur_dir.append(d)
                         packages_set.add(os.sep.join(cur_dir))
 
-        for bin_dirs, files in ((bin_package_dirs, py_files_for_bin), (bin_package_dev_dirs, py_files_for_bin_dev)):
+        for bin_dirs, files in ((bin_package_dirs, py_files_for_bin),):
             for d in bin_dirs:
                 files.append(os.path.join(d, '__init__.py'))
 
@@ -599,12 +608,13 @@ class GDNativeBuildExt(build_ext):
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
-        context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+        # context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+        context['venv_path'] = self.python_dependencies['site_dir']
         if self.godot_project.set_development_path:
             context['development_path'] = os.path.realpath(root_dir)
 
         so_files = self.python_dependencies['so_files']
-        deps = [main_zip_res, tools_zip_res,
+        deps = [main_zip_res,
                 *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
                     for root, fn in so_files)]
         py_files_for_bin = self.python_dependencies['py_files_for_bin']
@@ -671,12 +681,13 @@ class GDNativeBuildExt(build_ext):
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
-        context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+        # context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
+        context['venv_path'] = self.python_dependencies['site_dir']
         if self.godot_project.set_development_path:
             context['development_path'] = os.path.realpath(root_dir)
 
         so_files = self.python_dependencies['so_files']
-        deps = [main_zip_res, tools_zip_res,
+        deps = [main_zip_res,
                 *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
                     for root, fn in so_files)]
         py_files_for_bin = self.python_dependencies['py_files_for_bin']
@@ -794,16 +805,16 @@ class GDNativeBuildExt(build_ext):
 
         append_init_file = False
 
-        if addon and addon._editor_only:
-            collection = self.python_dependencies['py_files_dev']
-            if prefix not in self.python_dependencies['zip_dirs_dev']:
-                self.python_dependencies['zip_dirs_dev'].add(prefix)
-                append_init_file = True
-        else:
-            collection = self.python_dependencies['py_files']
-            if prefix not in self.python_dependencies['zip_dirs']:
-                self.python_dependencies['zip_dirs'].add(prefix)
-                append_init_file = True
+        # if addon and addon._editor_only:
+        #     collection = self.python_dependencies['py_files_dev']
+        #     if prefix not in self.python_dependencies['zip_dirs_dev']:
+        #         self.python_dependencies['zip_dirs_dev'].add(prefix)
+        #         append_init_file = True
+        # else:
+        collection = self.python_dependencies['py_files']
+        if prefix not in self.python_dependencies['zip_dirs']:
+            self.python_dependencies['zip_dirs'].add(prefix)
+            append_init_file = True
 
         if append_init_file:
             init_file = os.path.join(prefix, '__init__.py')
