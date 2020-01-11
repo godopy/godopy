@@ -346,6 +346,17 @@ cdef class Vector2(CoreTypeWrapper):
 
     cdef cpp.Vector2 to_cpp(self)
 
+
+cdef class Point2(Vector2):
+    @staticmethod
+    cdef Point2 from_cpp(cpp.Point2 _cpp_object)
+
+
+cdef class Size2(Vector2):
+    @staticmethod
+    cdef Size2 from_cpp(cpp.Size2 _cpp_object)
+
+
 cdef class Vector3(CoreTypeWrapper):
     cdef cpp.Vector3 _cpp_object
 

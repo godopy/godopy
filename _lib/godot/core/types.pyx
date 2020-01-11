@@ -173,8 +173,12 @@ cdef class Color(CoreTypeWrapper):
         cdef np.ndarray arr = np.array_new_simple(1, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
+
+    def __repr__(self):
+        self._internal_check()
+        return 'Color(%s, %s, %s, %s)' % (self._cpp_object.r, self._cpp_object.g, self._cpp_object.b, self._cpp_object.a)
 
 
 cdef class Dictionary(CoreTypeWrapper):
@@ -268,7 +272,7 @@ cdef class PoolByteArrayReadAccess(PoolArrayReadAccess):
         cdef np.ndarray arr = np.array_new_simple_readonly(1, dims, np.NPY_UINT8, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -289,7 +293,7 @@ cdef class PoolByteArrayWriteAccess(PoolArrayWriteAccess):
         cdef np.ndarray arr = np.array_new_simple(1, dims, np.NPY_UINT8, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -372,7 +376,7 @@ cdef class PoolIntArrayReadAccess(PoolArrayReadAccess):
         cdef np.ndarray arr = np.array_new_simple_readonly(1, dims, np.NPY_INT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -393,7 +397,7 @@ cdef class PoolIntArrayWriteAccess(PoolArrayWriteAccess):
         cdef np.ndarray arr = np.array_new_simple(1, dims, np.NPY_INT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -477,7 +481,7 @@ cdef class PoolRealArrayReadAccess(PoolArrayReadAccess):
         cdef np.ndarray arr = np.array_new_simple_readonly(1, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -498,7 +502,7 @@ cdef class PoolRealArrayWriteAccess(PoolArrayWriteAccess):
         cdef np.ndarray arr = np.array_new_simple(1, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -712,7 +716,7 @@ cdef class PoolVector2ArrayReadAccess(PoolArrayReadAccess):
         cdef np.ndarray arr = np.array_new_simple_readonly(2, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -733,7 +737,7 @@ cdef class PoolVector2ArrayWriteAccess(PoolArrayWriteAccess):
         cdef np.ndarray arr = np.array_new_simple(2, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -816,7 +820,7 @@ cdef class PoolVector3ArrayReadAccess(PoolArrayReadAccess):
         cdef np.ndarray arr = np.array_new_simple_readonly(2, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -837,7 +841,7 @@ cdef class PoolVector3ArrayWriteAccess(PoolArrayWriteAccess):
         cdef np.ndarray arr = np.array_new_simple(2, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -920,7 +924,7 @@ cdef class PoolColorArrayReadAccess(PoolArrayReadAccess):
         cdef np.ndarray arr = np.array_new_simple_readonly(2, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -941,7 +945,7 @@ cdef class PoolColorArrayWriteAccess(PoolArrayWriteAccess):
         cdef np.ndarray arr = np.array_new_simple(2, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, base or self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
 
 
@@ -1039,6 +1043,31 @@ cdef class Rect2(CoreTypeWrapper):
     cdef cpp.Rect2 to_cpp(self):
         self._internal_check()
         return self._cpp_object
+
+    def to_numpy(self) -> np.ndarray:
+        cdef np.npy_intp *dims = [4]
+        cdef float *ptr = <float *>&self._cpp_object
+
+        cdef np.ndarray arr = np.array_new_simple(1, dims, np.NPY_FLOAT32, <void *>ptr)
+
+        np.set_array_base(arr, self)
+        # print('BASE', np.get_array_base(arr))
+        return arr
+
+    @property
+    def position(self):
+        self._internal_check()
+        return Point2.from_cpp(self._cpp_object.position)
+
+    @property
+    def size(self):
+        self._internal_check()
+        return Size2.from_cpp(self._cpp_object.size)
+
+    def __repr__(self):
+        cdef Point2 pos = self.position
+        cdef Size2 size = self.size
+        return 'Rect2(%s, %s, %s, %s)' % (pos.x, pos.y, size.width, size.height)
 
 
 cdef class RID(CoreTypeWrapper):
@@ -1255,8 +1284,55 @@ cdef class Vector2(CoreTypeWrapper):
         cdef np.ndarray arr = np.array_new_simple(1, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
+
+    @property
+    def x(self):
+        self._internal_check()
+        return self._cpp_object.x
+
+    @property
+    def y(self):
+        self._internal_check()
+        return self._cpp_object.y
+
+    def __repr__(self):
+        return 'Vector2(%s, %s)' % (self.x, self.y)
+
+
+cdef class Point2(Vector2):
+    @staticmethod
+    cdef Point2 from_cpp(cpp.Point2 _cpp_object):
+        cdef Point2 self = Point2.__new__(Point2)
+        self._cpp_object = _cpp_object
+        self._initialized = True
+        return self
+
+    def __repr__(self):
+        return 'Point2(%s, %s)' % (self.x, self.y)
+
+
+cdef class Size2(Vector2):
+    @staticmethod
+    cdef Size2 from_cpp(cpp.Size2 _cpp_object):
+        cdef Size2 self = Size2.__new__(Size2)
+        self._cpp_object = _cpp_object
+        self._initialized = True
+        return self
+
+    @property
+    def width(self):
+        self._internal_check()
+        return self._cpp_object.width
+
+    @property
+    def height(self):
+        self._internal_check()
+        return self._cpp_object.height
+
+    def __repr__(self):
+        return 'Size2(%s, %s)' % (self.width, self.height)
 
 
 cdef class Vector3(CoreTypeWrapper):
@@ -1294,8 +1370,27 @@ cdef class Vector3(CoreTypeWrapper):
         cdef np.ndarray arr = np.array_new_simple(1, dims, np.NPY_FLOAT32, <void *>ptr)
 
         np.set_array_base(arr, self)
-        print('BASE', np.get_array_base(arr))
+        # print('BASE', np.get_array_base(arr))
         return arr
+
+    @property
+    def x(self):
+        self._internal_check()
+        return self._cpp_object.x
+
+    @property
+    def y(self):
+        self._internal_check()
+        return self._cpp_object.y
+
+    @property
+    def z(self):
+        self._internal_check()
+        return self._cpp_object.z
+
+    def __repr__(self):
+        self._internal_check()
+        return 'Vector3(%s, %s, %s)' % (self.x, self.y, self.z)
 
 
 cdef public:
