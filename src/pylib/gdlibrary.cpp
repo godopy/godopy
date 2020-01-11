@@ -5,8 +5,8 @@
 #include "GodotGlobal.hpp"
 #include "Defs.hpp"
 
-#include <batteries/godot/nativescript.hpp>
-#include <batteries/godot/gdnative.hpp>
+#include <_lib/godot/nativescript.hpp>
+#include <_lib/godot/gdnative.hpp>
 
 PyMODINIT_FUNC PyInit_godot__core___wrapped();
 PyMODINIT_FUNC PyInit_godot__core__signals();

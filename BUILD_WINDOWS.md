@@ -20,7 +20,7 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 > .\deps\python\PCbuild\amd64\python.exe -m venv .\venv
 > .\venv\Scripts\activate
 (venv) > cp .\deps\python\PC\pyconfig.h .\venv\Include\
-(venv) > pip install -r batteries/requirements.txt
+(venv) > pip install -r _lib/requirements.txt
 (venv) > # Use pip to install any Python dependencies you want
 (venv) > deactivate
 > cd ..
@@ -36,7 +36,7 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 (toolbox) > python bootstrap.py
 (toolbox) > deactivate
 > .\venv\Scripts\activate
-(venv) > pip install .\batteries
+(venv) > pip install .\_lib
 (venv) > deactivate
 > ..\toolbox\Scripts\activate
 (toolbox) > scons

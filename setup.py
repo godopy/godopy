@@ -54,9 +54,9 @@ install_requires = [
 
 setup_requires = [
     'scons',
-    # 'Mako',
-    # 'pycparser',
-    # 'autopxd2'
+    'Mako',
+    'pycparser',
+    'autopxd2'
 ]
 
 setup(

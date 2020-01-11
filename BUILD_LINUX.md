@@ -17,7 +17,7 @@ $ cd godopy
 $ ./build_python.py
 $ deps/python/build/bin/python3 -m venv venv
 $ source venv/bin/activate
-(venv) $ pip install -r batteries/requirements.txt
+(venv) $ pip install -r _lib/requirements.txt
 (venv) $ # Use pip to install any Python dependencies you want
 (venv) $ deactivate
 $ cd ..

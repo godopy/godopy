@@ -38,30 +38,31 @@ Simple `pip install godopy` setup will be available in the future versions.
 
 We’ll start by creating an empty Godot project in which we’ll place a few files.
 
-Open Godot and create a new project. For this example, we will place it in a folder called `demo` inside our PyGodot project’s folder structure.
+Open Godot and create a new project. For this example, we will place it in a folder called `demo`
+inside the folder called `gd` inside our PyGodot project’s folder structure.
 
 In our demo project, we’ll create a scene containing a Node2D called “Main” and we’ll save it as `main.tscn`.
 We’ll come back to that later.
 
-Back in the top-level project folder, we’re also going to create a subfolder called `_demo`
+Back in the top-level project folder, we’re also going to create a subfolder called `demo`
 in which we’ll place our Python files.
 
-You should now have `demo`, `godopy`, `_demo` and `toolbox` directories in your PyGodot project.
+You should now have `gd`, `godopy`, `demo` and `toolbox` directories in your PyGodot project.
 
 
-In the `_demo` folder, we’ll start with creating our Python module for the GDNative node we’ll be creating.
+In the `demo` folder, we’ll start with creating our Python module for the GDNative node we’ll be creating.
 We will name it `python_example.py`:
 ```py
 import math
 import numpy as np
 
-from godot.bindings.python import nodes
+from godot import bindings
 from godot.core.types import Vector2
-from godot.core.signal_arguments import SignalArgumentObject, SignalArgumentVector2
+from godot.core.signal_arguments import SignalArgumentObject as SAO, SignalArgumentVector2 as SAV2
 from godot.nativescript import register_method, register_property, register_signal
 
 
-class PythonExample(nodes.Sprite):
+class PythonExample(bindings.Sprite):
     def __init__(self):
         self.time_passed = 0.0
         self.amplitude = 10
@@ -86,8 +87,7 @@ class PythonExample(nodes.Sprite):
         register_method(PythonExample, '_process')
         register_property(PythonExample, 'amplitude', 10)
 
-        register_signal(PythonExample, 'position_changed',
-                        SignalArgumentObject('node'), SignalArgumentVector2('new_position'))
+        register_signal(PythonExample, 'position_changed', SAO('node'), SAV2('new_position'))
 ```
 
 There is one more Python file we need, it should be named `__init__.py`.  Our GDNative plugin can contain
@@ -113,8 +113,8 @@ from godot_tools.setup.extensions import NativeScript
 
 
 godot_setup(
-    godot_project='demo',
-    package='_demo',
+    godot_project='gd/demo',
+    package='demo',
     # set_development_path=True,
     library=GenericGDNativeLibrary('gdexample.gdnlib', singleton=False),
     extensions=[

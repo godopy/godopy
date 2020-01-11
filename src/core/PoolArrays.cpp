@@ -6,7 +6,7 @@
 
 #include <gdnative/pool_arrays.h>
 
-#include <batteries/godot/core/types.hpp>
+#include <_lib/godot/core/types.hpp>
 
 namespace godot {
 

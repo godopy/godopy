@@ -79,4 +79,4 @@ def strip_internal_path(path):
 
 
 def is_internal_path(path):
-    return path.startswith('batteries') or path.startswith('src')
+    return path.startswith('_lib') or path.startswith('src')

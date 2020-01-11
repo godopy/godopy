@@ -1,5 +1,5 @@
-rm batteries/godot/*.cpp
-rm batteries/godot/core/*.cpp
-rm batteries/godot/bindings/*.cpp
+rm _lib/godot/*.cpp
+rm _lib/godot/core/*.cpp
+rm _lib/godot/bindings/*.cpp
 . venv/bin/activate
-pip install ./batteries
+pip install ./_lib

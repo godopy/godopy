@@ -28,7 +28,7 @@ entry_points = {'console_scripts': ['godopy_cython=build_tools:godopy_cython']}
 
 
 setup(
-    name='godopy-batteries',
+    name='godopy-internal-library',
     version='0.0.1a',
     python_requires='>=3.8',
     packages=packages,

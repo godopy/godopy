@@ -63,7 +63,7 @@ class GDNativeBuildExt(build_ext):
 
     build_context = {
         '__version__': get_version(),
-        'godot_headers_path': os.path.normpath(os.path.join(tools_root, '..', 'batteries', 'godot_headers')),
+        'godot_headers_path': os.path.normpath(os.path.join(tools_root, '..', '_lib', 'godot_headers')),
         'godopy_bindings_path': os.path.dirname(tools_root),
         'singleton': False,
         'gdnative_options': False,

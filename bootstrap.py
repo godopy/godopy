@@ -19,7 +19,7 @@ except ImportError:
     raise SystemExit("Required packages were not found. Please install them from 'requirements.txt'.")
 
 root_dir = os.path.abspath(os.path.dirname(__file__))
-headers_dir = os.path.join(root_dir, 'batteries', 'godot_headers')
+headers_dir = os.path.join(root_dir, '_lib', 'godot_headers')
 cwd = os.path.abspath(os.getcwd())
 
 prefix = os.path.join(root_dir, 'venv')

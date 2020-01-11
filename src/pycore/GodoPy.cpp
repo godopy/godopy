@@ -1,6 +1,6 @@
 #include "GodoPy.hpp"
 
-#include <batteries/godot/nativescript.hpp>
+#include <_lib/godot/nativescript.hpp>
 
 namespace godopy {
 
