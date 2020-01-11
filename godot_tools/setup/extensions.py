@@ -798,9 +798,12 @@ class GDNativeBuildExt(build_ext):
     def collect_dynamic_sources(self, sources, addon):
         prefix = addon and addon.name or self.godot_project.python_package
 
+        collection = self.python_dependencies['py_files']
+
         if sources:
             dirname = os.path.dirname(sources[0])
             if dirname:
+                collection.append(('local', os.path.join(prefix, '__init__.py')))
                 prefix = os.path.join(prefix, dirname)
 
         append_init_file = False
@@ -811,7 +814,7 @@ class GDNativeBuildExt(build_ext):
         #         self.python_dependencies['zip_dirs_dev'].add(prefix)
         #         append_init_file = True
         # else:
-        collection = self.python_dependencies['py_files']
+
         if prefix not in self.python_dependencies['zip_dirs']:
             self.python_dependencies['zip_dirs'].add(prefix)
             append_init_file = True
