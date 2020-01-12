@@ -618,9 +618,13 @@ cdef tuple __parse_args(int num_args, godot_variant **args):
     cdef object __args = PyTuple_New(num_args)
     Py_INCREF(__args)
 
+    cdef Variant item
+
     for i in range(num_args):
+        item = deref(<Variant *>args[i])
+
         # PyObject * casts are defined in `Variant::operator PyObject *() const` C++ method
-        PyTuple_SET_ITEM(__args, i, <object>deref(<Variant *>args[i]))
+        PyTuple_SET_ITEM(__args, i, <object>item)
 
     return __args
 

@@ -86,7 +86,8 @@ cdef unregister_godot_instance(godot_object *godot_instance):
 
 
 cdef get_python_instance(godot_object *godot_instance):
-    return __instance_map[<size_t>godot_instance]
+    # FIXME: Returns None for all external Godot objects
+    return __instance_map.get(<size_t>godot_instance, None)
 
 
 cdef replace_python_instance(godot_object *godot_instance, object python_instance):

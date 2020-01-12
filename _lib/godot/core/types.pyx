@@ -1564,9 +1564,11 @@ cdef public:
 
 
     object _godot_object_to_cython_binding(godot_object *_owner):
+        # FIXME: Returns None for all external Godot objects
         return get_python_instance(_owner);
 
     object _godot_object_to_python_binding(godot_object *_owner):
+        # FIXME: Returns None for all external Godot objects
         return get_python_instance(_owner);
 
 
