@@ -274,7 +274,6 @@ class GDNativeBuildExt(build_ext):
 
                 if os.path.basename(inner_dir).startswith('.'):
                     # Helper libraries not intended for import
-                    # TODO: mv path/to/.bin/osx/_numpy/.dylibs path/to/.bin/osx/
                     continue
 
                 bin_dir = '/' + os.path.join(unprefixed_binroot, inner_dir)
@@ -328,7 +327,13 @@ class GDNativeBuildExt(build_ext):
                         fp_dst.write(fp_src.read())
                 so_shims_written.add(fnc)
 
+            processed = set()
+
             for i, (root, fn) in enumerate(self.python_dependencies[files]):
+                if (root, fn) in processed:
+                    continue
+                processed.add((root, fn))
+
                 if root == 'lib':
                     basedir = self.python_dependencies['lib_dir']
                 elif root == 'site':
@@ -512,6 +517,7 @@ class GDNativeBuildExt(build_ext):
             has_files = False
             # has_dev_files = False
             has_so_files = False
+
             for fn in filenames:
                 if is_python_source(fn):
                     # if dirpath.startswith('traitlets') or dirpath.startswith('jedi'):
