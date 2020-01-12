@@ -104,6 +104,8 @@ extern "C" void GDN_EXPORT godopy_nativescript_init(void *handle) {
   ___python_init();
   godopy::GodoPy::nativescript_init(handle);
 
+  godopy::GodoPy::numpy_init();
+
 % if gdnative_options:
   PyObject *result = _godopy_nativescript_init(&gdnative_options); ERR_FAIL_PYTHON_NULL(result); Py_DECREF(result);
 % else:

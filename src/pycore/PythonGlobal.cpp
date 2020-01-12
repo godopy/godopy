@@ -174,12 +174,14 @@ void GodoPy::python_init() {
 
 	PyConfig_Clear(&config);
 
+	/*
 	if (_import_array() == -1) {
 		PyErr_Print();
 		FATAL_PRINT("NumPy Initialization Failed.");
 		CRASH_NOW();
 		return;
 	}
+	*/
 
 	// Initializes the GIL, required for threading
 	PyEval_InitThreads();
@@ -207,6 +209,15 @@ void GodoPy::python_terminate() {
 	if (Py_IsInitialized()) {
 
 		Py_FinalizeEx();
+	}
+}
+
+void GodoPy::numpy_init() {
+	if (_import_array() == -1) {
+		PyErr_Print();
+		FATAL_PRINT("NumPy Initialization Failed.");
+		CRASH_NOW();
+		return;
 	}
 }
 

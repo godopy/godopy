@@ -24,6 +24,7 @@ class GodoPy {
 public:
 	static void python_preconfig(godot_gdnative_init_options *o);
 	static void python_init();
+  static void numpy_init();
 	static void python_terminate();
 
 	static void nativescript_init(void *handle, bool init_cython=true, bool init_python=true);
