@@ -296,7 +296,7 @@ class GDNativeBuildExt(build_ext):
                         "    for ___name in dir(___mod):\n"
                         "        globals()[___name] = getattr(___mod, ___name, None)\n"
                         "except Exception as ex:\n"
-                        "    # print('Error ignored during \\'{1}\\' extension init: %s' % ex)\n"
+                        "    print('Error ignored during \\'{1}\\' extension init: %s' % ex)\n"
                         "    RandomState = None\n"
                         "    Philox = None\n"
                         "    PCG64 = None\n"
@@ -306,6 +306,9 @@ class GDNativeBuildExt(build_ext):
                         "    default_rng = None\n"
                         "    SeedSequence = None\n"
                         "    BitGenerator = None\n"
+                        "    add_docstring = None\n"
+                        "    implement_array_function = None\n"
+                        "    _get_implementing_args = None\n"
                     )
 
                     fp.write(shim_tmpl.format(bin_dir, os.path.join(inner_dir, import_name).replace(os.sep, '.')))

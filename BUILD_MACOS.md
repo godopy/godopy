@@ -30,7 +30,8 @@ $ source setup/bin/activate
 (setup) $ scons  # scons -j4 only_cython=yes && scons -j4
 (setup) $ deactivate
 ```
-> If you want a faster parallel initial build, build with "only_cython=yes" first, otherwise the required headers will be missing
+> Sometimes it is required to deactivate and reactivate the virtual environment before running scons
+> If you want to run an initial build with a -j option, build with "only_cython=yes" first, otherwise the required headers will be missing
 
 
 ## Setting up GodoPy development environment
