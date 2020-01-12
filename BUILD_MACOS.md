@@ -21,6 +21,7 @@ $ source venv/bin/activate
 (venv) $ deactivate
 ```
 
+
 ## Building GodoPy
 ```
 $ python3 -m venv setup
