@@ -613,12 +613,12 @@ class GDNativeBuildExt(build_ext):
         if self.godot_project.set_development_path:
             context['development_path'] = os.path.realpath(root_dir)
 
-        so_files = self.python_dependencies['so_files']
-        deps = [main_zip_res,
-                *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
-                    for root, fn in so_files)]
-        py_files_for_bin = self.python_dependencies['py_files_for_bin']
-        deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
+        # so_files = self.python_dependencies['so_files']
+        deps = [main_zip_res]
+        #        *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
+        #            for root, fn in so_files)]
+        # py_files_for_bin = self.python_dependencies['py_files_for_bin']
+        # deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
 
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
@@ -686,12 +686,12 @@ class GDNativeBuildExt(build_ext):
         if self.godot_project.set_development_path:
             context['development_path'] = os.path.realpath(root_dir)
 
-        so_files = self.python_dependencies['so_files']
-        deps = [main_zip_res,
-                *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
-                    for root, fn in so_files)]
-        py_files_for_bin = self.python_dependencies['py_files_for_bin']
-        deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
+        # so_files = self.python_dependencies['so_files']
+        deps = [main_zip_res]
+        # *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
+        #    for root, fn in so_files)]
+        # py_files_for_bin = self.python_dependencies['py_files_for_bin']
+        # deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
 
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
