@@ -80,6 +80,8 @@ static void ___python_init() {
   mod = PyImport_ImportModule("__godopy_internal__${mod['symbol_name']}"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
 % endfor
 
+  godopy::GodoPy::numpy_init();
+
   __python_initialized = true;
 }
 
@@ -103,8 +105,6 @@ extern "C" void GDN_EXPORT godopy_nativescript_init(void *handle) {
   godot::Godot::nativescript_init(handle);  // C++ bindings
   ___python_init();
   godopy::GodoPy::nativescript_init(handle);
-
-  godopy::GodoPy::numpy_init();
 
 % if gdnative_options:
   PyObject *result = _godopy_nativescript_init(&gdnative_options); ERR_FAIL_PYTHON_NULL(result); Py_DECREF(result);
