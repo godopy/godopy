@@ -81,8 +81,6 @@ void GodoPy::python_init() {
 
 	godot::String binary_module_path = ((godot::String *)&active_library_path)->get_base_dir();
 
-	godot::api->godot_string_destroy(&active_library_path);
-
 	bool commandline_script_mode = false;
 
 	bool write_bytecode = false;
@@ -92,12 +90,13 @@ void GodoPy::python_init() {
 #elif __APPLE__
 
 #else
-	// printf("dlopen %s\n", ((godot::String *)&active_library_path)->utf8().get_data());
+	printf("dlopen %s\n", ((godot::String *)&active_library_path)->utf8().get_data());
 
 	// Make Python symbols available for core Python extension modules on Linux
 	// Idea from https://stackoverlow.com/questions/11842920/undefined-symbol-pyexc-importerror-when-embedding-python-in-c#11847653
 	const void *___so_handle = dlopen(((godot::String *)&active_library_path)->utf8().get_data(), RTLD_LAZY | RTLD_GLOBAL);
 #endif
+	godot::api->godot_string_destroy(&active_library_path);
 
 	PyConfig_InitIsolatedConfig(&config);
 

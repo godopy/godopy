@@ -296,7 +296,7 @@ class GDNativeBuildExt(build_ext):
                         "    for ___name in dir(___mod):\n"
                         "        globals()[___name] = getattr(___mod, ___name, None)\n"
                         "except Exception as ex:\n"
-                        "    print('Error ignored during \\'{1}\\' extension init: %s' % ex)\n"
+                        "    # print('Error ignored during \\'{1}\\' extension init: %s' % ex)\n"
                         "    RandomState = None\n"
                         "    Philox = None\n"
                         "    PCG64 = None\n"
