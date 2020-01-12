@@ -618,9 +618,9 @@ class GDNativeBuildExt(build_ext):
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
         # context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
-        context['venv_path'] = self.python_dependencies['site_dir'].replace('\\', '/')
+        context['venv_path'] = self.python_dependencies['site_dir'].replace(os.sep, '/')
         if self.godot_project.set_development_path:
-            context['development_path'] = os.path.realpath(root_dir)
+            context['development_path'] = os.path.realpath(root_dir).replace(os.sep, '/')
 
         # so_files = self.python_dependencies['so_files']
         deps = [main_zip_res]
@@ -691,9 +691,9 @@ class GDNativeBuildExt(build_ext):
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
         # context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
-        context['venv_path'] = self.python_dependencies['site_dir']
+        context['venv_path'] = self.python_dependencies['site_dir'].replace(os.sep, '/')
         if self.godot_project.set_development_path:
-            context['development_path'] = os.path.realpath(root_dir)
+            context['development_path'] = os.path.realpath(root_dir).replace(os.sep, '/')
 
         # so_files = self.python_dependencies['so_files']
         deps = [main_zip_res]
