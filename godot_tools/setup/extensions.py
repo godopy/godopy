@@ -7,6 +7,7 @@ import hashlib
 import zipfile
 import subprocess
 
+from distutils import log
 from setuptools import Extension
 from setuptools.command.build_ext import build_ext
 
@@ -81,11 +82,11 @@ class GDNativeBuildExt(build_ext):
         for ext in self.extensions:
             if self.godot_project:
                 if not dependencies_collected:
-                    print('collecting Python dependencies')
+                    log.info('collecting Python dependencies')
                     self.collect_dependencies()
                     dependencies_collected = True
 
-                print('setting up', 'GDNative {0}: {1}'.format(ext._gdnative_type.name.lower(), ext.name))
+                log.info('setting up GDNative {0}: {1}'.format(ext._gdnative_type.name.lower(), ext.name))
 
             getattr(self, 'collect_godot_{0}_data'.format(ext._gdnative_type.name.lower()))(ext)
 
@@ -101,21 +102,21 @@ class GDNativeBuildExt(build_ext):
         for res_path, source in self.godot_resource_files.items():
             target = os.path.join(self.godot_project.path_prefix, res_path)
             if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
-                print('skip copying "%s"' % make_relative_path(target))
+                log.info('skip copying "%s"' % make_resource_path(self.godot_root, target))
                 continue
 
             target_dir = os.path.dirname(target)
             if not os.path.exists(target_dir) and not self.dry_run:
                 os.makedirs(target_dir)
 
-            print('copying "%s"' % make_relative_path(target))
+            log.info('copying "%s"' % make_resource_path(self.godot_root, target))
             if not self.dry_run:
                 shutil.copy2(source, target)
 
         self.package_dependencies()
 
         setup_script = self.gdnative_library_path.replace('.gdnlib', '__setup.gd')
-        print('updating Godot project settings, running "res://%s"' % setup_script)
+        log.info('updating Godot project settings, running "res://%s"' % setup_script)
         if not self.dry_run:
             subprocess.run([
                 get_godot_executable(),
@@ -123,30 +124,32 @@ class GDNativeBuildExt(build_ext):
                 '-s', 'res://%s' % setup_script
             ], check=True)
 
-        print('removing "res://%s"' % setup_script)
+        log.info('removing "res://%s"' % setup_script)
         if not self.dry_run:
             os.unlink(os.path.join(self.godot_project.path_prefix, setup_script))
 
     def run_copylib(self):
-        source = os.path.join(self.build_context['godopy_bindings_path'], self.build_context['godopy_library_name'])
+        source_zip = os.path.join(self.build_context['godopy_bindings_path'], self.build_context['godopy_zip_name'])
         target = self.build_context['target']
 
-        # print(source)
-        assert os.path.exists(source)
+        assert os.path.exists(source_zip)
 
-        # print(target, os.path.exists(target), os.path.islink(target))
-
-        if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
-            print('skip copying "%s"' % make_relative_path(target))
-            return
+        # if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
+        #    log.info('skip copying "res://%s"' % make_resource_path(self.godot_root, target))
+        #    return
 
         target_dir = os.path.dirname(target)
         if not os.path.exists(target_dir) and not self.dry_run:
             os.makedirs(target_dir)
 
-        print('copying "%s"' % make_relative_path(target))
-        if not self.dry_run:
-            shutil.copy2(source, target)
+        log.info('unpacking "res://%s"' % make_resource_path(self.godot_root, target))
+        if self.dry_run:
+            return
+
+        with zipfile.ZipFile(source_zip) as _zip:
+            with _zip.open(self.build_context['godopy_library_name']) as src:
+                with open(target, 'bw') as dst:
+                    dst.write(src.read())
 
     def run_build(self):
         cpp_lib_template = Template(filename=os.path.join(templates_dir, 'gdlibrary.cpp.mako'))
@@ -174,14 +177,14 @@ class GDNativeBuildExt(build_ext):
             with open(path, encoding='utf-8') as fp:
                 old_hash = hashlib.sha1(fp.read().encode('utf-8'))
             if old_hash.digest() == new_hash.digest():
-                print('skip writing "%s"' % pretty_path)
+                log.info('skip writing "%s"' % pretty_path)
                 return
             elif is_editable_resource and not self.force:
                 # Do not overwrite user resources without --force flag
-                print('WARNING! modified resource already exists: "%s"' % pretty_path)
+                log.warning('WARNING! modified resource already exists: "%s"' % pretty_path)
                 return
 
-        print('writing "%s"' % pretty_path, path)
+        log.info('writing "%s"' % pretty_path)
         if not self.dry_run:
             dirname, basename = os.path.split(path)
             if dirname and not os.path.exists(dirname):
@@ -244,12 +247,14 @@ class GDNativeBuildExt(build_ext):
             subprocess.run(cmd, check=True)
 
     def _make_zip(self, zippath, files, dirs):
-        print('byte-compiling and compressing Python dependencies into "res://%s"' % zippath)
+        pathbase = os.path.basename(zippath)
+        log.info('byte-compiling and compressing Python dependencies into "res://%s/%s"' % (self.godot_project.binary_path, pathbase))
+
         if self.dry_run:
             return
 
-        builddir_src = os.path.join('build', os.path.basename(zippath) + '.py_files')
-        builddir_dst = os.path.join('build', os.path.basename(zippath) + '.pyc_files')
+        builddir_src = os.path.join('build', pathbase + '.py_files')
+        builddir_dst = os.path.join('build', pathbase + '.pyc_files')
         unprefixed_binroot = os.path.join(self.godot_project.binary_path, platform_suffix(get_platform()))
 
         verbosity = 1
@@ -370,7 +375,7 @@ class GDNativeBuildExt(build_ext):
                 if changed:
                     # Compile to bytecode with target interpreter
                     if verbosity > 1:
-                        print("Byte-compiling and compressing %r" % fnc)
+                        log.info("Byte-compiling and compressing %r" % fnc)
                     elif verbosity == 1:
                         if _ratio > _prev_ratio:
                             print('.', end='', flush=True)
@@ -392,7 +397,7 @@ class GDNativeBuildExt(build_ext):
                     shutil.copystat(pre_dst, dst)
                 else:
                     if verbosity > 1:
-                        print("Compressing %r" % fnc)
+                        log.info("Compressing %r" % fnc)
                     elif verbosity == 1:
                         if _ratio > _prev_ratio:
                             print('.', end='', flush=True)
@@ -409,8 +414,7 @@ class GDNativeBuildExt(build_ext):
             print()
 
     def collect_dependencies(self):
-        # TODO: NumPy dependencies in .dynlibs
-
+        print('ROOT', tools_root)
         if sys.platform == 'win32':
             py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
             py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'venv'))
@@ -431,12 +435,8 @@ class GDNativeBuildExt(build_ext):
         self.python_dependencies['py_files'] = py_files = []
         self.python_dependencies['so_files'] = so_files = []
         self.python_dependencies['py_files_for_bin'] = py_files_for_bin = []
-        # self.python_dependencies['py_files_dev'] = py_files_dev = []
-        # self.python_dependencies['so_files_dev'] = so_files_dev = []
-        # self.python_dependencies['py_files_for_bin_dev'] = py_files_for_bin_dev = []
 
         self.python_dependencies['zip_dirs'] = dirs = set()
-        # self.python_dependencies['zip_dirs_dev'] = dirs_dev = set()
         self.python_dependencies['bin_dirs'] = so_dirs = set()
 
         mainlib = None
@@ -469,7 +469,6 @@ class GDNativeBuildExt(build_ext):
             if skip:
                 continue
             has_files = False
-            # has_dev_files = False
             for fn in filenames:
                 if not is_python_source(fn):
                     continue
@@ -479,26 +478,16 @@ class GDNativeBuildExt(build_ext):
                         if dirpath.startswith(tooldir):
                             is_tool = True
                             break
-                if is_tool:
-                    pass
-                    # has_dev_files = True
-                    # py_files_dev.append(('lib', os.path.join(dirpath, fn)))
-                else:
                     has_files = True
                     py_files.append(('lib', os.path.join(dirpath, fn)))
 
             if has_files:
                 dirs.add(dirpath)
-            # elif has_dev_files:
-            #     dirs_dev.add(dirpath)
 
         for fn in os.listdir(dynload_dir):
             if not is_python_ext(fn):
                 continue
-            if 'test' in fn:
-                pass
-                # so_files_dev.append(('dynload', fn))
-            else:
+            if 'test' not in fn:
                 so_files.append(('dynload', fn))
 
         for dirpath, dirnames, filenames in os.walk(site_dir):
@@ -530,11 +519,7 @@ class GDNativeBuildExt(build_ext):
                         if dirpath.startswith(tooldir):
                             is_tool = True
                             break
-                    if is_tool:
-                        pass
-                        # has_dev_files = True
-                        # py_files_dev.append(('site', os.path.join(dirpath, fn)))
-                    else:
+                    if not is_tool:
                         has_files = True
                         py_files.append(('site', os.path.join(dirpath, fn)))
                 elif is_python_ext(fn):
@@ -542,20 +527,14 @@ class GDNativeBuildExt(build_ext):
                     has_files = True
                     if '_dummy' not in fn and not dirpath.startswith('Cython'):
                         so_files.append(('site', os.path.join(dirpath, fn)))
-                    # else:
-                    #     so_files_dev.append(('site', os.path.join(dirpath, fn)))
             if has_files:
                 dirs.add(dirpath)
-            # if has_dev_files:
-            #     dirs_dev.add(dirpath)
             if has_so_files:
                 so_dirs.add('_' + dirpath)
 
         bin_package_dirs = {''}
-        # bin_package_dev_dirs = {''}
         packages_sets = (
             (bin_package_dirs, so_files),
-            # (bin_package_dev_dirs, so_files_dev)
         )
         for packages_set, files in packages_sets:
             for root, fn in reversed(files):
@@ -593,14 +572,18 @@ class GDNativeBuildExt(build_ext):
 
         ext_name = self.godot_project.get_setuptools_name(ext.name, validate='.gdnlib')
         ext_path = self.get_ext_fullpath(ext_name)
-        godot_root = ensure_godot_project_path(ext_path)
+        godot_root = self.godot_root = ensure_godot_project_path(ext_path)
 
         dst_dir, dst_fullname = os.path.split(ext_path)
         dst_name_parts = dst_fullname.split('.')
-        src_name = '.'.join(['_godopy', *dst_name_parts[1:]])
+        src_zip = '.'.join(['_godopy', *dst_name_parts[1:]])
+        src_name = '.'.join(['_godopy', dst_name_parts[-1]])
 
-        binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform_suffix(platform), dst_fullname)
+        dst_name = '.'.join([dst_name_parts[0], dst_name_parts[-1]])
 
+        binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform_suffix(platform), dst_name)
+
+        self.build_context['godopy_zip_name'] = src_zip
         self.build_context['godopy_library_name'] = src_name
         self.build_context['target'] = binext_path
         self.build_context['library_name'] = '_godopy'
@@ -617,17 +600,11 @@ class GDNativeBuildExt(build_ext):
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
-        # context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
         context['venv_path'] = self.python_dependencies['site_dir'].replace(os.sep, '/')
         if self.godot_project.set_development_path:
             context['development_path'] = os.path.realpath(root_dir).replace(os.sep, '/')
 
-        # so_files = self.python_dependencies['so_files']
         deps = [main_zip_res]
-        #        *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
-        #            for root, fn in so_files)]
-        # py_files_for_bin = self.python_dependencies['py_files_for_bin']
-        # deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
 
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
@@ -657,7 +634,7 @@ class GDNativeBuildExt(build_ext):
 
         ext_name = self.godot_project.get_setuptools_name(ext.name, validate='.gdnlib')
         ext_path = self.get_ext_fullpath(ext_name)
-        godot_root = ensure_godot_project_path(ext_path)
+        godot_root = self.godot_root = ensure_godot_project_path(ext_path)
 
         dst_dir, dst_fullname = os.path.split(ext_path)
         dst_name_parts = dst_fullname.split('.')
@@ -690,17 +667,11 @@ class GDNativeBuildExt(build_ext):
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
 
         context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
-        # context['dev_zip_resource'] = tools_zip_res = 'res://%s/%s-dev.pak' % (self.godot_project.binary_path, base_name)
         context['venv_path'] = self.python_dependencies['site_dir'].replace(os.sep, '/')
         if self.godot_project.set_development_path:
             context['development_path'] = os.path.realpath(root_dir).replace(os.sep, '/')
 
-        # so_files = self.python_dependencies['so_files']
         deps = [main_zip_res]
-        # *('res://%s/%s/%s' % (self.godot_project.binary_path, platform_suffix(platform), inner_so_path(root, fn))
-        #    for root, fn in so_files)]
-        # py_files_for_bin = self.python_dependencies['py_files_for_bin']
-        # deps += ['res://%s/%s/%sc' % (self.godot_project.binary_path, platform_suffix(platform), fn) for fn in py_files_for_bin]
 
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
