@@ -14,7 +14,7 @@ from setuptools.command.build_ext import build_ext
 from mako.template import Template
 
 from ..version import get_version
-from ..utils import get_godot_executable, is_internal_path
+from ..utils import is_internal_path
 
 from .enums import ExtType
 
@@ -93,6 +93,7 @@ class GDNativeBuildExt(build_ext):
         if self.generic_setup:
             self.run_copylib()
         else:
+            # TODO: Check that required development files exist
             self.run_build()
 
         for res_path, content in self.godot_resources.items():
@@ -119,7 +120,7 @@ class GDNativeBuildExt(build_ext):
         log.info('updating Godot project settings, running "res://%s"' % setup_script)
         if not self.dry_run:
             subprocess.run([
-                get_godot_executable(),
+                'godot',
                 '--path', self.godot_project.path_prefix,
                 '-s', 'res://%s' % setup_script
             ], check=True)
@@ -129,27 +130,25 @@ class GDNativeBuildExt(build_ext):
             os.unlink(os.path.join(self.godot_project.path_prefix, setup_script))
 
     def run_copylib(self):
-        source_zip = os.path.join(self.build_context['godopy_bindings_path'], self.build_context['godopy_zip_name'])
+        # source_zip = os.path.join(self.build_context['godopy_bindings_path'], self.build_context['godopy_zip_name'])
+        source = os.path.join('build', 'lib', self.build_context['godopy_library_name'])
         target = self.build_context['target']
 
-        assert os.path.exists(source_zip)
+        assert os.path.exists(source), source
 
-        # if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
-        #    log.info('skip copying "res://%s"' % make_resource_path(self.godot_root, target))
-        #    return
+        if os.path.exists(target) and os.stat(source).st_mtime == os.stat(target).st_mtime and not self.force:
+            log.info('skip copying "res://%s"' % make_resource_path(self.godot_root, target))
+            return
 
         target_dir = os.path.dirname(target)
         if not os.path.exists(target_dir) and not self.dry_run:
             os.makedirs(target_dir)
 
-        log.info('unpacking "res://%s"' % make_resource_path(self.godot_root, target))
+        log.info('copying "res://%s"' % make_resource_path(self.godot_root, target))
         if self.dry_run:
             return
 
-        with zipfile.ZipFile(source_zip) as _zip:
-            with _zip.open(self.build_context['godopy_library_name']) as src:
-                with open(target, 'bw') as dst:
-                    dst.write(src.read())
+        shutil.copy2(source, target)
 
     def run_build(self):
         cpp_lib_template = Template(filename=os.path.join(templates_dir, 'gdlibrary.cpp.mako'))
@@ -194,367 +193,53 @@ class GDNativeBuildExt(build_ext):
                 fp.write(content)
 
     def package_dependencies(self):
-        binroot = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, platform_suffix(get_platform()))
+        lib_root = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, 'lib')
+        libtools_root = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, 'libtools')
 
-        for d in sorted(self.python_dependencies['bin_dirs']):
-            target_dir = os.path.join(binroot, d)
-            if not os.path.isdir(target_dir) and not self.dry_run:
-                os.makedirs(target_dir)
+        print(lib_root, libtools_root)
 
-        for root, fn in reversed(self.python_dependencies['so_files']):
-            if root == 'dynload':
-                basedir = self.python_dependencies['dynload_dir']
-            elif root == 'site':
-                basedir = self.python_dependencies['site_dir']
-            else:
-                basedir = self.python_dependencies['mainlib_dir']
+        if self.dry_run:
+            return
 
-            src = os.path.join(basedir, fn)
-            dst = os.path.join(binroot, inner_so_path(root, fn))
-            dstdir = os.path.dirname(dst)
-            if not os.path.isdir(dstdir) and not self.dry_run:
-                os.makedirs(dstdir)
-            if not os.path.exists(dst) and not self.dry_run:
+        if not os.path.isdir(lib_root):
+            os.makedirs(lib_root)
+
+        if not os.path.isdir(libtools_root):
+            os.makedirs(libtools_root)
+
+        for dirname, subdirs, files in os.walk(self.python_dependencies['lib_dir']):
+            base_dirname = dirname.replace(self.python_dependencies['lib_dir'], '').lstrip(os.sep)
+            root = lib_root
+
+            # TODO: Configure tools-only packages and put them into libtools_root
+
+            target_dirname = os.path.join(root, base_dirname)
+
+            if not os.path.isdir(target_dirname):
+                os.makedirs(target_dirname)
+
+            for fn in files:
+                src = os.path.join(dirname, fn)
+                dst = os.path.join(target_dirname, fn)
                 shutil.copy2(src, dst)
 
-        _, gdnlib_name = os.path.split(self.gdnative_library_path)
-        basename, _ = os.path.splitext(gdnlib_name)
-        main_zip_path = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, '%s.pak' % basename)
-        # tools_zip_path = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, '%s-dev.pak' % basename)
-
-        self._make_zip(main_zip_path, 'py_files', 'zip_dirs')
-        # self._make_zip(tools_zip_path, 'py_files_dev', 'zip_dirs_dev')
-
-        if self.dry_run:
-            return
-
-        builddir_src = os.path.join('build', '_bin.py_files')
-
-        for path in self.python_dependencies['py_files_for_bin']:
-            d, fn = os.path.split(path)
-            assert fn == '__init__.py', fn
-            src_dir = os.path.join(builddir_src, d)
-            if not os.path.isdir(src_dir):
-                os.makedirs(src_dir)
-            src = os.path.join(builddir_src, d, fn)
-            with open(src, 'w', encoding='utf-8'):
-                pass
-
-            dst = os.path.join(binroot, d, fn + 'c')
-            cmd = [self.python_dependencies['executable'], '-c',
-                   "from py_compile import compile; compile(%r, %r, doraise=True)" % (src, dst)]
-
-            subprocess.run(cmd, check=True)
-
-    def _make_zip(self, zippath, files, dirs):
-        pathbase = os.path.basename(zippath)
-        log.info('byte-compiling and compressing Python dependencies into "res://%s/%s"' % (self.godot_project.binary_path, pathbase))
-
-        if self.dry_run:
-            return
-
-        builddir_src = os.path.join('build', pathbase + '.py_files')
-        builddir_dst = os.path.join('build', pathbase + '.pyc_files')
-        unprefixed_binroot = os.path.join(self.godot_project.binary_path, platform_suffix(get_platform()))
-
-        verbosity = 1
-
-        for d in sorted(self.python_dependencies[dirs]):
-            for target_dir in (os.path.join(builddir_src, d), os.path.join(builddir_dst, d)):
-                if not os.path.isdir(target_dir):
-                    os.makedirs(target_dir)
-
-        _prev_ratio = 0
-        so_shims = [(root, fn) for root, fn in
-                    reversed(self.python_dependencies['so_files'])
-                    if root == 'site']
-        _total = len(self.python_dependencies[files])
-
-        so_shims_written = set()
-        with zipfile.ZipFile(zippath, 'w', zipfile.ZIP_DEFLATED) as _zip:
-            for root, fn_so in so_shims:
-                base_fn, so_ext = os.path.splitext(fn_so)
-                fn = base_fn + '.py'
-                inner_dir, import_name = os.path.split(base_fn)
-
-                if os.path.basename(inner_dir).startswith('.'):
-                    # Helper libraries not intended for import
-                    continue
-
-                bin_dir = '/' + os.path.join(unprefixed_binroot, inner_dir)
-                import_name = import_name.split('.')[0]
-
-                fn = os.path.join(inner_dir, import_name + '.py')
-                fnc = fn + 'c'
-                dst = os.path.join(builddir_dst, fnc)
-                pre_dst = os.path.join(builddir_src, fn)
-
-                pre_dst_dir = os.path.dirname(pre_dst)
-                if not os.path.isdir(pre_dst_dir):
-                    os.makedirs(pre_dst_dir)
-
-                with open(pre_dst, 'w', encoding='utf-8') as fp:
-                    # TODO: Fix NumPy 1.18 initialization and remove hacks
-                    shim_tmpl = (
-                        "try:\n"
-                        "    import _{1} as ___mod\n\n"
-                        "    for ___name in dir(___mod):\n"
-                        "        globals()[___name] = getattr(___mod, ___name, None)\n"
-                        "except Exception as ex:\n"
-                        "    # print('Error ignored during \\'{1}\\' extension init: %s' % ex)\n"
-                        "    RandomState = None\n"
-                        "    Philox = None\n"
-                        "    PCG64 = None\n"
-                        "    SFC64 = None\n"
-                        "    Generator = None\n"
-                        "    MT19937 = None\n"
-                        "    default_rng = None\n"
-                        "    SeedSequence = None\n"
-                        "    BitGenerator = None\n"
-                        "    add_docstring = None\n"
-                        "    implement_array_function = None\n"
-                        "    _get_implementing_args = None\n"
-                    )
-
-                    fp.write(shim_tmpl.format(bin_dir, os.path.join(inner_dir, import_name).replace(os.sep, '.')))
-
-                assert os.path.exists(pre_dst), pre_dst
-
-                cmd = [
-                    self.python_dependencies['executable'],
-                    '-c',
-                    "from py_compile import compile; compile(%r, %r, dfile=%r, doraise=True)" % (pre_dst, dst, fn)
-                ]
-
-                subprocess.run(cmd, check=True)
-                assert os.path.exists(dst), dst
-                shutil.copystat(pre_dst, dst)
-
-                with open(dst, 'rb') as fp_src:
-                    with _zip.open(fnc, 'w') as fp_dst:
-                        fp_dst.write(fp_src.read())
-                so_shims_written.add(fnc)
-
-            processed = set()
-
-            for i, (root, fn) in enumerate(self.python_dependencies[files]):
-                if (root, fn) in processed:
-                    continue
-                processed.add((root, fn))
-
-                if root == 'lib':
-                    basedir = self.python_dependencies['lib_dir']
-                elif root == 'site':
-                    basedir = self.python_dependencies['site_dir']
-                elif root == 'local':
-                    basedir = root_dir
-                else:
-                    basedir = None
-
-                pre_dst = os.path.join(builddir_src, fn)
-
-                if basedir is None:
-                    with open(pre_dst, 'w', encoding='utf-8'):
-                        pass
-                else:
-                    src = os.path.join(basedir, fn)
-                    changed = not os.path.exists(pre_dst) or os.stat(src).st_mtime != os.stat(pre_dst).st_mtime
-
-                    if changed:
-                        shutil.copy2(src, pre_dst)
-
-                assert os.path.exists(pre_dst), pre_dst
-
-                fnc = fn + 'c'
-                dst = os.path.join(builddir_dst, fnc)
-
-                _ratio = math.floor(i * 78 / _total)
-
-                changed = not os.path.exists(dst) or os.stat(pre_dst).st_mtime != os.stat(dst).st_mtime
-
-                if changed:
-                    # Compile to bytecode with target interpreter
-                    if verbosity > 1:
-                        log.info("Byte-compiling and compressing %r" % fnc)
-                    elif verbosity == 1:
-                        if _ratio > _prev_ratio:
-                            print('.', end='', flush=True)
-                            _prev_ratio = _ratio
-
-                    cmd = [
-                        self.python_dependencies['executable'],
-                        '-c',
-                        "from py_compile import compile; compile(%r, %r, dfile=%r)" % (pre_dst, dst, fn)
-                    ]
-
-                    if sys.version_info >= (3, 7):
-                        subprocess.run(cmd, check=True, capture_output=True)
-                    else:
-                        subprocess.run(cmd, check=True)
-
-                    assert os.path.exists(dst), dst
-
-                    shutil.copystat(pre_dst, dst)
-                else:
-                    if verbosity > 1:
-                        log.info("Compressing %r" % fnc)
-                    elif verbosity == 1:
-                        if _ratio > _prev_ratio:
-                            print('.', end='', flush=True)
-                            _prev_ratio = _ratio
-
-                if fnc not in so_shims_written:
-                    assert os.path.exists(dst), dst
-
-                    with open(dst, 'rb') as fp_src:
-                        with _zip.open(fnc, 'w') as fp_dst:
-                            fp_dst.write(fp_src.read())
-
-        if verbosity == 1:
-            print()
+        # TODO: process py_files
 
     def collect_dependencies(self):
-        print('ROOT', tools_root)
-        if sys.platform == 'win32':
-            py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
-            py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'venv'))
-            self.python_dependencies['bin_dir'] = bin_dir = os.path.join(py_base_dir, 'PCBuild', 'amd64')
-            self.python_dependencies['mainlib_dir'] = mainlib_dir = bin_dir
-            self.python_dependencies['lib_dir'] = lib_dir = os.path.join(py_base_dir, 'Lib')
-            self.python_dependencies['dynload_dir'] = dynload_dir = bin_dir
-            self.python_dependencies['site_dir'] = site_dir = os.path.join(py_venv_dir, 'Lib', 'site-packages')
-        else:
-            py_base_dir = os.path.normpath(os.path.join(tools_root, '..', 'deps', 'python'))
-            py_venv_dir = os.path.normpath(os.path.join(tools_root, '..', 'venv'))
-            self.python_dependencies['bin_dir'] = bin_dir = os.path.join(py_base_dir, 'build', 'bin')
-            self.python_dependencies['mainlib_dir'] = mainlib_dir = os.path.join(py_base_dir, 'build', 'lib')
-            self.python_dependencies['lib_dir'] = lib_dir = os.path.join(mainlib_dir, 'python3.8')
-            self.python_dependencies['dynload_dir'] = dynload_dir = os.path.join(lib_dir, 'lib-dynload')
-            self.python_dependencies['site_dir'] = site_dir = os.path.join(py_venv_dir, 'lib', 'python3.8', 'site-packages')
+        ziplib = glob.glob(os.path.join(tools_root, '..', '_godopy.cpython-*.*')).pop()
+        assert ziplib, glob.glob(os.path.join(tools_root, '..', '_godopy.cpython-*.*'))
 
-        self.python_dependencies['py_files'] = py_files = []
-        self.python_dependencies['so_files'] = so_files = []
-        self.python_dependencies['py_files_for_bin'] = py_files_for_bin = []
+        if not self.dry_run and not os.path.isdir(os.path.join('build', 'lib')):
+            shutil.unpack_archive(ziplib, 'build', 'xztar')
 
-        self.python_dependencies['zip_dirs'] = dirs = set()
-        self.python_dependencies['bin_dirs'] = so_dirs = set()
+        self.python_dependencies['bin_dir'] = bin_dir = os.path.join('build', 'bin')
+        self.python_dependencies['lib_dir'] = os.path.join('build', 'lib')
 
-        mainlib = None
-        extra_mainlib = None
-        python_exe = 'python3'
-        if sys.platform == 'win32':
-            mainlib = 'python38.dll'
-            # extra_mainlib = 'python38_d.dll'
-            python_exe = 'python.exe'
+        self.python_dependencies['py_files'] = []
+        self.python_dependencies['zip_dirs'] = set()
 
+        python_exe = 'python.exe'
         self.python_dependencies['executable'] = os.path.join(bin_dir, python_exe)
-
-        if mainlib is not None:
-            so_files.append(('mainlib', mainlib))
-        if extra_mainlib is not None:
-            so_files.append(('mainlib', extra_mainlib))
-
-        for dirpath, dirnames, filenames in os.walk(lib_dir):
-            dirpath = dirpath[len(lib_dir):].lstrip(os.sep)
-            skip = False
-            if '__pychache__' in dirnames:
-                dirnames.remove('__pychache__')
-            if '__pycache__' in dirpath:
-                continue
-
-            for skipdir in ('site-packages', 'lib-dynload', 'config-', 'lib2to3', 'tkinter', 'ensurepip', 'venv', 'parser', 'test'):
-                if dirpath.startswith(skipdir):
-                    skip = True
-                    break
-            if skip:
-                continue
-            has_files = False
-            for fn in filenames:
-                if not is_python_source(fn):
-                    continue
-                is_tool = dirpath.endswith('tests')
-                if not is_tool:
-                    for tooldir in ('typing', 'pydoc', 'doctest', 'idlelib', 'distutils', 'zipapp'):
-                        if dirpath.startswith(tooldir):
-                            is_tool = True
-                            break
-                    has_files = True
-                    py_files.append(('lib', os.path.join(dirpath, fn)))
-
-            if has_files:
-                dirs.add(dirpath)
-
-        for fn in os.listdir(dynload_dir):
-            if not is_python_ext(fn):
-                continue
-            if 'test' not in fn:
-                so_files.append(('dynload', fn))
-
-        for dirpath, dirnames, filenames in os.walk(site_dir):
-            dirpath = dirpath[len(site_dir):].lstrip(os.sep)
-            skip = False
-            if '__pychache__' in dirnames:
-                dirnames.remove('__pychache__')
-            if '__pycache__' in dirpath:
-                continue
-            if 'typeshed' in dirpath:
-                continue
-
-            for skipdir in ('pip', 'setuptools', 'pkg_resources'):
-                if dirpath.startswith(skipdir):
-                    skip = True
-                    break
-            if skip:
-                continue
-            has_files = False
-            # has_dev_files = False
-            has_so_files = False
-
-            for fn in filenames:
-                if is_python_source(fn):
-                    # if dirpath.startswith('traitlets') or dirpath.startswith('jedi'):
-                    #     continue
-                    is_tool = False  # dirpath.endswith('tests')  # or 'testing' in dirpath
-                    for tooldir in TOOL_PACKAGES:
-                        if dirpath.startswith(tooldir):
-                            is_tool = True
-                            break
-                    if not is_tool:
-                        has_files = True
-                        py_files.append(('site', os.path.join(dirpath, fn)))
-                elif is_python_ext(fn):
-                    has_so_files = True
-                    has_files = True
-                    if '_dummy' not in fn and not dirpath.startswith('Cython'):
-                        so_files.append(('site', os.path.join(dirpath, fn)))
-            if has_files:
-                dirs.add(dirpath)
-            if has_so_files:
-                so_dirs.add('_' + dirpath)
-
-        bin_package_dirs = {''}
-        packages_sets = (
-            (bin_package_dirs, so_files),
-        )
-        for packages_set, files in packages_sets:
-            for root, fn in reversed(files):
-                if root == 'site':
-                    prefix = '_'
-                    create_package = True
-                else:
-                    prefix = ''
-                    create_package = False
-
-                if create_package:
-                    dirs, filename = os.path.split(fn)
-                    cur_dir = []
-                    for d in (prefix + dirs).split(os.sep):
-                        cur_dir.append(d)
-                        packages_set.add(os.sep.join(cur_dir))
-
-        for bin_dirs, files in ((bin_package_dirs, py_files_for_bin),):
-            for d in bin_dirs:
-                files.append(os.path.join(d, '__init__.py'))
 
     def collect_godot_project_data(self, ext):
         self.godot_project = ext
@@ -576,14 +261,18 @@ class GDNativeBuildExt(build_ext):
 
         dst_dir, dst_fullname = os.path.split(ext_path)
         dst_name_parts = dst_fullname.split('.')
-        src_zip = '.'.join(['_godopy', *dst_name_parts[1:]])
-        src_name = '.'.join(['_godopy', dst_name_parts[-1]])
+        # src_zip = '.'.join(['_godopy', *dst_name_parts[1:]])
 
-        dst_name = '.'.join([dst_name_parts[0], dst_name_parts[-1]])
+        python_exe = self.python_dependencies['executable']
+        cmd = [python_exe, '-c', "from distutils.sysconfig import get_config_var; print(get_config_var('EXT_SUFFIX'))"]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, check=True, universal_newlines=True)
+        ext_suffix = result.stdout.strip()
 
-        binext_path = os.path.join(godot_root, self.godot_project.binary_path, platform_suffix(platform), dst_name)
+        src_name = dst_name = '_godopy' + ext_suffix
 
-        self.build_context['godopy_zip_name'] = src_zip
+        binext_path = os.path.join(godot_root, self.godot_project.binary_path, 'lib', dst_name)
+
+        # self.build_context['godopy_zip_name'] = src_zip
         self.build_context['godopy_library_name'] = src_name
         self.build_context['target'] = binext_path
         self.build_context['library_name'] = '_godopy'
@@ -599,12 +288,14 @@ class GDNativeBuildExt(build_ext):
         context['symbol_prefix'] = 'godopy_'
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
 
-        context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
-        context['venv_path'] = self.python_dependencies['site_dir'].replace(os.sep, '/')
+        # context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
+        # context['venv_path'] = self.python_dependencies['site_dir'].replace(os.sep, '/')
+        context['lib_path'] = 'res://%s/lib' % self.godot_project.binary_path
+        context['libtools_path'] = 'res://%s/libtools' % self.godot_project.binary_path
         if self.godot_project.set_development_path:
             context['development_path'] = os.path.realpath(root_dir).replace(os.sep, '/')
 
-        deps = [main_zip_res]
+        deps = []
 
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
@@ -666,12 +357,14 @@ class GDNativeBuildExt(build_ext):
         context['symbol_prefix'] = 'godopy_'
         context['libraries'] = {platform: make_resource_path(godot_root, binext_path), 'Server.64': make_resource_path(godot_root, binext_path)}
 
-        context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
-        context['venv_path'] = self.python_dependencies['site_dir'].replace(os.sep, '/')
+        # context['main_zip_resource'] = main_zip_res = 'res://%s/%s.pak' % (self.godot_project.binary_path, base_name)
+        # context['venv_path'] = self.python_dependencies['site_dir'].replace(os.sep, '/')
+        context['lib_path'] = 'res://%s/lib' % self.godot_project.binary_path
+        context['libtools_path'] = 'res://%s/libtools' % self.godot_project.binary_path
         if self.godot_project.set_development_path:
             context['development_path'] = os.path.realpath(root_dir).replace(os.sep, '/')
 
-        deps = [main_zip_res]
+        deps = []
 
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
