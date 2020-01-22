@@ -36,14 +36,14 @@ class InstallScriptsAndGodotExecutables(install_scripts):
 
         log.info('Installing Godot executable from %r' % godot_exe_gui)
 
-        target = os.path.join(self.install_dir, 'godot')
+        target = os.path.join(self.install_dir, 'godot.exe' if sys.platform == 'win32' else 'godot')
         if not self.dry_run:
             shutil.copy2(godot_exe_gui, target)
         self.outfiles.append(target)
 
         if godot_exe != godot_exe_gui:
             log.info('Installing Godot server executable from %r' % godot_exe)
-            target = os.path.join(self.install_dir, 'godot_server')
+            target = os.path.join(self.install_dir, 'godot_server.exe' if sys.platform == 'win32' else 'godot_server')
             if not self.dry_run:
                 shutil.copy2(godot_exe_gui, target)
             self.outfiles.append(target)

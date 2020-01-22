@@ -281,8 +281,7 @@ class GDNativeBuildExt(build_ext):
             copy_python_lib_file(src, dst, fn, (i+1)/len(to_copy))
 
     def collect_dependencies(self):
-        ziplib = glob.glob(os.path.join(tools_root, '..', '_godopy.cpython-*.*')).pop()
-        assert ziplib, glob.glob(os.path.join(tools_root, '..', '_godopy.cpython-*.*'))
+        ziplib = glob.glob(os.path.join(tools_root, '..', '_godopy.cp*.*')).pop()
 
         if not self.dry_run and not os.path.isdir(os.path.join('build', 'lib')):
             shutil.unpack_archive(ziplib, 'build', 'xztar')
