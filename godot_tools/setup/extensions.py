@@ -49,7 +49,7 @@ class Addon(Extension):
 # TODO: Make target configurable
 build_target = 'release'
 
-TOOL_PACKAGES = ('Cython', 'IPython', 'ipython_genutils', 'jedi', 'parso', 'pexpect', 'traitlets', 'ptyprocess')
+TOOLS_PACKAGES = ('Cython', 'IPython', 'ipython_genutils', 'jedi', 'parso', 'pexpect', 'traitlets', 'ptyprocess')
 
 
 # TODO:
@@ -196,8 +196,6 @@ class GDNativeBuildExt(build_ext):
         lib_root = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, 'lib')
         libtools_root = os.path.join(self.godot_project.path_prefix, self.godot_project.binary_path, 'libtools')
 
-        print(lib_root, libtools_root)
-
         if self.dry_run:
             return
 
@@ -209,9 +207,13 @@ class GDNativeBuildExt(build_ext):
 
         for dirname, subdirs, files in os.walk(self.python_dependencies['lib_dir']):
             base_dirname = dirname.replace(self.python_dependencies['lib_dir'], '').lstrip(os.sep)
+
             root = lib_root
 
-            # TODO: Configure tools-only packages and put them into libtools_root
+            for tools_pkg in TOOLS_PACKAGES:
+                if base_dirname.startswith(tools_pkg):
+                    root = libtools_root
+                    break
 
             target_dirname = os.path.join(root, base_dirname)
 
@@ -223,7 +225,60 @@ class GDNativeBuildExt(build_ext):
                 dst = os.path.join(target_dirname, fn)
                 shutil.copy2(src, dst)
 
-        # TODO: process py_files
+        if self.godot_project.set_development_path:
+            return
+
+        def copy_python_lib_file(src, dst, fn, ratio, force=False):
+            check_existance = True
+
+            if dst.endswith('.py'):
+                dst += 'c'
+                log.info('compiling %s -> %s' % (src, dst))
+                changed = force or not os.path.exists(dst) or os.stat(src).st_mtime != os.stat(dst).st_mtime
+                if not changed:
+                    return
+
+                python_exe = self.python_dependencies['executable']
+                cmd = [
+                    python_exe,
+                    '-c',
+                    "from py_compile import compile; compile(%r, %r, dfile=%r, doraise=True)" % (src, dst, fn)
+                ]
+                try:
+                    subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    shutil.copystat(src, dst)
+                except Exception as exc:
+                    check_existance = False
+                    log.error('Could not compile %r, error was: %r' % (dst, exc))
+            else:
+                log.info('copying %s -> %s' % (src, dst))
+                changed = force or not os.path.exists(dst) or os.stat(src).st_mtime != os.stat(dst).st_mtime
+                if not changed:
+                    return
+
+                target_dir = os.path.dirname(dst)
+                if not os.path.isdir(target_dir):
+                    os.makedirs(target_dir)
+
+                shutil.copy2(src, dst)
+
+            if check_existance:
+                assert os.path.exists(dst), dst
+
+        log.info('byte-compiling Python sources')
+        to_copy = []
+        for dirname, subdirs, files in os.walk(self.godot_project.python_package):
+            if '__pycache__' in dirname:
+                continue
+            target_dirname = os.path.join(lib_root, dirname)
+
+            for fn in files:
+                src = os.path.join(dirname, fn)
+                dst = os.path.join(target_dirname, fn)
+                to_copy.append((src, dst, fn))
+
+        for i, (src, dst, fn) in enumerate(to_copy):
+            copy_python_lib_file(src, dst, fn, (i+1)/len(to_copy))
 
     def collect_dependencies(self):
         ziplib = glob.glob(os.path.join(tools_root, '..', '_godopy.cpython-*.*')).pop()

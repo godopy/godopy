@@ -75,7 +75,7 @@ class GodoPyDevelop(develop):
         super().install_wrapper_scripts(dist)
 
 
-PYTHON_IGNORE = ('lib2to3', 'tkinter', 'ensurepip', 'parser', 'test')
+PYTHON_IGNORE = ('lib2to3', 'tkinter', 'ensurepip', 'parser', 'test', 'pip')
 PYTHONLIB_FORMAT = 'xztar'
 
 
@@ -131,7 +131,7 @@ class BuildSconsAndPackInnerPython(build_ext):
                     sys.stdout.write('\r%d%%' % (ratio*100))
                     sys.stdout.flush()
                 else:
-                    log.debug('COMPILE', src, '->', dst)
+                    log.debug('COMPILE %s -> %s' % (src, dst))
                 changed = force or not os.path.exists(dst) or os.stat(src).st_mtime != os.stat(dst).st_mtime
                 if not changed:
                     return
@@ -152,7 +152,7 @@ class BuildSconsAndPackInnerPython(build_ext):
                     sys.stdout.write('\r%d%%' % (ratio*100))
                     sys.stdout.flush()
                 else:
-                    log.debug('COPY', src, '->', dst)
+                    log.debug('COPY %s -> %s' % (src, dst))
                 changed = force or not os.path.exists(dst) or os.stat(src).st_mtime != os.stat(dst).st_mtime
                 if not changed:
                     return
