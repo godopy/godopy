@@ -1,1 +1,1 @@
-from .python.singletons.tools import *
+from .python.tools import *
