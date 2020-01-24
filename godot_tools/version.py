@@ -5,6 +5,8 @@ VERSION = (0, 0, 1, 'alpha', 0)
 
 
 def githead_sha():
+    return ''
+
     repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     # TODO: Write PyGodot version to a C header file and retrieve SHA from the built-in modules

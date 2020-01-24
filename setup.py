@@ -274,35 +274,7 @@ class BuildExtCommand(build_ext):
         shutil.move(result, extension_path)
 
 
-version = __import__('godot_tools').__version__
-
-packages = ['godot_tools', 'godot_tools.binding_generator', 'godot_tools.setup', 'godot_tools.script_runner']
-package_data = {
-    'godot_tools.setup': ['templates/*.mako'],
-    'godot_tools.binding_generator': ['templates/*.mako']
-}
-
-entry_points = {'console_scripts': ['godopy=godot_tools.cli:godopy', 'bindgen=godot_tools.cli:bindgen']}
-
-install_requires = [
-    'Mako',
-    'scons',
-    'Click'
-]
-
-setup_requires = [
-    'scons',
-    'Mako',
-    'pycparser',
-    'autopxd2'
-]
-
 setup(
-    name='godopy',
-    version=version,
-    python_requires='>=3.6',
-    packages=packages,
-    package_data=package_data,
     cmdclass={
         'install': InstallCommand,
         'develop': DevelopCommand,
@@ -310,8 +282,4 @@ setup(
         'install_scripts': InstallScriptsCommand
     },
     ext_modules=[GodoPyExtension('_godopy')],
-    install_requires=install_requires,
-    setup_requires=setup_requires,
-    entry_points=entry_points,
-    zip_safe=False
 )

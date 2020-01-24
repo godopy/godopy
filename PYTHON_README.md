@@ -1,3 +1,6 @@
+**These instructions are outdated**
+
+
 # Pure Python API
 
 Direct support for Python files is planned for future versions.
