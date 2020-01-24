@@ -347,7 +347,7 @@ class GDNativeBuildExt(build_ext):
         context['lib_path'] = 'res://%s/lib' % self.godot_project.binary_path
         context['libtools_path'] = 'res://%s/libtools' % self.godot_project.binary_path
         if self.godot_project.set_development_path:
-            context['development_path'] = os.path.realpath(root_dir).replace(os.sep, '/')
+            context['development_path'] = self.godot_project.development_path or os.path.realpath(root_dir).replace(os.sep, '/')
 
         deps = []
 
@@ -416,7 +416,7 @@ class GDNativeBuildExt(build_ext):
         context['lib_path'] = 'res://%s/lib' % self.godot_project.binary_path
         context['libtools_path'] = 'res://%s/libtools' % self.godot_project.binary_path
         if self.godot_project.set_development_path:
-            context['development_path'] = os.path.realpath(root_dir).replace(os.sep, '/')
+            context['development_path'] = self.godot_project.development_path or os.path.realpath(root_dir).replace(os.sep, '/')
 
         deps = []
 

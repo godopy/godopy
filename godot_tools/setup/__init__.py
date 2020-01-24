@@ -16,7 +16,7 @@ def godot_setup(godot_project, *, library, extensions, addons=None, **kwargs):
         *extensions
     ]
 
-    if len(sys.argv) < 2 or sys.argv[1] != 'install':
+    if len(sys.argv) < 2 or sys.argv[1] not in ('install', 'develop'):
         raise SystemExit('Usage: python godot_setup.py install [options]')
 
     sys.argv = [sys.argv[0], 'build_ext', '-i'] + sys.argv[2:]
@@ -35,7 +35,8 @@ class GodotProject(Extension):
 
         self.python_package = python_package
         self.binary_path = binary_path
-        self.set_development_path = set_development_path
+        self.development_path = kwargs.get('development_path', None)
+        self.set_development_path = set_development_path or self.development_path
         self._gdnative_type = ExtType.PROJECT
 
         self.path_prefix = os.path.join(dir, name)

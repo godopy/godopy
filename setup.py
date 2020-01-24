@@ -1,13 +1,13 @@
 import os
 import sys
 import shutil
-import zipfile
 import subprocess
 
 from setuptools import setup, Extension
+from setuptools.command.install import install
+from setuptools.command.develop import develop
 from setuptools.command.build_ext import build_ext
 from setuptools.command.install_scripts import install_scripts
-from setuptools.command.develop import develop
 
 from distutils import log
 
@@ -27,59 +27,94 @@ class GodoPyExtension(Extension):
 get_godot_exe = __import__('godot_tools', {}, {}, ['utils']).utils.get_godot_executable
 
 
-class InstallScriptsAndGodotExecutables(install_scripts):
+class InstallCommand(install):
     def run(self):
         super().run()
 
-        godot_exe = get_godot_exe()
-        godot_exe_gui = get_godot_exe(noserver=True)
+        # TODO: Launch subprocess
 
-        log.info('Installing Godot executable from %r' % godot_exe_gui)
+        from godot_tools.setup import godot_setup
+        from godot_tools.setup.libraries import GenericGDNativeLibrary
+        from godot_tools.setup.extensions import NativeScript
+
+        cwd = os.getcwd()
+        os.chdir(os.path.join(self.install_lib, 'godot_tools'))
+        sys.argv = [sys.argv[0], 'install']
+        godot_setup(
+            godot_project='script_runner/project',
+            python_package='script_runner',
+            development_path=os.path.join(self.install_lib, 'godot_tools'),
+            library=GenericGDNativeLibrary('script-runner.gdnlib'),
+            extensions=[
+                NativeScript('Main.gdns', class_name='Main')
+            ]
+        )
+        os.chdir(cwd)
+
+
+class InstallScriptsCommand(install_scripts):
+    def run(self):
+        super().run()
+
+        godot_exe = get_godot_exe(noserver=True)
+
+        log.info('Installing Godot executable from %r' % godot_exe)
 
         target = os.path.join(self.install_dir, 'godot.exe' if sys.platform == 'win32' else 'godot')
-        if not self.dry_run:
-            shutil.copy2(godot_exe_gui, target)
+        changed = self.force or not os.path.exists(target) or os.stat(target).st_mtime != os.stat(godot_exe).st_mtime
+
+        if not self.dry_run and changed:
+            shutil.copy2(godot_exe, target)
+
         self.outfiles.append(target)
 
-        if godot_exe != godot_exe_gui:
-            log.info('Installing Godot server executable from %r' % godot_exe)
-            target = os.path.join(self.install_dir, 'godot_server.exe' if sys.platform == 'win32' else 'godot_server')
-            if not self.dry_run:
-                shutil.copy2(godot_exe_gui, target)
-            self.outfiles.append(target)
 
+class DevelopCommand(develop):
+    def run(self):
+        super().run()
 
-class GodoPyDevelop(develop):
+        # TODO: Launch subprocess
+
+        from godot_tools.setup import godot_setup
+        from godot_tools.setup.libraries import GenericGDNativeLibrary
+        from godot_tools.setup.extensions import NativeScript
+
+        cwd = os.getcwd()
+        os.chdir('godot_tools')
+        sys.argv = [sys.argv[0], 'install']
+        godot_setup(
+            godot_project='script_runner/project',
+            python_package='script_runner',
+            development_path=os.getcwd(),
+            library=GenericGDNativeLibrary('script-runner.gdnlib'),
+            extensions=[
+                NativeScript('Main.gdns', class_name='Main')
+            ]
+        )
+        os.chdir(cwd)
+
     def install_wrapper_scripts(self, dist):
+        super().install_wrapper_scripts(dist)
+
         if dist.project_name == 'godopy':
-            godot_exe = get_godot_exe()
-            godot_exe_gui = get_godot_exe(noserver=True)
+            godot_exe = get_godot_exe(noserver=True)
 
-            log.info('Installing Godot executable from %r' % godot_exe_gui)
-
-            # FIXME: Make symlinks?
+            log.info('Installing Godot executable from %r' % godot_exe)
 
             target = os.path.join(self.script_dir, 'godot')
+            changed = self.force or not os.path.exists(target) or os.stat(target).st_mtime != os.stat(godot_exe).st_mtime
+
+            if not self.dry_run and changed:
+                shutil.copy2(godot_exe, target)
+
             self.add_output(target)
-            if not self.dry_run:
-                shutil.copy2(godot_exe_gui, target)
-
-            if godot_exe != godot_exe_gui:
-                log.info('Installing Godot server executable from %r' % godot_exe)
-
-                target = os.path.join(self.script_dir, 'godot_server')
-                self.add_output(target)
-                if not self.dry_run:
-                    shutil.copy2(godot_exe_gui, target)
-
-        super().install_wrapper_scripts(dist)
 
 
 PYTHON_IGNORE = ('lib2to3', 'tkinter', 'ensurepip', 'parser', 'test', 'pip')
 PYTHONLIB_FORMAT = 'xztar'
 
 
-class BuildSconsAndPackInnerPython(build_ext):
+class BuildExtCommand(build_ext):
     def run(self):
         for ext in self.extensions:
             self.build_and_compress(ext)
@@ -225,10 +260,11 @@ class BuildSconsAndPackInnerPython(build_ext):
 
 version = __import__('godot_tools').__version__
 
-packages = ['godot_tools', 'godot_tools.binding_generator', 'godot_tools.setup']
+packages = ['godot_tools', 'godot_tools.binding_generator', 'godot_tools.setup', 'godot_tools.script_runner']
 package_data = {
     'godot_tools.setup': ['templates/*.mako'],
-    'godot_tools.binding_generator': ['templates/*.mako']
+    'godot_tools.binding_generator': ['templates/*.mako'],
+    'godot_tools.script_runner': ['project/project.godot']
 }
 
 entry_points = {'console_scripts': ['godopy=godot_tools.cli:godopy', 'bindgen=godot_tools.cli:bindgen']}
@@ -253,12 +289,14 @@ setup(
     packages=packages,
     package_data=package_data,
     cmdclass={
-        'build_ext': BuildSconsAndPackInnerPython,
-        'install_scripts': InstallScriptsAndGodotExecutables,
-        'develop': GodoPyDevelop
+        'install': InstallCommand,
+        'develop': DevelopCommand,
+        'build_ext': BuildExtCommand,
+        'install_scripts': InstallScriptsCommand
     },
     ext_modules=[GodoPyExtension('_godopy')],
     install_requires=install_requires,
     setup_requires=setup_requires,
-    entry_points=entry_points
+    entry_points=entry_points,
+    zip_safe=False
 )
