@@ -1,6 +1,7 @@
 import sys
 import os
 import click
+import subprocess
 
 from .binding_generator import generate, write_api_pxd
 
@@ -27,7 +28,7 @@ def godopy(ctx, version):
 @godopy.add_command
 @click.command()
 @click.argument('path')
-def new_project(path):
+def newproject(path):
     if os.path.exists(path):
         raise SystemExit('%r already exists' % path)
 
@@ -36,6 +37,25 @@ def new_project(path):
     # Create an empty file
     with open(os.path.join(path, 'project.godot'), 'w', encoding='utf-8'):
         pass
+
+
+@godopy.add_command
+@click.command()
+@click.argument('script')
+def runpy(script):
+    import godot_tools
+
+    project_path = os.path.join(godot_tools.__path__[0], 'script_runner', 'project')
+
+    path = os.path.realpath(script)
+    dirname, basename = os.path.split(path)
+    name, ext = os.path.splitext(basename)
+
+    os.environ['SCRIPT_PATH'] = dirname
+    os.environ['GODOPY_MAIN_MODULE'] = name
+
+    cmd = ['godot', '--path', project_path, '-s', 'Main.gdns']
+    subprocess.run(cmd, check=True)
 
 
 @click.group(invoke_without_command=True)
