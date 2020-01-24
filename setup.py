@@ -39,6 +39,14 @@ class InstallCommand(install):
 
         cwd = os.getcwd()
         os.chdir(os.path.join(self.install_lib, 'godot_tools'))
+        project_dir = os.path.join('script_runner', 'project')
+
+        if not os.path.isdir(project_dir):
+            os.makedirs(project_dir)
+
+        with open(os.path.join(project_dir, 'project.godot'), 'w', encoding='utf-8'):
+            pass
+
         sys.argv = [sys.argv[0], 'install']
         godot_setup(
             godot_project='script_runner/project',
@@ -81,6 +89,14 @@ class DevelopCommand(develop):
 
         cwd = os.getcwd()
         os.chdir('godot_tools')
+        project_dir = os.path.join('script_runner', 'project')
+
+        if not os.path.isdir(project_dir):
+            os.makedirs(project_dir)
+
+        with open(os.path.join(project_dir, 'project.godot'), 'w', encoding='utf-8'):
+            pass
+
         sys.argv = [sys.argv[0], 'install']
         godot_setup(
             godot_project='script_runner/project',
@@ -263,8 +279,7 @@ version = __import__('godot_tools').__version__
 packages = ['godot_tools', 'godot_tools.binding_generator', 'godot_tools.setup', 'godot_tools.script_runner']
 package_data = {
     'godot_tools.setup': ['templates/*.mako'],
-    'godot_tools.binding_generator': ['templates/*.mako'],
-    'godot_tools.script_runner': ['project/project.godot']
+    'godot_tools.binding_generator': ['templates/*.mako']
 }
 
 entry_points = {'console_scripts': ['godopy=godot_tools.cli:godopy', 'bindgen=godot_tools.cli:bindgen']}

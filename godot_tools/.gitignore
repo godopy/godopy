@@ -1,3 +1,2 @@
 build/
-script_runner/project/*
-!script_runner/project/project.godot
+script_runner/project/
