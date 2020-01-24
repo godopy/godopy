@@ -47,6 +47,9 @@ def runpy(script):
 
     project_path = os.path.join(godot_tools.__path__[0], 'script_runner', 'project')
 
+    if not os.path.isfile(os.path.join(project_path, 'project.godot')):
+        enable_runpy()
+
     path = os.path.realpath(script)
     dirname, basename = os.path.split(path)
     name, ext = os.path.splitext(basename)
@@ -56,6 +59,38 @@ def runpy(script):
 
     cmd = ['godot', '--path', project_path, '-s', 'Main.gdns']
     subprocess.run(cmd, check=True)
+
+
+@godopy.add_command
+@click.command()
+def enable_runpy():
+    import godot_tools
+
+    from godot_tools.setup import godot_setup
+    from godot_tools.setup.libraries import GenericGDNativeLibrary
+    from godot_tools.setup.extensions import NativeScript
+
+    os.chdir(godot_tools.__path__[0])
+    project_dir = os.path.join('script_runner', 'project')
+
+    if not os.path.isdir(project_dir):
+        os.makedirs(project_dir)
+
+    with open(os.path.join(project_dir, 'project.godot'), 'w', encoding='utf-8'):
+        pass
+
+    save_argv = sys.argv[:]
+    sys.argv = [sys.argv[0], 'install']
+    godot_setup(
+        godot_project='script_runner/project',
+        python_package='script_runner',
+        development_path=os.getcwd(),
+        library=GenericGDNativeLibrary('script-runner.gdnlib'),
+        extensions=[
+            NativeScript('Main.gdns', class_name='Main')
+        ]
+    )
+    sys.argv = save_argv
 
 
 @click.group(invoke_without_command=True)

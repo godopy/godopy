@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import shutil
 import subprocess
 
@@ -19,57 +20,49 @@ if os.path.realpath(os.path.dirname(__file__)) != os.path.realpath(os.getcwd()):
     os.chdir(os.realpath(os.path.dirname(__file__)))
 
 
+def get_godot_exe():
+    godot_build_dir = os.environ.get('GODOT_BUILD')
+    if not godot_build_dir:
+        raise SystemExit("'GODOT_BUILD' environment variable is required.")
+
+    godot_exe_list = crossplat_exe_glob(godot_build_dir, 'godot.*.64')
+
+    if not godot_exe_list:
+        raise SystemExit("Can't find Godot executable.")
+
+    return godot_exe_list.pop()
+
+
+def crossplat_exe_glob(godot_build_dir, pattern):
+    if sys.platform == 'win32':
+        pattern += '.exe'
+
+    return glob.glob(os.path.join(godot_build_dir, 'bin', pattern))
+
+
 class GodoPyExtension(Extension):
     def __init__(self, name):
         super().__init__(name, sources=[])
 
 
-get_godot_exe = __import__('godot_tools', {}, {}, ['utils']).utils.get_godot_executable
-
-
 class InstallCommand(install):
-    def run(self):
-        super().run()
-
-        # TODO: Launch subprocess
-
-        from godot_tools.setup import godot_setup
-        from godot_tools.setup.libraries import GenericGDNativeLibrary
-        from godot_tools.setup.extensions import NativeScript
-
-        cwd = os.getcwd()
-        os.chdir(os.path.join(self.install_lib, 'godot_tools'))
-        project_dir = os.path.join('script_runner', 'project')
-
-        if not os.path.isdir(project_dir):
-            os.makedirs(project_dir)
-
-        with open(os.path.join(project_dir, 'project.godot'), 'w', encoding='utf-8'):
-            pass
-
-        sys.argv = [sys.argv[0], 'install']
-        godot_setup(
-            godot_project='script_runner/project',
-            python_package='script_runner',
-            development_path=os.path.join(self.install_lib, 'godot_tools'),
-            library=GenericGDNativeLibrary('script-runner.gdnlib'),
-            extensions=[
-                NativeScript('Main.gdns', class_name='Main')
-            ]
-        )
-        os.chdir(cwd)
+    pass
 
 
 class InstallScriptsCommand(install_scripts):
     def run(self):
         super().run()
 
-        godot_exe = get_godot_exe(noserver=True)
+        godot_exe = get_godot_exe()
 
         log.info('Installing Godot executable from %r' % godot_exe)
 
         target = os.path.join(self.install_dir, 'godot.exe' if sys.platform == 'win32' else 'godot')
         changed = self.force or not os.path.exists(target) or os.stat(target).st_mtime != os.stat(godot_exe).st_mtime
+
+        target_dir = os.path.dirname(target)
+        if not os.path.isdir(target_dir):
+            os.makedirs(target_dir)
 
         if not self.dry_run and changed:
             shutil.copy2(godot_exe, target)
@@ -78,42 +71,11 @@ class InstallScriptsCommand(install_scripts):
 
 
 class DevelopCommand(develop):
-    def run(self):
-        super().run()
-
-        # TODO: Launch subprocess
-
-        from godot_tools.setup import godot_setup
-        from godot_tools.setup.libraries import GenericGDNativeLibrary
-        from godot_tools.setup.extensions import NativeScript
-
-        cwd = os.getcwd()
-        os.chdir('godot_tools')
-        project_dir = os.path.join('script_runner', 'project')
-
-        if not os.path.isdir(project_dir):
-            os.makedirs(project_dir)
-
-        with open(os.path.join(project_dir, 'project.godot'), 'w', encoding='utf-8'):
-            pass
-
-        sys.argv = [sys.argv[0], 'install']
-        godot_setup(
-            godot_project='script_runner/project',
-            python_package='script_runner',
-            development_path=os.getcwd(),
-            library=GenericGDNativeLibrary('script-runner.gdnlib'),
-            extensions=[
-                NativeScript('Main.gdns', class_name='Main')
-            ]
-        )
-        os.chdir(cwd)
-
     def install_wrapper_scripts(self, dist):
         super().install_wrapper_scripts(dist)
 
         if dist.project_name == 'godopy':
-            godot_exe = get_godot_exe(noserver=True)
+            godot_exe = get_godot_exe()
 
             log.info('Installing Godot executable from %r' % godot_exe)
 
