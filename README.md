@@ -1,16 +1,13 @@
-======
-GodoPy
-======
+# GodoPy
 
-Python and Cython bindings to the Godot game engine.
+[Python](https://www.python.org/) and [Cython](https://cython.readthedocs.io/en/latest/src/quickstart/overview.html)
+bindings to the [Godot game engine](http://godotengine.org/)
 
-Work in progress
-================
+## Work in progress
 
 The bindings are a work in progress. Some planned features are missing and the existing APIs can be unstable!
 
-Features
-========
+## Features
 
 * Compilation of Cython and Python code to GDNative binaries
 
@@ -27,9 +24,13 @@ Features
 * NumPy array access to core Godot types
 
 
-Installation
-============
+## Installation
 
-* Read ``PYTHON_QUICKSTART.md`` for Python language instructions
+* [Python language instructions](PYTHON_QUICKSTART.md)
 
-* Read ``CYTHON_QUICKSTART.md`` for Cython language instructions
+* [Cython language instructions](CYTHON_QUICKSTART.md)
+
+
+## Donate
+
+If you like to support this project consider becoming a patron on [Patreon](https://www.patreon.com/join/godopy)
