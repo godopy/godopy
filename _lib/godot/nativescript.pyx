@@ -416,7 +416,7 @@ cdef _register_class(type cls, tool_class=False):
     if is_python and '__init__' in cls.__dict__:
         WARN_PRINT("overwriting %r, please use '_init' instead of '__init__'" % cls.__init__)
         cls._init = __init__
-    elif cls.__init__.__qualname__.startswith(cls.__name__):
+    elif cls.__init__.__qualname__.startswith(cls.__name__ + '.'):
         raise RuntimeError("%r is not allowed in Godot binding subclasses, did you mean %r" %
                            (cls.__init__.__qualname__, cls.__init__.__qualname__.replace('__init__', '_init')))
 
@@ -438,7 +438,52 @@ cdef _register_class(type cls, tool_class=False):
     else:
         register_cython_type(cls)
 
-    cls._register_methods()
+    if hasattr(cls, '_register_methods'):
+        cls._register_methods()
+
+    if hasattr(cls, '__godot_methods__'):
+        for method in cls.__godot_methods__:
+            register_method(cls, method)
+
+    if hasattr(cls, '__godot_properties__'):
+        for prop, default in cls.__godot_properties__.items():
+            register_property(cls, prop, default)
+
+    if hasattr(cls, '__godot_signals__'):
+        for signal, args in cls.__godot_signals__.items():
+            register_signal(cls, signal, *args)
+
+
+def gdmethod(func):
+    func.__add_to_godot_methods = True
+
+    return func
+
+
+def gdexclude(func):
+    func.__exclude_from_godot_methods = True
+
+    return func
+
+
+def gdexport(default_value):
+    def _godot_property_placeholder(self):
+        return default_value
+
+    _godot_property_placeholder.__add_to_godot_properties = True
+    _godot_property_placeholder.__default_value = default_value
+
+    return _godot_property_placeholder
+
+
+def gdsignal(*args):
+    def _godot_signal_placeholder(self):
+        return len(args)
+
+    _godot_signal_placeholder.__add_to_godot_signals = True
+    _godot_signal_placeholder.__signal_args = args
+
+    return _godot_signal_placeholder
 
 
 cpdef register_class(type cls):

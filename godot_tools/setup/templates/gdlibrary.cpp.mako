@@ -15,6 +15,7 @@ PyMODINIT_FUNC PyInit_godot__core__tag_db();
 PyMODINIT_FUNC PyInit_godot__core__types();
 PyMODINIT_FUNC PyInit_godot__bindings___cython_bindings();
 PyMODINIT_FUNC PyInit_godot__bindings___python_bindings();
+PyMODINIT_FUNC PyInit_godot__globals();
 PyMODINIT_FUNC PyInit_godot__utils();
 
 % for mod in pyx_sources:
@@ -54,6 +55,7 @@ static void ___python_init() {
   PyImport_AppendInittab("__godopy_internal__godot__core__types", PyInit_godot__core__types);
   PyImport_AppendInittab("__godopy_internal__godot__bindings___cython_bindings", PyInit_godot__bindings___cython_bindings);
   PyImport_AppendInittab("__godopy_internal__godot__bindings___python_bindings", PyInit_godot__bindings___python_bindings);
+  PyImport_AppendInittab("__godopy_internal__godot__globals", PyInit_godot__globals);
   PyImport_AppendInittab("__godopy_internal__godot__utils", PyInit_godot__utils);
   PyImport_AppendInittab("__godopy_internal__godot__nativescript", PyInit_godot__nativescript);
   PyImport_AppendInittab("__godopy_internal__godot__gdnative", PyInit_godot__gdnative);
@@ -72,6 +74,7 @@ static void ___python_init() {
   mod = PyImport_ImportModule("__godopy_internal__godot__core__types"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__godopy_internal__godot__bindings___cython_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__godopy_internal__godot__bindings___python_bindings"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
+  mod = PyImport_ImportModule("__godopy_internal__godot__globals"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__godopy_internal__godot__utils"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__godopy_internal__godot__nativescript"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);
   mod = PyImport_ImportModule("__godopy_internal__godot__gdnative"); ERR_FAIL_PYTHON_NULL(mod); Py_DECREF(mod);

@@ -25,21 +25,25 @@ import math
 import numpy as np
 
 from godot import bindings
+from godot.globals import gdclass, gdprint
+from godot.nativescript import register_class, gdmethod, gdexport, gdsignal
 from godot.core.signals import SignalArgumentObject as SAO, SignalArgumentVector2 as SAV2
-from godot.nativescript import register_method, register_property, register_signal, register_class
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
+with open(os.path.join(os.path.dirname(__file__), 'data', 'godopy-logo.png'), 'rb') as fp:
+    IMAGE_DATA = np.frombuffer(fp.read(), dtype=np.uint8)
 
 
-class Logo(bindings.Sprite):
+@gdclass
+class Icon(bindings.Sprite):
+    amplitude = gdexport(10)
+    position_changed = gdsignal(SAO('node'), SAV2('new_position'))
+
     def _init(self):
-        with open(os.path.join(DATA_DIR, 'godopy-logo.png'), 'rb') as fp:
-            ar = np.frombuffer(fp.read(), dtype=np.uint8)
-
         image = bindings.Image()
+
         # In 'runpy' mode there is no real Godot project and `image.load('res://data/godopy-logo.png')` won't work
         # But, if the proper Godot project was available, `image.load(path)` could be used
-        image.load_png_from_buffer(ar)
+        image.load_png_from_buffer(IMAGE_DATA)
 
         self.texture = bindings.ImageTexture()
         self.texture.create_from_image(image)
@@ -50,6 +54,7 @@ class Logo(bindings.Sprite):
         self.amplitude = 10
         self._position = np.array([0, 0], dtype=np.float32)
 
+    @gdmethod
     def _process(self, delta):
         self.time_passed += delta
 
@@ -64,46 +69,30 @@ class Logo(bindings.Sprite):
             self.emit_signal('position_changed', self, self.position)
             self.time_emit = 0
 
-    def __repr__(self):
-        return '<Logo(%s) instance at 0x%x>' % (self.__class__.__bases__[0].__name__, hash(self))
 
-    @staticmethod
-    def _register_methods():
-        register_method(Logo, '_process')
-        register_property(Logo, 'amplitude', 10)
-
-        register_signal(Logo, 'position_changed', SAO('node'), SAV2('new_position'))
-
-
+@gdclass
 class Example(bindings.Node2D):
     def _init(self):
-        self.logo = Logo()
-        self.add_child(self.logo)
+        self.icon = Icon()
+        self.add_child(self.icon)
 
+    @gdmethod
     def _ready(self):
-        self.logo.connect('position_changed', self, '_on_position_changed')
+        self.icon.connect('position_changed', self, '_on_position_changed')
 
+    @gdmethod
     def _on_position_changed(self, node, new_position):
-        print(node, new_position)
-
-    @staticmethod
-    def _register_methods():
-        register_method(Example, '_ready')
-        register_method(Example, '_on_position_changed')
+        gdprint('{0} {1}', node, new_position)
 
 
-class Main(bindings.SceneTree):
-    def _init(self):
-        self.example = Example()
-        self.get_root().add_child(self.example)
-
-    @staticmethod
-    def _register_methods():
-        pass
+@gdclass(bindings.SceneTree, '_init')
+def Main(self):
+    self.example = Example()
+    self.get_root().add_child(self.example)
 
 
 def _init():
-    register_class(Logo)
+    register_class(Icon)
     register_class(Example)
     register_class(Main)
 ```

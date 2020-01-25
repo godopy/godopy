@@ -33,7 +33,7 @@ $ source setup/bin/activate
 ```
 > Sometimes it is required to deactivate and reactivate the virtual environment before running scons
 > If you want to run an initial build with a -j option, build with "only_cython=yes" first, otherwise the required headers will be missing
-> Python wheels inside `dist/` can be created with `python3 -m pep517.build .` command
+> Python wheels inside `dist/` can be created with `python -m pep517.build .` command
 
 
 ## Setting up GodoPy development environment
