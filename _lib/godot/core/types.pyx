@@ -1297,6 +1297,12 @@ cdef class Vector2(CoreTypeWrapper):
         self._internal_check()
         return self._cpp_object.y
 
+    def __add__(self, other):
+        if isinstance(other, np.ndarray):
+            return Vector2.from_numpy(self.to_numpy() + other)
+
+        return Vector2.from_numpy(self.to_numpy() + other.to_numpy())
+
     def __repr__(self):
         return 'Vector2(%s, %s)' % (self.x, self.y)
 

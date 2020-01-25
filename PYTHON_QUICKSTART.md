@@ -37,6 +37,8 @@ class Logo(bindings.Sprite):
             ar = np.frombuffer(fp.read(), dtype=np.uint8)
 
         image = bindings.Image()
+        # In 'runpy' mode there is no real Godot project and `image.load('res://data/godopy-logo.png')` won't work
+        # But, if the proper Godot project was available, `image.load(path)` could be used
         image.load_png_from_buffer(ar)
 
         self.texture = bindings.ImageTexture()
