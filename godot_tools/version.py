@@ -5,8 +5,6 @@ VERSION = (0, 0, 1, 'alpha', 0)
 
 
 def githead_sha():
-    return ''
-
     repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     # TODO: Write PyGodot version to a C header file and retrieve SHA from the built-in modules
@@ -30,9 +28,9 @@ def get_version():
 
     mapping = {'alpha': 'a', 'beta': 'b', 'rc': 'rc'}
     sub = mapping[VERSION[3]]
-    sha = githead_sha()
+    sha = VERSION[4] == 0 and githead_sha()
 
-    if VERSION[4] == 0 and sha:
+    if sha:
         # Comply with PEP 440
         sub += f'0.dev0+{sha}'
     else:

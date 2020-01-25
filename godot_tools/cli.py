@@ -48,7 +48,7 @@ def runpy(script):
     project_path = os.path.join(godot_tools.__path__[0], 'script_runner', 'project')
 
     if not os.path.isfile(os.path.join(project_path, 'project.godot')):
-        enable_runpy()
+        raise SystemExit('Please run "godopy enable-runpy" to enable "runpy" command.')
 
     path = os.path.realpath(script)
     dirname, basename = os.path.split(path)
