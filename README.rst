@@ -30,6 +30,12 @@ Features
 Installation
 ============
 
-* Read ``PYTHON_README.md`` for instructions on installing GodoPy for Python language
+* Read ``PYTHON_QUICKSTART.md`` for Python language instructions
 
-* Read ``CYTHON_README.md`` for instructions on installing GodoPy for Cython language
+* Read ``CYTHON_QUICKSTART.md`` for Cython language instructions
+
+
+Donate
+======
+
+If you like to support this project consider becoming a patron on [Patreon](https://www.patreon.com/join/godopy)
