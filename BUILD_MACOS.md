@@ -41,6 +41,7 @@ $ source setup/bin/activate
 $ cd .. # return to the project's root
 $ python3 -m venv toolbox
 $ source toolbox/bin/activate
-(toolbox) $ pip install -e ./godopy  # path to GodoPy build
+(toolbox) $ cd godopy
+(toolbox) $ python setup.py develop
 ```
 > When you finish working with a virtual environment, run `deactivate` command
