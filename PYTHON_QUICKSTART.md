@@ -108,3 +108,5 @@ $ godopy runpy example
 ```
 
 There are more examples at the [GodoPy examples repo](https://github.com/godopy/godopy-python-examples)
+
+TODO: Describe `project.py`, `installscripts`, `run` and `runeditor` commands, change the code to use `image.load(path)`
