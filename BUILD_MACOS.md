@@ -44,4 +44,4 @@ $ source toolbox/bin/activate
 (toolbox) $ cd godopy
 (toolbox) $ python setup.py develop
 ```
-> When you finish working with a virtual environment, run `deactivate` command
+> When you finish working with a virtual environment, run the `deactivate` command
