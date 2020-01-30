@@ -71,6 +71,23 @@ def runpy(script):
 
 @godopy.add_command
 @click.command()
+def test():
+    project_module = import_module('godot_tools.script_runner.project')
+
+    project_path = project_module.GODOT_PROJECT
+
+    if not os.path.isfile(os.path.join(project_path, 'project.godot')):
+        raise SystemExit('Please run "godopy enable-runpy" to enable "test" command.')
+
+    os.environ['SCRIPT_PATH'] = str(project_module.BASE_DIR / 'tests')
+    os.environ['GODOPY_MAIN_MODULE'] = 'runtests'
+
+    cmd = ['godot', '--path', project_path, '-s', 'Main.gdns']
+    subprocess.run(cmd, check=True)
+
+
+@godopy.add_command
+@click.command()
 def run():
     project_module_pythonpath = os.environ.get(ENVIRONMENT_VARIABLE)
     if not project_module_pythonpath:
