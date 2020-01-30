@@ -97,6 +97,50 @@ def runeditor():
     subprocess.run(cmd, check=True)
 
 
+@godopy.add_command
+@click.command()
+@click.option('--force', is_flag=True)
+def installscripts(force):
+    project_module_pythonpath = os.environ.get(ENVIRONMENT_VARIABLE)
+    if not project_module_pythonpath:
+        _raise_unconfigured_project(project_module_pythonpath)
+
+    mod = import_module(project_module_pythonpath)
+
+    from godot_tools.setup import godot_setup, libraries, extensions
+
+    sources = getattr(mod, 'NATIVESCRIPT_SOURCES', {})
+    development_path = getattr(mod, 'DEVELOPMENT_PATH', None)
+
+    libclass = sources and libraries.GDNativeLibrary or libraries.GenericGDNativeLibrary
+
+    def make_ext(ext_path):
+        return extensions.NativeScript(
+            ext_path + '.gdns',
+            class_name=os.path.basename(ext_path),
+            sources=sources.get(ext_path, [])
+        )
+
+    save_argv = sys.argv[:]
+    sys.argv = [sys.argv[0], 'install']
+    if force:
+        sys.argv.append('--force')
+
+    kwargs = dict(
+        godot_project=mod.GODOT_PROJECT,
+        python_package=mod.PYTHON_PACKAGE,
+        library=libclass(mod.GDNATIVE_LIBRARY),
+        extensions=[make_ext(ext) for ext in mod.NATIVESCRIPT_EXTENSIONS]
+    )
+
+    if development_path:
+        kwargs['development_path'] = development_path
+
+    godot_setup(**kwargs)
+
+    sys.argv = save_argv
+
+
 def _raise_unconfigured_project(name=None):
     desc = ('project %s' % name) if name else 'project'
 

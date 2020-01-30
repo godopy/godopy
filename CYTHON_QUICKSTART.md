@@ -148,25 +148,28 @@ cdef public _godopy_nativescript_init():
 
 ### Building the extension
 
-Create a `godot_setup.py` file in the root directory:
+Create a `project.py` file in the `_demo` directory:
 ```py
-from godot_tools.setup import godot_setup
-from godot_tools.setup.libraries import GDNativeLibrary
-from godot_tools.setup.extensions import NativeScript
+from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve(strict=True).parents[1]
 
-godot_setup(
-    godot_project='demo',
-    library=GDNativeLibrary('cython_example.gdnlib'),
-    extensions=[
-        NativeScript('cython_example.gdns', class_name='CythonExample', sources=['cython_example.pyx'])
-    ]
-)
+GODOT_PROJECT = 'demo'
+PYTHON_PACKAGE = '_demo'
+GDNATIVE_LIBRARY = 'cython_example.gdnlib'
+
+NATIVESCRIPT_EXTENSIONS = [
+    'CythonExample'
+]
+
+NATIVESCRIPT_SOURCES = {
+    'CythonExample': ['cython_example.pyx']
+}
 ```
 
 Now we can execute the setup script and build our GDNative extensions:
 ```
-$ python godot_setup.py install
+$ GODOPY_PROJECT_MODULE=_demo godopy installscripts
 ```
 
 ### Using the GDNative module
