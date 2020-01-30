@@ -99,6 +99,21 @@ def runeditor():
 
 @godopy.add_command
 @click.command()
+@click.argument('script')
+def runscript(script):
+    project_module_pythonpath = os.environ.get(ENVIRONMENT_VARIABLE)
+    if not project_module_pythonpath:
+        _raise_unconfigured_project(project_module_pythonpath)
+
+    project_module = import_module(project_module_pythonpath)
+    project_path = project_module.GODOT_PROJECT
+
+    cmd = ['godot', '--path', project_path, '-s', script]
+    subprocess.run(cmd, check=True)
+
+
+@godopy.add_command
+@click.command()
 @click.option('--force', is_flag=True)
 def installscripts(force):
     project_module_pythonpath = os.environ.get(ENVIRONMENT_VARIABLE)
