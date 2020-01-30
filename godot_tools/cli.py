@@ -10,6 +10,8 @@ from .binding_generator import generate, write_api_pxd
 
 HERE = Path(__file__).resolve(strict=True).parents[0]
 
+ENVIRONMENT_VARIABLE = 'GODOPY_PROJECT_MODULE'
+
 
 @click.group(invoke_without_command=True)
 @click.pass_context
@@ -45,7 +47,7 @@ def newproject(path):
 @click.command()
 @click.argument('script')
 def runpy(script):
-    project_module_pythonpath = os.environ.get('GODOPY_PROJECT_MODULE', 'godot_tools.script_runner.project')
+    project_module_pythonpath = os.environ.get(ENVIRONMENT_VARIABLE, 'godot_tools.script_runner.project')
     project_module = import_module(project_module_pythonpath)
 
     project_path = project_module.GODOT_PROJECT
@@ -65,6 +67,42 @@ def runpy(script):
 
     cmd = ['godot', '--path', project_path, '-s', main_script]
     subprocess.run(cmd, check=True)
+
+
+@godopy.add_command
+@click.command()
+def run():
+    project_module_pythonpath = os.environ.get(ENVIRONMENT_VARIABLE)
+    if not project_module_pythonpath:
+        _raise_unconfigured_project(project_module_pythonpath)
+
+    project_module = import_module(project_module_pythonpath)
+    project_path = project_module.GODOT_PROJECT
+
+    cmd = ['godot', '--path', project_path]
+    subprocess.run(cmd, check=True)
+
+
+@godopy.add_command
+@click.command()
+def runeditor():
+    project_module_pythonpath = os.environ.get(ENVIRONMENT_VARIABLE)
+    if not project_module_pythonpath:
+        _raise_unconfigured_project(project_module_pythonpath)
+
+    project_module = import_module(project_module_pythonpath)
+    project_path = project_module.GODOT_PROJECT
+
+    cmd = ['godot', '--path', project_path, '-e']
+    subprocess.run(cmd, check=True)
+
+
+def _raise_unconfigured_project(name=None):
+    desc = ('project %s' % name) if name else 'project'
+
+    raise SystemExit("Requested %s, but project is not configured. "
+                     "You must define the environment variable %s "
+                     "before accessing project." % (desc, ENVIRONMENT_VARIABLE))
 
 
 @godopy.add_command
