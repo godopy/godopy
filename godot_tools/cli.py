@@ -1,12 +1,14 @@
-import sys
 import os
+import sys
 import click
 import subprocess
 
+from pathlib import Path
+from importlib import import_module
+
 from .binding_generator import generate, write_api_pxd
 
-USE_INTERNAL_CYTHON = True
-HERE = os.path.abspath(os.path.dirname(__file__))
+HERE = Path(__file__).resolve(strict=True).parents[0]
 
 
 @click.group(invoke_without_command=True)
@@ -43,9 +45,13 @@ def newproject(path):
 @click.command()
 @click.argument('script')
 def runpy(script):
-    import godot_tools
+    project_module_pythonpath = os.environ.get('GODOPY_PROJECT_MODULE', 'godot_tools.script_runner.project')
+    project_module = import_module(project_module_pythonpath)
 
-    project_path = os.path.join(godot_tools.__path__[0], 'script_runner', 'project')
+    project_path = project_module.GODOT_PROJECT
+    main_script = getattr(project_module, 'RUNPY_MAIN', 'Main')
+    if not main_script.endswith('.gdns'):
+        main_script += '.gdns'
 
     if not os.path.isfile(os.path.join(project_path, 'project.godot')):
         raise SystemExit('Please run "godopy enable-runpy" to enable "runpy" command.')
@@ -57,7 +63,7 @@ def runpy(script):
     os.environ['SCRIPT_PATH'] = dirname
     os.environ['GODOPY_MAIN_MODULE'] = name
 
-    cmd = ['godot', '--path', project_path, '-s', 'Main.gdns']
+    cmd = ['godot', '--path', project_path, '-s', main_script]
     subprocess.run(cmd, check=True)
 
 
