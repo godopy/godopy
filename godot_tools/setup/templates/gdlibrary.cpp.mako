@@ -104,7 +104,6 @@ extern "C" void GDN_EXPORT godopy_gdnative_terminate(godot_gdnative_terminate_op
 }
 
 extern "C" void GDN_EXPORT godopy_nativescript_init(void *handle) {
-  printf("NATIVESCRIPT INIT\n");
   godot::Godot::nativescript_init(handle);  // C++ bindings
   ___python_init();
   godopy::GodoPy::nativescript_init(handle);

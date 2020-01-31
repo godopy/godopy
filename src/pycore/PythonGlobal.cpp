@@ -90,7 +90,7 @@ void GodoPy::python_init() {
 #elif __APPLE__
 
 #else
-	printf("dlopen %s\n", ((godot::String *)&active_library_path)->utf8().get_data());
+	// printf("dlopen %s\n", ((godot::String *)&active_library_path)->utf8().get_data());
 
 	// Make Python symbols available for core Python extension modules on Linux
 	// Idea from https://stackoverlow.com/questions/11842920/undefined-symbol-pyexc-importerror-when-embedding-python-in-c#11847653
@@ -131,24 +131,24 @@ void GodoPy::python_init() {
 	// ERR_FAIL_PYSTATUS(status, fail);
 
 	if (development_module_path != "") {
-		godot::Godot::print("set DEV Python path: {0}", development_module_path);
+		// godot::Godot::print("set DEV Python path: {0}", development_module_path);
 		status = PyWideStringList_Append(&config.module_search_paths, development_module_path.unicode_str());
 		ERR_FAIL_PYSTATUS(status, fail);
 
 		write_bytecode = true;
 	}
 
-	godot::Godot::print("set MAIN Python path: {0}", main_module_path);
+	// godot::Godot::print("set MAIN Python path: {0}", main_module_path);
 	status = PyWideStringList_Append(&config.module_search_paths, main_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
 
 	if (tool_module_path != "" && (in_editor || commandline_script_mode || development_module_path != "")) {
-		godot::Godot::print("set TOOL python path: {0}", tool_module_path);
+		// godot::Godot::print("set TOOL python path: {0}", tool_module_path);
 		status = PyWideStringList_Append(&config.module_search_paths, tool_module_path.unicode_str());
 		ERR_FAIL_PYSTATUS(status, fail);
 	}
 
-	godot::Godot::print("set BIN python path: {0}", binary_module_path);
+	// godot::Godot::print("set BIN python path: {0}", binary_module_path);
 	status = PyWideStringList_Append(&config.module_search_paths, binary_module_path.unicode_str());
 	ERR_FAIL_PYSTATUS(status, fail);
 
@@ -166,21 +166,10 @@ void GodoPy::python_init() {
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
-	// TODO: Override values computed by PyConfig_Read()
-
 	status = Py_InitializeFromConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
 	PyConfig_Clear(&config);
-
-	/*
-	if (_import_array() == -1) {
-		PyErr_Print();
-		FATAL_PRINT("NumPy Initialization Failed.");
-		CRASH_NOW();
-		return;
-	}
-	*/
 
 	// Initializes the GIL, required for threading
 	PyEval_InitThreads();
