@@ -679,9 +679,9 @@ cdef Variant _python_method_wrapper(godot_object *instance, void *method_data, v
         self = <object>self_data
         method = <object>method_data
 
-        # if not (<_Wrapped>self)._owner:
-        #     WARN_PRINT("%r has undefined Godot instance" % self)
-        #     (<_Wrapped>self)._owner = instance  # XXX: tool classes may have _owner set to NULL incorrectly
+        if not (<_Wrapped>self)._owner:
+            # WARN_PRINT("%r has undefined Godot instance" % self)
+            (<_Wrapped>self)._owner = instance  # XXX: tool classes may have _owner set to NULL incorrectly
 
         # Variant casts from PyObject* are defined in Variant::Variant(const PyObject*) constructor
         return <Variant>method(self, *__parse_args(num_args, args))
