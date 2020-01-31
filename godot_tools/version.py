@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-VERSION = (0, 0, 1, 'alpha', 0)
+VERSION = (0, 0, 1, 'rc', 1)
 
 
 def githead_sha():
