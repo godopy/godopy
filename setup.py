@@ -5,10 +5,7 @@ import shutil
 import subprocess
 
 from setuptools import setup, Extension
-from setuptools.command.install import install
-from setuptools.command.develop import develop
 from setuptools.command.build_ext import build_ext
-from setuptools.command.install_scripts import install_scripts
 
 from distutils import log
 
@@ -43,49 +40,6 @@ def crossplat_exe_glob(godot_build_dir, pattern):
 class GodoPyExtension(Extension):
     def __init__(self, name):
         super().__init__(name, sources=[])
-
-
-class InstallCommand(install):
-    pass
-
-
-class InstallScriptsCommand(install_scripts):
-    def run(self):
-        super().run()
-
-        godot_exe = get_godot_exe()
-
-        log.info('Installing Godot executable from %r' % godot_exe)
-
-        target = os.path.join(self.install_dir, 'godot.exe' if sys.platform == 'win32' else 'godot')
-        changed = self.force or not os.path.exists(target) or os.stat(target).st_mtime != os.stat(godot_exe).st_mtime
-
-        target_dir = os.path.dirname(target)
-        if not os.path.isdir(target_dir):
-            os.makedirs(target_dir)
-
-        if not self.dry_run and changed:
-            shutil.copy2(godot_exe, target)
-
-        self.outfiles.append(target)
-
-
-class DevelopCommand(develop):
-    def install_wrapper_scripts(self, dist):
-        super().install_wrapper_scripts(dist)
-
-        if dist.project_name == 'godopy':
-            godot_exe = get_godot_exe()
-
-            log.info('Installing Godot executable from %r' % godot_exe)
-
-            target = os.path.join(self.script_dir, 'godot')
-            changed = self.force or not os.path.exists(target) or os.stat(target).st_mtime != os.stat(godot_exe).st_mtime
-
-            if not self.dry_run and changed:
-                shutil.copy2(godot_exe, target)
-
-            self.add_output(target)
 
 
 PYTHON_IGNORE = ('lib2to3', 'tkinter', 'ensurepip', 'parser', 'test', 'pip')
@@ -253,10 +207,7 @@ setup(
     packages=packages,
     package_data=package_data,
     cmdclass={
-        'install': InstallCommand,
-        'develop': DevelopCommand,
-        'build_ext': BuildExtCommand,
-        'install_scripts': InstallScriptsCommand
+        'build_ext': BuildExtCommand
     },
     ext_modules=[GodoPyExtension('_godopy')],
 )
