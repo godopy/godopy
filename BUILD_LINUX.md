@@ -1,7 +1,7 @@
 ## Installing dependencies
 ```
 sudo apt-get install python3-venv python3-dev
-sudo apt-get build-dep python3
+sudo apt-get build-dep python3.8
 ```
 
 ## Setting environment variables

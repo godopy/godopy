@@ -17,7 +17,7 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 ```
 > cd godopy
 > py build_python.py
-> deps\python\PCbuild\amd64\python.exe -m venv .\venv
+> deps\python\PCbuild\amd64\python.exe -m venv venv
 > venv\Scripts\activate
 (venv) > cp deps\python\PC\pyconfig.h venv\Include\
 (venv) > py -m pip install -r _lib\requirements.txt
