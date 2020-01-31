@@ -12,6 +12,7 @@ HERE = Path(__file__).resolve(strict=True).parents[0]
 
 ENVIRONMENT_VARIABLE = 'GODOPY_PROJECT_MODULE'
 
+GODOT_EXE = 'godot.exe' if sys.platform == 'win32' else 'godot'
 
 @click.group(invoke_without_command=True)
 @click.pass_context
@@ -65,7 +66,7 @@ def runpy(script):
     os.environ['SCRIPT_PATH'] = dirname
     os.environ['GODOPY_MAIN_MODULE'] = name
 
-    cmd = ['godot', '--path', project_path, '-s', main_script]
+    cmd = [GODOT_EXE, '--path', project_path, '-s', main_script]
     subprocess.run(cmd, check=True)
 
 
@@ -82,7 +83,7 @@ def test():
     os.environ['SCRIPT_PATH'] = str(project_module.BASE_DIR / 'tests')
     os.environ['GODOPY_MAIN_MODULE'] = 'runtests'
 
-    cmd = ['godot', '--path', project_path, '-s', 'Main.gdns']
+    cmd = [GODOT_EXE, '--path', project_path, '-s', 'Main.gdns']
     subprocess.run(cmd, check=True)
 
 
@@ -96,7 +97,7 @@ def run():
     project_module = import_module(project_module_pythonpath)
     project_path = project_module.GODOT_PROJECT
 
-    cmd = ['godot', '--path', project_path]
+    cmd = [GODOT_EXE, '--path', project_path]
     subprocess.run(cmd, check=True)
 
 
@@ -110,7 +111,7 @@ def runeditor():
     project_module = import_module(project_module_pythonpath)
     project_path = project_module.GODOT_PROJECT
 
-    cmd = ['godot', '--path', project_path, '-e']
+    cmd = [GODOT_EXE, '--path', project_path, '-e']
     subprocess.run(cmd, check=True)
 
 
@@ -125,7 +126,7 @@ def runscript(script):
     project_module = import_module(project_module_pythonpath)
     project_path = project_module.GODOT_PROJECT
 
-    cmd = ['godot', '--path', project_path, '-s', script]
+    cmd = [GODOT_EXE, '--path', project_path, '-s', script]
     subprocess.run(cmd, check=True)
 
 
@@ -200,7 +201,7 @@ def enable_runpy():
         pass
 
     save_argv = sys.argv[:]
-    sys.argv = [sys.argv[0], 'install']
+    sys.argv = [sys.argv[0], 'install', '--force']
     godot_setup(
         godot_project='script_runner/project',
         python_package='script_runner',

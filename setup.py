@@ -236,7 +236,22 @@ class BuildExtCommand(build_ext):
         shutil.move(result, extension_path)
 
 
+packages = [
+    'godot_tools',
+    'godot_tools.setup',
+    'godot_tools.tests',
+    'godot_tools.script_runner',
+    'godot_tools.binding_generator'
+]
+
+package_data = {
+    'godot_tools.setup': ['templates/*.mako'],
+    'godot_tools.binding_generator': ['templates/*.mako']
+}
+
 setup(
+    packages=packages,
+    package_data=package_data,
     cmdclass={
         'install': InstallCommand,
         'develop': DevelopCommand,

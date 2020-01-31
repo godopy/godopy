@@ -180,7 +180,7 @@ class GDNativeBuildExt(build_ext):
                 return
             elif is_editable_resource and not self.force:
                 # Do not overwrite user resources without --force flag
-                log.warning('WARNING! modified resource already exists: "%s"' % pretty_path)
+                log.warn('WARNING! modified resource already exists: "%s"' % pretty_path)
                 return
 
         log.info('writing "%s"' % pretty_path)
@@ -348,6 +348,7 @@ class GDNativeBuildExt(build_ext):
         context['libtools_path'] = 'res://%s/libtools' % self.godot_project.binary_path
         if self.godot_project.set_development_path:
             context['development_path'] = self.godot_project.development_path or os.path.realpath(root_dir).replace(os.sep, '/')
+            context['development_path'] = context['development_path'].replace(os.sep, '/')
 
         deps = []
 
@@ -417,6 +418,7 @@ class GDNativeBuildExt(build_ext):
         context['libtools_path'] = 'res://%s/libtools' % self.godot_project.binary_path
         if self.godot_project.set_development_path:
             context['development_path'] = self.godot_project.development_path or os.path.realpath(root_dir).replace(os.sep, '/')
+            context['development_path'] = context['development_path'].replace(os.sep, '/')
 
         deps = []
 
@@ -579,7 +581,10 @@ def detect_godot_project(dir, fn='project.godot'):
 
 
 def make_resource_path(godot_root, path):
-    return path.replace(godot_root, '').lstrip(os.sep).replace(os.sep, '/')
+    # Filenames should be exportable to case-sesitive platforms, don't touch them here
+    folder, fn = os.path.split(path)
+    folder = os.path.realpath(folder).replace(os.path.realpath(godot_root), '').lstrip(os.sep)
+    return os.path.join(folder, fn).replace(os.sep, '/')
 
 
 def make_relative_path(path):
