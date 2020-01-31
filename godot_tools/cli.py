@@ -14,6 +14,7 @@ ENVIRONMENT_VARIABLE = 'GODOPY_PROJECT_MODULE'
 
 GODOT_EXE = 'godot.exe' if sys.platform == 'win32' else 'godot'
 
+
 @click.group(invoke_without_command=True)
 @click.pass_context
 @click.option('--version', '-V', is_flag=True)
@@ -59,9 +60,10 @@ def runpy(script):
     if not os.path.isfile(os.path.join(project_path, 'project.godot')):
         raise SystemExit('Please run "godopy enable-runpy" to enable "runpy" command.')
 
+    if script.endswith('.py'):
+        script = script[:-3]
     path = os.path.realpath(script.replace('.', os.sep))
-    dirname, basename = os.path.split(path)
-    name, ext = os.path.splitext(basename)
+    dirname, name = os.path.split(path)
 
     os.environ['SCRIPT_PATH'] = dirname
     os.environ['GODOPY_MAIN_MODULE'] = name
