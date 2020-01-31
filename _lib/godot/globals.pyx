@@ -18,6 +18,10 @@ def gdprint(fmt, *args):
         Godot.print(fmt, <cpp.Variant>args[0], <cpp.Variant>args[1], <cpp.Variant>args[2], <cpp.Variant>args[3], <cpp.Variant>args[4])
 
 
+def get_godopy_version():
+    return GodoPy.get_version()
+
+
 def gdclass(cls=None, single_method=None, register_all=False, _force_decorator=False):
     if single_method is not None:
         return _convert_to_class(cls, single_method)

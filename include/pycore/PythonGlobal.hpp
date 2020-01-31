@@ -13,6 +13,8 @@
 #endif
 #include <numpy/arrayobject.h>
 
+#include "GodoPyVersion.hpp"
+
 #include <gdnative_api_struct.gen.h>
 
 namespace godopy {
@@ -32,6 +34,8 @@ public:
 
 	static void set_cython_language_index(int language_index);
 	static void set_python_language_index(int language_index);
+
+  static const char *get_version() { return GODOPY_VERSION; }
 };
 
 } // namespace godopy

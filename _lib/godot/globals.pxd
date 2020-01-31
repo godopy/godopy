@@ -69,3 +69,6 @@ cdef extern from "PythonGlobal.hpp" namespace "godopy":
 
         @staticmethod
         void set_python_language_index(int)
+
+        @staticmethod
+        const char *get_version()

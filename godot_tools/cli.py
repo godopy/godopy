@@ -23,7 +23,7 @@ def godopy(ctx, version):
 
     if version or not ctx.invoked_subcommand:
         from .version import get_version
-        click.echo(f'{cmdname} v{get_version()}')
+        click.echo(f'GodoPy v{get_version()}')
 
         if not version:
             click.echo(f'Usage: {cmdname} <command>')

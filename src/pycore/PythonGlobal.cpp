@@ -2,6 +2,7 @@
 #include "PythonGlobal.hpp"
 
 #include "CoreTypes.hpp"
+#include "GodoPyVersion.hpp"
 
 #include <OS.hpp>
 #include <ProjectSettings.hpp>
@@ -59,6 +60,8 @@ void GodoPy::python_init() {
 	// godot::Godot::print("get_locale: {0}", os->get_locale());
 	// godot::Godot::print("get_model_name: {0}", os->get_model_name());
 	// godot::Godot::print("get_name: {0}", os->get_name());
+
+	godot::String version = GODOPY_VERSION;
 
 	godot::String executable = os->get_executable_path();
 	godot::String exec_prefix = executable.get_base_dir().get_base_dir();
@@ -182,7 +185,7 @@ void GodoPy::python_init() {
 	// * Python code runs concurently with non-Python code without issues
 
 	if (!commandline_script_mode) {
-		godot::Godot::print("Python {0}\nGodoPy 0.0.1\n", (godot::Variant)Py_GetVersion());
+		godot::Godot::print("Python {0}\nGodoPy {1}\n", (godot::Variant)Py_GetVersion(), version);
 	}
 
 	return;
