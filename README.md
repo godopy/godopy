@@ -1,11 +1,11 @@
 # GodoPy
 
-[Python](https://www.python.org/) and [Cython](https://cython.readthedocs.io/en/latest/src/quickstart/overview.html)
-bindings to the [Godot game engine](http://godotengine.org/)
+Different [Python](https://www.python.org/) bindings to the [Godot game engine](http://godotengine.org/)
 
 ## Work in progress
 
 The bindings are a work in progress. Some planned features are missing and the existing APIs can be unstable!
+
 
 ## Features
 
@@ -13,20 +13,23 @@ The bindings are a work in progress. Some planned features are missing and the e
 
 * Running dynamic, byte-compiled and AOT-compiled Python code from NativeScript extensions
 
-* Two specialized sets (Cython and Python) of automatically generatated bindings to the full Godot API
+* Automatically generatated bindings to the full Godot API
 
-* Access to the complete official C++ API from the Cython programming language
+* Access to the complete official C++ API from the Cython programming language, full interoperability
+  between `godot-cpp` and `GodoPy`; in fact `godot-cpp` types are used by Cython bindings as is
 
 * Automatic type conversions between Godot and Python types
 
-* NumPy array access to core Godot types
+* NumPy array access to all numeric Godot types
 
 
 ## Installation
 
-* [Python language instructions](PYTHON_QUICKSTART.md)
+* [Python introduction](PYTHON_QUICKSTART.md)
 
-* [Cython language instructions](CYTHON_QUICKSTART.md)
+* [Development installation](CYTHON_QUICKSTART.md), required for
+  [Cython](https://cython.readthedocs.io/en/latest/src/quickstart/overview.html) worlflow,
+  AOT compilation or advanced Python workflow
 
 
 ## Donate

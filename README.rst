@@ -2,12 +2,14 @@
 GodoPy
 ======
 
-Python and Cython bindings to the Godot game engine.
+Different Python bindings to the Godot game engine.
+
 
 Work in progress
 ================
 
 The bindings are a work in progress. Some planned features are missing and the existing APIs can be unstable!
+
 
 Features
 ========
@@ -16,18 +18,19 @@ Features
 
 * Running dynamic, byte-compiled and AOT-compiled Python code from NativeScript extensions
 
-* Two specialized sets (Cython and Python) of automatically generatated bindings to the full Godot API
+* Automatically generatated bindings to the full Godot API
 
-* Access to the complete official C++ API from the Cython programming language
+* Access to the complete official C++ API from the Cython programming language, full interoperability
+  between ``godot-cpp`` and ``GodoPy``; in fact ``godot-cpp`` types are used by Cython bindings as is
 
 * Automatic type conversions between Godot and Python types
 
-* NumPy array access to core Godot types
+* NumPy array access to all numeric Godot types
 
 
 Installation
 ============
 
-* Read ``PYTHON_QUICKSTART.md`` for Python language instructions
+*``PYTHON_QUICKSTART.md`` introduces GodoPy for beginners
 
-* Read ``CYTHON_QUICKSTART.md`` for Cython language instructions
+* Advanced usage and AOT compilation are described in ``CYTHON_QUICKSTART.md``

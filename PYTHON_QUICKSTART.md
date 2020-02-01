@@ -2,7 +2,22 @@
 
 ## Getting started
 
+### Prerequisites
+
+It is required that your Godot 3.2 binary be in your [PATH](https://docs.godotengine.org/en/3.2/getting_started/editor/command_line_tutorial.html#path)
+
 TODO: Describe Python 3 requirement
+
+You can verify that Python and Godot are installed correctly by typing **python** and **godot** from your shell.
+
+You should see something like this:
+```
+$ python --version
+Python 3.8.1
+
+$ godot --version
+3.2.stable
+```
 
 ### Setting up a new project
 
