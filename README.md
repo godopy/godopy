@@ -28,7 +28,7 @@ The bindings are a work in progress. Some planned features are missing and the e
 * [Python introduction](PYTHON_QUICKSTART.md)
 
 * [Development installation](CYTHON_QUICKSTART.md), required for
-  [Cython](https://cython.readthedocs.io/en/latest/src/quickstart/overview.html) worlflow,
+  [Cython](https://cython.readthedocs.io/en/latest/src/quickstart/overview.html) workflow,
   AOT compilation or advanced Python workflow
 
 
