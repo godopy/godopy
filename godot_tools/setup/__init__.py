@@ -23,9 +23,16 @@ def godot_setup(godot_project, *, library, extensions, addons=None, **kwargs):
     setup(ext_modules=modules, cmdclass={'build_ext': GDNativeBuildExt})
 
 
+class DummyModule:
+    def __init__(self):
+        pass
+
+
 class GodotProject(Extension):
     def __init__(self, name, python_package=None, *, binary_path=None, set_development_path=False, **kwargs):
         dir, name = os.path.split(name)
+
+        project_module = kwargs.pop('project_module', DummyModule())
 
         if python_package is None:
             python_package = name if dir else '_' + name
@@ -38,6 +45,8 @@ class GodotProject(Extension):
         self.development_path = kwargs.get('development_path', None)
         self.set_development_path = set_development_path or self.development_path
         self._gdnative_type = ExtType.PROJECT
+
+        self.module = project_module
 
         self.path_prefix = os.path.join(dir, name)
         self.project_name = kwargs.get('project_name', name)

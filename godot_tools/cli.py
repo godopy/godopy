@@ -164,6 +164,7 @@ def installscripts(force):
     kwargs = dict(
         godot_project=mod.GODOT_PROJECT,
         python_package=mod.PYTHON_PACKAGE,
+        project_module=mod,
         library=libclass(mod.GDNATIVE_LIBRARY),
         extensions=[make_ext(ext) for ext in mod.NATIVESCRIPT_EXTENSIONS]
     )

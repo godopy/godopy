@@ -356,6 +356,8 @@ class GDNativeBuildExt(build_ext):
         context['library'] = 'res://%s' % gdnlib_respath
         context['python_package'] = self.godot_project.python_package
 
+        context['settings'] = create_settings(self.godot_project)
+
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
 
@@ -425,6 +427,8 @@ class GDNativeBuildExt(build_ext):
         context['dependencies'] = {platform: deps, 'Server.64': deps}
         context['library'] = 'res://%s' % gdnlib_respath
         context['python_package'] = self.godot_project.python_package
+
+        context['settings'] = create_settings(self.godot_project)
 
         self.make_godot_resource('gdnlib.mako', gdnlib_respath, context)
         self.make_godot_resource('library_setup.gd.mako', setup_script_respath, context)
@@ -642,3 +646,30 @@ def get_platform():
         return 'Windows.64'
 
     raise SystemExit("Can't build for '%s' platform yet" % sys.platform)
+
+
+def create_settings(project):
+    mod = project.module
+
+    settings = {}
+
+    if hasattr(mod, 'NAME'):
+        settings['application/config/name'] = mod.NAME
+
+    if hasattr(mod, 'MAIN_SCENE'):
+        settings['application/run/main_scene'] = mod.MAIN_SCENE
+
+    if hasattr(mod, 'ICON'):
+        settings['application/config/icon'] = mod.ICON
+
+    if hasattr(mod, 'WINDOW_SIZE'):
+        width, height = mod.WINDOW_SIZE
+        settings['display/window/size/width'] = width
+        settings['display/window/size/height'] = height
+
+    # TODO: [input] block
+
+    if hasattr(mod, 'DEFAULT_ENVIRONMENT'):
+        settings['rendering/environment/default_environment'] = mod.DEFAULT_ENVIRONMENT
+
+    return settings

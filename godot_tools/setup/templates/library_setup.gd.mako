@@ -12,9 +12,13 @@ func _initialize():
         ProjectSettings.set("python/config/module_search_path/development", "")
     % endif
 
-    ## % for platform, lib in python_library.items():
-    ## ProjectSettings.set("python/config/python_library/${platform}", "${lib}")
-    ## % endfor
+    % for key, val in settings.items():
+        % if isinstance(val, str):
+    ProjectSettings.set("${key}", "${val}")
+        % else:
+    ProjectSettings.set("${key}", ${repr(val)})
+        % endif
+    % endfor
 
     var singletons = []
 
