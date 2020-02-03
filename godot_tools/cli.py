@@ -171,6 +171,11 @@ def installscripts(force):
     if development_path:
         kwargs['development_path'] = development_path
 
+    if not os.path.exists(mod.GODOT_PROJECT / 'project.godot'):
+        # Create an empty file
+        with open(mod.GODOT_PROJECT / 'project.godot', 'w', encoding='utf-8'):
+            pass
+
     godot_setup(**kwargs)
 
     sys.argv = save_argv
