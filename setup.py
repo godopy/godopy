@@ -190,6 +190,10 @@ class BuildExtCommand(build_ext):
         shutil.move(result, extension_path)
 
 
+# The name `godot_tools` was chosen to avoid any confusion with `godopy` and `godot` under `_lib`
+# `godopy` and `godot` packages are designed to be accessed from GDNative modules.
+# `godot_tools` is a meta package designed to build and/or package a customized Python interpreter
+# inside the user's Godot project (and/or a generic Godot project in `script_runner/project`)
 packages = [
     'godot_tools',
     'godot_tools.setup',
