@@ -20,7 +20,7 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 > deps\python\PCbuild\amd64\python.exe -m venv venv
 > venv\Scripts\activate
 (venv) > cp deps\python\PC\pyconfig.h venv\Include\
-(venv) > py -m pip install -r _lib\requirements.txt
+(venv) > py -m pip install -U pip Cython numpy ipython
 (venv) > # Use pip to install any Python dependencies you want
 (venv) > deactivate
 ```
@@ -30,7 +30,7 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 ```
 > py -m venv setup
 > setup\Scripts\activate
-(setup) > py -m pip install -r requirements.txt
+(setup) > py -m pip install -r dev-requirements.txt
 (setup) > py bootstrap.py
 (setup) > venv\Scripts\activate
 (venv) > py -m pip install .\_lib
@@ -44,10 +44,10 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 ## Setting up GodoPy development environment
 ```
 > cd ..  # return to the project's root
-> py -m venv toolbox
-> toolbox\Scripts\activate
-(toolbox) $ cd godopy
-(toolbox) > py -m pip install -r requirements.txt
-(toolbox) > py setup.py develop
+> py -m venv tools
+> tools\Scripts\activate
+(tools) $ cd godopy
+(tools) > py -m pip install -r dev-requirements.txt
+(tools) > py setup.py develop
 ```
 > When you finish working with a virtual environment, run the `deactivate` command

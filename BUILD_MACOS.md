@@ -16,7 +16,7 @@ $ cd godopy
 $ ./build_python.py
 $ deps/python/build/bin/python3 -m venv venv
 $ source venv/bin/activate
-(venv) $ pip install -r _lib/requirements.txt
+(venv) $ pip install -U pip Cython numpy ipython
 (venv) $ # Use pip to install any Python dependencies you want
 (venv) $ deactivate
 ```
@@ -26,7 +26,7 @@ $ source venv/bin/activate
 ```
 $ python3 -m venv setup
 $ source setup/bin/activate
-(setup) $ pip install -r requirements.txt
+(setup) $ pip install -r dev-requirements.txt
 (setup) $ ./bootstrap.py && ./clean.sh
 (setup) $ scons  # scons -j4 only_cython=yes && scons -j4
 (setup) $ deactivate
@@ -39,9 +39,9 @@ $ source setup/bin/activate
 ## Setting up GodoPy development environment
 ```
 $ cd .. # return to the project's root
-$ python3 -m venv toolbox
-$ source toolbox/bin/activate
-(toolbox) $ cd godopy
-(toolbox) $ python setup.py develop
+$ python3 -m venv tools
+$ source tools/bin/activate
+(tools) $ cd godopy
+(tools) $ python setup.py develop
 ```
 > When you finish working with a virtual environment, run the `deactivate` command
