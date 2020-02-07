@@ -31,6 +31,6 @@ Features
 Installation
 ============
 
-*``PYTHON_QUICKSTART.md`` introduces GodoPy for beginners
+* ``PYTHON_QUICKSTART.md`` introduces GodoPy for beginners
 
 * Advanced usage and AOT compilation are described in ``CYTHON_QUICKSTART.md``
