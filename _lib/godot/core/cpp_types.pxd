@@ -1374,6 +1374,8 @@ cdef extern from "Vector2.hpp" namespace "godot" nogil:
         real_t length()
         real_t length_squared()
 
+        # TODO: Add missing methods
+
         Vector2(np.ndarray) except +
 
         np.ndarray py_ndarray()
