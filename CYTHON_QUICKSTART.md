@@ -19,12 +19,12 @@ The instructions below assume using git for managing your project.
 ```
 $ mkdir gdnative-cython-example
 $ cd gdnative-cython-example
-$ git clone --recursive https://github.com/godopy/godopy
+$ git clone --recursive https://github.com/godopy/godopy GodoPy
 ```
 
 If your project is an existing repository, use git submodule instead:
 ```
-$ git submodule add https://github.com/godopy/godopy
+$ git submodule add https://github.com/godopy/godopy GodoPy
 $ git submodule update --init --recursive
 ```
 

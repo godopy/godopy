@@ -13,11 +13,11 @@ export GODOT_BUILD=<path to Godot source folder>
 
 ## Building internal Python interpreter and libraries
 ```
-$ cd godopy
+$ cd GodoPy
 $ ./build_python.py
 $ deps/python/build/bin/python3 -m venv venv
 $ source venv/bin/activate
-(venv) $ pip install -U pip Cython numpy ipython
+(venv) $ pip install -U pip Cython numpy
 (venv) $ # Use pip to install any Python dependencies you want
 (venv) $ deactivate
 ```
@@ -42,7 +42,7 @@ $ source setup/bin/activate
 $ cd .. # return to the project's root
 $ python3 -m venv tools
 $ source tools/bin/activate
-(tools) $ cd godopy
+(tools) $ cd GodoPy
 (tools) $ python setup.py develop
 ```
 > When you finish working with a virtual environment, run the `deactivate` command

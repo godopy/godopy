@@ -1,6 +1,7 @@
 # Roadmap
 
 ## 0.1.0
+- Fix `Pool*Array`s: `from_numpy()`, `write()`, `to_numpy()`
 - Automated export of Python games to major desktop platforms
 - Unit tests for core functionality
 - Godot add-ons (plugins)

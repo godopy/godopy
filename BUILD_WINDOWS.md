@@ -15,12 +15,12 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 
 ## Building internal Python interpreter and libraries
 ```
-> cd godopy
+> cd GodoPy
 > py build_python.py
 > deps\python\PCbuild\amd64\python.exe -m venv venv
 > venv\Scripts\activate
 (venv) > cp deps\python\PC\pyconfig.h venv\Include\
-(venv) > py -m pip install -U pip Cython numpy ipython
+(venv) > py -m pip install -U pip Cython numpy
 (venv) > # Use pip to install any Python dependencies you want
 (venv) > deactivate
 ```
@@ -46,7 +46,7 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 > cd ..  # return to the project's root
 > py -m venv tools
 > tools\Scripts\activate
-(tools) $ cd godopy
+(tools) $ cd GodoPy
 (tools) > py -m pip install -r dev-requirements.txt
 (tools) > py setup.py develop
 ```
