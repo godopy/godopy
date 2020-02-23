@@ -6,6 +6,8 @@ Different [Python](https://www.python.org/) bindings to the [Godot game engine](
 
 The bindings are a work in progress. Some planned features are missing and the existing APIs can be unstable!
 
+Godot 4 features are not yet supported, master branch tracks Godot 3.2
+This will change in the near future, master branch will track the Godot's master
 
 ## Features
 

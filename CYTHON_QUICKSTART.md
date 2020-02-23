@@ -8,7 +8,10 @@ This tutorial is based on the official [GDNative C++ example](https://docs.godot
 
 ### Prerequisites
 
-[**Build latest version of Godot**](https://godot.readthedocs.io/en/latest/development/compiling/index.html)
+Godot 4 features are not yet supported, master branch tracks Godot 3.2
+This will change in the near future, master branch will track the Godot's master
+
+[**Build latest supported version of Godot**](https://godot.readthedocs.io/en/3.2/development/compiling/index.html)
 
 TODO: Describe Python 3 requirement
 
