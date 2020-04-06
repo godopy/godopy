@@ -50,4 +50,3 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 (tools) > py -m pip install -r dev-requirements.txt
 (tools) > py setup.py develop
 ```
-> When you finish working with a virtual environment, run the `deactivate` command

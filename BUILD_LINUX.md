@@ -21,13 +21,13 @@ $ source venv/bin/activate
 (venv) $ # Use pip to install any Python dependencies you want
 (venv) $ deactivate
 ```
-
+> Example: `pip install -U pip Cython numpy scikit-image ipython`
 
 ## Building GodoPy
 ```
 $ python3 -m venv setup
 $ source setup/bin/activate
-(setup) $ pip install -r dev-requirements.txt
+(setup) $ pip install -U pip -r dev-requirements.txt
 (setup) $ ./bootstrap.py && ./clean.sh
 (setup) $ scons  # scons -j4 only_cython=yes && scons -j4
 (setup) $ deactivate
@@ -45,4 +45,3 @@ $ source tools/bin/activate
 (tools) $ cd GodoPy
 (tools) $ python setup.py develop
 ```
-> When you finish working with a virtual environment, run the `deactivate` command
