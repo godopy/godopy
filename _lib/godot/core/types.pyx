@@ -236,6 +236,7 @@ cdef class NodePath(CoreTypeWrapper):
         return self._cpp_object
 
     def __repr__(self):
+        self._internal_check()
         cdef cpp.String s = <cpp.String>self._cpp_object
 
         return 'NodePath(%r)' % s.py_str()
