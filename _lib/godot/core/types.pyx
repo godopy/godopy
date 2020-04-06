@@ -215,13 +215,30 @@ cdef class NodePath(CoreTypeWrapper):
         self._initialized = True
         return self
 
-    def __init__(self):
-        self._cpp_object = cpp.NodePath()
+    @staticmethod
+    def from_str(path : str):
+        cdef NodePath self = NodePath.__new__(NodePath)
+        cdef cpp.String str_path = cpp.String(path)
+        self._cpp_object = cpp.NodePath(str_path)
+        self._initialized = True
+        return self
+
+    def __init__(self, path=None):
+        if path is not None:
+            self._cpp_object = cpp.NodePath(cpp.String(str(path)))
+        else:
+            self._cpp_object = cpp.NodePath()
+
         self._initialized = True
 
     cdef cpp.NodePath to_cpp(self):
         self._internal_check()
         return self._cpp_object
+
+    def __repr__(self):
+        cdef cpp.String s = <cpp.String>self._cpp_object
+
+        return 'NodePath(%r)' % s.py_str()
 
 
 cdef class Plane(CoreTypeWrapper):
