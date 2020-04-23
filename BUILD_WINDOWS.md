@@ -17,36 +17,32 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 ```
 > cd GodoPy
 > py build_python.py
-> deps\python\PCbuild\amd64\python.exe -m venv venv
-> venv\Scripts\activate
-(venv) > cp deps\python\PC\pyconfig.h venv\Include\
-(venv) > py -m pip install -U pip Cython numpy
-(venv) > # Use pip to install any Python dependencies you want
-(venv) > deactivate
+> deps\python\PCbuild\amd64\python.exe -m venv godopy-venv
+> godopy-venv\Scripts\activate
+(godopy-venv) > cp deps\python\PC\pyconfig.h venv\Include\
+(godopy-venv) > py -m pip install -U pip Cython numpy
+(godopy-venv) > # Use pip to install any Python dependencies you want
+(godopy-venv) > deactivate
 ```
 
 
 ## Building GodoPy
 ```
-> py -m venv setup
+> py -m venv godopy-build-venv
 > setup\Scripts\activate
-(setup) > py -m pip install -r dev-requirements.txt
-(setup) > py bootstrap.py
-(setup) > venv\Scripts\activate
-(venv) > py -m pip install .\_lib
-(venv) > setup\Scripts\activate
-(setup) > scons
-(setup) > deactivate
+(godopy-build-venv) > py -m pip install -r dev-requirements.txt
+(godopy-build-venv) > py bootstrap.py
+(godopy-build-venv) > godopy-build-venv\Scripts\activate
+(godopy-build-venv) > py -m pip install .\_lib
+(godopy-build-venv) > godopy-build-venv\Scripts\activate
+(godopy-build-venv) > scons
 ```
-> If you want to run an initial build with a -j option, build with "only_cython=yes" first, otherwise the required headers will be missing
 > Python wheels inside `dist/` can be created with `py -m pep517.build .` command
 
 ## Setting up GodoPy development environment
 ```
-> cd ..  # return to the project's root
-> py -m venv tools
-> tools\Scripts\activate
-(tools) $ cd GodoPy
-(tools) > py -m pip install -r dev-requirements.txt
-(tools) > py setup.py develop
+> py -m venv ..\meta
+> ..\meta\Scripts\activate
+(meta) > py -m pip install -r dev-requirements.txt
+(meta) > py setup.py develop
 ```

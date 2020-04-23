@@ -14,33 +14,28 @@ export GODOT_BUILD=<path to Godot source folder>
 ```
 $ cd GodoPy
 $ ./build_python.py
-$ deps/python/build/bin/python3 -m venv venv
-$ source venv/bin/activate
-(venv) $ pip install -U pip Cython numpy
-(venv) $ # Use pip to install any Python dependencies you want
-(venv) $ deactivate
+$ deps/python/build/bin/python3 -m venv godopy-venv
+$ source godopy-venv/bin/activate
+(godopy-venv) $ pip install -U pip Cython numpy
+(godopy-venv) $ # Use pip to install any Python dependencies you want
 ```
-> Example: `pip install -U pip Cython numpy scikit-image ipython`
 
 ## Building GodoPy
 ```
-$ python3 -m venv setup
-$ source setup/bin/activate
-(setup) $ pip install -U pip -r dev-requirements.txt
-(setup) $ ./bootstrap.py && ./clean.sh
-(setup) $ scons  # scons -j4 only_cython=yes && scons -j4
-(setup) $ deactivate
+$ python -m venv godopy-build-venv
+$ source godopy-build-venv/bin/activate
+(godopy-build-venv) $ pip install -U pip -r dev-requirements.txt
+(godopy-build-venv) $ ./bootstrap.py
+(godopy-build-venv) $ ./clean.sh
+(godopy-build-venv) $ scons --jobs=$(sysctl -n hw.logicalcpu) only_cython=yes
+(godopy-build-venv) $ scons --jobs=$(sysctl -n hw.logicalcpu) 
 ```
-> Sometimes it is required to deactivate and reactivate the virtual environment before running scons
-> If you want to run an initial build with a -j option, build with "only_cython=yes" first, otherwise the required headers will be missing
 > Python wheels inside `dist/` can be created with `python -m pep517.build .` command
 
 
 ## Setting up GodoPy development environment
 ```
-$ cd .. # return to the project's root
-$ python3 -m venv tools
-$ source tools/bin/activate
-(tools) $ cd GodoPy
-(tools) $ python setup.py develop
+$ python -m venv ../meta
+$ source ../meta/bin/activate
+(meta) $ python setup.py develop
 ```

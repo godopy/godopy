@@ -26,7 +26,6 @@ bin
 # Build files
 .eggs/
 /build
-/venv
-/setup
 /dist
-/toolbox
+/godopy-venv
+/godopy-*-venv
