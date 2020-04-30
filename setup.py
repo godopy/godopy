@@ -64,12 +64,12 @@ class BuildExtCommand(build_ext):
             python_exe = os.path.join(python_basedir, 'PCBuild', 'amd64', 'python.exe')
             python_lib = os.path.join(python_basedir, 'Lib')
             python_dynload = os.path.join(python_basedir, 'PCBuild', 'amd64')
-            packages_dir = os.path.join('venv', 'Lib', 'site-packages')
+            packages_dir = os.path.join('godopy-venv', 'Lib', 'site-packages')
         else:
             python_exe = os.path.join(python_basedir, 'build', 'bin', 'python3.8')
             python_lib = os.path.join(python_basedir, 'build', 'lib', 'python3.8')
             python_dynload = os.path.join(python_basedir, 'build', 'lib', 'python3.8', 'lib-dynload')
-            packages_dir = os.path.join('venv', 'lib', 'python3.8', 'site-packages')
+            packages_dir = os.path.join('godopy-venv', 'lib', 'python3.8', 'site-packages')
 
         cmd = [python_exe, '-c', "from distutils.sysconfig import get_config_var; print(get_config_var('EXT_SUFFIX'))"]
         result = subprocess.run(cmd, stdout=subprocess.PIPE, check=True, universal_newlines=True)
