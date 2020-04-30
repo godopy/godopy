@@ -79,7 +79,7 @@ if env['platform'] == "osx":
         '-Wl,-undefined,dynamic_lookup',
     ])
 
-    env.Append(LIBS=[python_lib, 'dl'])
+    env.Append(LIBS=[python_lib, 'dl', 'intl'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
@@ -98,7 +98,7 @@ elif env['platform'] == 'linux':
         '-Wno-unused-result',
         '-Wsign-compare'
     ])
-    env.Append(LIBS=[python_lib, 'crypt', 'pthread', 'dl', 'util', 'm'])
+    env.Append(LIBS=[python_lib, 'crypt', 'pthread', 'dl', 'intl', 'util', 'm'])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
     # env.Append(LINKFLAGS=['-Wl,-undefined,dynamic_lookup'])
     if env['target'] in ('debug', 'd'):

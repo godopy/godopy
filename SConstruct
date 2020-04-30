@@ -216,7 +216,7 @@ if env['platform'] == 'linux':
     ])
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
 
-    env.Append(LIBS=[python_lib, 'crypt', 'pthread', 'dl', 'util', 'm'])
+    env.Append(LIBS=[python_lib, 'crypt', 'pthread', 'dl', 'intl', 'util', 'm'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
@@ -259,7 +259,7 @@ elif env['platform'] == 'osx':
         '-Wl,-undefined,dynamic_lookup',
     ])
 
-    env.Append(LIBS=[python_lib, 'dl'])
+    env.Append(LIBS=[python_lib, 'dl', 'intl'])
 
     if env['target'] == 'debug':
         env.Append(CCFLAGS=['-Og'])
