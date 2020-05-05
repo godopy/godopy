@@ -3,11 +3,8 @@
 [Python](https://www.python.org) scripting for the [Godot game engine](http://godotengine.org),
 [Cython](https://cython.org) and Python bindings to the Godot script API.
 
-The goal of this project is to extend Godot with [SciPy ecosystem](https://scipy.org)
-and to add interactive scripting features to the editor.
-
-GodoPy extends and complements GDScript, there is no goal to replace or
-provide an alternative to anything in the core Godot engine.
+The goal of this project is make Python ecosystem accessible to Godot developers with special focus
+on [SciPy](https://scipy.org) and related projects.
 
 ## Work in progress
 
