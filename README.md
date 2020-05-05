@@ -1,13 +1,20 @@
 # GodoPy
 
-Different [Python](https://www.python.org/) bindings to the [Godot game engine](http://godotengine.org/)
+[Python](https://www.python.org) scripting for the [Godot game engine](http://godotengine.org),
+[Cython](https://cython.org) and Python bindings to the Godot script API.
+
+The goal of this project is to extend Godot with [SciPy ecosystem](https://scipy.org)
+and to add interactive scripting features to the editor.
+
+GodoPy extends and complements GDScript, there is no goal to replace or
+provide an alternative to anything in the core Godot engine.
 
 ## Work in progress
 
 The bindings are a work in progress. Some planned features are missing and the existing APIs can be unstable!
 
-Godot 4 features are not yet supported, master branch tracks Godot 3.2
-This will change in the near future, master branch will track the Godot's master
+Godot 4 features are not yet supported, master branch tracks the 3.2 branch of Godot.
+This will change in the near future, master branch will track the Godot's master.
 
 ## Features
 
@@ -36,4 +43,4 @@ This will change in the near future, master branch will track the Godot's master
 
 ## Donate
 
-If you like to support this project consider becoming a patron on [Patreon](https://www.patreon.com/join/godopy)
+If you think that this project is useful, please support us on [Patreon](https://www.patreon.com/join/godopy).
