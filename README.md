@@ -3,9 +3,6 @@
 [Python](https://www.python.org) scripting for the [Godot game engine](http://godotengine.org),
 [Cython](https://cython.org) and Python bindings to the Godot script API.
 
-The goal of this project is make Python ecosystem accessible to Godot developers with special focus
-on [SciPy](https://scipy.org) and related projects.
-
 ## Work in progress
 
 The bindings are a work in progress. Some planned features are missing and the existing APIs can be unstable!
