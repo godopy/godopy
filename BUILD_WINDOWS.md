@@ -35,6 +35,7 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 (godopy-build-venv) > godopy-build-venv\Scripts\activate
 (godopy-build-venv) > py -m pip install .\_lib
 (godopy-build-venv) > godopy-build-venv\Scripts\activate
+(godopy-build-venv) > scons only_cython=yes
 (godopy-build-venv) > scons
 ```
 > Python wheels inside `dist/` can be created with `py -m pep517.build .` command

@@ -29,7 +29,8 @@ $ source godopy-build-venv/bin/activate
 (godopy-build-venv) $ pip install -U pip -r dev-requirements.txt
 (godopy-build-venv) $ ./bootstrap.py
 (godopy-build-venv) $ ./clean.sh
-(godopy-build-venv) $ scons  # scons -j4 only_cython=yes && scons -j4
+(godopy-build-venv) $ scons only_cython=yes
+(godopy-build-venv) $ scons
 ```
 > Python wheels inside `dist/` can be created with `python -m pep517.build .` command
 
