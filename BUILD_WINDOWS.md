@@ -17,33 +17,32 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 ```
 > cd GodoPy
 > py build_python.py
-> deps\python\PCbuild\amd64\python.exe -m venv godopy-venv
-> godopy-venv\Scripts\activate
-(godopy-venv) > cp deps\python\PC\pyconfig.h venv\Include\
-(godopy-venv) > py -m pip install -U pip Cython numpy
-(godopy-venv) > # Use pip to install any Python dependencies you want
-(godopy-venv) > deactivate
+> deps\python\PCbuild\amd64\python.exe -m venv env
+> env\Scripts\activate
+(env) > cp deps\python\PC\pyconfig.h env\Include\
+(env) > py -m pip install -U pip Cython numpy
+(env) > # Install any Python dependencies you'd like to use inside the engine
 ```
 
 
 ## Building GodoPy
 ```
-> py -m venv godopy-build-venv
-> setup\Scripts\activate
-(godopy-build-venv) > py -m pip install -r dev-requirements.txt
-(godopy-build-venv) > py bootstrap.py
-(godopy-build-venv) > godopy-build-venv\Scripts\activate
-(godopy-build-venv) > py -m pip install .\_lib
-(godopy-build-venv) > godopy-build-venv\Scripts\activate
-(godopy-build-venv) > scons only_cython=yes
-(godopy-build-venv) > scons
+> py -m venv gdpy-setup
+> gdpy-setup\Scripts\activate
+(gdpy-setup) > py -m pip install -U pip -r setup-requirements.txt
+(gdpy-setup) > py bootstrap.py
+(gdpy-setup) > env\Scripts\activate
+(env) > py -m pip install .\_lib
+(env) > gdpy-setup\Scripts\activate
+(gdpy-setup) > scons only_cython=yes venv=env
+(gdpy-setup) > scons venv=env
 ```
-> Python wheels inside `dist/` can be created with `py -m pep517.build .` command
+
 
 ## Setting up GodoPy development environment
 ```
 > py -m venv ..\meta
 > ..\meta\Scripts\activate
 (meta) > py -m pip install -r dev-requirements.txt
-(meta) > py setup.py develop
+(meta) > py setup.py develop venv=env
 ```

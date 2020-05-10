@@ -29,6 +29,7 @@ opts.Add(EnumVariable('platform', "Compilation platform", host_platform, ['windo
 opts.Add(EnumVariable('p', "Compilation target, alias for 'platform'", host_platform, ['windows', 'linux', 'osx']))
 opts.Add(BoolVariable('use_llvm', "Use the LLVM / Clang compiler", 'no'))
 opts.Add(BoolVariable('python_debug', 'Use debug build of Python', False))
+opts.Add('venv', 'Engine-level Python virtual environment', 'env')
 
 godot_headers_path = ${repr(godot_headers_path)}
 godopy_bindings_path = ${repr(godopy_bindings_path)}
@@ -52,9 +53,10 @@ if env['platform'] == '':
     print("No valid target platform selected.")
     quit()
 
+venv = env['venv']
 python_include = 'python3.8d' if env['python_debug'] else 'python3.8'
 python_lib = 'python3.8d' if env['python_debug'] else 'python3.8'
-python_internal_env = os.path.join(godopy_bindings_path, 'godopy-venv', 'lib', 'python3.8', 'site-packages')
+python_internal_env = os.path.join(godopy_bindings_path, venv, 'lib', 'python3.8', 'site-packages')
 
 if env['platform'] == "osx":
     # Use Clang on macOS by default
@@ -107,7 +109,7 @@ elif env['platform'] == 'linux':
         env.Append(CCFLAGS=['-g', '-O3'])
 
 elif env['platform'] == 'windows':
-    python_internal_env = os.path.join(godopy_bindings_path, 'godopy-venv', 'Lib', 'site-packages')
+    python_internal_env = os.path.join(godopy_bindings_path, venv, 'Lib', 'site-packages')
 
     env.Append(LIBPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'PC')])
@@ -128,7 +130,7 @@ elif env['platform'] == 'windows':
 
 cython_builder = os.path.join(
     godopy_bindings_path,
-    'godopy-venv',
+    venv,
     'Scripts' if sys.platform == 'win32' else 'bin',
     'godopy_cython.exe' if sys.platform == 'win32' else 'godopy_cython'
 )

@@ -157,6 +157,7 @@ def installscripts(force):
         )
 
     save_argv = sys.argv[:]
+
     sys.argv = [sys.argv[0], 'install']
     if force:
         sys.argv.append('--force')

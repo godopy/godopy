@@ -1,5 +1,5 @@
 rm _lib/godot/*.cpp
 rm _lib/godot/core/*.cpp
 rm _lib/godot/bindings/*.cpp
-source godopy-venv/bin/activate
+source $1/bin/activate
 pip install ./_lib

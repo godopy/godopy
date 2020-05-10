@@ -28,6 +28,15 @@ bin
 .eggs/
 build/
 /dist
+/_godopy.*
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
 /godopy-venv
 /godopy-*-venv
-/_godopy.*
+/gdpy-*

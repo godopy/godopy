@@ -118,6 +118,11 @@ opts.Add(
     'Build shared library',
     ''
 )
+opts.Add(
+    'venv',
+    'Engine-level Python virtual environment',
+    'env'
+)
 opts.Add(PathVariable(
     'headers_dir',
     'Path to the directory containing Godot headers',
@@ -163,7 +168,7 @@ opts.Add(
     os.environ.get("ANDROID_NDK_ROOT", None)
 )
 
-env = Environment(ENV = os.environ)
+env = Environment(ENV=os.environ)
 opts.Update(env)
 Help(opts.GenerateHelpText(env))
 
@@ -179,9 +184,10 @@ if (
 if env['bits'] == 'default':
     env['bits'] = '64' if is64 else '32'
 
+venv = env['venv']
 python_include = 'python3.8d' if env['python_debug'] else 'python3.8'
 python_lib = 'python3.8d' if env['python_debug'] else 'python3.8'
-python_internal_env = os.path.join('godopy-venv', 'lib', 'python3.8', 'site-packages')
+python_internal_env = os.path.join(venv, 'lib', 'python3.8', 'site-packages')
 
 # This makes sure to keep the session environment variables on Windows.
 # This way, you can run SCons in a Visual Studio 2017 prompt and it will find
@@ -195,7 +201,7 @@ if host_platform == 'windows' and env['platform'] != 'android':
 
     opts.Update(env)
     env['bits'] = bits
-    python_internal_env = os.path.join('godopy-venv', 'Lib', 'site-packages')
+    python_internal_env = os.path.join(venv, 'Lib', 'site-packages')
 
 if env['platform'] == 'linux':
     if env['use_llvm']:
@@ -402,7 +408,7 @@ elif env['platform'] == 'android':
     env.Append(CCFLAGS=arch_info['ccflags'])
 
 cython_builder = os.path.join(
-    'godopy-venv',
+    venv,
     'Scripts' if sys.platform == 'win32' else 'bin',
     'godopy_cython.exe' if sys.platform == 'win32' else 'godopy_cython'
 )

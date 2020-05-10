@@ -15,29 +15,28 @@ export GODOT_BUILD=<path to Godot source folder>
 ```
 $ cd GodoPy
 $ ./build_python.py
-$ deps/python/build/bin/python3 -m venv godopy-venv
-$ source godopy-venv/bin/activate
-(godopy-venv) $ pip install -U pip Cython numpy
-(godopy-venv) $ # Use pip to install any Python dependencies you want
+$ deps/python/build/bin/python3 -m venv env
+$ source env/bin/activate
+(env) $ pip install -U pip Cython numpy
+(env) $ # Install any Python dependencies you'd like to use inside the engine
 ```
 
 
 ## Building GodoPy
 ```
-$ python -m venv godopy-build-venv
-$ source godopy-build-venv/bin/activate
-(godopy-build-venv) $ pip install -U pip -r dev-requirements.txt
-(godopy-build-venv) $ ./bootstrap.py
-(godopy-build-venv) $ ./clean.sh
-(godopy-build-venv) $ scons only_cython=yes
-(godopy-build-venv) $ scons
+$ python -m venv gdpy-setup
+$ source gdpy-setup/bin/activate
+(gdpy-setup) $ pip install -U pip -r dev-requirements.txt
+(gdpy-setup) $ ./bootstrap.py
+(gdpy-setup) $ ./clean.sh env
+(gdpy-setup) $ scons only_cython=yes venv=env
+(gdpy-setup) $ scons venv=env
 ```
-> Python wheels inside `dist/` can be created with `python -m pep517.build .` command
 
 
 ## Setting up GodoPy development environment
 ```
 $ python -m venv ../meta
 $ source ../meta/bin/activate
-(meta) $ python setup.py develop
+(meta) $ python setup.py develop venv=env
 ```
