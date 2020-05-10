@@ -34,8 +34,8 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 (gdpy-setup) > env\Scripts\activate
 (env) > py -m pip install .\_lib
 (env) > gdpy-setup\Scripts\activate
-(gdpy-setup) > scons only_cython=yes venv=env
-(gdpy-setup) > scons venv=env
+(gdpy-setup) > scons only_cython=yes
+(gdpy-setup) > scons
 ```
 
 
@@ -44,5 +44,5 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 > py -m venv ..\meta
 > ..\meta\Scripts\activate
 (meta) > py -m pip install -r dev-requirements.txt
-(meta) > py setup.py develop venv=env
+(meta) > py setup.py develop
 ```

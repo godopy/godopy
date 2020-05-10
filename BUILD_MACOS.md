@@ -28,8 +28,8 @@ $ source gdpy-setup/bin/activate
 (gdpy-setup) $ pip install -U pip -r setup-requirements.txt
 (gdpy-setup) $ ./bootstrap.py
 (gdpy-setup) $ ./clean.sh env
-(gdpy-setup) $ scons --jobs=$(sysctl -n hw.logicalcpu) only_cython=yes venv=env
-(gdpy-setup) $ scons --jobs=$(sysctl -n hw.logicalcpu) venv=env
+(gdpy-setup) $ scons --jobs=$(sysctl -n hw.logicalcpu) only_cython=yes
+(gdpy-setup) $ scons --jobs=$(sysctl -n hw.logicalcpu)
 ```
 
 
@@ -37,5 +37,5 @@ $ source gdpy-setup/bin/activate
 ```
 $ python -m venv ../meta
 $ source ../meta/bin/activate
-(meta) $ python setup.py develop venv=env
+(meta) $ python setup.py develop
 ```

@@ -44,7 +44,7 @@ class GodoPyExtension(Extension):
 
 PYTHON_IGNORE = ('lib2to3', 'tkinter', 'ensurepip', 'parser', 'test', 'pip')
 PYTHONLIB_FORMAT = 'xztar'
-DEFAULT_VENV = 'gdpy-env'
+DEFAULT_VENV = 'env'
 
 
 argv = []

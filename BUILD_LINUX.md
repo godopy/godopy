@@ -29,8 +29,8 @@ $ source gdpy-setup/bin/activate
 (gdpy-setup) $ pip install -U pip -r dev-requirements.txt
 (gdpy-setup) $ ./bootstrap.py
 (gdpy-setup) $ ./clean.sh env
-(gdpy-setup) $ scons only_cython=yes venv=env
-(gdpy-setup) $ scons venv=env
+(gdpy-setup) $ scons only_cython=yes
+(gdpy-setup) $ scons
 ```
 
 
@@ -38,5 +38,5 @@ $ source gdpy-setup/bin/activate
 ```
 $ python -m venv ../meta
 $ source ../meta/bin/activate
-(meta) $ python setup.py develop venv=env
+(meta) $ python setup.py develop
 ```
