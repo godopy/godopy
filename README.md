@@ -7,8 +7,7 @@
 
 The bindings are a work in progress. Some planned features are missing and the existing APIs can be unstable!
 
-Godot 4 features are not yet supported, master branch tracks the 3.2 branch of Godot.
-This will change in the near future, master branch will track the Godot's master.
+Godot 4 features are not yet supported, master branch tracks 3.2 branch of Godot.
 
 ## Features
 
