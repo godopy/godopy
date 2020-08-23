@@ -72,7 +72,7 @@ class BuildExtCommand(build_ext):
             extension_path = extension_path[len(cwd):].lstrip(os.sep)
 
         ext_basepath, ext_fn = os.path.split(extension_path)
-        python_basedir = os.path.join('deps', 'python')
+        python_basedir = os.path.join('3rdparty', 'python')
 
         if sys.platform == 'win32':
             python_exe = os.path.join(python_basedir, 'PCBuild', 'amd64', 'python.exe')

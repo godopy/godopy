@@ -63,8 +63,8 @@ if env['platform'] == "osx":
     env['CXX'] = 'clang++'
 
     libdir = 'config-3.8d-darwin' if env['python_debug'] else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'build', 'lib', 'python3.8', libdir)])
-    env.Append(CPPPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'build', 'include', python_include)])
+    env.Append(LIBPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'build', 'lib', 'python3.8', libdir)])
+    env.Append(CPPPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'build', 'include', python_include)])
     env.Append(CCFLAGS=[
         '-g',
         '-std=c++14',
@@ -89,8 +89,8 @@ if env['platform'] == "osx":
         env.Append(CCFLAGS=['-O3'])
 
 elif env['platform'] == 'linux':
-    env.Append(LIBPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'build', 'lib')])
-    env.Append(CPPPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'build', 'include', python_include)])
+    env.Append(LIBPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'build', 'lib')])
+    env.Append(CPPPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'build', 'include', python_include)])
     env.Append(CCFLAGS=[
         '-fPIC',
         '-g',
@@ -111,9 +111,9 @@ elif env['platform'] == 'linux':
 elif env['platform'] == 'windows':
     python_internal_env = os.path.join(godopy_bindings_path, venv, 'Lib', 'site-packages')
 
-    env.Append(LIBPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'PCBuild', 'amd64')])
-    env.Append(CPPPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'PC')])
-    env.Append(CPPPATH=[os.path.join(godopy_bindings_path, 'deps', 'python', 'Include')])
+    env.Append(LIBPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'PCBuild', 'amd64')])
+    env.Append(CPPPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'PC')])
+    env.Append(CPPPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'Include')])
     env.Append(CPPDEFINES=['WIN32', '_WIN32', '_WINDOWS', '_CRT_SECURE_NO_WARNINGS'])
     env.Append(CCFLAGS=['-W3', '-GR'])
 

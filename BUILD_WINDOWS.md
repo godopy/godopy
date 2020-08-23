@@ -17,7 +17,7 @@ set-executionpolicy RemoteSigned  # To enable virtualenv activation
 ```
 > cd GodoPy
 > py build_python.py
-> deps\python\PCbuild\amd64\python.exe -m venv env
+> 3rdparty\python\PCbuild\amd64\python.exe -m venv env
 > env\Scripts\activate
 (env) > cp deps\python\PC\pyconfig.h env\Include\
 (env) > py -m pip install -U pip Cython numpy

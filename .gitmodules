@@ -1,8 +1,4 @@
-[submodule "deps/python"]
-	path = deps/python
+[submodule "3rdparty/python"]
+	path = 3rdparty/python
 	url = https://github.com/python/cpython.git
 	branch = 3.8
-[submodule "deps/cython"]
-	path = deps/cython
-	url = https://github.com/cython/cython.git
-	branch = master

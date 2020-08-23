@@ -18,7 +18,7 @@ export GODOT_BUILD=<path to Godot source folder>
 ```
 $ cd GodoPy
 $ ./build_python.py
-$ deps/python/build/bin/python3 -m venv env
+$ 3rdparty/python/build/bin/python3 -m venv env
 $ source env/bin/activate
 (env) $ pip install -U pip Cython numpy
 (env) $ # Install any Python dependencies you'd like to use inside the engine

@@ -19,10 +19,10 @@ OVERLAYS_WINDOWS = (
 def build_python():
     root_dir = os.path.abspath(os.path.dirname(__file__))
 
-    prefix = os.path.join(root_dir, 'deps', 'python', 'build')
+    prefix = os.path.join(root_dir, '3rdparty', 'python', 'build')
     cwd = os.path.abspath(os.getcwd())
-    python_path = os.path.join(root_dir, 'deps', 'python')
-    overlay_path = os.path.join(root_dir, 'deps', 'overlay', 'python')
+    python_path = os.path.join(root_dir, '3rdparty', 'python')
+    overlay_path = os.path.join(root_dir, '3rdparty', 'overlay', 'python')
 
     if 'VIRTUAL_ENV' in os.environ:
         raise SystemExit("Please deactivate virtualenv")

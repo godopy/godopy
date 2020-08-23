@@ -208,8 +208,8 @@ if env['platform'] == 'linux':
         env['CXX'] = 'clang++'
 
     # libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join('deps', 'python', 'build', 'lib')])
-    env.Append(CPPPATH=[os.path.join('deps', 'python', 'build', 'include', python_include)])
+    env.Append(LIBPATH=[os.path.join('3rdparty', 'python', 'build', 'lib')])
+    env.Append(CPPPATH=[os.path.join('3rdparty', 'python', 'build', 'include', python_include)])
 
     env.Append(CCFLAGS=[
         '-fPIC',
@@ -241,8 +241,8 @@ elif env['platform'] == 'osx':
     env['CXX'] = 'clang++'
 
     libdir = 'config-3.8d-darwin' if env['python_debug'] else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join('deps', 'python', 'build', 'lib', 'python3.8', libdir)])
-    env.Append(CPPPATH=[os.path.join('deps', 'python', 'build', 'include', python_include)])
+    env.Append(LIBPATH=[os.path.join('3rdparty', 'python', 'build', 'lib', 'python3.8', libdir)])
+    env.Append(CPPPATH=[os.path.join('3rdparty', 'python', 'build', 'include', python_include)])
 
     if env['bits'] == '32':
         raise ValueError(
@@ -310,9 +310,9 @@ elif env['platform'] == 'ios':
         env.Append(CCFLAGS=['-O3'])
 
 elif env['platform'] == 'windows':
-    env.Append(LIBPATH=[os.path.join('deps', 'python', 'PCBuild', 'amd64')])
-    env.Append(CPPPATH=[os.path.join('deps', 'python', 'PC')])
-    env.Append(CPPPATH=[os.path.join('deps', 'python', 'Include')])
+    env.Append(LIBPATH=[os.path.join('3rdparty', 'python', 'PCBuild', 'amd64')])
+    env.Append(CPPPATH=[os.path.join('3rdparty', 'python', 'PC')])
+    env.Append(CPPPATH=[os.path.join('3rdparty', 'python', 'Include')])
 
     python_lib = 'python38_d' if env['python_debug'] else 'python38'
     env.Append(LIBS=[python_lib])
