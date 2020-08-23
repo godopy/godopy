@@ -43,17 +43,17 @@ in which we’ll place a few files.
 
 Open Godot and create a new project. For this example, we will place it in a folder called `demo` inside our GodoPy project’s folder structure.
 
-In our demo project, we’ll create a scene containing a Node2D called “Main” and we’ll save it as `main.tscn`.
+In our demo project, we’ll create a scene containing a Node2D called “Main” and we’ll save it as `Main.tscn`.
 We’ll come back to that later.
 
 Back in the top-level project folder, we’re also going to create a subfolder called `_demo`
 in which we’ll place our source files.
 
-You should now have `demo`, `godopy`, `_demo` and `toolbox` directories in your GodoPy project.
+You should now have `demo`, `godopy`, `_demo` and `meta` directories in your GodoPy project.
 
-Place an empty file `__init__.pxd` inside the `_demo` folder, Cython requires this in order to perform C-level imports:
+Place an empty `__init__.py` files inside the `_demo` folder, this will turn it into a Python package:
 ```
-$ touch _demo/__init__.pxd
+$ touch _demo/__init__.py
 ```
 
 In the `_demo` folder, we’ll start with creating our Cython definition file for the GDNative node we’ll be creating.
@@ -156,7 +156,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve(strict=True).parents[1]
 
-GODOT_PROJECT = 'demo'
+GODOT_PROJECT = BASE_DIR / 'demo'
 PYTHON_PACKAGE = '_demo'
 GDNATIVE_LIBRARY = 'cython_example.gdnlib'
 
@@ -169,9 +169,33 @@ NATIVESCRIPT_SOURCES = {
 }
 ```
 
+Create a `control.py` file in root directory:
+```py
+#!/usr/bin/env python
+"""GodoPy's command-line utility for administrative tasks."""
+import os
+
+
+def main():
+    """Run administrative tasks."""
+    os.environ.setdefault('GODOPY_PROJECT_MODULE', '_demo.project')
+    try:
+        from godot_tools.cli import godopy
+    except ImportError as exc:
+        raise ImportError(
+            "Couldn't import GodoPy. Are you sure it's installed? Did you "
+            "forget to activate a virtual environment?"
+        ) from exc
+    godopy()
+
+
+if __name__ == '__main__':
+    main()
+```
+
 Now we can execute the setup script and build our GDNative extensions:
 ```
-$ GODOPY_PROJECT_MODULE=_demo godopy installscripts
+$ python control.py installscripts
 ```
 
 ### Using the GDNative module
