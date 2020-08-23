@@ -1,6 +1,9 @@
 ## Installing dependencies
 ```
 sudo apt-get install python3-venv python3-dev
+```
+If not already done, enable the Ubuntu source 'deb-src' repository in 'Software and Updates' before installing these python deps: 
+```
 sudo apt-get build-dep python3.8
 ```
 
