@@ -29,7 +29,7 @@ opts.Add(EnumVariable('platform', "Compilation platform", host_platform, ['windo
 opts.Add(EnumVariable('p', "Compilation target, alias for 'platform'", host_platform, ['windows', 'linux', 'osx']))
 opts.Add(BoolVariable('use_llvm', "Use the LLVM / Clang compiler", 'no'))
 opts.Add(BoolVariable('python_debug', 'Use debug build of Python', False))
-opts.Add('venv', 'Engine-level Python virtual environment', 'env')
+opts.Add('venv', 'Engine-level Python virtual environment', '.env')
 
 godot_headers_path = ${repr(godot_headers_path)}
 godopy_bindings_path = ${repr(godopy_bindings_path)}
@@ -54,16 +54,16 @@ if env['platform'] == '':
     quit()
 
 venv = env['venv']
-python_include = 'python3.8d' if env['python_debug'] else 'python3.8'
-python_lib = 'python3.8d' if env['python_debug'] else 'python3.8'
-python_internal_env = os.path.join(godopy_bindings_path, venv, 'lib', 'python3.8', 'site-packages')
+python_include = 'python3.9d' if env['python_debug'] else 'python3.9'
+python_lib = 'python3.9d' if env['python_debug'] else 'python3.9'
+python_internal_env = os.path.join(godopy_bindings_path, venv, 'lib', 'python3.9', 'site-packages')
 
 if env['platform'] == "osx":
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
 
-    libdir = 'config-3.8d-darwin' if env['python_debug'] else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'build', 'lib', 'python3.8', libdir)])
+    libdir = 'config-3.9d-darwin' if env['python_debug'] else 'config-3.9-darwin'
+    env.Append(LIBPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'build', 'lib', 'python3.9', libdir)])
     env.Append(CPPPATH=[os.path.join(godopy_bindings_path, '3rdparty', 'python', 'build', 'include', python_include)])
     env.Append(CCFLAGS=[
         '-g',
@@ -117,7 +117,7 @@ elif env['platform'] == 'windows':
     env.Append(CPPDEFINES=['WIN32', '_WIN32', '_WINDOWS', '_CRT_SECURE_NO_WARNINGS'])
     env.Append(CCFLAGS=['-W3', '-GR'])
 
-    python_lib = 'python38_d' if env['python_debug'] else 'python38'
+    python_lib = 'python39_d' if env['python_debug'] else 'python39'
     env.Append(LIBS=[python_lib])
 
     if env['target'] in ('debug', 'd'):

@@ -14,7 +14,6 @@ if not hasattr(sys, 'version_info') or sys.version_info < (3, 6):
 try:
     import pycparser  # noqa
     import autopxd    # noqa
-    import scons      # noqa
 except ImportError:
     raise SystemExit("Required packages were not found. Please install them from 'setup-requirements.txt'.")
 

@@ -14,28 +14,36 @@ export GODOT_BUILD=<path to Godot source folder>
 ```
 $ cd GodoPy
 $ ./build_python.py
-$ 3rdparty/python/build/bin/python3 -m venv env
-$ source env/bin/activate
-(env) $ pip install -U pip Cython numpy
-(env) $ # Install any Python dependencies you'd like to use inside the engine
+$ 3rdparty/python/build/bin/python3 -m venv .env
+$ source .env/bin/activate
+(.env) $ pip install -U pip Cython numpy
+(.env) $ # Install any Python dependencies you'd like to use inside the engine
 ```
 
 
 ## Building GodoPy
 ```
-$ python -m venv gdpy-setup
-$ source gdpy-setup/bin/activate
-(gdpy-setup) $ pip install -U pip -r setup-requirements.txt
-(gdpy-setup) $ ./bootstrap.py
-(gdpy-setup) $ ./clean.sh env
-(gdpy-setup) $ scons --jobs=$(sysctl -n hw.logicalcpu) only_cython=yes
-(gdpy-setup) $ scons --jobs=$(sysctl -n hw.logicalcpu)
+$ python3 -m venv .setup
+$ source .setup/bin/activate
+(.setup) $ pip install -U pip -r setup-requirements.txt
+(.setup) $ ./bootstrap.py
+(.setup) $ ./clean.sh .env
+(.setup) $ scons --jobs=$(sysctl -n hw.logicalcpu) only_cython=yes
+(.setup) $ scons --jobs=$(sysctl -n hw.logicalcpu)
 ```
 
 
 ## Setting up GodoPy development environment
+
+Create "meta" virtual environment:
 ```
-$ python -m venv ../meta
+$ python3 -m venv ../meta
 $ source ../meta/bin/activate
+```
+> "meta" is an example, any other name would work ("venv", "my-game" etc)
+> you may activate an existing virtual environment, GodoPy will be installed there
+
+Build and link GodoPy inside created virtualenv:
+```
 (meta) $ python setup.py develop
 ```

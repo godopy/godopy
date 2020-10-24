@@ -40,6 +40,7 @@ env.bak/
 /godopy-venv
 /godopy-*-venv
 /gdpy-*
+/.setup
 
 # Gprof output
 gmon.out

@@ -121,7 +121,7 @@ opts.Add(
 opts.Add(
     'venv',
     'Engine-level Python virtual environment',
-    'env'
+    '.env'
 )
 opts.Add(PathVariable(
     'headers_dir',
@@ -185,9 +185,9 @@ if env['bits'] == 'default':
     env['bits'] = '64' if is64 else '32'
 
 venv = env['venv']
-python_include = 'python3.8d' if env['python_debug'] else 'python3.8'
-python_lib = 'python3.8d' if env['python_debug'] else 'python3.8'
-python_internal_env = os.path.join(venv, 'lib', 'python3.8', 'site-packages')
+python_include = 'python3.9d' if env['python_debug'] else 'python3.9'
+python_lib = 'python3.9d' if env['python_debug'] else 'python3.9'
+python_internal_env = os.path.join(venv, 'lib', 'python3.9', 'site-packages')
 
 # This makes sure to keep the session environment variables on Windows.
 # This way, you can run SCons in a Visual Studio 2017 prompt and it will find
@@ -207,7 +207,7 @@ if env['platform'] == 'linux':
     if env['use_llvm']:
         env['CXX'] = 'clang++'
 
-    # libdir = 'config-3.8d-darwin' if env['target'] == 'debug' else 'config-3.8-darwin'
+    # libdir = 'config-3.9d-darwin' if env['target'] == 'debug' else 'config-3.9-darwin'
     env.Append(LIBPATH=[os.path.join('3rdparty', 'python', 'build', 'lib')])
     env.Append(CPPPATH=[os.path.join('3rdparty', 'python', 'build', 'include', python_include)])
 
@@ -240,8 +240,8 @@ elif env['platform'] == 'osx':
     # Use Clang on macOS by default
     env['CXX'] = 'clang++'
 
-    libdir = 'config-3.8d-darwin' if env['python_debug'] else 'config-3.8-darwin'
-    env.Append(LIBPATH=[os.path.join('3rdparty', 'python', 'build', 'lib', 'python3.8', libdir)])
+    libdir = 'config-3.9d-darwin' if env['python_debug'] else 'config-3.9-darwin'
+    env.Append(LIBPATH=[os.path.join('3rdparty', 'python', 'build', 'lib', 'python3.9', libdir)])
     env.Append(CPPPATH=[os.path.join('3rdparty', 'python', 'build', 'include', python_include)])
 
     if env['bits'] == '32':
@@ -314,7 +314,7 @@ elif env['platform'] == 'windows':
     env.Append(CPPPATH=[os.path.join('3rdparty', 'python', 'PC')])
     env.Append(CPPPATH=[os.path.join('3rdparty', 'python', 'Include')])
 
-    python_lib = 'python38_d' if env['python_debug'] else 'python38'
+    python_lib = 'python39_d' if env['python_debug'] else 'python39'
     env.Append(LIBS=[python_lib])
 
     if host_platform == 'windows' and not env['use_mingw']:
