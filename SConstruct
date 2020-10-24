@@ -70,6 +70,17 @@ else:
         'platform=<platform>'
     )
 
+env = Environment(ENV = os.environ)
+
+is64 = sys.maxsize > 2**32
+if (
+    env['TARGET_ARCH'] == 'amd64' or
+    env['TARGET_ARCH'] == 'emt64' or
+    env['TARGET_ARCH'] == 'x86_64' or
+    env['TARGET_ARCH'] == 'arm64-v8a'
+):
+    is64 = True
+
 opts = Variables([], ARGUMENTS)
 
 opts.Add(EnumVariable(
@@ -82,8 +93,8 @@ opts.Add(EnumVariable(
 opts.Add(EnumVariable(
     'bits',
     'Target platform bits',
-    'default',
-    ('default', '32', '64')
+    '64' if is64 else '32',
+    ('32', '64')
 ))
 opts.Add(BoolVariable(
     'use_llvm',
@@ -167,6 +178,11 @@ opts.Add(
     'Path to your Android NDK installation. By default, uses ANDROID_NDK_ROOT from your defined environment variables.',
     os.environ.get("ANDROID_NDK_ROOT", None)
 )
+opts.Add(BoolVariable(
+	'generate_template_get_node',
+	"Generate a template version of the Node class's get_node.",
+	True
+))
 
 env = Environment(ENV=os.environ)
 opts.Update(env)
@@ -188,6 +204,9 @@ venv = env['venv']
 python_include = 'python3.9d' if env['python_debug'] else 'python3.9'
 python_lib = 'python3.9d' if env['python_debug'] else 'python3.9'
 python_internal_env = os.path.join(venv, 'lib', 'python3.9', 'site-packages')
+
+opts.Update(env)
+Help(opts.GenerateHelpText(env))
 
 # This makes sure to keep the session environment variables on Windows.
 # This way, you can run SCons in a Visual Studio 2017 prompt and it will find
@@ -218,14 +237,16 @@ if env['platform'] == 'linux':
         '-Wwrite-strings',
         '-fwrapv',
         '-Wno-unused-result',
-        '-Wsign-compare'
+        '-Wsign-compare',
+        '-Wwrite-strings'
     ])
+
     env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
 
     env.Append(LIBS=[python_lib, 'crypt', 'pthread', 'dl', 'intl', 'util', 'm'])
 
     if env['target'] == 'debug':
-        env.Append(CCFLAGS=['-Og'])
+        env.Append(CCFLAGS=['-Og', '-g'])
     elif env['target'] == 'release':
         env.Append(CCFLAGS=['-O3'])
 
@@ -258,6 +279,7 @@ elif env['platform'] == 'osx':
         '-Wsign-compare',
         # '-Wunreachable-code'
     ])
+
     env.Append(LINKFLAGS=[
         '-arch',
         'x86_64',
@@ -268,7 +290,7 @@ elif env['platform'] == 'osx':
     env.Append(LIBS=[python_lib, 'dl', 'intl'])
 
     if env['target'] == 'debug':
-        env.Append(CCFLAGS=['-Og'])
+        env.Append(CCFLAGS=['-Og', '-g'])
     elif env['target'] == 'release':
         env.Append(CCFLAGS=['-O3'])
 
@@ -293,7 +315,7 @@ elif env['platform'] == 'ios':
     env['AR'] = compiler_path + 'ar'
     env['RANLIB'] = compiler_path + 'ranlib'
 
-    env.Append(CCFLAGS=['-g', '-std=c++14', '-arch', env['ios_arch'], '-isysroot', sdk_path])
+    env.Append(CCFLAGS=['-std=c++14', '-arch', env['ios_arch'], '-isysroot', sdk_path])
     env.Append(LINKFLAGS=[
         '-arch',
         env['ios_arch'],
@@ -305,7 +327,7 @@ elif env['platform'] == 'ios':
     ])
 
     if env['target'] == 'debug':
-        env.Append(CCFLAGS=['-Og'])
+        env.Append(CCFLAGS=['-Og', '-g'])
     elif env['target'] == 'release':
         env.Append(CCFLAGS=['-O3'])
 
@@ -343,13 +365,15 @@ elif env['platform'] == 'windows':
 
     # Native or cross-compilation using MinGW
     if host_platform == 'linux' or host_platform == 'osx' or env['use_mingw']:
-        env.Append(CCFLAGS=['-g', '-O3', '-std=c++14', '-Wwrite-strings'])
+        # These options are for a release build even using target=debug
+        env.Append(CCFLAGS=['-O3', '-std=c++14', '-Wwrite-strings'])
         env.Append(LINKFLAGS=[
             '--static',
             '-Wl,--no-undefined',
             '-static-libgcc',
             '-static-libstdc++',
         ])
+
 elif env['platform'] == 'android':
     if host_platform == 'windows':
         env = env.Clone(tools=['mingw'])
@@ -439,11 +463,12 @@ if 'custom_api_file' in env:
 else:
     json_api_file = os.path.join(os.getcwd(), '_lib', 'godot_headers', 'api.json')
 
+
 if env['generate_bindings']:
     # Actually create the bindings here
     import binding_generator
 
-    binding_generator.generate_bindings(json_api_file)
+    binding_generator.generate_bindings(json_api_file, env['generate_template_get_node'])
 
 # Sources to compile
 cython_sources = [env.CythonSource(str(fp).replace('.pyx', '.cpp'), fp) for fp in Glob('_lib/godot/*.pyx')]
