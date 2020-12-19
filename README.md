@@ -5,9 +5,9 @@
 
 ## Work in progress
 
-The bindings are a work in progress. Some planned features are missing and the existing APIs can be unstable!
+*This branch contains an initial prototype of the project.*
 
-Godot 4 features are not yet supported, master branch tracks 3.2 branch of Godot.
+*New version is being written and it won't be compatible with the implementation in this branch.*
 
 ## Features
 
@@ -32,8 +32,3 @@ Godot 4 features are not yet supported, master branch tracks 3.2 branch of Godot
 * [Development installation](CYTHON_QUICKSTART.md), required for
   [Cython](https://cython.readthedocs.io/en/latest/src/quickstart/overview.html) workflow,
   AOT compilation or advanced Python workflow
-
-
-## Donate
-
-If you think that this project is useful, please support us on [Patreon](https://www.patreon.com/join/godopy).
