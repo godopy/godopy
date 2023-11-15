@@ -2,6 +2,7 @@
 
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/os.hpp>
 
@@ -25,19 +26,17 @@ _FORCE_INLINE_ const wchar_t *_wide_string_from_string(String &s) {
 }
 
 void PythonRuntime::pre_initialize() {
-	UtilityFunctions::print("Python: Pre-Initializing module...");
+	UtilityFunctions::print_verbose("Python: Pre-Initializing runtime...");
 
 	PyPreConfig preconfig;
 	PyPreConfig_InitIsolatedConfig(&preconfig);
 
 	preconfig.utf8_mode = 1;
-	preconfig.isolated = 1;
-	preconfig.use_environment = 0;
 
 	PyStatus status = Py_PreInitialize(&preconfig);
 
 	if (PyStatus_Exception(status)) {
-		ERR_PRINT("Python Pre-Initialization Failed.");
+		UtilityFunctions::push_error("Python: Pre-Initialization FAILED");
 		Py_ExitStatusException(status);
 	}
 }
@@ -46,10 +45,10 @@ void PythonRuntime::pre_initialize() {
 #define CHECK_PYSTATUS(status, ret) if (PyStatus_Exception(status)) return ret
 
 int set_config_paths(PyConfig *config) {
+	PyStatus status;
 	ProjectSettings *settings = ProjectSettings::get_singleton();
 
 	String res_path = settings->globalize_path("res://");
-	// String godot_project_path = settings->globalize_path("res://project.godot");
 	String project_name = settings->get_setting("application/config/name");
 
 	if (project_name == "") {
@@ -57,17 +56,15 @@ int set_config_paths(PyConfig *config) {
 		return 1;
 	}
 
-	// String godopy_root = res_path.get_base_dir();
+	// TODO: Use addon bin/lib folders for paths
+	UtilityFunctions::print_verbose("Python path: " + res_path + "../python/Lib");
 
-	UtilityFunctions::print("Python path: " + res_path + "../python/Lib");
-
-	PyStatus status;
 	String exec_path = OS::get_singleton()->get_executable_path();
 	// List<String> cmdline_args = OS::get_singleton()->get_cmdline_args();
 
-	String exec_prefix = exec_path.get_base_dir().get_base_dir();
+	String exec_prefix = exec_path.get_base_dir();
 
-	UtilityFunctions::print("Python program name: " + exec_path);
+	UtilityFunctions::print_verbose("Python program name: " + exec_path);
 
 	status = PyConfig_SetString(config, &config->program_name, _wide_string_from_string(exec_path));
 	CHECK_PYSTATUS(status, 1);
@@ -104,7 +101,7 @@ void init_builtin_modules() {
 }
 
 void PythonRuntime::initialize() {
-	UtilityFunctions::print("Python: Initializing runtime...");
+	UtilityFunctions::print_verbose("Python: Initializing runtime...");
 	UtilityFunctions::print("Python version " + String(Py_GetVersion()));
 
 	PyStatus status;
@@ -118,16 +115,23 @@ void PythonRuntime::initialize() {
 		goto fail;
 	}
 
-	config.verbose = 0;
-	config.isolated = 1;
-	config.site_import = 0;
-	config.faulthandler = 0;
-	config.buffered_stdio = 1;
-	config.write_bytecode = 1;
-	config.use_environment = 0;
-	config.user_site_directory = 0;
-	config.install_signal_handlers = 0;
+	// UtilityFunctions::print("defaul configs: " +
+	// 	String(Variant(config.verbose)) + ":" +
+	// 	String(Variant(config.site_import)) + ":" +
+	// 	String(Variant(config.faulthandler)) + ":" +
+	// 	String(Variant(config.user_site_directory)) + ":" +
+	// 	String(Variant(config.install_signal_handlers)) + ":" +
+	// 	String(Variant(config.module_search_paths_set))
+	// );
+
+	// config.verbose = 0;
+	// config.site_import = 0;
+	// config.faulthandler = 0;
+	// config.user_site_directory = 0;
+	// config.install_signal_handlers = 0;
 	config.module_search_paths_set = 1;
+
+	// FIXME: custom faulthandler?
 
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
@@ -142,15 +146,13 @@ void PythonRuntime::initialize() {
 	// Redirect stdio
 	PyRun_SimpleString("import _godopy_bootstrap");
 
-	UtilityFunctions::print("Python: INITIALIZED");
-
-	// TODO: print banners
+	// UtilityFunctions::print("Python: INITIALIZED");
 
 	return;
 
 fail:
 	PyConfig_Clear(&config);
-	UtilityFunctions::print("Python: Initialization FAILED");
+	UtilityFunctions::push_error("Python: Initialization FAILED");
 	Py_ExitStatusException(status);
 }
 

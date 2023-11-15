@@ -1,3 +1,7 @@
+'''
+Custom stdout/stderr writers which
+redirect output to Godot utility functions
+'''
 from godot_cpp cimport UtilityFunctions
 
 import sys
@@ -5,22 +9,29 @@ import sys
 class Writer:
     def write(self, data):
         if isinstance(data, str):
-            msg = data.rstrip().encode('utf-8')
+            msg = data.encode('utf-8')
         else:
-            msg = bytes(data).rstrip()
-        UtilityFunctions.print(<const char *>msg)
+            msg = bytes(data)
+        UtilityFunctions.printraw(<const char *>msg)
     
     def flush(self): pass
 
 class ErrWriter:
+    def __init__(self):
+        self.data = []
+
     def write(self, data):
         if isinstance(data, str):
-            msg = data.rstrip().encode('utf-8')
+            msg = data.encode('utf-8')
         else:
-            msg = bytes(data).rstrip()
-        UtilityFunctions.print(<const char *>msg)
+            msg = bytes(data)
+        self.data.append(msg)
 
-    def flush(self): pass
+    def flush(self):
+        # TODO: Use push_error in custom handler
+        msg = b'[color=red]%s[/color]' % (b''.join(self.data))
+        UtilityFunctions.print_rich(msg)
+        self.data = []
 
 sys.stdout = Writer()
 sys.stderr = ErrWriter()
