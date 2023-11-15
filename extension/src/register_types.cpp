@@ -13,11 +13,18 @@ static PythonRuntime *runtime;
 static Python *python;
 
 void gdextension_initialize(ModuleInitializationLevel p_level) {
-	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
+	bool should_init = true;
+
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		runtime = memnew(PythonRuntime);
-        runtime->pre_initialize();
-	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-        runtime->initialize();
+		if (runtime->detect_python_mode()) {
+			should_init = false;
+		}
+
+		if (should_init) {
+			runtime->pre_initialize();
+			runtime->initialize();
+		}
 
 		ClassDB::register_class<Python>();
         python = memnew(Python);
@@ -26,14 +33,13 @@ void gdextension_initialize(ModuleInitializationLevel p_level) {
 }
 
 void gdextension_terminate(ModuleInitializationLevel p_level) {
-	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
-		if (runtime) {
-		    memdelete(runtime);
-        }
-	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
         Engine::get_singleton()->unregister_singleton("Python");
         if (python) {
             memdelete(python);
+        }
+		if (runtime) {
+		    memdelete(runtime);
         }
     }
 }
@@ -48,7 +54,7 @@ extern "C" {
 
 		init_obj.register_initializer(gdextension_initialize);
 		init_obj.register_terminator(gdextension_terminate);
-		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SERVERS);
+		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
 
 		return init_obj.init();
 	}

@@ -13,7 +13,7 @@ class Writer:
         else:
             msg = bytes(data)
         UtilityFunctions.printraw(<const char *>msg)
-    
+
     def flush(self): pass
 
 class ErrWriter:
