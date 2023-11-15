@@ -1,0 +1,13 @@
+[configuration]
+
+entry_symbol = "gdextension_init"
+compatibility_minimum = "4.1"
+
+[libraries]
+
+macos.debug = "bin/libGodoPy.macos.debug.framework"
+macos.release = "bin/libGodoPy.macos.release.framework"
+windows.debug.x86_64 = "bin/libGodoPy.windows.debug.x86_64.dll"
+windows.release.x86_64 = "bin/libGodoPy.windows.release.x86_64.dll"
+linux.debug.x86_64 = "bin/libGodoPy.linux.debug.x86_64.so"
+linux.release.x86_64 = "bin/libGodoPy.linux.release.x86_64.so"
