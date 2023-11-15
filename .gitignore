@@ -13,3 +13,6 @@
 
 # Editors
 .vscode/
+
+# Logs
+/*.log

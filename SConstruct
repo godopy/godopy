@@ -8,6 +8,12 @@ env = SConscript("godot-cpp/SConstruct")
 env.Append(CPPPATH=["extension/src/"])
 sources = Glob("extension/src/*.cpp")
 
+env.Append(BUILDERS={
+    'CythonSource': Builder(
+        action='cython --fast-fail -3 --cplus -o $TARGET $SOURCE'
+    )
+})
+
 # Find gdextension path even if the directory or extension is renamed (e.g. project/addons/example/example.gdextension).
 (extension_path,) = glob("project/addons/*/*.gdextension")
 
@@ -33,6 +39,18 @@ if env['platform'] == 'windows':
 
     env.Append(CPPDEFINES=['WINDOWS_ENABLED'])
 
+lib_dir = 'extension/src/lib/'
+lib_sources = [
+    '_godopy_bootstrap'
+]
+
+lib_sources = [
+    env.CythonSource(
+        '%s%s.cpp' % (lib_dir, f),
+        '%s%s.pyx' % (lib_dir, f)
+    ) for f in lib_sources
+]
+
 # Create the library target (e.g. libexample.linux.debug.x86_64.so).
 debug_or_release = "release" if env["target"] == "template_release" else "debug"
 if env["platform"] == "macos":
@@ -43,7 +61,7 @@ if env["platform"] == "macos":
             env["platform"],
             debug_or_release,
         ),
-        source=sources,
+        sources + lib_sources,
     )
 else:
     library = env.SharedLibrary(
@@ -55,7 +73,7 @@ else:
             env["arch"],
             env["SHLIBSUFFIX"],
         ),
-        source=sources,
+        sources + lib_sources,
     )
 
 # TODO: Copy python312.dll on windows to the

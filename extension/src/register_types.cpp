@@ -14,33 +14,26 @@ static Python *python;
 
 void gdextension_initialize(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
-		
-	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		runtime = memnew(PythonRuntime);
         runtime->pre_initialize();
+	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
         runtime->initialize();
 
-		runtime->run_simple_string("import sys; print(sys.path); print('OK')");
-
 		ClassDB::register_class<Python>();
-
         python = memnew(Python);
-
 		Engine::get_singleton()->register_singleton("Python", Python::get_singleton());
     }
 }
 
 void gdextension_terminate(ModuleInitializationLevel p_level) {
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
-		
+		if (runtime) {
+		    memdelete(runtime);
+        }
 	} else if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
         Engine::get_singleton()->unregister_singleton("Python");
         if (python) {
             memdelete(python);
-        }
-
-		if (runtime) {
-		    memdelete(runtime);
         }
     }
 }

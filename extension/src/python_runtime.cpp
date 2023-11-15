@@ -8,6 +8,8 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+PyMODINIT_FUNC PyInit__godopy_bootstrap(void);
+
 using namespace godot;
 
 PythonRuntime *PythonRuntime::singleton = nullptr;
@@ -44,18 +46,20 @@ void PythonRuntime::pre_initialize() {
 #define CHECK_PYSTATUS(status, ret) if (PyStatus_Exception(status)) return ret
 
 int set_config_paths(PyConfig *config) {
-	UtilityFunctions::print("Python: Setting paths from ProjectSettings");
 	ProjectSettings *settings = ProjectSettings::get_singleton();
 
 	String res_path = settings->globalize_path("res://");
 	// String godot_project_path = settings->globalize_path("res://project.godot");
 	String project_name = settings->get_setting("application/config/name");
 
-	String godopy_root = res_path.get_base_dir();
+	if (project_name == "") {
+		ERR_PRINT("No Godot/GodoPy project found. Cannot run.");
+		return 1;
+	}
 
-	UtilityFunctions::print(project_name);
-	UtilityFunctions::print(res_path);
-	UtilityFunctions::print(godopy_root);
+	// String godopy_root = res_path.get_base_dir();
+
+	UtilityFunctions::print("Python path: " + res_path + "../python/Lib");
 
 	PyStatus status;
 	String exec_path = OS::get_singleton()->get_executable_path();
@@ -63,8 +67,7 @@ int set_config_paths(PyConfig *config) {
 
 	String exec_prefix = exec_path.get_base_dir().get_base_dir();
 
-	UtilityFunctions::print(exec_path);
-	UtilityFunctions::print(exec_prefix);
+	UtilityFunctions::print("Python program name: " + exec_path);
 
 	status = PyConfig_SetString(config, &config->program_name, _wide_string_from_string(exec_path));
 	CHECK_PYSTATUS(status, 1);
@@ -89,19 +92,15 @@ int set_config_paths(PyConfig *config) {
 	status = PyConfig_SetString(config, &config->prefix, _wide_string_from_string(res_path));
 	CHECK_PYSTATUS(status, 1);
 
-	if (project_name != "") {
-		// Set module path and pycache_prefix only when active project detected
-
-		// String pycache_prefix = settings->globalize_path("res://.godopy/__pycache__");
-
-		status = PyWideStringList_Append(&config->module_search_paths, _wide_string_from_string(godopy_root));
-		CHECK_PYSTATUS(status, 1);
-
-		// status = PyConfig_SetString(config, &config->pycache_prefix, _wide_string_from_string(pycache_prefix));
-		// CHECK_PYSTATUS(status, 1);
-	}
+	// TODO: Copy Python libs and dylibs to project/addons/GodoPy
+	status = PyWideStringList_Append(&config->module_search_paths, _wide_string_from_string(res_path + "../python/Lib"));
+	CHECK_PYSTATUS(status, 1);
 
 	return 0;
+}
+
+void init_builtin_modules() {
+	PyImport_AppendInittab("_godopy_bootstrap", PyInit__godopy_bootstrap);
 }
 
 void PythonRuntime::initialize() {
@@ -111,22 +110,24 @@ void PythonRuntime::initialize() {
 	PyStatus status;
 	PyConfig config;
 
-	PyConfig_InitPythonConfig(&config);
+	init_builtin_modules();
+
+	PyConfig_InitIsolatedConfig(&config);
 
 	if (set_config_paths(&config) != 0) {
 		goto fail;
 	}
 
-	config.verbose = 1;
-	// config.isolated = 1;
+	config.verbose = 0;
+	config.isolated = 1;
 	config.site_import = 0;
 	config.faulthandler = 0;
 	config.buffered_stdio = 1;
 	config.write_bytecode = 1;
-	// config.use_environment = 0;
+	config.use_environment = 0;
 	config.user_site_directory = 0;
 	config.install_signal_handlers = 0;
-	// config.module_search_paths_set = 1;
+	config.module_search_paths_set = 1;
 
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
@@ -138,8 +139,8 @@ void PythonRuntime::initialize() {
 
 	PyConfig_Clear(&config);
 
-	// Initialize Godot API modules
-	// PyRun_SimpleString("import godot");
+	// Redirect stdio
+	PyRun_SimpleString("import _godopy_bootstrap");
 
 	UtilityFunctions::print("Python: INITIALIZED");
 
@@ -155,8 +156,6 @@ fail:
 
 void PythonRuntime::run_simple_string(const String &p_string) {
 	ERR_FAIL_COND(!initialized);
-	// if (!is_initialized()) initialize();
-	UtilityFunctions::print("\t*PyRun_SimpleString:*\n" + p_string + "\n\n");
 	PyRun_SimpleString(p_string.utf8());
 }
 
