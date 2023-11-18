@@ -126,7 +126,29 @@ int set_config_paths(PyConfig *config) {
 	CHECK_PYSTATUS(status, 1);
 
 	// TODO: Copy Python libs and dylibs to project/addons/GodoPy
-	status = PyWideStringList_Append(&config->module_search_paths, _wide_string_from_string(res_path + "../python/Lib"));
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "/addons/GodoPy/lib/py")
+	);
+	CHECK_PYSTATUS(status, 1);
+
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "/addons/GodoPy/bin/py")
+	);
+	CHECK_PYSTATUS(status, 1);
+
+	// TODO: Set ed paths only when editor is active
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "/addons/GodoPy/lib/edpy")
+	);
+	CHECK_PYSTATUS(status, 1);
+
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "/addons/GodoPy/bin/edpy")
+	);
 	CHECK_PYSTATUS(status, 1);
 
 	return 0;

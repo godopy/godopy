@@ -14,25 +14,15 @@ env.Append(BUILDERS={
     )
 })
 
-# Find gdextension path even if the directory or extension is renamed (e.g. project/addons/example/example.gdextension).
-(extension_path,) = glob("project/addons/*/*.gdextension")
+extension_path = 'project/addons/GodoPy/GodoPy.gdextension'
+addon_path = 'project/addons/GodoPy'
+project_name = 'GodoPy'
 
-# Find the addon path (e.g. project/addons/example).
-addon_path = Path(extension_path).parent
-
-# Find the project name from the gdextension file (e.g. example).
-project_name = Path(extension_path).stem
+env.Append(CPPPATH=[os.path.join('python', 'Include')])
 
 if env['platform'] == 'windows':
     env.Append(LIBPATH=[os.path.join('python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join('python', 'PC')])
-    env.Append(CPPPATH=[os.path.join('python', 'Include')])
-
-    env.Append(LINKFLAGS=['/WX'])
-    # if env['target'] == 'debug':
-    #     env.Append(CCFLAGS=['/Z7', '/Od', '/EHsc', '/D_DEBUG', '/MDd', '/bigobj'])
-    # elif env['target'] == 'release':
-    env.Append(CCFLAGS=['/O2', '/EHsc', '/DNDEBUG', '/MD', '/bigobj'])
 
     python_lib = 'python312'
     env.Append(LIBS=[python_lib])
@@ -76,6 +66,15 @@ else:
         sources + lib_sources,
     )
 
-# TODO: Copy python312.dll on windows to the
+if env['platform'] == 'windows':
+    pydll = env.Command('{0}/bin/python312.dll'.format(addon_path), 'python/PCBuild/amd64/python312.dll', Copy('$TARGET', '$SOURCE'))
+    pyexe = env.Command('{0}/bin/python.exe'.format(addon_path), 'python/PCBuild/amd64/python.exe', Copy('$TARGET', '$SOURCE'))
+    env.Execute(Mkdir('{0}/bin/py'.format(addon_path)))
+    env.Execute(Mkdir('{0}/bin/edpy'.format(addon_path)))
+    env.Execute(Mkdir('{0}/lib/py'.format(addon_path)))
+    env.Execute(Mkdir('{0}/lib/edpy'.format(addon_path)))
 
-Default(library)
+    Depends(pydll, library)
+    Depends(pyexe, library)
+
+Default(library, pydll, pyexe)
