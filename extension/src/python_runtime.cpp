@@ -92,23 +92,13 @@ int set_config_paths(PyConfig *config) {
 		return 1;
 	}
 
-	// TODO: Use addon bin/lib folders for paths
-	UtilityFunctions::print_verbose("Python path: " + res_path + "../python/Lib");
-
-	String exec_path = OS::get_singleton()->get_executable_path();
-	// List<String> cmdline_args = OS::get_singleton()->get_cmdline_args();
-
+	String exec_path = res_path + "/addons/GodoPy/bin/python.exe";
 	String exec_prefix = exec_path.get_base_dir();
 
 	UtilityFunctions::print_verbose("Python program name: " + exec_path);
 
 	status = PyConfig_SetString(config, &config->program_name, _wide_string_from_string(exec_path));
 	CHECK_PYSTATUS(status, 1);
-
-	//for (List<String>::Element *E = cmdline_args.front(); E; E = E->next()) {
-	//	status = PyWideStringList_Append(&config->argv, _wide_string_from_string(E->get()));
-	//	CHECK_PYSTATUS(status, 1);
-	//}
 
 	status = PyConfig_SetString(config, &config->base_exec_prefix, _wide_string_from_string(exec_prefix));
 	CHECK_PYSTATUS(status, 1);
@@ -135,6 +125,12 @@ int set_config_paths(PyConfig *config) {
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
 		_wide_string_from_string(res_path + "/addons/GodoPy/bin/py")
+	);
+	CHECK_PYSTATUS(status, 1);
+
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "/addons/GodoPy/lib/py/site-packages")
 	);
 	CHECK_PYSTATUS(status, 1);
 

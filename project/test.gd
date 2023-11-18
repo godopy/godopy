@@ -3,7 +3,11 @@ extends SceneTree
 func _init():
     Python.run_simple_string(
         "import sys\n" +
-        "print(sys.path)\n" +
+        "for p in sys.path:\n" +
+        "    print(p)\n" +
+        "import numpy as np\n" +
+        "a1D = np.array([1, 2, 3, 4])\n" +
+        "print(a1D)\n" +
         "raise Exception('Test exc')"
     )
 

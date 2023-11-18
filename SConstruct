@@ -41,7 +41,7 @@ lib_sources = [
     ) for f in lib_sources
 ]
 
-# Create the library target (e.g. libexample.linux.debug.x86_64.so).
+# Create the library target (e.g. libGodoPy.linux.debug.x86_64.so).
 debug_or_release = "release" if env["target"] == "template_release" else "debug"
 if env["platform"] == "macos":
     library = env.SharedLibrary(
@@ -67,8 +67,13 @@ else:
     )
 
 if env['platform'] == 'windows':
-    pydll = env.Command('{0}/bin/python312.dll'.format(addon_path), 'python/PCBuild/amd64/python312.dll', Copy('$TARGET', '$SOURCE'))
-    pyexe = env.Command('{0}/bin/python.exe'.format(addon_path), 'python/PCBuild/amd64/python.exe', Copy('$TARGET', '$SOURCE'))
+    pydll = env.Command('{0}/bin/python312.dll'.format(addon_path), 'python/PCBuild/amd64/python312.dll',
+                        Copy('$TARGET', '$SOURCE'))
+    pyexe = env.Command('{0}/bin/python.exe'.format(addon_path), 'python/PCBuild/amd64/python.exe',
+                        Copy('$TARGET', '$SOURCE'))
+    venvlaunch = env.Command('{0}/bin/venvlauncher.exe'.format(addon_path), 'python/PCBuild/amd64/venvlauncher.exe',
+                             Copy('$TARGET', '$SOURCE'))
+
     env.Execute(Mkdir('{0}/bin/py'.format(addon_path)))
     env.Execute(Mkdir('{0}/bin/edpy'.format(addon_path)))
     env.Execute(Mkdir('{0}/lib/py'.format(addon_path)))
@@ -76,5 +81,6 @@ if env['platform'] == 'windows':
 
     Depends(pydll, library)
     Depends(pyexe, library)
+    Depends(venvlaunch, library)
 
-Default(library, pydll, pyexe)
+Default(library, pydll, pyexe, venvlaunch)
