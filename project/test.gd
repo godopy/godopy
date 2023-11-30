@@ -15,5 +15,3 @@ func _init():
 
 	quit()
 
-	# Python.initialize()
-	# quit(Python.run_main())

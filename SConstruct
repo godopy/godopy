@@ -24,7 +24,7 @@ if env['platform'] == 'windows':
     env.Append(LIBPATH=[os.path.join('python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join('python', 'PC')])
 
-    python_lib = 'python312'
+    python_lib = 'python312_d'
     env.Append(LIBS=[python_lib])
 
     env.Append(CPPDEFINES=['WINDOWS_ENABLED'])
@@ -66,21 +66,29 @@ else:
         sources + lib_sources,
     )
 
+pybin_copyfiles = []
 if env['platform'] == 'windows':
-    pydll = env.Command('{0}/bin/python312.dll'.format(addon_path), 'python/PCBuild/amd64/python312.dll',
-                        Copy('$TARGET', '$SOURCE'))
-    pyexe = env.Command('{0}/bin/python.exe'.format(addon_path), 'python/PCBuild/amd64/python.exe',
-                        Copy('$TARGET', '$SOURCE'))
-    venvlaunch = env.Command('{0}/bin/venvlauncher.exe'.format(addon_path), 'python/PCBuild/amd64/venvlauncher.exe',
-                             Copy('$TARGET', '$SOURCE'))
+    pybin_list = ['python312_d.dll', 'python_d.exe']
+    for fn in pybin_list:
+        pybin_copyfiles.append(env.Command('{0}/bin/{1}'.format(addon_path, fn),
+                                           'python/PCBuild/amd64/{0}'.format(fn),
+                                           Copy('$TARGET', '$SOURCE')))
 
-    env.Execute(Mkdir('{0}/bin/py'.format(addon_path)))
-    env.Execute(Mkdir('{0}/bin/edpy'.format(addon_path)))
-    env.Execute(Mkdir('{0}/lib/py'.format(addon_path)))
-    env.Execute(Mkdir('{0}/lib/edpy'.format(addon_path)))
+env.Execute(Mkdir('{0}/lib'.format(addon_path)))
+# env.Execute(Mkdir('{0}/lib/site-packages'.format(addon_path)))
 
-    Depends(pydll, library)
-    Depends(pyexe, library)
-    Depends(venvlaunch, library)
+pylib_copyfiles = []
+pylib_list =[
+    'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
+    'io.py', 'abc.py'
+]
+for fn in pylib_list:
+    pylib_copyfiles.append(env.Command('{0}/lib/{1}'.format(addon_path, fn),
+                                        'python/Lib/{0}'.format(fn),
+                                        Copy('$TARGET', '$SOURCE')))
 
-Default(library, pydll, pyexe, venvlaunch)
+
+Depends(pybin_copyfiles, library)
+Depends(pylib_copyfiles, library)
+
+Default(library, pybin_copyfiles, pylib_copyfiles)

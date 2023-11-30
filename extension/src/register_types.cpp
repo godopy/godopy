@@ -13,18 +13,10 @@ static PythonRuntime *runtime;
 static Python *python;
 
 void gdextension_initialize(ModuleInitializationLevel p_level) {
-	bool should_init = true;
-
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
 		runtime = memnew(PythonRuntime);
-		if (runtime->detect_python_mode()) {
-			should_init = false;
-		}
-
-		if (should_init) {
-			runtime->pre_initialize();
-			runtime->initialize();
-		}
+		runtime->pre_initialize();
+		runtime->initialize();
 
 		ClassDB::register_class<Python>();
         python = memnew(Python);

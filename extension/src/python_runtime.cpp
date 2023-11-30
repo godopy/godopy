@@ -41,42 +41,6 @@ void PythonRuntime::pre_initialize() {
 	}
 }
 
-void PythonRuntime::pre_initialize_as_py() {
-	UtilityFunctions::print_verbose("Python: Pre-Initializing Python-mode runtime...");
-
-	PyPreConfig preconfig;
-	PyPreConfig_InitPythonConfig(&preconfig);
-
-	preconfig.utf8_mode = 1;
-
-	PyStatus status = Py_PreInitialize(&preconfig);
-
-	if (PyStatus_Exception(status)) {
-		UtilityFunctions::push_error("Python: Pre-Initialization FAILED");
-		Py_ExitStatusException(status);
-	}
-}
-
-bool PythonRuntime::detect_python_mode() {
-	PackedStringArray cmdline_args = OS::get_singleton()->get_cmdline_args();
-	String el;
-
-	for (int i = 0; i < cmdline_args.size(); i++) {
-		el = cmdline_args[i];
-
-		UtilityFunctions::print("arg " + String(Variant(i + 1)) + ": " + el);
-
-		if (el == "--as-python") {
-			UtilityFunctions::print("PYTHON MODE DETECTED");
-			i_am_py = true;
-
-			break;
-		}
-	}
-
-	return i_am_py;
-}
-
 #define ERR_FAIL_PYSTATUS(status, label) if (PyStatus_Exception(status)) goto label
 #define CHECK_PYSTATUS(status, ret) if (PyStatus_Exception(status)) return ret
 
@@ -118,32 +82,13 @@ int set_config_paths(PyConfig *config) {
 	// TODO: Copy Python libs and dylibs to project/addons/GodoPy
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/addons/GodoPy/lib/py")
+		_wide_string_from_string(res_path + "/addons/GodoPy/lib")
 	);
 	CHECK_PYSTATUS(status, 1);
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/addons/GodoPy/bin/py")
-	);
-	CHECK_PYSTATUS(status, 1);
-
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/addons/GodoPy/lib/py/site-packages")
-	);
-	CHECK_PYSTATUS(status, 1);
-
-	// TODO: Set ed paths only when editor is active
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/addons/GodoPy/lib/edpy")
-	);
-	CHECK_PYSTATUS(status, 1);
-
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/addons/GodoPy/bin/edpy")
+		_wide_string_from_string(res_path + "/addons/GodoPy/lib/site-packages")
 	);
 	CHECK_PYSTATUS(status, 1);
 
@@ -169,17 +114,17 @@ void PythonRuntime::initialize() {
 		goto fail;
 	}
 
-	// UtilityFunctions::print("defaul configs: " +
-	// 	String(Variant(config.verbose)) + ":" +
-	// 	String(Variant(config.site_import)) + ":" +
-	// 	String(Variant(config.faulthandler)) + ":" +
-	// 	String(Variant(config.user_site_directory)) + ":" +
-	// 	String(Variant(config.install_signal_handlers)) + ":" +
-	// 	String(Variant(config.module_search_paths_set))
-	// );
+	UtilityFunctions::print("defaul configs: " +
+		String(Variant(config.verbose)) + ":" +
+		String(Variant(config.site_import)) + ":" +
+		String(Variant(config.faulthandler)) + ":" +
+		String(Variant(config.user_site_directory)) + ":" +
+		String(Variant(config.install_signal_handlers)) + ":" +
+		String(Variant(config.module_search_paths_set))
+	);
 
 	// config.verbose = 0;
-	// config.site_import = 0;
+	config.site_import = 0;
 	// config.faulthandler = 0;
 	// config.user_site_directory = 0;
 	// config.install_signal_handlers = 0;
@@ -210,87 +155,19 @@ fail:
 	Py_ExitStatusException(status);
 }
 
-
-void PythonRuntime::initialize_as_py() {
-	UtilityFunctions::print_verbose("Python: Initializing Python-mode runtime...");
-	UtilityFunctions::print("Python version " + String(Py_GetVersion()));
-
-	PyStatus status;
-	PyConfig config;
-
-	init_builtin_modules();
-
-	PyConfig_InitPythonConfig(&config);
-
-	if (set_config_paths(&config) != 0) {
-		goto fail;
-	}
-
-	// UtilityFunctions::print("defaul configs: " +
-	// 	String(Variant(config.verbose)) + ":" +
-	// 	String(Variant(config.site_import)) + ":" +
-	// 	String(Variant(config.faulthandler)) + ":" +
-	// 	String(Variant(config.user_site_directory)) + ":" +
-	// 	String(Variant(config.install_signal_handlers)) + ":" +
-	// 	String(Variant(config.module_search_paths_set))
-	// );
-
-	config.verbose = 1;
-	// config.site_import = 0;
-	// config.faulthandler = 1;
-	// config.user_site_directory = 0;
-	config.install_signal_handlers = 1;
-	config.module_search_paths_set = 1;
-	config.interactive = 1;
-
-	// FIXME: custom faulthandler?
-
-	status = PyConfig_Read(&config);
-	ERR_FAIL_PYSTATUS(status, fail);
-
-	status = Py_InitializeFromConfig(&config);
-	ERR_FAIL_PYSTATUS(status, fail);
-
-	initialized = true;
-
-	PyConfig_Clear(&config);
-
-	// Redirect stdio
-	// PyRun_SimpleString("import _godopy_bootstrap");
-
-	// UtilityFunctions::print("Python: INITIALIZED");
-
-	return;
-
-fail:
-	PyConfig_Clear(&config);
-	UtilityFunctions::push_error("Python: Initialization FAILED");
-	Py_ExitStatusException(status);
-}
-
 void PythonRuntime::run_simple_string(const String &p_string) {
 	ERR_FAIL_COND(!initialized);
 	PyRun_SimpleString(p_string.utf8());
-}
-
-int PythonRuntime::run_python_main() {
-	if (!initialized || !i_am_py) {
-		UtilityFunctions::push_error("Not initialized as Python interpreter");
-		return 1;
-	}
-
-	return Py_RunMain();
 }
 
 PythonRuntime::PythonRuntime() {
 	ERR_FAIL_COND(singleton != nullptr);
 	singleton = this;
 	initialized = false;
-	i_am_py = false;
 }
 
 PythonRuntime::~PythonRuntime() {
-	if (is_initialized() && !am_i_py()) {
+	if (is_initialized()) {
 		if (Py_IsInitialized()) {
 			Py_FinalizeEx();
 		}
@@ -304,25 +181,12 @@ PythonRuntime::~PythonRuntime() {
 
 Python *Python::singleton = nullptr;
 
-void Python::initialize() {
-	ERR_FAIL_COND(PythonRuntime::get_singleton()->is_initialized());
-
-	PythonRuntime::get_singleton()->pre_initialize_as_py();
-	PythonRuntime::get_singleton()->initialize_as_py();
-}
-
 void Python::run_simple_string(const String &p_string) {
 	PythonRuntime::get_singleton()->run_simple_string(p_string);
 }
 
-int Python::run_main() {
-	return PythonRuntime::get_singleton()->run_python_main();
-}
-
 void Python::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("initialize"), &Python::initialize);
 	ClassDB::bind_method(D_METHOD("run_simple_string", "string"), &Python::run_simple_string);
-	ClassDB::bind_method(D_METHOD("run_main"), &Python::run_main);
 }
 
 Python::Python() {
