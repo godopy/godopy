@@ -1,12 +1,13 @@
-'''
-Custom stdout/stderr writers which
-redirect output to Godot utility functions
-'''
+
 from godot_cpp cimport UtilityFunctions
 
 import sys
 
-class Writer:
+'''
+Custom stdout/stderr writers which
+redirect output to Godot utility functions
+'''
+class GodotWriter:
     def write(self, data):
         if isinstance(data, str):
             msg = data.encode('utf-8')
@@ -16,7 +17,7 @@ class Writer:
 
     def flush(self): pass
 
-class ErrWriter:
+class GodotErrWriter:
     def __init__(self):
         self.data = []
 
@@ -33,6 +34,7 @@ class ErrWriter:
         UtilityFunctions.print_rich(msg)
         self.data = []
 
-sys.stdout = Writer()
-sys.stderr = ErrWriter()
+def init_godot_printing():
+    sys.stdout = GodotWriter()
+    sys.stderr = GodotErrWriter()
 

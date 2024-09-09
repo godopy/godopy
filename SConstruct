@@ -1,12 +1,54 @@
 #!/usr/bin/env python
 import os
-from glob import glob
-from pathlib import Path
 
-env = SConscript("godot-cpp/SConstruct")
 
-env.Append(CPPPATH=["extension/src/"])
-sources = Glob("extension/src/*.cpp")
+def normalize_path(val, env):
+    return val if os.path.isabs(val) else os.path.join(env.Dir("#").abspath, val)
+
+
+def validate_parent_dir(key, val, env):
+    if not os.path.isdir(normalize_path(os.path.dirname(val), env)):
+        raise UserError("'%s' is not a directory: %s" % (key, os.path.dirname(val)))
+
+
+libname = "GodoPy"
+projectdir = "demo"
+
+localEnv = Environment(tools=["default"], PLATFORM="")
+
+customs = ["custom.py"]
+customs = [os.path.abspath(path) for path in customs]
+
+opts = Variables(customs, ARGUMENTS)
+opts.Add(
+    BoolVariable(
+        key="compiledb",
+        help="Generate compilation DB (`compile_commands.json`) for external tools",
+        default=localEnv.get("compiledb", False),
+    )
+)
+opts.Add(
+    PathVariable(
+        key="compiledb_file",
+        help="Path to a custom `compile_commands.json` file",
+        default=localEnv.get("compiledb_file", "compile_commands.json"),
+        validator=validate_parent_dir,
+    )
+)
+opts.Update(localEnv)
+
+Help(opts.GenerateHelpText(localEnv))
+
+env = localEnv.Clone()
+env["compiledb"] = False
+
+env.Tool("compilation_db")
+compilation_db = env.CompilationDatabase(
+    normalize_path(localEnv["compiledb_file"], localEnv)
+)
+env.Alias("compiledb", compilation_db)
+
+env = SConscript("godot-cpp/SConstruct", {"env": env, "customs": customs})
 
 env.Append(BUILDERS={
     'CythonSource': Builder(
@@ -14,9 +56,8 @@ env.Append(BUILDERS={
     )
 })
 
-extension_path = 'project/addons/GodoPy/GodoPy.gdextension'
-addon_path = 'project/addons/GodoPy'
-project_name = 'GodoPy'
+env.Append(CPPPATH=["src/"])
+sources = Glob("src/*.cpp")
 
 env.Append(CPPPATH=[os.path.join('python', 'Include')])
 
@@ -24,71 +65,52 @@ if env['platform'] == 'windows':
     env.Append(LIBPATH=[os.path.join('python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join('python', 'PC')])
 
-    python_lib = 'python312_d'
+    python_lib = 'python312'
     env.Append(LIBS=[python_lib])
 
     env.Append(CPPDEFINES=['WINDOWS_ENABLED'])
+# TODO: Other platforms
 
-lib_dir = 'extension/src/lib/'
-lib_sources = [
-    '_godopy_bootstrap'
-]
+pyx_dir = 'src/pyxlib/'
 
 lib_sources = [
     env.CythonSource(
-        '%s%s.cpp' % (lib_dir, f),
-        '%s%s.pyx' % (lib_dir, f)
-    ) for f in lib_sources
+        '%s%s.cpp' % (pyx_dir, f),
+        '%s%s.pyx' % (pyx_dir, f)
+    ) for f in  [
+        'godopy'
+    ]
 ]
 
-# Create the library target (e.g. libGodoPy.linux.debug.x86_64.so).
-debug_or_release = "release" if env["target"] == "template_release" else "debug"
-if env["platform"] == "macos":
-    library = env.SharedLibrary(
-        "{0}/bin/lib{1}.{2}.{3}.framework/{1}.{2}.{3}".format(
-            addon_path,
-            project_name,
-            env["platform"],
-            debug_or_release,
-        ),
-        sources + lib_sources,
-    )
-else:
-    library = env.SharedLibrary(
-        "{}/bin/lib{}.{}.{}.{}{}".format(
-            addon_path,
-            project_name,
-            env["platform"],
-            debug_or_release,
-            env["arch"],
-            env["SHLIBSUFFIX"],
-        ),
-        sources + lib_sources,
-    )
+# cython_obj = []
+# env_cython = env.Clone()
+# env_cython.disable_warnings()
+# env_cython.add_source_files(cython_obj, lib_sources)
 
-pybin_copyfiles = []
-if env['platform'] == 'windows':
-    pybin_list = ['python312_d.dll', 'python_d.exe']
-    for fn in pybin_list:
-        pybin_copyfiles.append(env.Command('{0}/bin/{1}'.format(addon_path, fn),
-                                           'python/PCBuild/amd64/{0}'.format(fn),
-                                           Copy('$TARGET', '$SOURCE')))
+sources += lib_sources
 
-env.Execute(Mkdir('{0}/lib'.format(addon_path)))
-# env.Execute(Mkdir('{0}/lib/site-packages'.format(addon_path)))
+if env["target"] in ["editor", "template_debug"]:
+    try:
+        doc_data = env.GodotCPPDocData("src/gen/doc_data.gen.cpp", source=Glob("doc_classes/*.xml"))
+        sources.append(doc_data)
+    except AttributeError:
+        print("Not including class reference as we're targeting a pre-4.3 baseline.")
 
-pylib_copyfiles = []
-pylib_list =[
-    'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
-    'io.py', 'abc.py'
-]
-for fn in pylib_list:
-    pylib_copyfiles.append(env.Command('{0}/lib/{1}'.format(addon_path, fn),
-                                        'python/Lib/{0}'.format(fn),
-                                        Copy('$TARGET', '$SOURCE')))
+file = "{}{}{}".format(libname, env["suffix"], env["SHLIBSUFFIX"])
 
+if env["platform"] == "macos" or env["platform"] == "ios":
+    platlibname = "{}.{}.{}".format(libname, env["platform"], env["target"])
+    file = "{}.framework/{}".format(env["platform"], platlibname, platlibname)
 
-Depends(pybin_copyfiles, library)
-Depends(pylib_copyfiles, library)
+libraryfile = "bin/{}/{}".format(env["platform"], file)
+library = env.SharedLibrary(
+    libraryfile,
+    source=sources,
+)
 
-Default(library, pybin_copyfiles, pylib_copyfiles)
+copy = env.InstallAs("{}/bin/{}/lib{}".format(projectdir, env["platform"], file), library)
+
+default_args = [library, copy]
+if localEnv.get("compiledb", False):
+    default_args += [compilation_db]
+Default(*default_args)

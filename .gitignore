@@ -1,18 +1,44 @@
-# Objects.
-.scons-cache/
+# Godot 4+ specific ignores
+.godot/
+
+# Ignore library files but not the gdextension file
+bin/*/*
+!bin/*/.gitkeep
+demo/bin/*/*
+!demo/bin/*/.gitkeep
+!demo/bin/*.gdextension
+.sconsign*.dblite
+
+src/gen
+
+# Ignore custom.py
+custom.py
+
+# Ignore generated compile_commands.json
+compile_commands.json
+
+# Binaries
+*.o
 *.os
+*.so
 *.obj
-
-# SConstruct
-.sconf_temp
-.sconsign.dblite
+*.bc
 *.pyc
+*.dblite
+*.pdb
+*.lib
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes
+*.idb
+*.exp
 
-# MacOS
+# Other stuff
+*.log
+
+# VSCode
+.vscode/*
+!.vscode/extensions.json
 .DS_Store
-
-# Editors
-.vscode/
-
-# Logs
-/*.log

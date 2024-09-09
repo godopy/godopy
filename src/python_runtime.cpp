@@ -9,7 +9,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-PyMODINIT_FUNC PyInit__godopy_bootstrap(void);
+PyMODINIT_FUNC PyInit_godopy(void);
 
 using namespace godot;
 
@@ -56,7 +56,7 @@ int set_config_paths(PyConfig *config) {
 		return 1;
 	}
 
-	String exec_path = res_path + "/addons/GodoPy/bin/python.exe";
+	String exec_path = res_path + "/bin/windows/python.exe";
 	String exec_prefix = exec_path.get_base_dir();
 
 	UtilityFunctions::print_verbose("Python program name: " + exec_path);
@@ -79,16 +79,22 @@ int set_config_paths(PyConfig *config) {
 	status = PyConfig_SetString(config, &config->prefix, _wide_string_from_string(res_path));
 	CHECK_PYSTATUS(status, 1);
 
-	// TODO: Copy Python libs and dylibs to project/addons/GodoPy
+	// TODO: Copy Python libs and dylibs to /pystdlib and /bin/<platform>/dylib
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/addons/GodoPy/lib")
+		_wide_string_from_string(res_path + "/pystdlib")
 	);
 	CHECK_PYSTATUS(status, 1);
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/addons/GodoPy/lib/site-packages")
+		_wide_string_from_string(res_path + "/pystdlib/site-packages")
+	);
+	CHECK_PYSTATUS(status, 1);
+
+    status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "/bin/windows/dylib")
 	);
 	CHECK_PYSTATUS(status, 1);
 
@@ -96,7 +102,7 @@ int set_config_paths(PyConfig *config) {
 }
 
 void init_builtin_modules() {
-	PyImport_AppendInittab("_godopy_bootstrap", PyInit__godopy_bootstrap);
+	PyImport_AppendInittab("godopy", PyInit_godopy);
 }
 
 void PythonRuntime::initialize() {
@@ -143,7 +149,7 @@ void PythonRuntime::initialize() {
 	PyConfig_Clear(&config);
 
 	// Redirect stdio
-	PyRun_SimpleString("import _godopy_bootstrap");
+	// PyRun_SimpleString("import _godopy_bootstrap");
 
 	// UtilityFunctions::print("Python: INITIALIZED");
 
