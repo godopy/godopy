@@ -42,3 +42,6 @@ compile_commands.json
 .vscode/*
 !.vscode/extensions.json
 .DS_Store
+
+# Python
+/venv

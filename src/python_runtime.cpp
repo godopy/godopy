@@ -120,14 +120,14 @@ void PythonRuntime::initialize() {
 		goto fail;
 	}
 
-	UtilityFunctions::print("defaul configs: " +
-		String(Variant(config.verbose)) + ":" +
-		String(Variant(config.site_import)) + ":" +
-		String(Variant(config.faulthandler)) + ":" +
-		String(Variant(config.user_site_directory)) + ":" +
-		String(Variant(config.install_signal_handlers)) + ":" +
-		String(Variant(config.module_search_paths_set))
-	);
+	// UtilityFunctions::print("defaul configs: " +
+	// 	String(Variant(config.verbose)) + ":" +
+	// 	String(Variant(config.site_import)) + ":" +
+	// 	String(Variant(config.faulthandler)) + ":" +
+	// 	String(Variant(config.user_site_directory)) + ":" +
+	// 	String(Variant(config.install_signal_handlers)) + ":" +
+	// 	String(Variant(config.module_search_paths_set))
+	// );
 
 	// config.verbose = 0;
 	config.site_import = 0;
@@ -147,11 +147,6 @@ void PythonRuntime::initialize() {
 	initialized = true;
 
 	PyConfig_Clear(&config);
-
-	// Redirect stdio
-	// PyRun_SimpleString("import _godopy_bootstrap");
-
-	// UtilityFunctions::print("Python: INITIALIZED");
 
 	return;
 
