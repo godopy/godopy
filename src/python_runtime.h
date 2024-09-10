@@ -39,8 +39,6 @@ protected:
 public:
 	static Python *get_singleton() { return singleton; }
 
-	void initialize();
-
 	void run_simple_string(const String &p_string_script);
 
 	Python();

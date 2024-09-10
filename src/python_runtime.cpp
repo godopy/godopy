@@ -1,6 +1,5 @@
 #include "python_runtime.h"
 
-#include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -9,7 +8,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-PyMODINIT_FUNC PyInit_godopy(void);
+PyMODINIT_FUNC PyInit_godot(void);
 
 using namespace godot;
 
@@ -102,7 +101,7 @@ int set_config_paths(PyConfig *config) {
 }
 
 void init_builtin_modules() {
-	PyImport_AppendInittab("godopy", PyInit_godopy);
+	PyImport_AppendInittab("godot", PyInit_godot);
 }
 
 void PythonRuntime::initialize() {
@@ -152,7 +151,7 @@ void PythonRuntime::initialize() {
 
 fail:
 	PyConfig_Clear(&config);
-	UtilityFunctions::push_error("Python: Initialization FAILED");
+	UtilityFunctions::push_error("Python: Initialization FAILED.");
 	Py_ExitStatusException(status);
 }
 

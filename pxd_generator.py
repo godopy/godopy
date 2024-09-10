@@ -78,10 +78,10 @@ def write_api_pxd(echo=print):
         echo(f'"{output_dir}" does not exist. Something went wrong…')
         sys.exit(1)
 
-    echo("Converting 'gdextension_interface.h' -> 'gdextension_interface.pxd'")
+    echo("Converting 'gdextension_interface.h' -> '_gdextension_interface.pxd'")
 
     inpath =  input_dir / 'gdextension_interface.h'
-    outpath = output_dir / 'gdextension_interface.pxd'
+    outpath = output_dir / '_gdextension_interface.pxd'
     if not os.path.exists(inpath):
         echo(f'Required "gdextension_interface.h" file doesn\'t exist in "{input_dir}"')
         sys.exit(1)

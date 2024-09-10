@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-
+import scons_methods
 
 def normalize_path(val, env):
     return val if os.path.isabs(val) else os.path.join(env.Dir("#").abspath, val)
@@ -11,8 +11,9 @@ def validate_parent_dir(key, val, env):
         raise UserError("'%s' is not a directory: %s" % (key, os.path.dirname(val)))
 
 
+
 libname = "GodoPy"
-projectdir = "demo"
+projectdir = "test/project"
 
 localEnv = Environment(tools=["default"], PLATFORM="")
 
@@ -35,6 +36,13 @@ opts.Add(
         validator=validate_parent_dir,
     )
 )
+opts.Add(
+    BoolVariable(
+        key="python_debug",
+        help="Use debug version of python",
+        default=False,
+    )
+)
 opts.Update(localEnv)
 
 Help(opts.GenerateHelpText(localEnv))
@@ -49,6 +57,8 @@ compilation_db = env.CompilationDatabase(
 env.Alias("compiledb", compilation_db)
 
 env = SConscript("godot-cpp/SConstruct", {"env": env, "customs": customs})
+
+env.mscv = env["platform"] == "windows"
 
 env.Append(BUILDERS={
     'CythonSource': Builder(
@@ -65,29 +75,21 @@ if env['platform'] == 'windows':
     env.Append(LIBPATH=[os.path.join('python', 'PCBuild', 'amd64')])
     env.Append(CPPPATH=[os.path.join('python', 'PC')])
 
-    python_lib = 'python312'
+    python_lib = 'python312' if not env["python_debug"] else 'python312_d'
     env.Append(LIBS=[python_lib])
 
     env.Append(CPPDEFINES=['WINDOWS_ENABLED'])
 # TODO: Other platforms
 
-pyx_dir = 'src/pyxlib/'
+env_cython = env.Clone()
+env_cython.msvc = env.mscv
+scons_methods.disable_warnings(env_cython)
 
-lib_sources = [
-    env.CythonSource(
-        '%s%s.cpp' % (pyx_dir, f),
-        '%s%s.pyx' % (pyx_dir, f)
-    ) for f in  [
-        'godopy'
-    ]
+cython_sources = [
+    env_cython.CythonSource('src/cythonlib/godot.cpp', 'src/cythonlib/godot.pyx')
 ]
 
-# cython_obj = []
-# env_cython = env.Clone()
-# env_cython.disable_warnings()
-# env_cython.add_source_files(cython_obj, lib_sources)
-
-sources += lib_sources
+sources += cython_sources
 
 if env["target"] in ["editor", "template_debug"]:
     try:
@@ -110,7 +112,23 @@ library = env.SharedLibrary(
 
 copy = env.InstallAs("{}/bin/{}/lib{}".format(projectdir, env["platform"], file), library)
 
-default_args = [library, copy]
+copy_python_deps = []
+
+python_lib_files = ['encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
+                    'io.py', 'abc.py']
+
+for pyfile in python_lib_files:
+    srcfile = os.path.join('python', 'Lib', pyfile)
+    dstfile = os.path.join(projectdir, 'pystdlib', pyfile)
+    copy_python_deps.append(env.InstallAs(dstfile, srcfile))
+
+if env["platform"] == "windows":
+    python_dll_file = "python312.dll" if not env["python_debug"] else "python312_d.dll"
+    python_dll = os.path.join('python', 'PCBuild', 'amd64', python_dll_file)
+    python_dll_target = "{}/bin/{}/{}".format(projectdir, env["platform"], python_dll_file)
+    copy_python_deps.append(env.InstallAs(python_dll_target, python_dll))
+
+default_args = [library, copy, copy_python_deps]
 if localEnv.get("compiledb", False):
     default_args += [compilation_db]
 Default(*default_args)
