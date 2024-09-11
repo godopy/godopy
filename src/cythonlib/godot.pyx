@@ -1,17 +1,17 @@
 cimport cython
 from cpython cimport ref, PyObject
-from libc.stdlib cimport malloc, free
-from godot_cpp cimport *
+from godot cimport *
 
 import sys
 import builtins
 
+include "gde_shortcuts.pxi"
 include "type_converters.pxi"
 
 cdef class GodotObject:
     cdef void* _owner
     cdef GDExtensionInstanceBindingCallbacks _binding_callbacks
-    cdef StringName class_name
+    cdef StringName _class_name
     cdef readonly str __godot_class__
 
     @staticmethod
@@ -47,7 +47,8 @@ cdef class GodotObject:
             GodotSingleton._free_callback_gil(p_token, p_instance, p_binding)
 
     @staticmethod
-    cdef GDExtensionBool _reference_callback(void *p_token, void *p_instance, GDExtensionBool p_reference) noexcept nogil:
+    cdef GDExtensionBool _reference_callback(void *p_token, void *p_instance,
+                                             GDExtensionBool p_reference) noexcept nogil:
         return True
 
     def __cinit__(self):
@@ -57,47 +58,51 @@ cdef class GodotObject:
     
     def __init__(self, str class_name):
         self.__godot_class__ = class_name
-        self.class_name = stringname_from_str(class_name)
-        self._owner = gdextension_interface_classdb_construct_object(&self.class_name)
-        # ???  gdextension_interface_object_set_instance(self._owner, snn_from_str(class_name))
-        gdextension_interface_object_set_instance_binding(self._owner, &self.class_name, <void *><PyObject *>self, &self._binding_callbacks)
+        self._class_name = stringname_from_str(class_name)
+        self._owner = _gde_classdb_construct_object(self._class_name._native_ptr())
+        # ???  _gde_object_set_instance(self._owner, snn_from_str(class_name))
+        _gde_object_set_instance_binding(self._owner,
+                                         self._class_name._native_ptr(),
+                                         <void *><PyObject *>self, &self._binding_callbacks)
 
 
 cdef class GodotSingleton(GodotObject):
     # cdef void* owner
     # cdef GDExtensionInstanceBindingCallbacks _binding_callbacks
-    cdef GDExtensionObjectPtr singleton_obj
+    cdef GDExtensionObjectPtr _gde_so
     cdef void* singleton
 
     def __init__(self, str class_name):
         self.__godot_class__ = class_name
-        self.class_name = stringname_from_str(class_name)
-        self.singleton_obj = gdextension_interface_global_get_singleton(&self.class_name)
-        self.singleton = gdextension_interface_object_get_instance_binding(self.singleton_obj, token, &self._binding_callbacks)
+        self._class_name = stringname_from_str(class_name)
+        self._gde_so = _gde_global_get_singleton(self._class_name._native_ptr())
+        self.singleton = _gde_object_get_instance_binding(self._gde_so, token, &self._binding_callbacks)
 
 
 cdef class GodotMethodBindRet:
     cdef void *_owner
-    cdef GDExtensionMethodBindPtr _mb
-    cdef StringName method_name
+    cdef GDExtensionMethodBindPtr _gde_mb
+    cdef StringName _method_name
 
     def __cinit__(self, GodotObject wrapper, str method_name, GDExtensionInt method_hash):
         self._owner = wrapper._owner
-        self.method_name = stringname_from_str(method_name)
-        self._mb = gdextension_interface_classdb_get_method_bind(&wrapper.class_name, &self.method_name, method_hash)
+        self._method_name = stringname_from_str(method_name)
+        self._gde_mb = _gde_classdb_get_method_bind(
+            wrapper._class_name._native_ptr(), self._method_name._native_ptr(), method_hash)
 
     cpdef object _call_internal(self, tuple args):
         cdef Variant ret
         cdef Variant arg
-        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>malloc(len(args) * cython.sizeof(GDExtensionConstTypePtr))
+        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>\
+            _gde_mem_alloc(len(args) * cython.sizeof(GDExtensionConstTypePtr))
         cdef int i
         for i in range(len(args)):
             arg = variant_from_pyobject(args[i])
             p_args[i] = &arg
         
         with nogil:
-            gdextension_interface_object_method_bind_ptrcall(self._mb, self._owner, p_args, &ret)
-            free(p_args)
+            _gde_object_method_bind_ptrcall(self._gde_mb, self._owner, p_args, &ret)
+            _gde_mem_free(p_args)
 
         return pyobject_from_variant(ret)
     
@@ -108,41 +113,40 @@ cdef class GodotMethodBindRet:
 cdef class GodotMethodBindNoRet(GodotMethodBindRet):
     cpdef object _call_internal(self, tuple args):
         cdef Variant arg
-        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>malloc(len(args) * cython.sizeof(GDExtensionConstTypePtr))
+        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>\
+            _gde_mem_alloc(len(args) * cython.sizeof(GDExtensionConstTypePtr))
         cdef int i
         for i in range(len(args)):
             arg = variant_from_pyobject(args[i])
             p_args[i] = &arg
 
         with nogil:
-            gdextension_interface_object_method_bind_ptrcall(self._mb, self._owner, p_args, NULL)
-            free(p_args)
-
-
-# cpdef printraw(*args):
-#    cdef GDExtensionPtrUtilityFunction f = gdextension_interface_variant_get_ptr_utility_function(StringName(b"printraw")._native_ptr(), 2648703342)
+            _gde_object_method_bind_ptrcall(self._gde_mb, self._owner, p_args, NULL)
+            _gde_mem_free(p_args)
 
 cdef class GodotUtilityFunctionRet:
-    cdef GDExtensionPtrUtilityFunction _uf
-    cdef StringName function_name
+    cdef GDExtensionPtrUtilityFunction _gde_uf
+    cdef StringName _function_name
 
     def __cinit__(self, str function_name, GDExtensionInt function_hash):
-        self.function_name = stringname_from_str(function_name)
-        self._uf = gdextension_interface_variant_get_ptr_utility_function(&self.function_name, function_hash)
+        self._function_name = stringname_from_str(function_name)
+        self._gde_uf = _gde_variant_get_ptr_utility_function(self._function_name._native_ptr(), function_hash)
     
     cpdef object _call_internal(self, tuple args):
         cdef Variant ret
         cdef Variant arg
-        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>malloc(len(args) * cython.sizeof(GDExtensionConstTypePtr))
         cdef int i
         cdef int size = len(args)
+        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>\
+            _gde_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
+
         for i in range(size):
             arg = variant_from_pyobject(args[i])
             p_args[i] = &arg
-        
+
         with nogil:
-            self._uf(&ret, p_args, size)
-            free(p_args)
+            self._gde_uf(&ret, p_args, size)
+            _gde_mem_free(p_args)
 
         return pyobject_from_variant(ret)
 
@@ -153,16 +157,18 @@ cdef class GodotUtilityFunctionRet:
 cdef class GodotUtilityFunctionNoRet(GodotUtilityFunctionRet):
     cpdef object _call_internal(self, tuple args):
         cdef Variant arg
-        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>malloc(len(args) * cython.sizeof(GDExtensionConstTypePtr))
         cdef int i
         cdef int size = len(args)
+        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>\
+            _gde_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
+        
         for i in range(size):
             arg = variant_from_pyobject(args[i])
             p_args[i] = &arg
-        
+
         with nogil:
-            self._uf(NULL, p_args, size)
-            free(p_args)
+            self._gde_uf(NULL, p_args, size)
+            _gde_mem_free(p_args)
 
 printraw = GodotUtilityFunctionNoRet('printraw', 2648703342)
 print_rich = GodotUtilityFunctionNoRet('print_rich', 2648703342)
