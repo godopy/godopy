@@ -13,6 +13,6 @@ func _init():
 		"raise Exception('Test exc')"
 	)
 
-	Python.run_simple_string("print('Hello, world!')")
+	Python.run_simple_string("godot.printraw('Hello, world!')")
 
 	quit()

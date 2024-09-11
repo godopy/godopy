@@ -15,7 +15,7 @@ protected:
 public:
 	static PythonRuntime *get_singleton() { return singleton; }
 
-	_FORCE_INLINE_ bool is_initialized() const { return initialized; }
+	_ALWAYS_INLINE_ bool is_initialized() const { return initialized; }
 
 	void pre_initialize();
 	void initialize();
