@@ -1,6 +1,6 @@
 from gdextension_interface cimport *
 
-include "godot_cpp_defs/godot.pxi"
-include "godot_cpp_defs/variant.pxi"
-include "godot_cpp_defs/string_name.pxi"
-include "godot_cpp_defs/string.pxi"
+include "_godot_cpp_includes/godot.pxi"
+include "_godot_cpp_includes/variant.pxi"
+include "_godot_cpp_includes/string_name.pxi"
+include "_godot_cpp_includes/string.pxi"
