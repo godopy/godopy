@@ -1,13 +1,11 @@
 cdef class GodotMethodBindRet:
     cdef void *_owner
     cdef GDExtensionMethodBindPtr _gde_mb
-    cdef StringName _method_name
 
     def __cinit__(self, GodotObject wrapper, str method_name, GDExtensionInt method_hash):
         self._owner = wrapper._owner
-        self._method_name = stringname_from_str(method_name)
         self._gde_mb = _gde_classdb_get_method_bind(
-            wrapper._class_name._native_ptr(), self._method_name._native_ptr(), method_hash)
+            StringName(wrapper.__godot_class__)._native_ptr(), StringName(method_name)._native_ptr(), method_hash)
 
     cpdef object _call_internal(self, tuple args):
         cdef Variant ret
@@ -45,11 +43,10 @@ cdef class GodotMethodBindNoRet(GodotMethodBindRet):
 
 cdef class GodotUtilityFunctionRet:
     cdef GDExtensionPtrUtilityFunction _gde_uf
-    cdef StringName _function_name
 
     def __cinit__(self, str function_name, GDExtensionInt function_hash):
-        self._function_name = stringname_from_str(function_name)
-        self._gde_uf = _gde_variant_get_ptr_utility_function(self._function_name._native_ptr(), function_hash)
+        self._gde_uf = \
+            _gde_variant_get_ptr_utility_function(StringName(function_name)._native_ptr(), function_hash)
 
     cpdef object _call_internal(self, tuple args):
         cdef Variant ret

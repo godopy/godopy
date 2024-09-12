@@ -107,7 +107,7 @@ cdef class ArgumentInfo:
 
         self._gde_pi.type = GDEXTENSION_VARIANT_TYPE_NIL  # Get from func.__anotations__ if possible
         self._gde_pi.name = NULL
-        self._gde_pi.class_name = method.owner_class._name._native_ptr()
+        self._gde_pi.class_name = StringName(method.owner_class.name)._native_ptr()
         self._gde_pi.hint = 0
         self._gde_pi.hint_string = NULL
         self._gde_pi.usage = 0

@@ -11,9 +11,9 @@ import types
 include "gde_shortcuts.pxi"
 include "type_converters_ext.pxi"
 
-include "method.pxi"
 include "extension.pxi"
 include "extension_class.pxi"
+include "extension_method.pxi"
 
 def hello():
     print("Hello from gdextension module!")

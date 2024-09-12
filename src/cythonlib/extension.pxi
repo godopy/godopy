@@ -26,10 +26,9 @@ cdef class GodotExtension(godot.GodotObject):
         self._binding_callbacks.reference_callback = &GodotExtension._reference_callback
 
         self.__godot_class__ = class_name
-        self._class_name = stringname_from_str(class_name)
-        self._owner = _gde_classdb_construct_object(self._class_name._native_ptr())
-        _gde_object_set_instance(self._owner, self._class_name._native_ptr(), <void *><PyObject *>self)
+        self._owner = _gde_classdb_construct_object(StringName(class_name)._native_ptr())
+        _gde_object_set_instance(self._owner, StringName(class_name)._native_ptr(), <void *><PyObject *>self)
         ref.Py_INCREF(self)
         _gde_object_set_instance_binding(self._owner,
-                                         self._class_name._native_ptr(),
+                                         StringName(class_name)._native_ptr(),
                                          <void *><PyObject *>self, &self._binding_callbacks)

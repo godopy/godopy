@@ -101,10 +101,12 @@ cdef class GodotExtentionClass(godot.GodotClass):
             print('get_virtual_func')
         return NULL
 
-    def __init__(self, name, godot.GodotClass parent, **kwargs):
+    def __init__(self, name, object parent, **kwargs):
         self.name = name
-        self._name = stringname_from_str(name)
-        self.parent = parent
+        if isinstance(parent, godot.GodotClass):
+            self.parent = parent
+        else:
+            self.parent = godot.GodotClass(str(parent))
 
         cdef GDExtensionClassCreationInfo3 ci
 
@@ -139,10 +141,10 @@ cdef class GodotExtentionClass(godot.GodotClass):
         # is_abstract=True => register_abstract_class
         # is_exposed=False => register_internal_class
         # is_runtime=True => register_runtime_class
-
+        cdef str parent_name = parent.name
         _gde_classdb_register_extension_class3(gdextension_library,
-                                               self._name._native_ptr(),
-                                               parent._name._native_ptr(),
+                                               StringName(self.name)._native_ptr(),
+                                               StringName(parent_name)._native_ptr(),
                                                &ci)
 
     def __call__(self):
@@ -174,4 +176,4 @@ cdef class GodotExtentionClass(godot.GodotClass):
 
         ref.Py_INCREF(method)
 
-        _gde_classdb_register_extension_class_method(gdextension_library, self._name._native_ptr(), &mi)
+        _gde_classdb_register_extension_class_method(gdextension_library, StringName(self.name)._native_ptr(), &mi)

@@ -2,9 +2,8 @@ from godot_cpp cimport *
 from cpython cimport PyObject
 
 cdef class GodotObject:
-    cdef void* _owner
+    cdef void *_owner
     cdef GDExtensionInstanceBindingCallbacks _binding_callbacks
-    cdef StringName _class_name
     cdef readonly str __godot_class__
 
     @staticmethod
@@ -34,7 +33,6 @@ cdef class GodotSingleton(GodotObject):
 
 cdef class GodotClass:
     cdef str name
-    cdef StringName _name
 
 
 cdef class GodotSingletonClass(GodotClass):
