@@ -10,6 +10,7 @@ demo/bin/*/*
 .sconsign*.dblite
 
 src/gen
+godot-cpp/gen
 
 # Ignore custom.py
 custom.py
