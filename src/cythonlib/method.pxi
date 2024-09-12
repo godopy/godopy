@@ -18,7 +18,7 @@ cdef class GodotExtensionMethod:
                                const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
                                GDExtensionCallError *r_error):
         cdef GodotExtensionMethod self = <object>p_method_userdata
-        cdef GodotObject wrapper = <object>p_instance
+        cdef godot.GodotObject wrapper = <object>p_instance
         cdef int i
         cdef list args = []
         cdef Variant arg

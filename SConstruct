@@ -96,7 +96,7 @@ cython_builder = Builder(
 )
 env_cython.Append(BUILDERS={'CythonSource': cython_builder})
 
-cython_sources = env_cython.CythonSource(Glob('src/cythonlib/*.pyx'))
+cython_sources = env_cython.CythonSource(['src/cythonlib/godot.pyx'])
 cython_depends = [
     *Glob('src/cythonlib/*.pxi'),
     *Glob('src/cythonlib/*.pxd')
@@ -104,6 +104,9 @@ cython_depends = [
 Depends(cython_sources, cython_depends)
 
 sources += cython_sources
+
+gdextension_lib_sources = env_cython.CythonSource(['src/cythonlib/gdextension.pyx'])
+Depends(gdextension_lib_sources, cython_depends)
 
 if env['target'] in ['editor', 'template_debug']:
     try:
@@ -124,7 +127,17 @@ library = env.SharedLibrary(
     source=sources,
 )
 
-copy = env.InstallAs('{}/bin/{}/lib{}'.format(projectdir, env['platform'], file), library)
+gdextension_lib_file = 'bin/{}/dylib/gdextension.pyd'.format(env['platform'])
+gdextension_lib = env.SharedLibrary(
+    gdextension_lib_file,
+    source=gdextension_lib_sources,
+    SHLIBSUFFIX='.pyd'
+)
+
+copy = [
+    env.InstallAs('{}/bin/{}/lib{}'.format(projectdir, env['platform'], file), library),
+    env.InstallAs('{}/bin/{}/dylib/gdextension.pyd'.format(projectdir, env['platform']), gdextension_lib)
+]
 
 copy_python_deps = []
 
@@ -146,7 +159,7 @@ if env['platform'] == 'windows':
     python_dll_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_dll_file)
     copy_python_deps.append(env.InstallAs(python_dll_target, python_dll))
 
-default_args = [library, copy, copy_python_deps]
+default_args = [library, gdextension_lib, copy, copy_python_deps]
 if localEnv.get('compiledb', False):
     default_args += [compilation_db]
 Default(*default_args)
