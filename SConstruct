@@ -129,8 +129,10 @@ copy = env.InstallAs('{}/bin/{}/lib{}'.format(projectdir, env['platform'], file)
 copy_python_deps = []
 
 # Minimal Python library
-python_lib_files = ['encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
-                    'io.py', 'abc.py']
+python_lib_files = [
+    'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
+    'io.py', 'abc.py', 'types.py'
+]
 
 for pyfile in python_lib_files:
     srcfile = os.path.join('python', 'Lib', pyfile)

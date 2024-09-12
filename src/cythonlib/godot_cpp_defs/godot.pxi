@@ -1,7 +1,7 @@
 cdef extern from "godot_cpp/godot.hpp" namespace "godot::internal" nogil:
     cdef GDExtensionInterfaceGetProcAddress gdextension_interface_get_proc_address
-    cdef GDExtensionClassLibraryPtr library
-    cdef void *token
+    cdef GDExtensionClassLibraryPtr gdextension_library "godot::internal::library"
+    cdef void *gdextension_token "godot::internal::token"
     cdef GDExtensionGodotVersion godot_version
     cdef GDExtensionInterfaceGetGodotVersion gdextension_interface_get_godot_version
     cdef GDExtensionInterfaceMemAlloc gdextension_interface_mem_alloc
