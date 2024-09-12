@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+
+import re
 import os
 import sys
 import subprocess
@@ -64,31 +67,26 @@ class PxdWriter(AutoPxd):
 
 
 stdint_declarations = [
-    'int8_t', 'int16_t', 'int32_t', 'int64_t',
-    'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t'
+    'int32_t', 'int64_t', 'uint8_t', 'uint16_t', 'uint32_t', 'uint64_t'
 ]
 
 
 def write_api_pxd(echo=print):
-    output_dir = BASE_DIR / 'src' / 'pyxlib'
-    input_dir = BASE_DIR / 'godot-cpp' / 'gdextension'
+    output_dir = BASE_DIR / 'gdextension'
+    input_dir = BASE_DIR / 'gdextension'
 
     print(input_dir, output_dir)
     if not os.path.isdir(output_dir):
         echo(f'"{output_dir}" does not exist. Something went wrong…')
         sys.exit(1)
 
-    echo("Converting 'gdextension_interface.h' -> '_gdextension_interface.pxd'")
+    echo("Converting 'gdextension_interface.h' -> 'gdextension_interface.pxd'")
 
     inpath =  input_dir / 'gdextension_interface.h'
-    outpath = output_dir / '_gdextension_interface.pxd'
+    outpath = output_dir / 'gdextension_interface.pxd'
     if not os.path.exists(inpath):
         echo(f'Required "gdextension_interface.h" file doesn\'t exist in "{input_dir}"')
         sys.exit(1)
-
-    # initial_dir = os.getcwd()
-
-    # os.chdir(output_dir)
 
     with open(inpath, 'r') as infile:
         code = infile.read()
@@ -96,27 +94,25 @@ def write_api_pxd(echo=print):
     extra_cpp_args = ['-I', '.']
     if sys.platform == 'darwin':
         # TODO: Use 'xcode-select -p' output
-        extra_cpp_args += ['-I', "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"]
+        extra_cpp_args += ['-I',
+                           "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include"]
 
-    p = PxdWriter(inpath)
-    p.visit(parse_c_header(code, extra_cpp_args=extra_cpp_args))
+    pw = PxdWriter(inpath)
+    pw.visit(parse_c_header(code, extra_cpp_args=extra_cpp_args))
 
-    pxd = 'from libc.stdint cimport {:s}\n'.format(', '.join(stdint_declarations))
-    pxd += 'from libc.stddef cimport wchar_t\nfrom libcpp cimport bool\n'
-    # pxd += 'ctypedef uint32_t char32_t\n'
-    # pxd += 'ctypedef uint16_t char16_t\n'
-    pxd += '\n'
-    pxd += str(p)
-    pxd = pxd.replace('uint8_t _dont_touch_that[]', 'pass')
+    generated_pxd = str(pw)
+    generated_pxd = re.sub(r'".*gdextension_interface\.h":',
+                           '"gdextension_interface.h" nogil:', generated_pxd)
 
-    with open(outpath, 'w', encoding='utf-8') as f:
+    pxd = '\n'.join([
+        'from libc.stdint cimport {:s}'.format(', '.join(stdint_declarations)),
+        'from libc.stddef cimport wchar_t',
+        '',
+        generated_pxd
+    ])
+
+    with open(outpath, 'w', encoding='utf-8', newline='\n') as f:
         f.write(pxd)
-
-    # with open('__init__.py', 'w', encoding='utf-8') as f:
-    #    pass
-
-    # os.chdir(initial_dir)
-
 
 if __name__ == '__main__':
     write_api_pxd()

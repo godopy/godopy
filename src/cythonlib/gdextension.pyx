@@ -7,7 +7,6 @@ from cython.operator cimport dereference as deref
 cimport godot
 
 import types
-import builtins
 
 include "gde_shortcuts.pxi"
 include "type_converters_ext.pxi"

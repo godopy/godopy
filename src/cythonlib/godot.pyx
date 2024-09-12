@@ -5,7 +5,6 @@ from cython.operator cimport dereference as deref
 
 import sys
 import types
-import builtins
 
 include "gde_shortcuts.pxi"
 include "type_converters.pxi"

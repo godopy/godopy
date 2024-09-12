@@ -90,7 +90,7 @@ env_cython.msvc = env.mscv
 scons_methods.disable_warnings(env_cython)
 
 cython_builder = Builder(
-    action='cython --fast-fail -3 --cplus -o $TARGET $SOURCE',
+    action='cython -Isrc/cythonlib -Igdextension --fast-fail -3 --cplus -o $TARGET $SOURCE',
     suffix='.cpp',
     src_suffox='.pyx'
 )
@@ -99,7 +99,9 @@ env_cython.Append(BUILDERS={'CythonSource': cython_builder})
 cython_sources = env_cython.CythonSource(['src/cythonlib/godot.pyx'])
 cython_depends = [
     *Glob('src/cythonlib/*.pxi'),
-    *Glob('src/cythonlib/*.pxd')
+    *Glob('src/cythonlib/*.pxd'),
+    *Glob('src/cythonlib/godot_cpp_defs/*.pxi'),
+    *Glob('gdextension/*.pxd')
 ]
 Depends(cython_sources, cython_depends)
 

@@ -80,7 +80,7 @@ cdef class GodotExtensionMethod:
         return meta_info.data()
 
     cdef GDExtensionBool has_return(self):
-        return <GDExtensionBool>builtins.bool(self.method.annotations.get('return'))
+        return <GDExtensionBool>bool(self.method.annotations.get('return'))
 
     cdef uint32_t get_hint_flags(self):
         return 0

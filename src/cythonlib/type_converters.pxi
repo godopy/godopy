@@ -20,7 +20,7 @@ cdef inline object pyobject_from_variant(const Variant &v):
     elif t == VariantType.FLOAT:
         return <double>v
     elif t == VariantType.BOOL:
-        return builtins.bool(<int>v)
+        return bool(<int>v)
     elif t == VariantType.OBJECT:
         raise NotImplementedError()
         # return wrap_cpp(<Object *>v)
@@ -34,7 +34,7 @@ cdef inline Variant variant_from_pyobject(object o):
         v = Variant(<const char *>b)
     elif isinstance(o, bytes):
         v = Variant(<const char *>o)
-    elif isinstance(o, builtins.bool):
+    elif isinstance(o, bool):
         v = Variant(<bint>o)
     elif isinstance(o, int):
         v = Variant(<int64_t>o)

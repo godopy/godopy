@@ -33,13 +33,6 @@ opts.Update(env)
 
 Help(opts.GenerateHelpText(env))
 
-# Detect and print a warning listing unknown SCons variables to ease troubleshooting.
-unknown = opts.UnknownVariables()
-if unknown:
-    print("WARNING: Unknown SCons variables were passed and will be ignored:")
-    for item in unknown.items():
-        print("    " + item[0] + "=" + item[1])
-
 scons_cache_path = os.environ.get("SCONS_CACHE")
 if scons_cache_path is not None:
     CacheDir(scons_cache_path)
