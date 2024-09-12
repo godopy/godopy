@@ -141,16 +141,17 @@ cdef class GodotExtentionClass(godot.GodotClass):
         # is_abstract=True => register_abstract_class
         # is_exposed=False => register_internal_class
         # is_runtime=True => register_runtime_class
-        cdef str parent_name = parent.name
+
+        cdef str parent_name = parent.__name__
         _gde_classdb_register_extension_class3(gdextension_library,
-                                               StringName(self.name)._native_ptr(),
+                                               StringName(self.__name__)._native_ptr(),
                                                StringName(parent_name)._native_ptr(),
                                                &ci)
 
     def __call__(self):
         return GodotExtension(self.name)
 
-    cpdef add_method(self, object func: types.FunctionType):
+    cpdef add_method_to_class(self, object func: types.FunctionType):
         cdef GodotExtensionMethod method = GodotExtensionMethod(self, func)
         cdef GDExtensionClassMethodInfo mi
 
@@ -160,7 +161,7 @@ cdef class GodotExtentionClass(godot.GodotClass):
         cdef GDExtensionClassMethodArgumentMetadata *return_value_metadata = method.get_argument_metadata_list()
         cdef GDExtensionClassMethodArgumentMetadata *arguments_metadata = return_value_metadata + 1
 
-        mi.name = method._name._native_ptr()
+        mi.name = StringName(method.__name__)._native_ptr()
         mi.method_userdata = <void *><PyObject *>method
         mi.call_func = &GodotExtensionMethod.bind_call
         mi.ptrcall_func = &GodotExtensionMethod.bind_ptrcall
@@ -176,4 +177,5 @@ cdef class GodotExtentionClass(godot.GodotClass):
 
         ref.Py_INCREF(method)
 
-        _gde_classdb_register_extension_class_method(gdextension_library, StringName(self.name)._native_ptr(), &mi)
+        _gde_classdb_register_extension_class_method(
+            gdextension_library, StringName(self.__name__)._native_ptr(), &mi)

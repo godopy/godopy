@@ -37,12 +37,17 @@ cdef class GodotObject:
                                              GDExtensionBool p_reference) noexcept nogil:
         return True
 
-    def __init__(self, str class_name):
+    def __init__(self, object godot_class):
         self._binding_callbacks.create_callback = &GodotObject._create_callback
         self._binding_callbacks.free_callback = &GodotObject._free_callback
         self._binding_callbacks.reference_callback = &GodotObject._reference_callback
 
-        self.__godot_class__ = class_name
+        if not isinstance(godot_class, (GodotClass, str)):
+            raise TypeError("'godot_class' argument must be a GodotClass instance or a string")
+
+        self.__godot_class__ = godot_class if isinstance(godot_class, GodotClass) \
+                                           else GodotClass(godot_class)
+        cdef str class_name = self.__godot_class__.name
         self._owner = _gde_classdb_construct_object(StringName(class_name)._native_ptr())
         _gde_object_set_instance_binding(self._owner,
                                          StringName(class_name)._native_ptr(),
@@ -53,11 +58,16 @@ cdef class GodotSingleton(GodotObject):
     # cdef GDExtensionObjectPtr _gde_so
     # cdef void* singleton
 
-    def __init__(self, str class_name):
+    def __init__(self, object godot_class):
         self._binding_callbacks.create_callback = &GodotObject._create_callback
         self._binding_callbacks.free_callback = &GodotObject._free_callback
         self._binding_callbacks.reference_callback = &GodotObject._reference_callback
 
-        self.__godot_class__ = class_name
+        if not isinstance(godot_class, (GodotClass, str)):
+            raise TypeError("'godot_class' argument must be a GodotClass instance or a string")
+
+        self.__godot_class__ = godot_class if isinstance(godot_class, GodotClass) \
+                                           else GodotClass(godot_class)
+        cdef str class_name = self.__godot_class__.name
         self._gde_so = _gde_global_get_singleton(StringName(class_name)._native_ptr())
         self.singleton = _gde_object_get_instance_binding(self._gde_so, gdextension_token, &self._binding_callbacks)

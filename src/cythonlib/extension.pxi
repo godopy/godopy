@@ -20,12 +20,17 @@ cdef class GodotExtension(godot.GodotObject):
                                              GDExtensionBool p_reference) noexcept nogil:
         return True
 
-    def __init__(self, str class_name):
+    def __init__(self, object godot_class):
         self._binding_callbacks.create_callback = &GodotExtension._create_callback
         self._binding_callbacks.free_callback = &GodotExtension._free_callback
         self._binding_callbacks.reference_callback = &GodotExtension._reference_callback
 
-        self.__godot_class__ = class_name
+        if not isinstance(godot_class, (godot.GodotClass, str)):
+            raise TypeError("'godot_class' argument must be a GodotClass instance or a string")
+
+        self.__godot_class__ = godot_class if isinstance(godot_class, godot.GodotClass) \
+                                           else godot.GodotClass(godot_class)
+        cdef str class_name = self.__godot_class__.__name__
         self._owner = _gde_classdb_construct_object(StringName(class_name)._native_ptr())
         _gde_object_set_instance(self._owner, StringName(class_name)._native_ptr(), <void *><PyObject *>self)
         ref.Py_INCREF(self)

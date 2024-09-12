@@ -32,7 +32,7 @@ cdef class GodotSingleton(GodotObject):
 
 
 cdef class GodotClass:
-    cdef str name
+    cdef str __name__
 
 
 cdef class GodotSingletonClass(GodotClass):

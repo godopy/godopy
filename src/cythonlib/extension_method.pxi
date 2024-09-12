@@ -1,7 +1,7 @@
 cdef class GodotExtensionMethod:
     cdef GodotExtentionClass owner_class
     cdef object method
-    cdef StringName _name
+    cdef str __name__
 
     @staticmethod
     cdef void bind_call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
@@ -54,8 +54,26 @@ cdef class GodotExtensionMethod:
         return def_args.data()
 
     cdef GDExtensionPropertyInfo get_argument_info(self, int pos):
-        cdef ArgumentInfo ai = ArgumentInfo(self, pos)
-        return ai.as_gde_pi()
+        cdef GDExtensionPropertyInfo pi
+
+        pi.type = GDEXTENSION_VARIANT_TYPE_NIL  # Get from func.__anotations__ if possible
+        pi.name = NULL
+        cdef str class_name = self.method.owner_class.__name__
+        pi.class_name = StringName(class_name)._native_ptr()
+        pi.hint = 0
+        pi.hint_string = NULL
+        pi.usage = 0
+
+        cdef object varname = None
+        cdef StringName _name
+        if pos >= 0:
+            try:
+                varname = self.method.__code__.co_varnames[pos]
+                pi.name = StringName(<str>varname)._native_ptr()
+            except IndexError:
+                pass
+
+        return pi
 
     cdef GDExtensionPropertyInfo *get_argument_info_list(self):
         cdef vector[GDExtensionPropertyInfo] arg_info
@@ -94,35 +112,4 @@ cdef class GodotExtensionMethod:
     def __init__(self, GodotExtentionClass owner_class, object method: types.FunctionType):
         self.owner_class = owner_class
         self.method = method
-        self._name = stringname_from_str(method.__name__)
-
-
-cdef class ArgumentInfo:
-    cdef StringName _name
-    cdef GDExtensionPropertyInfo _gde_pi
-
-    def __cinit__(self, GodotExtensionMethod method: types.FunctionType, int pos):
-        cdef void *_name_ptr = NULL
-        cdef object func = method.method
-
-        self._gde_pi.type = GDEXTENSION_VARIANT_TYPE_NIL  # Get from func.__anotations__ if possible
-        self._gde_pi.name = NULL
-        self._gde_pi.class_name = StringName(method.owner_class.name)._native_ptr()
-        self._gde_pi.hint = 0
-        self._gde_pi.hint_string = NULL
-        self._gde_pi.usage = 0
-
-        cdef GDExtensionPropertyInfo pi
-        cdef object varname = None
-        cdef StringName _name
-        if pos >= 0:
-            try:
-                varname = func.__code__.co_varnames[pos]
-                self._name = stringname_from_str(varname)
-                pi.name = self._name._native_ptr()
-            except IndexError:
-                pass
-
-    cdef GDExtensionPropertyInfo as_gde_pi(self):
-        return self._gde_pi
-
+        self.__name__ = method.__name__
