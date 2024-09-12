@@ -1,2 +1,50 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# Binary data types
+*.aif binary
+*.aifc binary
+*.aiff binary
+*.au binary
+*.bmp binary
+*.exe binary
+*.icns binary
+*.gif binary
+*.ico binary
+*.jpg binary
+*.pck binary
+*.png binary
+*.psd binary
+*.tar binary
+*.wav binary
+*.whl binary
+*.zip binary
+
+# Specific binary files
+python/Lib/test/sndhdrdata/sndhdr.* binary
+python/PC/classicAppCompat.* binary
+
+# Text files that should not be subject to eol conversion
+[attr]noeol -text
+
+python/Lib/test/cjkencodings/*                    noeol
+python/Lib/test/tokenizedata/coding20731.py       noeol
+python/Lib/test/decimaltestdata/*.decTest         noeol
+python/Lib/test/test_email/data/*.txt             noeol
+python/Lib/test/test_importlib/resources/data01/*           noeol
+python/Lib/test/test_importlib/resources/namespacedata01/*  noeol
+python/Lib/test/xmltestdata/*                     noeol
+
+# Shell scripts should have LF even on Windows because of Cygwin
+python/Lib/venv/scripts/common/activate text eol=lf
+python/Lib/venv/scripts/posix/* text eol=lf
+
+# CRLF files
+[attr]dos text eol=crlf
+
+*.bat               dos
+*.proj              dos
+*.props             dos
+*.ps1               dos
+*.sln               dos
+*.vcxproj*          dos
