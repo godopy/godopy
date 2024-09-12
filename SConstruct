@@ -73,11 +73,8 @@ env.mscv = env['platform'] == 'windows'
 env.Append(CPPPATH=['src/'])
 sources = Glob('src/*.cpp')
 
-env.Append(CPPPATH=[os.path.join('python', 'Include')])
-
 if env['platform'] == 'windows':
     env.Append(LIBPATH=[os.path.join('python', 'PCBuild', 'amd64')])
-    env.Append(CPPPATH=[os.path.join('python', 'PC')])
 
     python_lib = 'python312' if not env['python_debug'] else 'python312_d'
     env.Append(LIBS=[python_lib])

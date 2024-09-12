@@ -1,14 +1,10 @@
 cdef inline StringName stringname_from_str(str s):
-    cdef bytes b = s.encode('utf-8')
-    cdef const char *cc = b
-    return StringName(cc)
+    return StringName(s)
 
 
 cdef inline str str_from_variant(Variant v):
     cdef String s = <String>v
-    cdef CharString cs = s.utf8()
-    cdef const char *data = cs.get_data()
-    return data.decode('utf-8')
+    return s.py_str()
 
 
 cdef inline object pyobject_from_variant(const Variant &v):
@@ -27,13 +23,13 @@ cdef inline object pyobject_from_variant(const Variant &v):
 
     return None
 
+
 cdef inline Variant variant_from_pyobject(object o):
     cdef Variant v
     if isinstance(o, str):
-        b = o.encode('utf-8')
-        v = Variant(<const char *>b)
+        v = Variant(<String>o)
     elif isinstance(o, bytes):
-        v = Variant(<const char *>o)
+        v = Variant(<String>o)
     elif isinstance(o, bool):
         v = Variant(<bint>o)
     elif isinstance(o, int):

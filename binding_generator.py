@@ -379,7 +379,6 @@ def scons_generate_bindings(target, source, env):
         env["precision"],
         env["godot_cpp_gen_dir"],
     )
-    return None
 
 
 def generate_bindings(api_filepath, use_template_get_node, bits="64", precision="single", output_dir="./godot-cpp"):
@@ -613,6 +612,7 @@ def generate_builtin_class_vararg_method_implements_header(builtin_classes):
 
     return "\n".join(result)
 
+PYTHONIZE = ["String", "StringName", "NodePath"]
 
 def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_classes):
     result = []
@@ -630,6 +630,11 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
     result.append("")
     result.append("#include <godot_cpp/core/defs.hpp>")
     result.append("")
+
+    if class_name in PYTHONIZE:
+        result.append("#define PY_SSIZE_T_CLEAN")
+        result.append("#include <Python.h>")
+        result.append("")
 
     # Special cases.
     if class_name == "String":
@@ -787,6 +792,7 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
         result.append(f"\t{class_name}(const wchar_t *p_from);")
         result.append(f"\t{class_name}(const char16_t *p_from);")
         result.append(f"\t{class_name}(const char32_t *p_from);")
+        result.append(f"\t{class_name}(const PyObject *p_from);")
     if class_name == "Callable":
         result.append("\tCallable(CallableCustom *p_custom);")
         result.append("\tCallableCustom *get_custom() const;")
@@ -862,6 +868,10 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
         result.append("\tCharWideString wide_string() const;")
         result.append("\tstatic String num_real(double p_num, bool p_trailing = true);")
         result.append("\tError resize(int64_t p_size);")
+
+    if class_name == "String" or class_name == "StringName" or class_name == "NodePath":
+        result.append(f"\tPyObject *py_str() const;")
+        result.append(f"\tPyObject *py_bytes() const;")
 
     if "members" in builtin_api:
         for member in builtin_api["members"]:
@@ -2979,3 +2989,13 @@ def add_header(filename, lines):
 
     lines.append("// THIS FILE IS GENERATED. EDITS WILL BE LOST.")
     lines.append("")
+
+
+if __name__ == '__main__':
+    generate_bindings(
+        'gdextension/extension_api.json',
+        True,
+        "64",
+        "single",
+        "godot-cpp",
+    )

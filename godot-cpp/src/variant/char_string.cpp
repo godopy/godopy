@@ -40,6 +40,8 @@
 #include <cmath>
 #include <string>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
 namespace godot {
 
 template <typename L, typename R>
@@ -157,7 +159,7 @@ template class CharStringT<wchar_t>;
 // It's easier to have them written in C++ directly than in a Python script that generates them.
 
 String::String(const char *from) {
-	internal::gdextension_interface_string_new_with_latin1_chars(_native_ptr(), from);
+	internal::gdextension_interface_string_new_with_utf8_chars(_native_ptr(), from);
 }
 
 String::String(const wchar_t *from) {
@@ -170,6 +172,20 @@ String::String(const char16_t *from) {
 
 String::String(const char32_t *from) {
 	internal::gdextension_interface_string_new_with_utf32_chars(_native_ptr(), from);
+}
+
+String::String(const PyObject *from) {
+	if (PyUnicode_Check(from)) {
+		Py_ssize_t size;
+		const wchar_t *contents = PyUnicode_AsWideCharString((PyObject *)from, &size);
+		internal::gdextension_interface_string_new_with_wide_chars(_native_ptr(), contents);
+	} else if (PyBytes_Check(from)) {
+		const char *contents = PyBytes_AsString((PyObject *)from);
+		internal::gdextension_interface_string_new_with_utf8_chars(_native_ptr(), contents);
+	} else {
+		// TODO: print error or warning
+		internal::gdextension_interface_string_new_with_latin1_chars(_native_ptr(), "");
+	}
 }
 
 String String::utf8(const char *from, int64_t len) {
@@ -287,6 +303,36 @@ CharWideString String::wide_string() const {
 	str[length] = '\0';
 
 	return str;
+}
+
+PyObject *String::py_str() const {
+	int64_t length = internal::gdextension_interface_string_to_wide_chars(_native_ptr(), nullptr, 0);
+	int64_t size = length + 1;
+	CharWideString str;
+	str.resize(size);
+	internal::gdextension_interface_string_to_wide_chars(_native_ptr(), str.ptrw(), length);
+
+	str[length] = '\0';
+
+	PyObject *ret = PyUnicode_FromWideChar(str.ptr(), length);
+
+	Py_XINCREF(ret);
+	return ret;
+}
+
+PyObject *String::py_bytes() const {
+	int64_t length = internal::gdextension_interface_string_to_utf8_chars(_native_ptr(), nullptr, 0);
+	int64_t size = length + 1;
+	CharString str;
+	str.resize(size);
+	internal::gdextension_interface_string_to_utf8_chars(_native_ptr(), str.ptrw(), length);
+
+	str[length] = '\0';
+
+	PyObject *ret = PyBytes_FromString(str.ptr());
+
+	Py_XINCREF(ret);
+	return ret;
 }
 
 Error String::resize(int64_t p_size) {
@@ -471,6 +517,19 @@ StringName::StringName(const char16_t *from) :
 StringName::StringName(const char32_t *from) :
 		StringName(String(from)) {}
 
+StringName::StringName(const PyObject *from) :
+		StringName(String(from)) {}
+
+PyObject *StringName::py_str() const {
+	String str = String(*this);
+	return str.py_str();
+}
+
+PyObject *StringName::py_bytes() const {
+	String str = String(*this);
+	return str.py_bytes();
+}
+
 NodePath::NodePath(const char *from) :
 		NodePath(String(from)) {}
 
@@ -482,5 +541,18 @@ NodePath::NodePath(const char16_t *from) :
 
 NodePath::NodePath(const char32_t *from) :
 		NodePath(String(from)) {}
+
+NodePath::NodePath(const PyObject *from) :
+		NodePath(String(from)) {}
+
+PyObject *NodePath::py_str() const {
+	String str = String(*this);
+	return str.py_str();
+}
+
+PyObject *NodePath::py_bytes() const {
+	String str = String(*this);
+	return str.py_bytes();
+}
 
 } // namespace godot
