@@ -25,15 +25,31 @@ cdef class GodotObject:
     cdef GDExtensionBool _reference_callback(void *p_token, void *p_instance,
                                              GDExtensionBool p_reference) noexcept nogil
 
-
 cdef class GodotSingleton(GodotObject):
     cdef GDExtensionObjectPtr _gde_so
     cdef void* singleton
 
-
 cdef class GodotClass:
     cdef str __name__
 
-
 cdef class GodotSingletonClass(GodotClass):
     pass
+
+cdef class GodotMethodBindRet:
+    cdef void *_owner
+    cdef GDExtensionMethodBindPtr _gde_mb
+    cpdef object _call_internal(self, tuple args)
+
+cdef class GodotMethodBindNoRet(GodotMethodBindRet):
+    pass
+
+cdef class GodotUtilityFunctionRet:
+    cdef GDExtensionPtrUtilityFunction _gde_uf
+    cpdef object _call_internal(self, tuple args)
+
+cdef class GodotUtilityFunctionNoRet(GodotUtilityFunctionRet):
+    pass
+
+cdef GodotUtilityFunctionNoRet printraw
+cdef GodotUtilityFunctionNoRet print_rich
+cdef GodotUtilityFunctionNoRet push_error

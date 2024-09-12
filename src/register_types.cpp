@@ -1,5 +1,7 @@
 #include "register_types.h"
 #include "python_runtime.h"
+#include "python_module.h"
+
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
@@ -8,10 +10,13 @@
 
 using namespace godot;
 
+int initialize_godopy_python_extension_types(ModuleInitializationLevel);
+int uninitialize_godopy_python_extension_types(ModuleInitializationLevel);
+
 static PythonRuntime *runtime;
 static Python *python;
 
-void initialize_gdextension_types(ModuleInitializationLevel p_level)
+void initialize_godopy_types(ModuleInitializationLevel p_level)
 {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
@@ -23,12 +28,19 @@ void initialize_gdextension_types(ModuleInitializationLevel p_level)
 	ClassDB::register_class<Python>();
 	python = memnew(Python);
 	Engine::get_singleton()->register_singleton("Python", Python::get_singleton());
+
+	ClassDB::register_class<PythonModule>();
+
+	int ret = initialize_godopy_python_extension_types(p_level);
 }
 
-void uninitialize_gdextension_types(ModuleInitializationLevel p_level) {
+void uninitialize_godopy_types(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
+
+	int ret = uninitialize_godopy_python_extension_types(p_level);
+
 	Engine::get_singleton()->unregister_singleton("Python");
 	if (python) {
 		memdelete(python);
@@ -44,8 +56,8 @@ extern "C"
 	GDExtensionBool GDE_EXPORT godopy_library_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization)
 	{
 		GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
-		init_obj.register_initializer(initialize_gdextension_types);
-		init_obj.register_terminator(uninitialize_gdextension_types);
+		init_obj.register_initializer(initialize_godopy_types);
+		init_obj.register_terminator(uninitialize_godopy_types);
 		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
 
 		return init_obj.init();

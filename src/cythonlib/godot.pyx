@@ -13,8 +13,8 @@ include "object.pxi"
 include "method_bind.pxi"
 include "class.pxi"
 
-printraw = GodotUtilityFunctionNoRet('printraw', 2648703342)
-print_rich = GodotUtilityFunctionNoRet('print_rich', 2648703342)
-push_error = GodotUtilityFunctionNoRet('push_error', 2648703342)
+cdef GodotUtilityFunctionNoRet printraw = GodotUtilityFunctionNoRet('printraw', 2648703342)
+cdef GodotUtilityFunctionNoRet print_rich = GodotUtilityFunctionNoRet('print_rich', 2648703342)
+cdef GodotUtilityFunctionNoRet push_error = GodotUtilityFunctionNoRet('push_error', 2648703342)
 
 include "sys_util.pxi"

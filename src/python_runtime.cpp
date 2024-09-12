@@ -9,6 +9,7 @@
 #include <Python.h>
 
 PyMODINIT_FUNC PyInit_godot(void);
+PyMODINIT_FUNC PyInit_register_types(void);
 
 using namespace godot;
 
@@ -102,6 +103,7 @@ int set_config_paths(PyConfig *config) {
 
 void init_builtin_modules() {
 	PyImport_AppendInittab("godot", PyInit_godot);
+	PyImport_AppendInittab("register_types", PyInit_register_types);
 }
 
 void PythonRuntime::initialize() {
