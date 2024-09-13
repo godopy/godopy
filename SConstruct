@@ -157,10 +157,26 @@ copy = [
 
 copy_python_deps = []
 
-# Minimal Python library
+# Python stdlib files
 python_lib_files = [
+    # These are always required
     'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
-    'io.py', 'abc.py', 'types.py'
+    'io.py', 'abc.py', 'types.py',
+
+    'encodings/latin_1.py',
+
+    # Others may be optional depending on the use case
+    # 're/__init__.py', 're/_casefix.py', 're/_compiler.py', 're/_constants.py', 're/_parser.py',
+    # 'enum.py', 'functools.py', 'operator.py', 'collections/__init__.py', 'collections/abc.py',
+    # 'contextlib.py', 'warnings.py', 'string.py', 'threading.py', 'pathlib.py',
+    # *('urllib/%s.py' % p for p in ('__init__', 'error', 'parse', 'request', 'response', 'robotparser')),
+    # 'ipaddress.py', 'typing.py', 'importlib.py',
+
+    # 'copy.py', 'weakref.py', '_weakrefset.py', 'copyreg.py',
+    # 'logging/__init__.py', 'logging/config.py', 'logging/handlers.py',
+    # 'keyword.py', 'reprlib.py', 'traceback.py', 'linecache.py', 'tokenize.py',
+    # 'token.py', 'textwrap.py', 'shutil.py', 'fnmatch.py',
+    # '__future__.py', 'inspect.py', 'ast.py', 'dis.py', 'opcode.py'
 ]
 
 for pyfile in python_lib_files:

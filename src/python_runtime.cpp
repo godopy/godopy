@@ -81,19 +81,41 @@ int set_config_paths(PyConfig *config) {
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/pystdlib")
+		_wide_string_from_string(res_path + "pystdlib")
 	);
 	CHECK_PYSTATUS(status, 1);
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/pystdlib/site-packages")
+		_wide_string_from_string(res_path + "pystdlib/site-packages")
 	);
 	CHECK_PYSTATUS(status, 1);
 
     status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "/bin/windows/dylib")
+		_wide_string_from_string(res_path + "bin/windows/dylib")
+	);
+	CHECK_PYSTATUS(status, 1);
+
+	// TODO: Detect active venv and editor/script status and set the right path
+	//       only in editor or script
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "../../venv/Lib/site-packages")
+	);
+	CHECK_PYSTATUS(status, 1);
+
+	// Also only for developing
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "../../python/Lib")
+	);
+	CHECK_PYSTATUS(status, 1);
+
+	// Also only for developing
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path + "../../python/PCbuild/amd64")
 	);
 	CHECK_PYSTATUS(status, 1);
 

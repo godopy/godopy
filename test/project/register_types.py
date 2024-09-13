@@ -1,4 +1,8 @@
 import gdextension as gde
 
 def initialize():
-    print(dir(gde))
+    import sys
+    print("ActivePython paths:")
+    for path in sys.path:
+        print('\t', path)
+    print()
