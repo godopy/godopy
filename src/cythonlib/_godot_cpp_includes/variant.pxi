@@ -19,8 +19,11 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
         Variant(const StringName &)
         Variant(const char *)
         Variant(const wchar_t *)
+        Variant(object)
 
         void *_native_ptr()
+        object pythonize() const
+        String stringify() const
 
         enum Type:
             NIL

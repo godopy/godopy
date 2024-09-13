@@ -165,7 +165,27 @@ fail:
 
 void PythonRuntime::run_simple_string(const String &p_string) {
 	ERR_FAIL_COND(!initialized);
+	PyGILState_STATE gil_state = PyGILState_Ensure();
 	PyRun_SimpleString(p_string.utf8());
+	PyGILState_Release(gil_state);
+}
+
+PythonObject *PythonRuntime::import_module(const String &p_name) {
+	PythonObject *module = memnew(PythonObject);
+	module->set_name(p_name);
+
+	PyGILState_STATE gil_state = PyGILState_Ensure();
+	PyObject *m = PyImport_ImportModule(p_name.utf8());
+	ERR_FAIL_NULL_V(m, module);
+
+    Py_INCREF(m);
+    module->set_instance(m);
+	PyObject *repr = PyObject_Repr(m);
+    ERR_FAIL_NULL_V(repr, module);
+    module->set_repr(String(repr));
+    PyGILState_Release(gil_state);
+
+    return module;
 }
 
 PythonRuntime::PythonRuntime() {
@@ -193,8 +213,13 @@ void Python::run_simple_string(const String &p_string) {
 	PythonRuntime::get_singleton()->run_simple_string(p_string);
 }
 
+PythonObject *Python::import_module(const String &p_name) {
+	return PythonRuntime::get_singleton()->import_module(p_name);
+}
+
 void Python::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("run_simple_string", "string"), &Python::run_simple_string);
+	ClassDB::bind_method(D_METHOD("import_module", "string"), &Python::import_module);
 }
 
 Python::Python() {

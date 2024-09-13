@@ -14,7 +14,7 @@ import sys
 import types
 
 include "gde_shortcuts.pxi"
-include "type_converters_ext.pxi"
+include "type_converters.pxi"
 
 include "extension.pxi"
 include "extension_class.pxi"

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <godot_cpp/classes/object.hpp>
 #include <godot_cpp/core/class_db.hpp>
+
+#include "python_object.h"
 
 using namespace godot;
 
@@ -21,6 +22,7 @@ public:
 	void initialize();
 
 	void run_simple_string(const String &p_string_script);
+	PythonObject *import_module(const String &p_name);
 
 	PythonRuntime();
 	~PythonRuntime();
@@ -39,7 +41,8 @@ protected:
 public:
 	static Python *get_singleton() { return singleton; }
 
-	void run_simple_string(const String &p_string_script);
+	void run_simple_string(const String &p_string);
+	PythonObject *import_module(const String &p_name);
 
 	Python();
 	~Python();

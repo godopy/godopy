@@ -26,23 +26,11 @@ void initialize_godopy_types(ModuleInitializationLevel p_level)
 	python = memnew(Python);
 	Engine::get_singleton()->register_singleton("Python", Python::get_singleton());
 
-	ClassDB::register_class<PythonModule>();
+	ClassDB::register_class<PythonObject>();
 
-	PyObject *mod = PyImport_ImportModule("gdextension");
-	ERR_FAIL_NULL(mod);
-	PyObject *func = PyObject_GetAttrString(mod, "initialize_types");
-	ERR_FAIL_NULL(func);
-	PyObject *args = PyTuple_New(0);
-	ERR_FAIL_NULL(args);
-	PyObject *result = PyObject_CallObject(func, args);
-	if (result == NULL) {
-		PyErr_Print();
-	}
-	Py_DECREF(args);
-	ERR_FAIL_NULL(result);
-	Py_DECREF(result);
-	Py_DECREF(func);
-	Py_DECREF(mod);
+	PythonObject *pygde_mod = PythonRuntime::get_singleton()->import_module("gdextension");
+	PythonObject *py_init_func = pygde_mod->getattr("initialize_types");
+	py_init_func->call();
 }
 
 void terminate_godopy_types(ModuleInitializationLevel p_level) {
@@ -50,21 +38,9 @@ void terminate_godopy_types(ModuleInitializationLevel p_level) {
 		return;
 	}
 
-	PyObject *mod = PyImport_ImportModule("gdextension");
-	ERR_FAIL_NULL(mod);
-	PyObject *func = PyObject_GetAttrString(mod, "terminate_types");
-	ERR_FAIL_NULL(func);
-	PyObject *args = PyTuple_New(0);
-	ERR_FAIL_NULL(args);
-	PyObject *result = PyObject_CallObject(func, args);
-	if (result == NULL) {
-		PyErr_Print();
-	}
-	Py_DECREF(args);
-	ERR_FAIL_NULL(result);
-	Py_DECREF(result);
-	Py_DECREF(func);
-	Py_DECREF(mod);
+	PythonObject *pygde_mod = PythonRuntime::get_singleton()->import_module("gdextension");
+	PythonObject *py_term_func = pygde_mod->getattr("terminate_types");
+	py_term_func->call();
 
 	Engine::get_singleton()->unregister_singleton("Python");
 	if (python) {

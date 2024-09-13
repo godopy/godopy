@@ -40,6 +40,9 @@
 
 #include <array>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 namespace godot {
 
 class ObjectID;
@@ -214,8 +217,10 @@ public:
 	Variant(const PackedVector3Array &v);
 	Variant(const PackedColorArray &v);
 	Variant(const PackedVector4Array &v);
+	Variant(const PyObject *v);
 	~Variant();
 
+	operator PyObject *() const;
 	operator bool() const;
 	operator int64_t() const;
 	operator int32_t() const;
@@ -324,6 +329,7 @@ public:
 	uint32_t hash() const;
 	uint32_t recursive_hash(int recursion_count) const;
 	bool hash_compare(const Variant &variant) const;
+	PyObject *pythonize(const Dictionary &type_hints=Dictionary()) const;
 	bool booleanize() const;
 	String stringify() const;
 	Variant duplicate(bool deep = false) const;

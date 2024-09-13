@@ -253,8 +253,75 @@ Variant::Variant(const PackedVector4Array &v) {
 	from_type_constructor[PACKED_VECTOR4_ARRAY](_native_ptr(), v._native_ptr());
 }
 
+Variant::Variant(const PyObject *v0) {
+	ERR_FAIL_NULL(v0);
+	PyGILState_STATE gil_state = PyGILState_Ensure();
+	PyObject *v = const_cast<PyObject *>(v0);
+	if (v == Py_None) {
+		internal::gdextension_interface_variant_new_nil(_native_ptr());
+
+	} else if (PyBool_Check(v)) {
+		GDExtensionBool encoded;
+		PtrToArg<bool>::encode(PyLong_AsLong(v), &encoded);
+		from_type_constructor[BOOL](_native_ptr(), &encoded);
+
+	} else if (PyLong_Check(v)) {
+		GDExtensionInt encoded;
+		PtrToArg<int64_t>::encode(PyLong_AsLong(v), &encoded);
+		from_type_constructor[INT](_native_ptr(), &encoded);
+
+	} else if (PyFloat_Check(v)) {
+		double encoded;
+		PtrToArg<double>::encode(PyFloat_AsDouble(v), &encoded);
+		from_type_constructor[FLOAT](_native_ptr(), &encoded);
+
+	} else if (PyUnicode_Check(v) || PyBytes_Check(v)) {
+		from_type_constructor[STRING](_native_ptr(), String(v)._native_ptr());
+
+	} else if (PyByteArray_Check(v)) {
+		// TODO: Convert to PackedByteArray
+		internal::gdextension_interface_variant_new_nil(_native_ptr());
+		ERR_PRINT("NOT IMPLEMENTED: PackedByteArray Variant from Python bytearrays");
+
+	} else if (PySequence_Check(v)) {
+		// TODO: Convert to Array
+		internal::gdextension_interface_variant_new_nil(_native_ptr());
+		ERR_PRINT("NOT IMPLEMENTED: Array Variant from Python sequences (list, tuple, etc)");
+
+	} else if (PyMapping_Check(v)) {
+		// TODO: Convert to Dictionary
+		internal::gdextension_interface_variant_new_nil(_native_ptr());
+		ERR_PRINT("NOT IMPLEMENTED: Dictionary Variant from mapping/dict");
+
+	} else if (PyIndex_Check(v)) {
+		GDExtensionInt encoded;
+		PtrToArg<int64_t>::encode(PyNumber_AsSsize_t(v, NULL), &encoded);
+		from_type_constructor[INT](_native_ptr(), &encoded);
+
+	} else if (PyNumber_Check(v)) {
+		PyObject *number = PyNumber_Float(v);
+		ERR_FAIL_NULL(number);
+		double encoded;
+		PtrToArg<double>::encode(PyFloat_AsDouble(number), &encoded);
+		from_type_constructor[FLOAT](_native_ptr(), &encoded);
+
+	} else if (PyObject_CheckBuffer(v)) {
+		internal::gdextension_interface_variant_new_nil(_native_ptr());
+		ERR_PRINT("NOT IMPLEMENTED: Packed*Array Variant from Python buffer");
+	} else {
+		internal::gdextension_interface_variant_new_nil(_native_ptr());
+		ERR_PRINT("NOT IMPLEMENTED: Could not cast Python object to Godot Variant. "
+				  "Unsupported or unknown Python object.");
+	}
+	PyGILState_Release(gil_state);
+}
+
 Variant::~Variant() {
 	internal::gdextension_interface_variant_destroy(_native_ptr());
+}
+
+Variant::operator PyObject *() const {
+	return pythonize();
 }
 
 Variant::operator bool() const {
@@ -706,6 +773,299 @@ bool Variant::hash_compare(const Variant &variant) const {
 bool Variant::booleanize() const {
 	GDExtensionBool booleanized = internal::gdextension_interface_variant_booleanize(_native_ptr());
 	return PtrToArg<bool>::convert(&booleanized);
+}
+
+PyObject *Variant::pythonize(const Dictionary &type_hints) const {
+	PyObject *obj;
+	PyGILState_STATE gil_state = PyGILState_Ensure();
+	switch (get_type()) {
+		case Type::STRING:
+		{
+			if (type_hints.has("String") && type_hints["String"] == "bytes") {
+				obj = String(this).py_bytes();
+			} else {
+				obj = String(this).py_str();
+			}
+			break;
+		}
+		case Type::STRING_NAME:
+		case Type::NODE_PATH:
+		{
+			obj = String(this).py_str();
+			break;
+		}
+		case Type::BOOL: {
+			obj = bool(this) ? Py_True : Py_False;
+			Py_INCREF(obj);
+			break;
+		}
+		case Type::INT: {
+			obj =  PyLong_FromSsize_t(int64_t(this));
+			ERR_FAIL_NULL_V(obj, nullptr);
+			break;
+		}
+		case Type::FLOAT: {
+			obj = PyFloat_FromDouble(double(*this));
+			ERR_FAIL_NULL_V(obj, nullptr);
+			break;
+		}
+		case Type::VECTOR2:
+		{
+			obj = PyTuple_New(2);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Vector2 vec = Vector2(*this);
+			PyObject *x = PyFloat_FromDouble(vec.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyFloat_FromDouble(vec.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyTuple_SetItem(obj, 0, x);
+			PyTuple_SetItem(obj, 1, y);
+			break;
+		}
+		case Type::VECTOR2I: {
+			obj = PyTuple_New(2);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Vector2 vec = Vector2i(*this);
+			PyObject *x = PyLong_FromSsize_t(vec.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyLong_FromSsize_t(vec.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyTuple_SetItem(obj, 0, x);
+			PyTuple_SetItem(obj, 1, y);
+			break;
+		}
+		case Type::VECTOR3: {
+			obj = PyTuple_New(3);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Vector3 vec = Vector3(*this);
+			PyObject *x = PyFloat_FromDouble(vec.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyFloat_FromDouble(vec.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyFloat_FromDouble(vec.z);
+			ERR_FAIL_NULL_V(z, nullptr);
+			PyTuple_SetItem(obj, 0, x);
+			PyTuple_SetItem(obj, 1, y);
+			PyTuple_SetItem(obj, 2, z);
+			break;
+		}
+		case Type::VECTOR3I:
+		{
+			obj = PyTuple_New(3);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Vector3i vec = Vector3i(*this);
+			PyObject *x = PyLong_FromSsize_t(vec.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyLong_FromSsize_t(vec.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyLong_FromSsize_t(vec.z);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyTuple_SetItem(obj, 0, x);
+			PyTuple_SetItem(obj, 1, y);
+			PyTuple_SetItem(obj, 2, z);
+			break;
+		}
+		case Type::COLOR:
+		{
+			obj = PyTuple_New(4);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Color c = Color(this);
+			PyObject *r = PyFloat_FromDouble(static_cast<double>(c.r));
+			ERR_FAIL_NULL_V(r, nullptr);
+			PyObject *g = PyFloat_FromDouble(static_cast<double>(c.g));
+			ERR_FAIL_NULL_V(g, nullptr);
+			PyObject *b = PyFloat_FromDouble(static_cast<double>(c.b));
+			ERR_FAIL_NULL_V(b, nullptr);
+			PyObject *a = PyFloat_FromDouble(static_cast<double>(c.a));
+			ERR_FAIL_NULL_V(a, nullptr);
+			PyTuple_SetItem(obj, 0, r);
+			PyTuple_SetItem(obj, 1, g);
+			PyTuple_SetItem(obj, 2, b);
+			PyTuple_SetItem(obj, 3, a);
+			break;
+		}
+		case Type::RID:
+		{
+			Py_INCREF(Py_None);
+			obj = Py_None;
+			ERR_PRINT("NOT IMPLEMENTED: PyObject* from RID Variants");
+			break;
+		}
+		case Type::OBJECT:
+		{
+			Py_INCREF(Py_None);
+			obj = Py_None;
+			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Object Variants");
+			break;
+		}
+		case Type::CALLABLE:
+		{
+			Py_INCREF(Py_None);
+			obj = Py_None;
+			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Callable Variants");
+			break;
+		}
+		case Type::SIGNAL:
+		{
+			Py_INCREF(Py_None);
+			obj = Py_None;
+			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Signal Variants");
+			break;
+		}
+		case Type::DICTIONARY:
+		{
+			const Dictionary dict = Dictionary(this);
+			const Array keys = dict.keys();
+			obj = PyDict_New();
+			ERR_FAIL_NULL_V(obj, nullptr);
+
+			for (int i = 0; i < keys.size(); i++) {
+				Variant _key = keys[i];
+				PyObject *key = _key;
+				ERR_FAIL_NULL_V(key, nullptr);
+				PyObject *val = dict[_key];
+				ERR_FAIL_NULL_V(val, nullptr);
+				PyDict_SetItem(obj, key, val);
+			}
+			break;
+		}
+
+		case Type::ARRAY:
+		{
+			const Array arr = *this;
+			if (type_hints.has("Array") && type_hints["Array"] == "tuple") {
+				obj = PyTuple_New(arr.size());
+				ERR_FAIL_NULL_V(obj, nullptr);
+
+				for (int i = 0; i < arr.size(); i++) {
+					PyObject *item = arr[i];
+					ERR_FAIL_NULL_V(item, nullptr);
+					PyTuple_SET_ITEM(obj, i, item);
+				}
+			} else {
+				obj = PyList_New(arr.size());
+				ERR_FAIL_NULL_V(obj, nullptr);
+
+				for (int i = 0; i < arr.size(); i++) {
+					PyObject *item = arr[i];
+					ERR_FAIL_NULL_V(item, nullptr);
+					PyList_SetItem(obj, i, item);
+				}
+			}
+			break;
+		}
+
+		// TODO: Return NumPy arrays as an option, maybe make NumPy default for
+		//       all numeric arrays
+
+		case Variant::Type::PACKED_BYTE_ARRAY:
+		{
+			PackedByteArray a = PackedByteArray(this);
+			if (type_hints.has("PackedByteArray") && type_hints["PackedByteArray"] == "bytes") {
+				obj = PyBytes_FromStringAndSize(reinterpret_cast<const char *>(a.ptr()), a.size());
+			} else {
+				obj = PyByteArray_FromStringAndSize(reinterpret_cast<const char *>(a.ptr()), a.size());
+			}
+			ERR_FAIL_NULL_V(obj, nullptr);
+			break;
+		}
+		case Variant::Type::PACKED_INT32_ARRAY:
+		{
+			PackedInt32Array a = PackedInt32Array(this);
+			obj = PyTuple_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			for (size_t i; i < a.size(); i++) {
+				PyObject *elem = PyLong_FromSsize_t(int64_t(a[i]));
+				ERR_FAIL_NULL_V(elem, nullptr);
+				PyTuple_SetItem(obj, i, nullptr);
+			}
+			break;
+		}
+		case Variant::Type::PACKED_INT64_ARRAY:
+		{
+			PackedInt64Array a = PackedInt64Array(this);
+			obj = PyTuple_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			for (size_t i; i < a.size(); i++) {
+				PyObject *elem = PyLong_FromSsize_t(a[i]);
+				ERR_FAIL_NULL_V(elem, nullptr);
+				PyTuple_SetItem(obj, i, elem);
+			}
+			break;
+		}
+		case Variant::Type::PACKED_FLOAT32_ARRAY:
+		{
+			PackedFloat32Array a = PackedFloat32Array(this);
+			obj = PyTuple_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			for (size_t i; i < a.size(); i++) {
+				PyObject *elem = PyFloat_FromDouble(static_cast<double>(a[i]));
+				ERR_FAIL_NULL_V(elem, nullptr);
+				PyTuple_SetItem(obj, i, elem);
+			}
+			break;
+		}
+		case Variant::Type::PACKED_FLOAT64_ARRAY:
+		{
+			PackedFloat64Array a = PackedFloat64Array(this);
+			obj = PyTuple_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			for (size_t i; i < a.size(); i++) {
+				PyObject *elem = PyFloat_FromDouble(a[i]);
+				ERR_FAIL_NULL_V(elem, nullptr);
+				PyTuple_SetItem(obj, i, elem);
+			}
+			break;
+		}
+		case Variant::Type::PACKED_STRING_ARRAY:
+		{
+			PackedStringArray a = PackedStringArray(this);
+			obj = PyTuple_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			for (size_t i; i < a.size(); i++) {
+				PyObject *elem = a[i].py_str();
+				ERR_FAIL_NULL_V(elem, nullptr);
+				PyTuple_SetItem(obj, i, elem);
+			}
+			break;
+		}
+		case Variant::Type::PACKED_VECTOR2_ARRAY:
+		{
+			PackedVector2Array a = PackedVector2Array(this);
+			obj = PyList_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *vec;
+			for (size_t i; i < a.size(); i++) {
+				// TODO: Use custom PyStructSequence
+				vec = PyTuple_New(2);
+				ERR_FAIL_NULL_V(vec, nullptr);
+				Vector2 p_elem = a[i];
+				PyObject *x = PyFloat_FromDouble(static_cast<double>(p_elem.x));
+				ERR_FAIL_NULL_V(x, nullptr);
+				PyObject *y = PyFloat_FromDouble(static_cast<double>(p_elem.y));
+				ERR_FAIL_NULL_V(y, nullptr);
+				PyTuple_SetItem(vec, 0, x);
+				PyTuple_SetItem(vec, 1, y);
+				PyList_SetItem(obj, i, vec);
+			}
+			break;
+		}
+		case Type::PACKED_VECTOR3_ARRAY:
+		{
+			Py_INCREF(Py_None);
+			obj = Py_None;
+			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Callable Variants");
+			break;
+		}
+		case Variant::Type::NIL:
+		default:
+			Py_INCREF(Py_None);
+			obj = Py_None;
+			break;
+	}
+
+	PyGILState_Release(gil_state);
+	return obj;
 }
 
 String Variant::stringify() const {

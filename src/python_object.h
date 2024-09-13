@@ -8,19 +8,40 @@
 
 using namespace godot;
 
-class PythonModule : public Resource {
-	GDCLASS(PythonModule, Resource);
+class PythonObject : public Resource {
+	GDCLASS(PythonObject, Resource);
 
+    friend class PythonRuntime;
 private:
-    PyObject *obj;
-    String name;
+    PyObject *instance;
+    String __name__;
+    String __repr__;
+
+    Variant call_internal(const Variant **p_args, GDExtensionInt p_arg_count);
+
+    _ALWAYS_INLINE_ void set_name(const String &p_name) { __name__ = p_name; }
+    _ALWAYS_INLINE_ void set_repr(const String &p_repr) { __repr__ = p_repr; }
+    _ALWAYS_INLINE_ void set_instance(PyObject *p_instance) { instance = p_instance; }
 
 protected:
 	static void _bind_methods();
 
 public:
-    PythonModule();
-    ~PythonModule();
+    PythonObject();
+    ~PythonObject();
 
-    static PythonModule *import(const String &name);
+    // static PythonModule *import(const String &name);
+
+    template <typename... Args>
+	Variant call(const Args &...p_args) {
+		std::array<Variant, sizeof...(Args)> variant_args{ Variant(p_args)... };
+		std::array<const Variant *, sizeof...(Args)> call_args;
+		for (size_t i = 0; i < variant_args.size(); i++) {
+			call_args[i] = &variant_args[i];
+		}
+		return call_internal(call_args.data(), variant_args.size());
+	}
+
+    PythonObject *getattr(const String &);
+    bool is_callable();
 };
