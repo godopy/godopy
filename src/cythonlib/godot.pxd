@@ -1,3 +1,6 @@
+"""\
+This module wraps objects inside the engine
+"""
 from godot_cpp cimport *
 from cpython cimport PyObject
 

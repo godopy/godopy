@@ -9,20 +9,13 @@
 #include <Python.h>
 
 PyMODINIT_FUNC PyInit_godot(void);
-PyMODINIT_FUNC PyInit_register_types(void);
 
 using namespace godot;
 
 PythonRuntime *PythonRuntime::singleton = nullptr;
 
-_FORCE_INLINE_ const wchar_t *_wide_string_from_string(String &s) {
-#ifdef WINDOWS_ENABLED
-	// wchar_t is 16-bit, convert to 16-bit
-	return (const wchar_t *)s.utf16().ptr();
-#else
-	// wchar_t is 32-bit, return as is
-	return (const wchar_t *)s.ptr();
-#endif
+_ALWAYS_INLINE_ const wchar_t *_wide_string_from_string(const String &s) {
+	return s.wide_string().ptr();
 }
 
 void PythonRuntime::pre_initialize() {
@@ -56,7 +49,8 @@ int set_config_paths(PyConfig *config) {
 		return 1;
 	}
 
-	String exec_path = res_path + "/bin/windows/python.exe";
+	// TODO: Get from project settings
+	String exec_path = res_path + "/bin/windows/libGodoPy.dll";
 	String exec_prefix = exec_path.get_base_dir();
 
 	UtilityFunctions::print_verbose("Python program name: " + exec_path);
@@ -79,7 +73,12 @@ int set_config_paths(PyConfig *config) {
 	status = PyConfig_SetString(config, &config->prefix, _wide_string_from_string(res_path));
 	CHECK_PYSTATUS(status, 1);
 
-	// TODO: Copy Python libs and dylibs to /pystdlib and /bin/<platform>/dylib
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_string(res_path)
+	);
+	CHECK_PYSTATUS(status, 1);
+
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
 		_wide_string_from_string(res_path + "/pystdlib")
@@ -101,11 +100,6 @@ int set_config_paths(PyConfig *config) {
 	return 0;
 }
 
-void init_builtin_modules() {
-	PyImport_AppendInittab("godot", PyInit_godot);
-	PyImport_AppendInittab("register_types", PyInit_register_types);
-}
-
 void PythonRuntime::initialize() {
 	UtilityFunctions::print_verbose("Python: Initializing runtime...");
 	UtilityFunctions::print("Python version " + String(Py_GetVersion()));
@@ -113,7 +107,7 @@ void PythonRuntime::initialize() {
 	PyStatus status;
 	PyConfig config;
 
-	init_builtin_modules();
+	PyImport_AppendInittab("godot", PyInit_godot);
 
 	PyConfig_InitIsolatedConfig(&config);
 
@@ -121,16 +115,6 @@ void PythonRuntime::initialize() {
 		goto fail;
 	}
 
-	// UtilityFunctions::print("defaul configs: " +
-	// 	String(Variant(config.verbose)) + ":" +
-	// 	String(Variant(config.site_import)) + ":" +
-	// 	String(Variant(config.faulthandler)) + ":" +
-	// 	String(Variant(config.user_site_directory)) + ":" +
-	// 	String(Variant(config.install_signal_handlers)) + ":" +
-	// 	String(Variant(config.module_search_paths_set))
-	// );
-
-	// config.verbose = 0;
 	config.site_import = 0;
 	// config.faulthandler = 0;
 	// config.user_site_directory = 0;

@@ -90,6 +90,7 @@ cython_opts = ' '.join([
     '-3',
     '--cplus',
     '--fast-fail',
+    '--gdb' if env['debug_symbols'] else '',
     '-Isrc/cythonlib',
     '-Igdextension',
     '-o',
@@ -105,8 +106,7 @@ cython_builder = Builder(
 env_cython.Append(BUILDERS={'CythonSource': cython_builder})
 
 cython_sources = [
-    env_cython.CythonSource('src/cythonlib/godot.pyx'),
-    env_cython.CythonSource('src/cythonlib/register_types.pyx')
+    env_cython.CythonSource('src/cythonlib/godot.pyx')
 ]
 
 cython_depends = [

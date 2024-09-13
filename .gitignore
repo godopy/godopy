@@ -38,6 +38,7 @@ compile_commands.json
 
 # Other stuff
 *.log
+cython_debug/
 
 # VSCode
 .vscode/*

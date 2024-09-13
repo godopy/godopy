@@ -22,5 +22,5 @@ public:
     PythonModule();
     ~PythonModule();
 
-    static PythonModule *import_module(const String &name);
+    static PythonModule *import(const String &name);
 };

@@ -4,13 +4,12 @@ redirect output to Godot utility functions
 '''
 cdef class StdoutWriter:
     cpdef write(self, data):
-        if isinstance(data, str):
-            msg = data.encode('utf-8')
-        else:
-            msg = bytes(data)
-        printraw(msg)
+        godot.printraw(str(data))
 
     cpdef flush(self): pass
+
+    cpdef fileno(self):
+        return 1
 
 cdef class StderrWriter:
     cdef list data
@@ -19,16 +18,16 @@ cdef class StderrWriter:
         self.data = []
 
     cpdef write(self, object data):
-        if isinstance(data, str):
-            msg = data.encode('utf-8')
-        else:
-            msg = bytes(data)
-        self.data.append(msg)
+        self.data.append(str(data))
 
     cpdef flush(self):
-        msg = b'[color=red]%s[/color]' % (b''.join(self.data))
-        print_rich(msg)
+        msg = '[color=red]%s[/color]' % (''.join(self.data))
+        godot.print_rich(msg)
         self.data = []
+
+    cpdef fileno(self):
+        return 2
+
 
 def redirect_python_stdout():
     sys.stdout = StdoutWriter()

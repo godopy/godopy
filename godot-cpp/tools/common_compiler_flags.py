@@ -22,11 +22,11 @@ def exists(env):
 
 
 def generate(env):
-    # Require C++17
+    # Require C++20
     if env.get("is_msvc", False):
-        env.Append(CXXFLAGS=["/std:c++17"])
+        env.Append(CXXFLAGS=["/std:c++20"])
     else:
-        env.Append(CXXFLAGS=["-std=c++17"])
+        env.Append(CXXFLAGS=["-std=c++20"])
 
     # Disable exception handling. Godot doesn't use exceptions anywhere, and this
     # saves around 20% of binary size and very significant build time.

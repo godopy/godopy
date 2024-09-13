@@ -1,6 +1,6 @@
 #include "register_types.h"
 #include "python_runtime.h"
-#include "python_module.h"
+#include "python_object.h"
 
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
@@ -9,9 +9,6 @@
 #include <godot_cpp/classes/engine.hpp>
 
 using namespace godot;
-
-int initialize_godopy_python_extension_types(ModuleInitializationLevel);
-int uninitialize_godopy_python_extension_types(ModuleInitializationLevel);
 
 static PythonRuntime *runtime;
 static Python *python;
@@ -31,15 +28,43 @@ void initialize_godopy_types(ModuleInitializationLevel p_level)
 
 	ClassDB::register_class<PythonModule>();
 
-	int ret = initialize_godopy_python_extension_types(p_level);
+	PyObject *mod = PyImport_ImportModule("gdextension");
+	ERR_FAIL_NULL(mod);
+	PyObject *func = PyObject_GetAttrString(mod, "initialize_types");
+	ERR_FAIL_NULL(func);
+	PyObject *args = PyTuple_New(0);
+	ERR_FAIL_NULL(args);
+	PyObject *result = PyObject_CallObject(func, args);
+	if (result == NULL) {
+		PyErr_Print();
+	}
+	Py_DECREF(args);
+	ERR_FAIL_NULL(result);
+	Py_DECREF(result);
+	Py_DECREF(func);
+	Py_DECREF(mod);
 }
 
-void uninitialize_godopy_types(ModuleInitializationLevel p_level) {
+void terminate_godopy_types(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
 		return;
 	}
 
-	int ret = uninitialize_godopy_python_extension_types(p_level);
+	PyObject *mod = PyImport_ImportModule("gdextension");
+	ERR_FAIL_NULL(mod);
+	PyObject *func = PyObject_GetAttrString(mod, "terminate_types");
+	ERR_FAIL_NULL(func);
+	PyObject *args = PyTuple_New(0);
+	ERR_FAIL_NULL(args);
+	PyObject *result = PyObject_CallObject(func, args);
+	if (result == NULL) {
+		PyErr_Print();
+	}
+	Py_DECREF(args);
+	ERR_FAIL_NULL(result);
+	Py_DECREF(result);
+	Py_DECREF(func);
+	Py_DECREF(mod);
 
 	Engine::get_singleton()->unregister_singleton("Python");
 	if (python) {
@@ -57,7 +82,7 @@ extern "C"
 	{
 		GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
 		init_obj.register_initializer(initialize_godopy_types);
-		init_obj.register_terminator(uninitialize_godopy_types);
+		init_obj.register_terminator(terminate_godopy_types);
 		init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
 
 		return init_obj.init();
