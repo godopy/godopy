@@ -30,7 +30,7 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
     PyObject *args = PyTuple_New(p_args.size());
     ERR_FAIL_NULL_V(args, ret);
 
-    for (size_t i; i < p_args.size(); i++) {
+    for (size_t i = 0; i < p_args.size(); i++) {
         Variant arg = p_args[i];
         PyTuple_SetItem(args, i, arg.pythonize());
     }
@@ -41,7 +41,7 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
         kwargs = PyDict_New();
         ERR_FAIL_NULL_V(kwargs, ret);
 
-        for (int i = 0; i < keys.size(); i++) {
+        for (size_t i = 0; i < keys.size(); i++) {
             Variant k = keys[i];
             PyObject *key = k;
             ERR_FAIL_NULL_V(key, nullptr);

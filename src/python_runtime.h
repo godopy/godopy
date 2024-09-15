@@ -4,6 +4,9 @@
 
 #include "python_object.h"
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 using namespace godot;
 
 class PythonRuntime {

@@ -8,16 +8,16 @@ cdef class GodotObject:
 
     @staticmethod
     cdef PyObject* _create_callback_gil(void *p_token, void *p_instance):
-        print("CREATE CALLBACK", <int64_t>p_instance)
+        print("CREATE CALLBACK %x" % <int64_t>p_instance)
         cdef GodotSingleton wrapper = GodotObject.from_ptr(p_instance)
         ref.Py_INCREF(wrapper)
 
-        print("CREATED BINDING", <int64_t><PyObject *>wrapper)
+        print("CREATED BINDING %x" % <int64_t><PyObject *>wrapper)
         return <PyObject *>wrapper
 
     @staticmethod
     cdef void _free_callback_gil(void *p_binding):
-        print("FREE CALLBACK", <int64_t>p_binding)
+        print("FREE CALLBACK %x" % <int64_t>p_binding)
         cdef GodotSingleton wrapper = <object>p_binding
         ref.Py_DECREF(wrapper)
 
@@ -49,25 +49,19 @@ cdef class GodotObject:
                                            else GodotClass(godot_class)
         cdef str class_name = self.__godot_class__.name
         self._owner = _gde_classdb_construct_object(StringName(class_name)._native_ptr())
+        print("CONSTRUCTED OWNER %x" % <int64_t>self._owner)
         _gde_object_set_instance_binding(self._owner,
                                          StringName(class_name)._native_ptr(),
                                          <void *><PyObject *>self, &self._binding_callbacks)
 
 
 cdef class GodotSingleton(GodotObject):
-    # cdef GDExtensionObjectPtr _gde_so
-    # cdef void* singleton
-
     def __init__(self, object godot_class):
-        self._binding_callbacks.create_callback = &GodotObject._create_callback
-        self._binding_callbacks.free_callback = &GodotObject._free_callback
-        self._binding_callbacks.reference_callback = &GodotObject._reference_callback
-
         if not isinstance(godot_class, (GodotClass, str)):
             raise TypeError("'godot_class' argument must be a GodotClass instance or a string")
 
         self.__godot_class__ = godot_class if isinstance(godot_class, GodotClass) \
                                            else GodotClass(godot_class)
-        cdef str class_name = self.__godot_class__.name
-        self._gde_so = _gde_global_get_singleton(StringName(class_name)._native_ptr())
-        self.singleton = _gde_object_get_instance_binding(self._gde_so, gdextension_token, &self._binding_callbacks)
+        cdef str class_name = self.__godot_class__.__name__
+        self._owner = _gde_global_get_singleton(StringName(class_name)._native_ptr())
+        print("AQUIRED SINGLETON OWNER %x" % <int64_t>self._owner)

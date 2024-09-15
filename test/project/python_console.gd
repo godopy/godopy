@@ -1,8 +1,6 @@
 extends SceneTree
 
 func _init():
-	Python.run_simple_string("import Cython; print(Cython.__version__)")
-
 	var console = Python.import_module("console")
 
 	console.getattr("interact").call([], {

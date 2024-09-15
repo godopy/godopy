@@ -6,9 +6,6 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
-
 PyMODINIT_FUNC PyInit_godot(void);
 PyMODINIT_FUNC PyInit__vector_types(void);
 
@@ -101,16 +98,18 @@ int set_config_paths(PyConfig *config) {
 
 	// TODO: Detect active venv and editor/script status and set the right path
 	//       only in editor or script
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_string(res_path + "../../venv/Lib/site-packages")
-	);
-	CHECK_PYSTATUS(status, 1);
+	
 
 	MainLoop *ml = Engine::get_singleton()->get_main_loop();
 	bool is_detached_script = ml == nullptr;
 
 	if (Engine::get_singleton()->is_editor_hint() || is_detached_script) {
+		status = PyWideStringList_Append(
+		&config->module_search_paths,
+			_wide_string_from_string(res_path + "../../venv/Lib/site-packages")
+		);
+		CHECK_PYSTATUS(status, 1);
+
 		status = PyWideStringList_Append(
 			&config->module_search_paths,
 			_wide_string_from_string(res_path + "../../python/Lib")

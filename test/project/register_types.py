@@ -1,8 +1,8 @@
-import gdextension as gde
+import sys
+import godot as gd
 
 def initialize():
-    import sys
-    print("Active Python paths:")
+    lines = ["Active Python paths:"]
     for path in sys.path:
-        print('\t', path)
-    print()
+        lines.append('\t[color=green]%s[/color]' % path)
+    gd.print_rich('[color=gray]%s[/color]\n' % '\n'.join(lines))

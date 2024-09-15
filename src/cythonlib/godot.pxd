@@ -2,12 +2,12 @@
 This module wraps objects inside the engine
 """
 from godot_cpp cimport *
-from cpython cimport PyObject
+from cpython cimport ref, PyObject
 
 cdef class GodotObject:
     cdef void *_owner
     cdef GDExtensionInstanceBindingCallbacks _binding_callbacks
-    cdef readonly str __godot_class__
+    cdef readonly GodotClass __godot_class__
 
     @staticmethod
     cdef GodotObject from_ptr(void *ptr)
@@ -29,8 +29,7 @@ cdef class GodotObject:
                                              GDExtensionBool p_reference) noexcept nogil
 
 cdef class GodotSingleton(GodotObject):
-    cdef GDExtensionObjectPtr _gde_so
-    cdef void* singleton
+    pass
 
 cdef class GodotClass:
     cdef str __name__
@@ -41,6 +40,8 @@ cdef class GodotSingletonClass(GodotClass):
 cdef class GodotMethodBindRet:
     cdef void *_owner
     cdef GDExtensionMethodBindPtr _gde_mb
+    cdef str returning_type
+    cdef Variant _ptrcall_string(self, GDExtensionConstTypePtr *p_args) noexcept nogil
     cpdef object _call_internal(self, tuple args)
 
 cdef class GodotMethodBindNoRet(GodotMethodBindRet):
@@ -53,6 +54,7 @@ cdef class GodotUtilityFunctionRet:
 cdef class GodotUtilityFunctionNoRet(GodotUtilityFunctionRet):
     pass
 
-cdef GodotUtilityFunctionNoRet printraw
-cdef GodotUtilityFunctionNoRet print_rich
-cdef GodotUtilityFunctionNoRet push_error
+cdef GodotUtilityFunctionNoRet _printraw
+cdef GodotUtilityFunctionNoRet _print_rich
+cdef GodotUtilityFunctionNoRet _push_error
+cdef GodotUtilityFunctionNoRet _push_warning

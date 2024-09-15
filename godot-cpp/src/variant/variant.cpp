@@ -780,18 +780,11 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 	PyGILState_STATE gil_state = PyGILState_Ensure();
 	switch (get_type()) {
 		case Type::STRING:
-		{
-			if (type_hints.has("String") && type_hints["String"] == "bytes") {
-				obj = String(this).py_bytes();
-			} else {
-				obj = String(this).py_str();
-			}
-			break;
-		}
 		case Type::STRING_NAME:
 		case Type::NODE_PATH:
 		{
-			obj = String(this).py_str();
+			String s = String(this);
+			obj = s.py_str();
 			break;
 		}
 		case Type::BOOL: {
@@ -919,7 +912,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			obj = PyDict_New();
 			ERR_FAIL_NULL_V(obj, nullptr);
 
-			for (int i = 0; i < keys.size(); i++) {
+			for (size_t i = 0; i < keys.size(); i++) {
 				Variant _key = keys[i];
 				PyObject *key = _key;
 				ERR_FAIL_NULL_V(key, nullptr);
@@ -929,7 +922,6 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			}
 			break;
 		}
-
 		case Type::ARRAY:
 		{
 			const Array arr = *this;
@@ -937,7 +929,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 				obj = PyTuple_New(arr.size());
 				ERR_FAIL_NULL_V(obj, nullptr);
 
-				for (int i = 0; i < arr.size(); i++) {
+				for (size_t i = 0; i < arr.size(); i++) {
 					PyObject *item = arr[i];
 					ERR_FAIL_NULL_V(item, nullptr);
 					PyTuple_SET_ITEM(obj, i, item);
@@ -946,7 +938,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 				obj = PyList_New(arr.size());
 				ERR_FAIL_NULL_V(obj, nullptr);
 
-				for (int i = 0; i < arr.size(); i++) {
+				for (size_t i = 0; i < arr.size(); i++) {
 					PyObject *item = arr[i];
 					ERR_FAIL_NULL_V(item, nullptr);
 					PyList_SetItem(obj, i, item);
@@ -974,7 +966,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			PackedInt32Array a = PackedInt32Array(this);
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
-			for (size_t i; i < a.size(); i++) {
+			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = PyLong_FromSsize_t(int64_t(a[i]));
 				ERR_FAIL_NULL_V(elem, nullptr);
 				PyTuple_SetItem(obj, i, nullptr);
@@ -986,7 +978,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			PackedInt64Array a = PackedInt64Array(this);
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
-			for (size_t i; i < a.size(); i++) {
+			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = PyLong_FromSsize_t(a[i]);
 				ERR_FAIL_NULL_V(elem, nullptr);
 				PyTuple_SetItem(obj, i, elem);
@@ -998,7 +990,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			PackedFloat32Array a = PackedFloat32Array(this);
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
-			for (size_t i; i < a.size(); i++) {
+			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = PyFloat_FromDouble(static_cast<double>(a[i]));
 				ERR_FAIL_NULL_V(elem, nullptr);
 				PyTuple_SetItem(obj, i, elem);
@@ -1010,7 +1002,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			PackedFloat64Array a = PackedFloat64Array(this);
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
-			for (size_t i; i < a.size(); i++) {
+			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = PyFloat_FromDouble(a[i]);
 				ERR_FAIL_NULL_V(elem, nullptr);
 				PyTuple_SetItem(obj, i, elem);
@@ -1022,7 +1014,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			PackedStringArray a = PackedStringArray(this);
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
-			for (size_t i; i < a.size(); i++) {
+			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = a[i].py_str();
 				ERR_FAIL_NULL_V(elem, nullptr);
 				PyTuple_SetItem(obj, i, elem);
@@ -1035,7 +1027,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			obj = PyList_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
 			PyObject *vec;
-			for (size_t i; i < a.size(); i++) {
+			for (size_t i = 0; i < a.size(); i++) {
 				// TODO: Use custom PyStructSequence
 				vec = PyTuple_New(2);
 				ERR_FAIL_NULL_V(vec, nullptr);
@@ -1058,9 +1050,15 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			break;
 		}
 		case Variant::Type::NIL:
+		{
+			Py_INCREF(Py_None);
+			obj = Py_None;
+			break;
+		}
 		default:
 			Py_INCREF(Py_None);
 			obj = Py_None;
+			ERR_PRINT("Could not determine Variant type, probably the wrong type was passed");
 			break;
 	}
 

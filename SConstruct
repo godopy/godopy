@@ -91,6 +91,7 @@ cython_opts = ' '.join([
     '--cplus',
     '--fast-fail',
     '--gdb' if env['debug_symbols'] else '',
+    '-EWITH_THREAD=1',
     '-Isrc/cythonlib',
     '-Igdextension',
     '-o',

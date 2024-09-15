@@ -318,8 +318,8 @@ PyObject *String::py_str() const {
 	PyObject *ret = PyUnicode_FromWideChar(str, length);
 	ERR_FAIL_NULL_V(ret, nullptr);
 	Py_XINCREF(ret);
-
 	PyGILState_Release(gil_state);
+
 	return ret;
 }
 

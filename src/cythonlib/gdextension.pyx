@@ -20,7 +20,7 @@ include "extension.pxi"
 include "extension_class.pxi"
 include "extension_method.pxi"
 
-include "sys_util.pxi"
+include "console.pxi"
 
 cdef object init_func = None
 cdef object register_func = None
@@ -31,7 +31,7 @@ cdef object terminate_func = None
 def initialize_types():
     global init_func, register_func, unregister_func, terminate_func
 
-    redirect_python_stdout()
+    redirect_python_stdio()
 
     # print("Python-level initialization started")
     register_func = None
@@ -42,9 +42,10 @@ def initialize_types():
         unregister_func = getattr(register_types, 'unregister', None)
         terminate_func = getattr(register_types, 'terminate', None)   
     except ImportError:
-        godot.print_rich("[color=orange]'register types' module was not found.[/color]")
+        godot._print_rich("[color=orange]'register types' module was not found.[/color]")
 
     if init_func:
+        # TODO: Call with init level, do all levels
         init_func()
 
     if register_func:
@@ -58,4 +59,5 @@ def terminate_types():
     if unregister_func:
         unregister_func()
     if terminate_func:
+        # TODO: Call with init level
         terminate_func()
