@@ -15,3 +15,5 @@ cdef GodotUtilityFunctionNoRet print_rich = GodotUtilityFunctionNoRet('print_ric
 cdef GodotUtilityFunctionNoRet push_error = GodotUtilityFunctionNoRet('push_error', 2648703342)
 
 print = print_rich
+_printraw = printraw
+_push_error = push_error

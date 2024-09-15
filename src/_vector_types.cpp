@@ -73,8 +73,9 @@ static struct PyModuleDef py_vector_types_module =
     NULL
 };
 
+extern "C" {
 PyMODINIT_FUNC
-initfoo(void)
+PyInit__vector_types(void)
 {
     PyObject *mod = PyModule_Create(&py_vector_types_module);
 
@@ -100,3 +101,4 @@ initfoo(void)
 
     return mod;
 }
+} // ! extern "C"

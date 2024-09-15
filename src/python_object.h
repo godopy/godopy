@@ -30,10 +30,8 @@ public:
     PythonObject();
     ~PythonObject();
 
-    // static PythonModule *import(const String &name);
-
     template <typename... Args>
-	Variant call(const Args &...p_args) {
+	Variant call_varargs(const Args &...p_args) {
 		std::array<Variant, sizeof...(Args)> variant_args{ Variant(p_args)... };
 		std::array<const Variant *, sizeof...(Args)> call_args;
 		for (size_t i = 0; i < variant_args.size(); i++) {
@@ -41,6 +39,8 @@ public:
 		}
 		return call_internal(call_args.data(), variant_args.size());
 	}
+
+    Variant call(const Array &p_args = Array(), const Dictionary &p_kwargs = Dictionary());
 
     PythonObject *getattr(const String &);
     bool is_callable();

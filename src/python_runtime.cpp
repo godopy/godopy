@@ -4,6 +4,7 @@
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/classes/os.hpp>
+#include <godot_cpp/classes/engine.hpp>
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
@@ -106,19 +107,23 @@ int set_config_paths(PyConfig *config) {
 	);
 	CHECK_PYSTATUS(status, 1);
 
-	// Also only for developing
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_string(res_path + "../../python/Lib")
-	);
-	CHECK_PYSTATUS(status, 1);
+	MainLoop *ml = Engine::get_singleton()->get_main_loop();
+	bool is_detached_script = ml == nullptr;
 
-	// Also only for developing
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_string(res_path + "../../python/PCbuild/amd64")
-	);
-	CHECK_PYSTATUS(status, 1);
+	if (Engine::get_singleton()->is_editor_hint() || is_detached_script) {
+		status = PyWideStringList_Append(
+			&config->module_search_paths,
+			_wide_string_from_string(res_path + "../../python/Lib")
+		);
+		CHECK_PYSTATUS(status, 1);
+
+		status = PyWideStringList_Append(
+			&config->module_search_paths,
+			_wide_string_from_string(res_path + "../../python/PCbuild/amd64")
+		);
+		CHECK_PYSTATUS(status, 1);
+	}
+
 
 	return 0;
 }

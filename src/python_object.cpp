@@ -15,7 +15,7 @@ PythonObject::~PythonObject() {
     Py_XDECREF(instance);
 }
 
-Variant PythonObject::call_internal(const Variant **p_args, GDExtensionInt p_arg_count) {
+Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
     Variant ret;
     PyGILState_STATE gil_state = PyGILState_Ensure();
 
@@ -27,15 +27,31 @@ Variant PythonObject::call_internal(const Variant **p_args, GDExtensionInt p_arg
         return ret;
     }
 
-    PyObject *args = PyTuple_New(p_arg_count);
+    PyObject *args = PyTuple_New(p_args.size());
     ERR_FAIL_NULL_V(args, ret);
 
-    for (size_t i; i < p_arg_count; i++) {
+    for (size_t i; i < p_args.size(); i++) {
         Variant arg = p_args[i];
         PyTuple_SetItem(args, i, arg.pythonize());
     }
 
-    PyObject *result = PyObject_CallObject(instance, args);
+    PyObject *kwargs = nullptr;
+    const Array keys = p_kwargs.keys();
+    if (keys.size() > 0) {
+        kwargs = PyDict_New();
+        ERR_FAIL_NULL_V(kwargs, ret);
+
+        for (int i = 0; i < keys.size(); i++) {
+            Variant k = keys[i];
+            PyObject *key = k;
+            ERR_FAIL_NULL_V(key, nullptr);
+            PyObject *val = p_kwargs[k];
+            ERR_FAIL_NULL_V(val, nullptr);
+            PyDict_SetItem(kwargs, key, val);
+        }
+    }
+
+    PyObject *result = PyObject_Call(instance, args, kwargs);
 
     if (result == nullptr) {
 		PyErr_Print();
@@ -75,9 +91,11 @@ bool PythonObject::is_callable() {
 void PythonObject::_bind_methods() {
     ClassDB::bind_method(D_METHOD("getattr", "string"), &PythonObject::getattr);
     ClassDB::bind_method(D_METHOD("is_callable"), &PythonObject::is_callable);
+    ClassDB::bind_method(D_METHOD("call", "array", "dictionary"), &PythonObject::call);
 
+    // FIXME: Can not compile call_varargs bind
     // MethodInfo mi;
-	// mi.name = "call";
+	// mi.name = "call_varargs";
     // std::vector<Variant> v;
-	// ClassDB::bind_vararg_method(METHOD_FLAGS_DEFAULT, "call", &PythonObject::call, mi, v, true);
+	// ClassDB::bind_vararg_method(METHOD_FLAGS_DEFAULT, "call_varargs", &PythonObject::call_varargs, mi, v, true);
 }
