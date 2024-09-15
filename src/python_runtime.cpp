@@ -9,6 +9,7 @@
 #include <Python.h>
 
 PyMODINIT_FUNC PyInit_godot(void);
+PyMODINIT_FUNC PyInit__vector_types(void);
 
 using namespace godot;
 
@@ -130,6 +131,7 @@ void PythonRuntime::initialize() {
 	PyConfig config;
 
 	PyImport_AppendInittab("godot", PyInit_godot);
+	PyImport_AppendInittab("_vector_types", PyInit__vector_types);
 
 	PyConfig_InitIsolatedConfig(&config);
 
