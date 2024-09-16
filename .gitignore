@@ -47,3 +47,4 @@ cython_debug/
 
 # Python
 /venv
+__pycache__
