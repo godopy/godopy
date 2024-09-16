@@ -1,26 +1,18 @@
-"""\
-This module wraps GodoPy extensions to the engine
-and holds the extension runtime data
-"""
 cimport cython
-from cpython cimport ref, PyObject
+from cpython cimport ref
 from libcpp.vector cimport vector
-from godot_cpp cimport *
 from cython.operator cimport dereference as deref
 
-cimport godot
-
 import sys
-import types
 
 include "gde_shortcuts.pxi"
 include "type_converters.pxi"
 
-include "extension.pxi"
-include "extension_class.pxi"
-include "extension_method.pxi"
+include "object.pxi"
+include "method_bind.pxi"
+include "class.pxi"
 
-include "console.pxi"
+include "io.pxi"
 
 cdef object init_func = None
 cdef object register_func = None
@@ -42,7 +34,7 @@ def initialize_types():
         unregister_func = getattr(register_types, 'unregister', None)
         terminate_func = getattr(register_types, 'terminate', None)   
     except ImportError:
-        godot._print_rich("[color=orange]'register types' module was not found.[/color]")
+        _print_rich("[color=orange]'register types' module was not found.[/color]")
 
     if init_func:
         # TODO: Call with init level, do all levels

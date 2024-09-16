@@ -1,4 +1,4 @@
-cdef class GodotClass:
+cdef class Class:
     """\
     Represents Godot engine classes. Instances of this class and derived
     classes encapsulate Godot *classes*.
@@ -7,9 +7,9 @@ cdef class GodotClass:
         self.__name__ = name
 
     def __call__(self):
-        return GodotObject(self)
+        return Object(self)
 
 
-cdef class GodotSingletonClass(GodotClass):
+cdef class SingletonClass(Class):
     def __call__(self):
-        return GodotSingleton(self)
+        return Singleton(self)

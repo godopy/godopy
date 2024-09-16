@@ -1,5 +1,5 @@
-cdef class GodotMethodBindRet:
-    def __cinit__(self, GodotObject wrapper, str method_name, GDExtensionInt method_hash, returning='Variant'):
+cdef class MethodBindRet:
+    def __cinit__(self, Object wrapper, str method_name, GDExtensionInt method_hash, returning='Variant'):
         self._owner = wrapper._owner
         print('GET MB %x %s %s' % (<uint64_t>self._owner, wrapper.__godot_class__.__name__, method_name))
         self.returning_type = returning
@@ -35,7 +35,7 @@ cdef class GodotMethodBindRet:
         return self._call_internal(args)
 
 
-cdef class GodotMethodBindNoRet(GodotMethodBindRet):
+cdef class MethodBindNoRet(MethodBindRet):
     cpdef object _call_internal(self, tuple args):
         cdef Variant arg
         cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>\
@@ -49,7 +49,7 @@ cdef class GodotMethodBindNoRet(GodotMethodBindRet):
             _gde_object_method_bind_ptrcall(self._gde_mb, self._owner, p_args, NULL)
             _gde_mem_free(p_args)
 
-cdef class GodotUtilityFunctionRet:
+cdef class UtilityFunctionRet:
     def __cinit__(self, str function_name, GDExtensionInt function_hash):
         self._gde_uf = \
             _gde_variant_get_ptr_utility_function(StringName(function_name)._native_ptr(), function_hash)
@@ -76,7 +76,7 @@ cdef class GodotUtilityFunctionRet:
         return self._call_internal(args)
 
 
-cdef class GodotUtilityFunctionNoRet(GodotUtilityFunctionRet):
+cdef class UtilityFunctionNoRet(UtilityFunctionRet):
     cpdef object _call_internal(self, tuple args):
         cdef Variant arg
         cdef int i

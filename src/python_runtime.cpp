@@ -6,7 +6,8 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
-PyMODINIT_FUNC PyInit_godot(void);
+PyMODINIT_FUNC PyInit__godot(void);
+PyMODINIT_FUNC PyInit__gdextension(void);
 PyMODINIT_FUNC PyInit__vector_types(void);
 
 using namespace godot;
@@ -134,7 +135,8 @@ void PythonRuntime::initialize() {
 	PyStatus status;
 	PyConfig config;
 
-	PyImport_AppendInittab("godot", PyInit_godot);
+	PyImport_AppendInittab("_godot", PyInit__godot);
+	PyImport_AppendInittab("_gdextension", PyInit__gdextension);
 	PyImport_AppendInittab("_vector_types", PyInit__vector_types);
 
 	PyConfig_InitIsolatedConfig(&config);
@@ -182,6 +184,9 @@ PythonObject *PythonRuntime::import_module(const String &p_name) {
 
 	PyGILState_STATE gil_state = PyGILState_Ensure();
 	PyObject *m = PyImport_ImportModule(p_name.utf8());
+	if (m == nullptr) {
+		PyErr_Print();
+	}
 	ERR_FAIL_NULL_V(m, module);
 
     Py_INCREF(m);

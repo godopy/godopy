@@ -1,9 +1,7 @@
-cdef inline void set_uint32_from_ptr(uint32_t *r_count, uint32_t value) noexcept nogil:
-    cdef uint32_t count = cython.operator.dereference(r_count)
-    count = value
-
-cdef class GodotExtentionClass(godot.GodotClass):
-    cdef godot.GodotClass parent
+cdef class ExtensionClass(gd.Class):
+    cdef gd.Class parent
+    cdef public bint is_registered
+    cdef vector[String] method_registry
 
     @staticmethod
     cdef GDExtensionBool set_bind(GDExtensionClassInstancePtr p_instance,
@@ -80,13 +78,13 @@ cdef class GodotExtentionClass(godot.GodotClass):
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance_func(void *data) noexcept nogil:
         with gil:
-            return GodotExtentionClass._create_instance_func_gil(data)
+            return ExtensionClass._create_instance_func_gil(data)
 
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance_func_gil(void *data):
         print('_create_instance_func')
-        cdef GodotExtentionClass cls = <object>data
-        cdef GodotExtension wrapper = cls()
+        cdef ExtensionClass cls = <object>data
+        cdef Extension wrapper = cls()
         return wrapper._owner
 
     @staticmethod
@@ -102,11 +100,52 @@ cdef class GodotExtentionClass(godot.GodotClass):
         return NULL
 
     def __init__(self, name, object parent, **kwargs):
-        self.name = name
-        if isinstance(parent, godot.GodotClass):
+        if not isinstance(parent, (gd.Class, str)):
+            raise TypeError("'parent' argument must be a Class instance or a string")
+
+        self.__name__ = name
+        if isinstance(parent, gd.Class):
             self.parent = parent
         else:
-            self.parent = godot.GodotClass(str(parent))
+            self.parent = gd.Class(str(parent))
+
+        self.is_registered = False
+        # self.method_registry = []
+
+    def __call__(self):
+        if not self.is_registered:
+            raise RuntimeError("Extension class not registered")
+        return Extension(self.__name__)
+
+    def add_method(self, method: types.FunctionType):
+        if not isinstance(method, types.FunctionType):
+            raise TypeError("Function is required")
+        self.method_registry.push_back(<String>method)
+
+    def add_methods(self, *methods):
+        for method in methods:
+            self.add_method(method)
+
+    cdef set_registered(self):
+        self.is_registered = True
+
+
+cdef inline void set_uint32_from_ptr(uint32_t *r_count, uint32_t value) noexcept nogil:
+    cdef uint32_t count = cython.operator.dereference(r_count)
+    count = value
+
+
+cdef class ExtensionClassRegistrator:
+    cdef gd.Class parent
+    cdef ExtensionClass registree
+
+    def __cinit__(self, ExtensionClass registree, gd.Class parent, **kwargs):
+        self.name = registree.__name__
+        self.registree = registree
+        self.parent = parent
+
+        if registree.is_registered:
+            raise RuntimeError("%r is already registered" % registree)
 
         cdef GDExtensionClassCreationInfo3 ci
 
@@ -114,45 +153,50 @@ cdef class GodotExtentionClass(godot.GodotClass):
         ci.is_abstract = kwargs.pop('is_abstract', False)
         ci.is_exposed = kwargs.pop('is_exposed', True)
         ci.is_runtime = kwargs.pop('is_runtime', False)
-        ci.set_func = &GodotExtentionClass.set_bind
-        ci.get_func = &GodotExtentionClass.get_bind
+        ci.set_func = &ExtensionClass.set_bind
+        ci.get_func = &ExtensionClass.get_bind
         ci.get_property_list_func = NULL
-        ci.free_property_list_func = &GodotExtentionClass.free_property_list_bind
-        ci.property_can_revert_func = &GodotExtentionClass.property_can_revert_bind
-        ci.property_get_revert_func = &GodotExtentionClass.property_get_revert_bind
-        ci.validate_property_func = &GodotExtentionClass.validate_property_bind
-        ci.notification_func = &GodotExtentionClass.notification_bind
-        ci.to_string_func = &GodotExtentionClass.to_string_bind
+        ci.free_property_list_func = &ExtensionClass.free_property_list_bind
+        ci.property_can_revert_func = &ExtensionClass.property_can_revert_bind
+        ci.property_get_revert_func = &ExtensionClass.property_get_revert_bind
+        ci.validate_property_func = &ExtensionClass.validate_property_bind
+        ci.notification_func = &ExtensionClass.notification_bind
+        ci.to_string_func = &ExtensionClass.to_string_bind
         ci.reference_func = NULL
         ci.unreference_func = NULL
-        ci.create_instance_func = &GodotExtentionClass._create_instance_func
-        ci.free_instance_func = &GodotExtentionClass.free
-        ci.recreate_instance_func = &GodotExtentionClass._recreate_instance_func
-        ci.get_virtual_func = &GodotExtentionClass.get_virtual_func
+        ci.create_instance_func = &ExtensionClass._create_instance_func
+        ci.free_instance_func = &ExtensionClass.free
+        ci.recreate_instance_func = &ExtensionClass._recreate_instance_func
+        ci.get_virtual_func = &ExtensionClass.get_virtual_func
         ci.get_virtual_call_data_func = NULL
         ci.call_virtual_with_data_func = NULL
         ci.get_rid_func = NULL
         ci.class_userdata = <void *><PyObject *>self
 
-        if GodotExtentionClass.has_get_property_list():
-            ci.get_property_list_func = <GDExtensionClassGetPropertyList>&GodotExtentionClass.get_property_list_bind
+        if ExtensionClass.has_get_property_list():
+            ci.get_property_list_func = <GDExtensionClassGetPropertyList>&ExtensionClass.get_property_list_bind
 
         # defaults => register_class
         # is_abstract=True => register_abstract_class
         # is_exposed=False => register_internal_class
         # is_runtime=True => register_runtime_class
 
+        cdef str name = self.__name__
         cdef str parent_name = parent.__name__
         _gde_classdb_register_extension_class3(gdextension_library,
-                                               StringName(self.__name__)._native_ptr(),
+                                               StringName(name)._native_ptr(),
                                                StringName(parent_name)._native_ptr(),
                                                &ci)
 
-    def __call__(self):
-        return GodotExtension(self.name)
+        cdef size_t i = 0
+        for i in range(registree.method_registry.size()):
+            method = registree.method_registry[i]
+            self.register_method(method.py_str())
 
-    cpdef add_method_to_class(self, object func: types.FunctionType):
-        cdef GodotExtensionMethod method = GodotExtensionMethod(self, func)
+        registree.set_registered()
+
+    cdef register_method(self, object func: types.FunctionType):
+        cdef ExtensionMethod method = ExtensionMethod(self, func)
         cdef GDExtensionClassMethodInfo mi
 
         cdef GDExtensionVariantPtr *def_args = method.get_default_arguments()
@@ -163,8 +207,8 @@ cdef class GodotExtentionClass(godot.GodotClass):
 
         mi.name = StringName(method.__name__)._native_ptr()
         mi.method_userdata = <void *><PyObject *>method
-        mi.call_func = &GodotExtensionMethod.bind_call
-        mi.ptrcall_func = &GodotExtensionMethod.bind_ptrcall
+        mi.call_func = &ExtensionMethod.bind_call
+        mi.ptrcall_func = &ExtensionMethod.bind_ptrcall
         mi.method_flags = method.get_hint_flags()
         mi.has_return_value = method.has_return()
         mi.return_value_info = return_value_info
@@ -177,5 +221,6 @@ cdef class GodotExtentionClass(godot.GodotClass):
 
         ref.Py_INCREF(method)
 
+        cdef str name = self.__name__
         _gde_classdb_register_extension_class_method(
-            gdextension_library, StringName(self.__name__)._native_ptr(), &mi)
+            gdextension_library, StringName(name)._native_ptr(), &mi)

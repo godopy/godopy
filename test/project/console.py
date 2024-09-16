@@ -5,13 +5,14 @@ import rlcompleter
 
 from code import InteractiveConsole
 
-import godot as gd
+import _godot as gd
 
 class GodotInteractiveConsole(InteractiveConsole):
     def __init__(self):
         super().__init__({
             "__name__": "__console__",
-            "__doc__": None
+            "__doc__": None,
+            "print_rich": gd.print_rich
         })
         # OS = gd.GodotSingleton('OS')
         # self._godot_input = gd.GodotMethodBindRet(OS, 'read_string_from_stdin', 2841200299, 'String')

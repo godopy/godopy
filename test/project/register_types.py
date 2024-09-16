@@ -1,5 +1,5 @@
 import sys
-import godot as gd
+import _godot as gd
 
 def initialize():
     lines = ["Active Python paths:"]

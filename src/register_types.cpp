@@ -28,8 +28,8 @@ void initialize_godopy_types(ModuleInitializationLevel p_level)
 
 	ClassDB::register_class<PythonObject>();
 
-	PythonObject *pygde_mod = PythonRuntime::get_singleton()->import_module("gdextension");
-	PythonObject *py_init_func = pygde_mod->getattr("initialize_types");
+	PythonObject *mod = PythonRuntime::get_singleton()->import_module("_godot");
+	PythonObject *py_init_func = mod->getattr("initialize_types");
 	py_init_func->call();
 }
 
@@ -38,8 +38,8 @@ void terminate_godopy_types(ModuleInitializationLevel p_level) {
 		return;
 	}
 
-	PythonObject *pygde_mod = PythonRuntime::get_singleton()->import_module("gdextension");
-	PythonObject *py_term_func = pygde_mod->getattr("terminate_types");
+	PythonObject *mod = PythonRuntime::get_singleton()->import_module("_godot");
+	PythonObject *py_term_func = mod->getattr("terminate_types");
 	py_term_func->call();
 
 	Engine::get_singleton()->unregister_singleton("Python");

@@ -1,5 +1,5 @@
-cdef class GodotExtensionMethod:
-    cdef GodotExtentionClass owner_class
+cdef class ExtensionMethod:
+    cdef ExtensionClass owner_class
     cdef object method
     cdef str __name__
 
@@ -9,7 +9,7 @@ cdef class GodotExtensionMethod:
                         GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil:
         cdef Variant ret
         with gil:
-            ret = GodotExtensionMethod.bind_call_gil(p_method_userdata, p_instance,
+            ret = ExtensionMethod.bind_call_gil(p_method_userdata, p_instance,
                                                      p_args, p_argument_count, r_error)
         _gde_variant_new_copy(r_return, ret._native_ptr())
 
@@ -17,16 +17,16 @@ cdef class GodotExtensionMethod:
     cdef Variant bind_call_gil(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
                                const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
                                GDExtensionCallError *r_error):
-        cdef GodotExtensionMethod self = <object>p_method_userdata
-        cdef godot.GodotObject wrapper = <object>p_instance
+        cdef ExtensionMethod self = <object>p_method_userdata
+        cdef gd.Object wrapper = <object>p_instance
         cdef int i
         cdef list args = []
         cdef Variant arg
         for i in range(p_argument_count):
             arg = deref(<Variant *>p_args[i])
-            args.append(pyobject_from_variant(arg))
+            args.append(<object>arg)
         cdef object ret = self.method(wrapper, *args)
-        return variant_from_pyobject(ret)
+        return <Variant>ret
 
     @staticmethod
     cdef void bind_ptrcall(void *p_method_userdata,
@@ -34,14 +34,25 @@ cdef class GodotExtensionMethod:
                            const GDExtensionConstTypePtr *p_args,
                            GDExtensionTypePtr r_return) noexcept nogil:
         with gil:
-            GodotExtensionMethod.bind_ptrcall_gil(p_method_userdata, p_instance, p_args, r_return)
+            ExtensionMethod.bind_ptrcall_gil(p_method_userdata, p_instance, p_args, r_return)
 
     @staticmethod
     cdef void bind_ptrcall_gil(void *p_method_userdata,
                                GDExtensionClassInstancePtr p_instance,
                                const GDExtensionConstTypePtr *p_args,
                                GDExtensionTypePtr r_return):
-        pass
+        cdef ExtensionMethod self = <object>p_method_userdata
+        cdef gd.Object wrapper = <object>p_instance
+        cdef size_t i = 0
+        cdef list args = []
+        cdef Variant arg
+        while p_args[i] != NULL:
+            arg = deref(<Variant *>p_args[i])
+            args.append(<object>arg)
+            i += 1
+        cdef object ret = self.method(wrapper, *args)
+        cdef Variant gd_ret = <Variant>ret
+        set_variant_from_ptr(<Variant *>r_return, gd_ret)
 
     cdef GDExtensionVariantPtr *get_default_arguments(self):
         cdef vector[GDExtensionVariantPtr] def_args
@@ -109,7 +120,12 @@ cdef class GodotExtensionMethod:
     cdef uint32_t get_default_argument_count(self):
         return <uint32_t>len(self.method.__defaults__)
 
-    def __init__(self, GodotExtentionClass owner_class, object method: types.FunctionType):
+    def __init__(self, ExtensionClass owner_class, object method: types.FunctionType):
         self.owner_class = owner_class
         self.method = method
         self.__name__ = method.__name__
+
+
+cdef inline void set_variant_from_ptr(Variant *v, Variant value) noexcept nogil:
+    cdef Variant result = cython.operator.dereference(v)
+    result = value

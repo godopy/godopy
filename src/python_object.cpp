@@ -70,6 +70,9 @@ PythonObject *PythonObject::getattr(const String &p_attr_name) {
 
     PyGILState_STATE gil_state = PyGILState_Ensure();
     PyObject *attr = PyObject_GetAttrString(instance, p_attr_name.utf8());
+    if (attr == nullptr) {
+        PyErr_Print();
+    }
     ERR_FAIL_NULL_V(attr, object);
     Py_INCREF(attr);
     object->instance = attr;
