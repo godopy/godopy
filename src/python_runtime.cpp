@@ -96,21 +96,25 @@ int set_config_paths(PyConfig *config) {
 		_wide_string_from_string(res_path + "bin/windows/dylib")
 	);
 	CHECK_PYSTATUS(status, 1);
-
-	// TODO: Detect active venv and editor/script status and set the right path
-	//       only in editor or script
 	
-
 	MainLoop *ml = Engine::get_singleton()->get_main_loop();
 	bool is_detached_script = ml == nullptr;
 
 	if (Engine::get_singleton()->is_editor_hint() || is_detached_script) {
-		status = PyWideStringList_Append(
-		&config->module_search_paths,
-			_wide_string_from_string(res_path + "../../venv/Lib/site-packages")
-		);
-		CHECK_PYSTATUS(status, 1);
 
+		String venv_path = OS::get_singleton()->get_environment("VIRTUAL_ENV");
+
+		if (venv_path != "") {
+			UtilityFunctions::print("VENV PATH: " + venv_path);
+
+			status = PyWideStringList_Append(
+			&config->module_search_paths,
+				_wide_string_from_string(res_path + "../../venv/Lib/site-packages")
+			);
+			CHECK_PYSTATUS(status, 1);
+		}
+		
+		// TODO: Just copy these
 		status = PyWideStringList_Append(
 			&config->module_search_paths,
 			_wide_string_from_string(res_path + "../../python/Lib")
@@ -186,6 +190,8 @@ PythonObject *PythonRuntime::import_module(const String &p_name) {
 	PyObject *m = PyImport_ImportModule(p_name.utf8());
 	if (m == nullptr) {
 		PyErr_Print();
+		PyGILState_Release(gil_state);
+		return module;
 	}
 	ERR_FAIL_NULL_V(m, module);
 

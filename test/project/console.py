@@ -1,7 +1,5 @@
 import sys
 import atexit
-import readline
-import rlcompleter
 
 from code import InteractiveConsole
 
@@ -27,13 +25,18 @@ class GodotInteractiveConsole(InteractiveConsole):
         except AttributeError:
             sys.ps2 = "... "
 
-        readline.parse_and_bind("tab: complete")
-        readline.set_completer(rlcompleter.Completer().complete)
+        try:
+            import readline
+            import rlcompleter
+            readline.parse_and_bind("tab: complete")
+            readline.set_completer(rlcompleter.Completer().complete)
 
-        # Release references early at shutdown (the readline module's
-        # contents are quasi-immortal, and the completer function holds a
-        # reference to globals).
-        atexit.register(lambda: readline.set_completer(None))
+            # Release references early at shutdown (the readline module's
+            # contents are quasi-immortal, and the completer function holds a
+            # reference to globals).
+            atexit.register(lambda: readline.set_completer(None))
+        except ImportError:
+            pass
 
         self.write("%s\n\n" % str(banner))
         more = 0

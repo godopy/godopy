@@ -128,8 +128,7 @@ if env["generate_bindings"]:
 
 cython_sources = [
     env_cython.CythonSource('src/cythonlib/_godot.pyx'),
-    env_cython.CythonSource('src/cythonlib/_gdextension.pyx'),
-    env_cython.CythonSource('src/cythonlib/_godot_core_singletons.pyx')
+    env_cython.CythonSource('src/cythonlib/_gdextension.pyx')
 ]
 
 cython_depends = [
