@@ -30,18 +30,20 @@ cdef class ExtensionClass(gd.Class):
     @staticmethod
     cdef bint has_get_property_list():
         # TODO: Check if a class has a property list
-        return False
+        return True
 
     @staticmethod
     cdef GDExtensionPropertyInfo *get_property_list_bind(GDExtensionClassInstancePtr p_instance,
                                                          uint32_t *r_count) noexcept nogil:
-        if not p_instance:
-            if r_count:
-                set_uint32_from_ptr(r_count, 0)
-            return NULL
-        # TODO: Create and return property list
-        if r_count:
-            set_uint32_from_ptr(r_count, 0)
+        # if not p_instance:
+        #     if r_count:
+        #         set_uint32_from_ptr(r_count, 0)
+        #     return NULL
+        # # TODO: Create and return property list
+        # if r_count:
+        #     set_uint32_from_ptr(r_count, 0)
+        with gil:
+            print('GETPROPLIST %x' % (<uint64_t>p_instance))
         return NULL
 
     @staticmethod
@@ -49,7 +51,8 @@ cdef class ExtensionClass(gd.Class):
                                       const GDExtensionPropertyInfo *p_list,
                                       uint32_t p_count) noexcept nogil:
         if p_instance:
-            pass
+            with gil:
+                print('FREEPROPLIST %x' % (<uint64_t>p_instance))
 
     @staticmethod
     cdef GDExtensionBool property_can_revert_bind(GDExtensionClassInstancePtr p_instance,
@@ -70,16 +73,21 @@ cdef class ExtensionClass(gd.Class):
     @staticmethod
     cdef void notification_bind(GDExtensionClassInstancePtr p_instance,
                                 int32_t p_what, GDExtensionBool p_reversed) noexcept nogil:
-        pass
+        if p_instance:
+            with gil:
+                print('NOTOFICATION BIND %x' % (<uint64_t>p_instance))
 
     @staticmethod
     cdef void to_string_bind(GDExtensionClassInstancePtr p_instance,
                              GDExtensionBool *r_is_valid, GDExtensionStringPtr r_out) noexcept nogil:
-        pass
+        if p_instance:
+            with gil:
+                print('TO STRING BIND %x' % (<uint64_t>p_instance))
 
     @staticmethod
     cdef void free(void *data, GDExtensionClassInstancePtr ptr) noexcept nogil:
-        pass
+        with gil:
+            print('FREE %x %x' % (<uint64_t>data, <uint64_t>ptr))
 
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance_func(void *data) noexcept nogil:
@@ -88,23 +96,30 @@ cdef class ExtensionClass(gd.Class):
 
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance_func_gil(void *data):
-        print('CREATE_INSTANCE %r' % <uint64_t>data)
+        print('CREATE INSTANCE %x' % <uint64_t>data)
         cdef ExtensionClass cls = <ExtensionClass>data
-        cdef Extension wrapper = Extension.__new__(Extension)
-        ref.Py_INCREF(wrapper)
+        # print('GOT CLASS %r' % cls)
+        # ref.Py_INCREF(cls)
+        cdef Extension wrapper = Extension(registry[cls.__name__], from_callback=True)
+        # ref.Py_INCREF(wrapper)
 
-        return <GDExtensionObjectPtr><PyObject>wrapper
+        print("CREATED INSTANCE %r %x" % (wrapper, <uint64_t>wrapper._owner))
+        # ref.Py_INCREF(wrapper)
+        return wrapper._owner
 
     @staticmethod
     cdef GDExtensionObjectPtr _recreate_instance_func(void *data, GDExtensionObjectPtr obj) noexcept nogil:
+        with gil:
+            print('RECREATE %x %x' % (<uint64_t>data, <uint64_t>obj))
         return NULL
 
     @staticmethod
     cdef GDExtensionClassCallVirtual get_virtual_func(void *p_userdata,
                                                       GDExtensionConstStringNamePtr p_name) noexcept nogil:
         # TODO
+        cdef StringName name = deref(<StringName *>p_name) 
         with gil:
-            print('get_virtual_func')
+            print('GETVIRTUAL %x %s' % (<uint64_t>p_userdata, name.py_str()))
         return NULL
 
     def __init__(self, name, object inherits, **kwargs):
@@ -159,6 +174,8 @@ cdef class ExtensionClassRegistrator:
     cdef str __name__
     cdef ExtensionClass registree
     cdef gd.Class inherits
+    cdef StringName _godot_class_name
+    cdef StringName _godot_inherits_name
 
     def __cinit__(self, ExtensionClass registree, gd.Class inherits, **kwargs):
         self.__name__ = registree.__name__
@@ -167,8 +184,6 @@ cdef class ExtensionClassRegistrator:
 
         if registree.is_registered:
             raise RuntimeError("%r is already registered" % registree)
-
-
 
         cdef GDExtensionClassCreationInfo3 ci
 
@@ -182,7 +197,7 @@ cdef class ExtensionClassRegistrator:
         ci.free_property_list_func = &ExtensionClass.free_property_list_bind
         ci.property_can_revert_func = &ExtensionClass.property_can_revert_bind
         ci.property_get_revert_func = &ExtensionClass.property_get_revert_bind
-        ci.validate_property_func = &ExtensionClass.validate_property_bind
+        ci.validate_property_func = ExtensionClass.validate_property_bind
         ci.notification_func = &ExtensionClass.notification_bind
         ci.to_string_func = &ExtensionClass.to_string_bind
         ci.reference_func = NULL
@@ -198,7 +213,7 @@ cdef class ExtensionClassRegistrator:
 
         ref.Py_INCREF(self.registree)
 
-        print('Set USERDATA %x' % <uint64_t>ci.class_userdata)
+        # print('Set USERDATA %x' % <uint64_t>ci.class_userdata)
 
         if ExtensionClass.has_get_property_list():
             ci.get_property_list_func = <GDExtensionClassGetPropertyList>&ExtensionClass.get_property_list_bind
@@ -210,18 +225,25 @@ cdef class ExtensionClassRegistrator:
 
         cdef str name = self.__name__
         cdef str inherits_name = inherits.__name__
-        _gde_classdb_register_extension_class3(gdextension_library,
-                                               StringName(name)._native_ptr(),
-                                               StringName(inherits_name)._native_ptr(),
-                                               &ci)
+        cdef StringName extra = StringName(name)
+        self._godot_class_name = StringName(extra)
+        self._godot_inherits_name = StringName(inherits_name)
+        _gde_classdb_register_extension_class3(
+            gdextension_library,
+            &self._godot_class_name,
+            &self._godot_inherits_name,
+            &ci
+        )
 
         for method in registree.method_registry:
             self.register_method(method)
 
         registree.set_registered()
         registry[self.__name__] = registree
+        print("%r registered" % self.__name__)
 
     def register_method(self, object func: types.FunctionType):
+        print("registering method %r" % object)
         cdef ExtensionMethod method = ExtensionMethod(self.registree, func)
         cdef GDExtensionClassMethodInfo mi
 

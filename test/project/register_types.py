@@ -29,11 +29,8 @@ def initialize():
     gd.print_rich('[color=gray]%s[/color]\n' % '\n'.join(lines))
 
 
-GDExample.add_method(__init__)
-GDExample.add_method(_process)
+GDExample.add_methods(__init__, _process)
 
 
 def register():
-    reg = GDExample.register()
-    # reg.register_method(__init__)
-    # reg.register_method(_process)
+    GDExample.register()

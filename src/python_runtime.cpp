@@ -15,7 +15,12 @@ using namespace godot;
 PythonRuntime *PythonRuntime::singleton = nullptr;
 
 _ALWAYS_INLINE_ const wchar_t *_wide_string_from_string(const String &s) {
-	return s.wide_string().ptr();
+	return s.wide_string();
+}
+
+_ALWAYS_INLINE_ const wchar_t *_wide_string_from_format(const String &format, const String &s) {
+	String result = format.replace("%s", s);
+	return result.wide_string();
 }
 
 void PythonRuntime::pre_initialize() {
@@ -50,7 +55,7 @@ int set_config_paths(PyConfig *config) {
 	}
 
 	// TODO: Get from project settings
-	String exec_path = res_path + "/bin/windows/libGodoPy.dll";
+	String exec_path = res_path + "bin/windows/libGodoPy.dll";
 	String exec_prefix = exec_path.get_base_dir();
 
 	UtilityFunctions::print_verbose("Python program name: " + exec_path);
@@ -81,22 +86,22 @@ int set_config_paths(PyConfig *config) {
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "lib/runtime")
+		_wide_string_from_format("%slib/runtime", res_path)
 	);
 	CHECK_PYSTATUS(status, 1);
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "lib/runtime/site-packages")
+		_wide_string_from_format("%slib/runtime/site-packages", res_path)
 	);
 	CHECK_PYSTATUS(status, 1);
 
     status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "bin/windows/dylib/runtime")
+		_wide_string_from_format("%sbin/windows/dylib/runtime", res_path)
 	);
 	CHECK_PYSTATUS(status, 1);
-	
+
 	MainLoop *ml = Engine::get_singleton()->get_main_loop();
 	bool is_detached_script = ml == nullptr;
 
@@ -105,24 +110,28 @@ int set_config_paths(PyConfig *config) {
 		String venv_path = OS::get_singleton()->get_environment("VIRTUAL_ENV");
 
 		if (venv_path != "") {
-			UtilityFunctions::print("VENV PATH: " + venv_path);
-
 			status = PyWideStringList_Append(
 			&config->module_search_paths,
-				_wide_string_from_string(venv_path + "/Lib/site-packages")
+				_wide_string_from_format("%s/Lib/site-packages", venv_path)
 			);
 			CHECK_PYSTATUS(status, 1);
 		}
 
 		status = PyWideStringList_Append(
 			&config->module_search_paths,
-			_wide_string_from_string(res_path + "lib/editor")
+			_wide_string_from_format("%slib/editor", res_path)
 		);
 		CHECK_PYSTATUS(status, 1);
 
 		status = PyWideStringList_Append(
 			&config->module_search_paths,
-			_wide_string_from_string(res_path + "lib/editor/site-packages")
+			_wide_string_from_format("%slib/editor/site-packages", res_path)
+		);
+		CHECK_PYSTATUS(status, 1);
+
+		status = PyWideStringList_Append(
+			&config->module_search_paths,
+			_wide_string_from_format("%sbin/windows/dylib/editor", res_path)
 		);
 		CHECK_PYSTATUS(status, 1);
 	}
