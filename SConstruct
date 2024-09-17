@@ -195,7 +195,8 @@ library = env.SharedLibrary(
     source=sources,
 )
 
-# gdextension_lib_file = 'bin/{}/dylib/gdextension.pyd'.format(env['platform'])
+# Example on how to build and install Python extensions:
+# gdextension_lib_file = 'bin/{}/dylib/runtime/gdextension.pyd'.format(env['platform'])
 # gdextension_lib = env.SharedLibrary(
 #     gdextension_lib_file,
 #     source=gdextension_lib_sources,
@@ -218,7 +219,6 @@ if env['minimal_python_stdlib']:
 
         'encodings/latin_1.py',
     ]]
-
     python_editor_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
     python_editor_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
 else:
@@ -235,8 +235,8 @@ if env['clean_python_stdlib']:
 
 for srcfile in python_runtime_lib_files:
     folder, pyfile = os.path.split(str(srcfile))
-    folder, parent = os.path.split(folder)
-    if parent != 'Lib':
+    while folder and folder.lower() != 'lib':
+        folder, parent = os.path.split(folder)
         pyfile = os.path.join(parent, pyfile)
     if env['compile_python_stdlib']:
         pyfile += 'c'
@@ -251,8 +251,8 @@ for srcfile in python_editor_lib_files:
     if srcfile in runtime_modules:
         continue
     folder, pyfile = os.path.split(str(srcfile))
-    folder, parent = os.path.split(folder)
-    if parent != 'Lib':
+    while folder and folder.lower() != 'lib':
+        folder, parent = os.path.split(folder)
         pyfile = os.path.join(parent, pyfile)
     if env['compile_python_stdlib']:
         pyfile += 'c'
@@ -261,6 +261,12 @@ for srcfile in python_editor_lib_files:
         copy_python_deps.append(env.CompilePyc(dstfile, srcfile))
     else:
         copy_python_deps.append(env.InstallAs(dstfile, srcfile))
+
+for srcfile in python_runtime_dylib_files:
+    pyfile = os.path.basename(str(srcfile))
+    dstfile = os.path.join(projectdir, 'bin', 'windows', 'dylib', 'runtime', pyfile)
+    copy_python_deps.append(env.InstallAs(dstfile, srcfile))
+
 
 for srcfile in python_editor_dylib_files:
     pyfile = os.path.basename(str(srcfile))
@@ -274,7 +280,17 @@ if env['platform'] == 'windows':
     python_dll_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_dll_file)
     copy_python_deps.append(env.InstallAs(python_dll_target, python_dll))
 
-default_args = [library, copy, copy_python_deps]
+copy_python_libs = []
+python_lib_files = Glob('lib/*/*.py')
+for srcfile in python_lib_files:
+    folder, pyfile = os.path.split(str(srcfile))
+    while folder != 'lib':
+        folder, parent = os.path.split(folder)
+        pyfile = os.path.join(parent, pyfile)
+    dstfile = os.path.join(projectdir, 'bin', 'pystdlib', 'runtime', 'site-packages',  pyfile)
+    copy_python_libs.append(env.InstallAs(dstfile, srcfile))
+
+default_args = [library, copy, copy_python_libs, copy_python_deps]
 if localEnv.get('compiledb', False):
     default_args += [compilation_db]
 Default(*default_args)
