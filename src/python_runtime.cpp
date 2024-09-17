@@ -144,17 +144,16 @@ void PythonRuntime::initialize() {
 
 	PyConfig_InitIsolatedConfig(&config);
 
+	MainLoop *ml = Engine::get_singleton()->get_main_loop();
+	bool is_detached_script = ml == nullptr;
+
 	if (set_config_paths(&config) != 0) {
 		goto fail;
 	}
 
 	config.site_import = 0;
-	// config.faulthandler = 0;
-	// config.user_site_directory = 0;
-	config.install_signal_handlers = 0;
+	config.install_signal_handlers = is_detached_script;
 	config.module_search_paths_set = 1;
-
-	// FIXME: custom faulthandler?
 
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);

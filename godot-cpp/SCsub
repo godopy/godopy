@@ -2,9 +2,6 @@
 
 import os
 
-EnsureSConsVersion(4, 0)
-
-
 try:
     Import("env")
 except Exception:
@@ -14,29 +11,12 @@ except Exception:
 
 env.PrependENVPath("PATH", os.getenv("PATH"))
 
-# Custom options and profile flags.
-customs = ["custom.py"]
-try:
-    customs += Import("customs")
-except Exception:
-    pass
-profile = ARGUMENTS.get("profile", "")
-if profile:
-    if os.path.isfile(profile):
-        customs.append(profile)
-    elif os.path.isfile(profile + ".py"):
-        customs.append(profile + ".py")
-opts = Variables(customs, ARGUMENTS)
+opts = Variables()
 cpp_tool = Tool("godotcpp", toolpath=["tools"])
 cpp_tool.options(opts, env)
 opts.Update(env)
 
 Help(opts.GenerateHelpText(env))
-
-scons_cache_path = os.environ.get("SCONS_CACHE")
-if scons_cache_path is not None:
-    CacheDir(scons_cache_path)
-    Decider("MD5")
 
 cpp_tool.generate(env)
 library = env.GodotCPP()

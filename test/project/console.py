@@ -1,6 +1,5 @@
 import sys
-import atexit
-
+import atexit  
 from code import InteractiveConsole
 
 import _godot as gd
@@ -15,7 +14,7 @@ class GodotInteractiveConsole(InteractiveConsole):
         # OS = gd.GodotSingleton('OS')
         # self._godot_input = gd.GodotMethodBindRet(OS, 'read_string_from_stdin', 2841200299, 'String')
 
-    def interact(self, banner, exitmsg=None):
+    def interact(self, banner):
         try:
             sys.ps1
         except AttributeError:
@@ -46,21 +45,16 @@ class GodotInteractiveConsole(InteractiveConsole):
                     prompt = sys.ps2
                 else:
                     prompt = sys.ps1
-                try:
-                    line = self.raw_input( prompt)
-                except EOFError:
+
+                line = self.raw_input(prompt)
+                if line.strip() in ['exit', 'quit']:
                     self.write("\n")
-                    break
+                    return
                 else:
                     more = self.push(line)
             except KeyboardInterrupt:
-                self.write("\nKeyboardInterrupt\n")
                 self.resetbuffer()
-                more = 0
-        if exitmsg is None:
-            self.write('now exiting %s...' % self.__class__.__name__)
-        elif exitmsg != '':
-            self.write('%s\n' % exitmsg)
+                return
 
     def write(self, data):
         gd.printraw(data)
