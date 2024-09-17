@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import os
+import shutil
+import py_compile
 import scons_methods
 from binding_generator import scons_generate_bindings, scons_emit_files
 
@@ -10,8 +12,6 @@ def normalize_path(val, env):
 def validate_parent_dir(key, val, env):
     if not os.path.isdir(normalize_path(os.path.dirname(val), env)):
         raise UserError("'%s' is not a directory: %s" % (key, os.path.dirname(val)))
-
-
 
 libname = 'GodoPy'
 projectdir = 'test/project'
@@ -42,6 +42,29 @@ opts.Add(
         key='python_debug',
         help='Use debug version of python',
         default=False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        key='minimal_python_stdlib',
+        help='Copy only absolutely required part of Python standard library'
+             ' to the path accessible by the game, editor will still have access'
+             ' to the full library',
+        default=False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        key='clean_python_stdlib',
+        help='Delete all previously installed files before copying Python standard library',
+        default=False,
+    )
+)
+opts.Add(
+    BoolVariable(
+        key='compile_python_stdlib',
+        help='Compile library Python files to byte-code .pyc files',
+        default=True,
     )
 )
 opts.Add(
@@ -106,15 +129,23 @@ cython_builder = Builder(
     suffix='.cpp',
     src_suffox='.pyx'
 )
-env_cython.Append(BUILDERS={
-    'CythonSource': cython_builder,
+
+def compile_to_bytecode(target, source, env):
+    py_compile.compile(str(source[0]), str(target[0]))
+
+env.Append(BUILDERS={
     'GodoPyBindings': Builder(action=Action(scons_generate_bindings), emitter=scons_emit_files),
+    'CompilePyc': Builder(action=compile_to_bytecode)
+})
+
+env_cython.Append(BUILDERS={
+    'CythonSource': cython_builder
 })
 
 extension_dir = normalize_path(env_cython.get("gdextension_dir", env.Dir("gdextension").abspath), env)
 api_file = normalize_path(env_cython.get("custom_api_file", env.File(extension_dir + "/extension_api.json").abspath), env)
-bindings = env_cython.GodoPyBindings(
-    env_cython.Dir("."),
+bindings = env.GodoPyBindings(
+    env.Dir("."),
     [
         api_file,
         os.path.join(extension_dir, "gdextension_interface.h"),
@@ -123,8 +154,8 @@ bindings = env_cython.GodoPyBindings(
 )
 # Forces bindings regeneration.
 if env["generate_bindings"]:
-    env_cython.AlwaysBuild(bindings)
-    env_cython.NoCache(bindings)
+    env.AlwaysBuild(bindings)
+    env.NoCache(bindings)
 
 cython_sources = [
     env_cython.CythonSource('src/cythonlib/_godot.pyx'),
@@ -178,32 +209,62 @@ copy = [
 ]
 
 copy_python_deps = []
+if env['minimal_python_stdlib']:
+    # Python stdlib files - minimal version
+    python_runtime_lib_files = [os.path.join('python', 'Lib', pyfile) for pyfile in [
+        # These are always required
+        'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
+        'io.py', 'abc.py', 'types.py',
 
-# Python stdlib files
-python_lib_files = [
-    # These are always required
-    'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
-    'io.py', 'abc.py', 'types.py',
+        'encodings/latin_1.py',
+    ]]
 
-    'encodings/latin_1.py',
+    python_editor_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
+    python_editor_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
+else:
+    python_runtime_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
+    python_editor_lib_files = []
+    python_runtime_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
+    python_editor_dylib_files = []
 
-    # Others may be optional depending on the use case
-    # 're/__init__.py', 're/_casefix.py', 're/_compiler.py', 're/_constants.py', 're/_parser.py',
-    # 'enum.py', 'functools.py', 'operator.py', 'collections/__init__.py', 'collections/abc.py',
-    # 'contextlib.py', 'warnings.py', 'string.py', 'threading.py', 'pathlib.py',
-    # *('urllib/%s.py' % p for p in ('__init__', 'error', 'parse', 'request', 'response', 'robotparser')),
-    # 'ipaddress.py', 'typing.py', 'importlib.py',
+runtime_modules = set()
 
-    # 'copy.py', 'weakref.py', '_weakrefset.py', 'copyreg.py',
-    # 'logging/__init__.py', 'logging/config.py', 'logging/handlers.py',
-    # 'keyword.py', 'reprlib.py', 'traceback.py', 'linecache.py', 'tokenize.py',
-    # 'token.py', 'textwrap.py', 'shutil.py', 'fnmatch.py',
-    # '__future__.py', 'inspect.py', 'ast.py', 'dis.py', 'opcode.py'
-]
+if env['clean_python_stdlib']:
+    shutil.rmtree(os.path.join(projectdir, 'bin', 'windows', 'dylib'), ignore_errors=True)
+    shutil.rmtree(os.path.join(projectdir, 'bin', 'pystdlib'), ignore_errors=True)
 
-for pyfile in python_lib_files:
-    srcfile = os.path.join('python', 'Lib', pyfile)
-    dstfile = os.path.join(projectdir, 'pystdlib', pyfile)
+for srcfile in python_runtime_lib_files:
+    folder, pyfile = os.path.split(str(srcfile))
+    folder, parent = os.path.split(folder)
+    if parent != 'Lib':
+        pyfile = os.path.join(parent, pyfile)
+    if env['compile_python_stdlib']:
+        pyfile += 'c'
+    runtime_modules.add(srcfile)
+    dstfile = os.path.join(projectdir, 'bin', 'pystdlib', 'runtime', pyfile)
+    if env['compile_python_stdlib']:
+        copy_python_deps.append(env.CompilePyc(dstfile, srcfile))
+    else:
+        copy_python_deps.append(env.InstallAs(dstfile, srcfile))
+
+for srcfile in python_editor_lib_files:
+    if srcfile in runtime_modules:
+        continue
+    folder, pyfile = os.path.split(str(srcfile))
+    folder, parent = os.path.split(folder)
+    if parent != 'Lib':
+        pyfile = os.path.join(parent, pyfile)
+    if env['compile_python_stdlib']:
+        pyfile += 'c'
+    dstfile = os.path.join(projectdir, 'bin', 'pystdlib', 'editor', pyfile)
+    if env['compile_python_stdlib']:
+        copy_python_deps.append(env.CompilePyc(dstfile, srcfile))
+    else:
+        copy_python_deps.append(env.InstallAs(dstfile, srcfile))
+
+for srcfile in python_editor_dylib_files:
+    pyfile = os.path.basename(str(srcfile))
+    dstfile = os.path.join(projectdir, 'bin', 'windows', 'dylib', 'editor', pyfile)
     copy_python_deps.append(env.InstallAs(dstfile, srcfile))
 
 if env['platform'] == 'windows':

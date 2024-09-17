@@ -81,19 +81,19 @@ int set_config_paths(PyConfig *config) {
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "pystdlib")
+		_wide_string_from_string(res_path + "bin/pystdlib/runtime")
 	);
 	CHECK_PYSTATUS(status, 1);
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "pystdlib/site-packages")
+		_wide_string_from_string(res_path + "bin/pystdlib/runtime/site-packages")
 	);
 	CHECK_PYSTATUS(status, 1);
 
     status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "bin/windows/dylib")
+		_wide_string_from_string(res_path + "bin/windows/dylib/runtime")
 	);
 	CHECK_PYSTATUS(status, 1);
 	
@@ -109,23 +109,29 @@ int set_config_paths(PyConfig *config) {
 
 			status = PyWideStringList_Append(
 			&config->module_search_paths,
-				_wide_string_from_string(res_path + "../../venv/Lib/site-packages")
+				_wide_string_from_string(venv_path + "/Lib/site-packages")
 			);
 			CHECK_PYSTATUS(status, 1);
 		}
-		
-		// TODO: Just copy these
+
 		status = PyWideStringList_Append(
 			&config->module_search_paths,
-			_wide_string_from_string(res_path + "../../python/Lib")
+			_wide_string_from_string(res_path + "/bin/pystdlib/editor")
 		);
 		CHECK_PYSTATUS(status, 1);
 
 		status = PyWideStringList_Append(
 			&config->module_search_paths,
-			_wide_string_from_string(res_path + "../../python/PCbuild/amd64")
+			_wide_string_from_string(res_path + "/bin/pystdlib/editor/site-packages")
 		);
 		CHECK_PYSTATUS(status, 1);
+
+		status = PyWideStringList_Append(
+			&config->module_search_paths,
+			_wide_string_from_string(res_path + "bin/windows/dylib/runtime")
+		);
+		CHECK_PYSTATUS(status, 1);
+
 	}
 
 
