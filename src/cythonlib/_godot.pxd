@@ -31,7 +31,7 @@ cdef class Object:
 
 cdef class Class:
     cdef dict _methods
-    cdef str __name__
+    cdef public str __name__
 
 cdef class MethodBind:
     cdef void *_owner
@@ -45,6 +45,7 @@ cdef class UtilityFunction:
     cdef str returning_type
     cpdef object _call_internal(self, tuple args)
 
+cdef UtilityFunction __print
 cdef UtilityFunction _printraw
 cdef UtilityFunction _print_rich
 cdef UtilityFunction _push_error

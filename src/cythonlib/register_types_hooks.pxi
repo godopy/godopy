@@ -18,8 +18,10 @@ def initialize_types():
         register_func = getattr(register_types, 'register', None)
         unregister_func = getattr(register_types, 'unregister', None)
         terminate_func = getattr(register_types, 'terminate', None)   
-    except ImportError:
+    except ImportError as err:
+        print(err)
         _print_rich("[color=orange]'register types' module was not found.[/color]")
+
 
     if init_func:
         # TODO: Call with init level, do all levels

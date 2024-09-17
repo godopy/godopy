@@ -14,7 +14,7 @@ cdef class MethodBind:
     cpdef object _call_internal(self, tuple args):
         cdef Variant gd_ret
         cdef Variant arg
-        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>\
+        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *> \
             _gde_mem_alloc(len(args) * cython.sizeof(GDExtensionConstTypePtr))
         cdef int i
         for i in range(len(args)):
@@ -68,7 +68,7 @@ cdef class UtilityFunction:
         cdef Variant arg
         cdef size_t i
         cdef size_t size = len(args)
-        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>\
+        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *> \
             _gde_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
 
         for i in range(size):

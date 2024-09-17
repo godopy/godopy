@@ -1,7 +1,9 @@
+registry = {}
+
 cdef class ExtensionClass(gd.Class):
-    cdef gd.Class parent
+    cdef gd.Class inherits
     cdef public bint is_registered
-    cdef vector[String] method_registry
+    cdef list method_registry
 
     @staticmethod
     cdef GDExtensionBool set_bind(GDExtensionClassInstancePtr p_instance,
@@ -9,6 +11,8 @@ cdef class ExtensionClass(gd.Class):
                                   GDExtensionConstVariantPtr p_value) noexcept nogil:
         if p_instance:
             # TODO: set instance property
+            with gil:
+                gd.__print('SET BIND INSTANCE %x' % <uint64_t>p_instance)
             return False
         return False
 
@@ -18,6 +22,8 @@ cdef class ExtensionClass(gd.Class):
                                   GDExtensionVariantPtr r_ret) noexcept nogil:
         if p_instance:
             # TODO: get instance property
+            with gil:
+                gd.__print('GET BIND INSTANCE %x' % <uint64_t>p_instance)
             return False
         return False
 
@@ -82,10 +88,12 @@ cdef class ExtensionClass(gd.Class):
 
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance_func_gil(void *data):
-        print('_create_instance_func')
-        cdef ExtensionClass cls = <object>data
-        cdef Extension wrapper = cls()
-        return wrapper._owner
+        print('CREATE_INSTANCE %r' % <uint64_t>data)
+        cdef ExtensionClass cls = <ExtensionClass>data
+        cdef Extension wrapper = Extension.__new__(Extension)
+        ref.Py_INCREF(wrapper)
+
+        return <GDExtensionObjectPtr><PyObject>wrapper
 
     @staticmethod
     cdef GDExtensionObjectPtr _recreate_instance_func(void *data, GDExtensionObjectPtr obj) noexcept nogil:
@@ -99,28 +107,29 @@ cdef class ExtensionClass(gd.Class):
             print('get_virtual_func')
         return NULL
 
-    def __init__(self, name, object parent, **kwargs):
-        if not isinstance(parent, (gd.Class, str)):
-            raise TypeError("'parent' argument must be a Class instance or a string")
+    def __init__(self, name, object inherits, **kwargs):
+        if not isinstance(inherits, (gd.Class, str)):
+            raise TypeError("'inherits' argument must be a Class instance or a string")
 
         self.__name__ = name
-        if isinstance(parent, gd.Class):
-            self.parent = parent
+        if isinstance(inherits, gd.Class):
+            self.inherits = inherits
         else:
-            self.parent = gd.Class(str(parent))
+            self.inherits = gd.Class(inherits)
 
         self.is_registered = False
-        # self.method_registry = []
+
+        self.method_registry = []
 
     def __call__(self):
         if not self.is_registered:
-            raise RuntimeError("Extension class not registered")
+            raise RuntimeError("Extension class is not registered")
         return Extension(self.__name__)
 
     def add_method(self, method: types.FunctionType):
         if not isinstance(method, types.FunctionType):
             raise TypeError("Function is required")
-        self.method_registry.push_back(<String>method)
+        self.method_registry.append(method)
 
     def add_methods(self, *methods):
         for method in methods:
@@ -129,23 +138,37 @@ cdef class ExtensionClass(gd.Class):
     cdef set_registered(self):
         self.is_registered = True
 
+    cpdef register(self):
+        return ExtensionClassRegistrator(self, self.inherits)
+
+    cpdef register_abstract(self):
+        return ExtensionClassRegistrator(self, self.inherits, is_abstract=True)
+    
+    cpdef register_internal(self):
+        return ExtensionClassRegistrator(self, self.inherits, is_exposed=False)
+
+    cpdef register_runtime(self):
+        return ExtensionClassRegistrator(self, self.inherits, is_runtime=True)
+
 
 cdef inline void set_uint32_from_ptr(uint32_t *r_count, uint32_t value) noexcept nogil:
     cdef uint32_t count = cython.operator.dereference(r_count)
     count = value
 
-
 cdef class ExtensionClassRegistrator:
-    cdef gd.Class parent
+    cdef str __name__
     cdef ExtensionClass registree
+    cdef gd.Class inherits
 
-    def __cinit__(self, ExtensionClass registree, gd.Class parent, **kwargs):
-        self.name = registree.__name__
+    def __cinit__(self, ExtensionClass registree, gd.Class inherits, **kwargs):
+        self.__name__ = registree.__name__
         self.registree = registree
-        self.parent = parent
+        self.inherits = inherits
 
         if registree.is_registered:
             raise RuntimeError("%r is already registered" % registree)
+
+
 
         cdef GDExtensionClassCreationInfo3 ci
 
@@ -171,7 +194,11 @@ cdef class ExtensionClassRegistrator:
         ci.get_virtual_call_data_func = NULL
         ci.call_virtual_with_data_func = NULL
         ci.get_rid_func = NULL
-        ci.class_userdata = <void *><PyObject *>self
+        ci.class_userdata = <void *><PyObject *>self.registree
+
+        ref.Py_INCREF(self.registree)
+
+        print('Set USERDATA %x' % <uint64_t>ci.class_userdata)
 
         if ExtensionClass.has_get_property_list():
             ci.get_property_list_func = <GDExtensionClassGetPropertyList>&ExtensionClass.get_property_list_bind
@@ -182,45 +209,100 @@ cdef class ExtensionClassRegistrator:
         # is_runtime=True => register_runtime_class
 
         cdef str name = self.__name__
-        cdef str parent_name = parent.__name__
+        cdef str inherits_name = inherits.__name__
         _gde_classdb_register_extension_class3(gdextension_library,
                                                StringName(name)._native_ptr(),
-                                               StringName(parent_name)._native_ptr(),
+                                               StringName(inherits_name)._native_ptr(),
                                                &ci)
 
-        cdef size_t i = 0
-        for i in range(registree.method_registry.size()):
-            method = registree.method_registry[i]
-            self.register_method(method.py_str())
+        for method in registree.method_registry:
+            self.register_method(method)
 
         registree.set_registered()
+        registry[self.__name__] = registree
 
-    cdef register_method(self, object func: types.FunctionType):
-        cdef ExtensionMethod method = ExtensionMethod(self, func)
+    def register_method(self, object func: types.FunctionType):
+        cdef ExtensionMethod method = ExtensionMethod(self.registree, func)
         cdef GDExtensionClassMethodInfo mi
 
-        cdef GDExtensionVariantPtr *def_args = method.get_default_arguments()
-        cdef GDExtensionPropertyInfo *return_value_info = method.get_argument_info_list()
-        cdef GDExtensionPropertyInfo *arguments_info = return_value_info + 1
-        cdef GDExtensionClassMethodArgumentMetadata *return_value_metadata = method.get_argument_metadata_list()
-        cdef GDExtensionClassMethodArgumentMetadata *arguments_metadata = return_value_metadata + 1
+        if method.get_argument_count() < 1:
+            raise RuntimeError('At least 1 argument ("self") is required')
 
-        mi.name = StringName(method.__name__)._native_ptr()
+        cdef PropertyInfo _return_value_info = method.get_return_info()
+        cdef GDExtensionPropertyInfo return_value_info
+
+        return_value_info.type = <GDExtensionVariantType>_return_value_info.type
+        return_value_info.name = SN(_return_value_info.name).ptr()
+        return_value_info.class_name = SN(_return_value_info.class_name).ptr()
+        return_value_info.hint = _return_value_info.hint
+        return_value_info.hint_string = SN(_return_value_info.hint_string).ptr() 
+        return_value_info.usage = _return_value_info.usage
+
+        cdef size_t i
+
+        cdef list _def_args = method.get_default_arguments()
+        cdef GDExtensionVariantPtr *def_args = <GDExtensionVariantPtr *> \
+            _gde_mem_alloc(len(_def_args) * cython.sizeof(GDExtensionVariantPtr))
+        cdef Variant defarg
+        for i in range(len(_def_args)):
+            defarg = <Variant>_def_args[i]
+            def_args[i] = <GDExtensionVariantPtr>&defarg
+
+        # Skip self arg
+        cdef list _arguments_info = method.get_argument_info_list()[1:]
+        cdef size_t argsize = len(_arguments_info)
+        cdef GDExtensionPropertyInfo *arguments_info = <GDExtensionPropertyInfo *> \
+            _gde_mem_alloc(argsize * cython.sizeof(GDExtensionPropertyInfo))
+
+        cdef str pyname
+        cdef str pyclassname
+        cdef str pyhintstring
+        cdef int pytype
+
+        for i in range(argsize):
+            pyname = _arguments_info[i].name
+            pyclassname = _arguments_info[i].class_name
+            pyhintstring = _arguments_info[i].hint_string
+            pytype = _arguments_info[i].type
+            arguments_info[i].type = <GDExtensionVariantType>pytype
+            arguments_info[i].name = (SN(pyname)).ptr()
+            arguments_info[i].class_name = (SN(pyclassname)).ptr()
+            arguments_info[i].hint = _arguments_info[i].hint
+            arguments_info[i].hint_string = (SN(pyhintstring)).ptr() 
+            arguments_info[i].usage = _arguments_info[i].usage
+
+        cdef list _arguments_metadata = method.get_argument_metadata_list()[1:]
+        cdef int *arguments_metadata = <int *>_gde_mem_alloc(len(_arguments_metadata) * cython.sizeof(int))
+        for i in range(len(_arguments_metadata)):
+            arguments_metadata[i] = <int>_arguments_metadata[i]
+
+        cdef GDExtensionClassMethodArgumentMetadata return_value_metadata = \
+            <GDExtensionClassMethodArgumentMetadata>method.get_return_metadata()
+
+        cdef str method_name = method.__name__
+        cdef StringName _method_name = StringName(method_name)
+
+        mi.name = _method_name._native_ptr()
         mi.method_userdata = <void *><PyObject *>method
         mi.call_func = &ExtensionMethod.bind_call
         mi.ptrcall_func = &ExtensionMethod.bind_ptrcall
         mi.method_flags = method.get_hint_flags()
         mi.has_return_value = method.has_return()
-        mi.return_value_info = return_value_info
-        mi.return_value_metadata = cython.operator.dereference(return_value_metadata)
-        mi.argument_count = method.get_argument_count()
+        mi.return_value_info = NULL # &return_value_info
+        mi.return_value_metadata = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
+        mi.argument_count = argsize
         mi.arguments_info = arguments_info
-        mi.arguments_metadata = arguments_metadata
+        mi.arguments_metadata = <GDExtensionClassMethodArgumentMetadata *>arguments_metadata
         mi.default_argument_count = method.get_default_argument_count()
         mi.default_arguments = def_args
 
         ref.Py_INCREF(method)
 
+        print("REG METHOD %s:%s %x" % (self.__name__, method.__name__, <uint64_t><PyObject *>method))
         cdef str name = self.__name__
-        _gde_classdb_register_extension_class_method(
-            gdextension_library, StringName(name)._native_ptr(), &mi)
+
+        _gde_classdb_register_extension_class_method(gdextension_library, SN(name).ptr(), &mi)
+
+        _gde_mem_free(def_args)
+        _gde_mem_free(arguments_info)
+        _gde_mem_free(arguments_metadata)

@@ -59,6 +59,13 @@ opts.Add(
 )
 opts.Add(
     BoolVariable(
+        key='install_python_stdlib_files',
+        help='Installs Python standard library',
+        default=True,
+    )
+)
+opts.Add(
+    BoolVariable(
         key='compile_python_stdlib',
         help='Compile library Python files to byte-code .pyc files',
         default=True,
@@ -269,6 +276,9 @@ copy_python_libs = []
 python_lib_files = Glob('lib/*/*.py')
 install_python_files(python_lib_files, 'runtime', copy_python_libs, 'lib', True)
 
-default_args = [library, copy, copy_python_libs, copy_python_deps]
+default_args = [library, copy, copy_python_libs]
+
+if env['install_python_stdlib_files']:
+    default_args += copy_python_deps
 
 Default(*default_args)

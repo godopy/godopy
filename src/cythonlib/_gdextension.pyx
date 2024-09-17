@@ -13,7 +13,8 @@ cimport _godot as gd
 import types
 
 include "shortcuts.pxi"
+include "typeconv.pxi"
 
-include "extension.pxi"
-include "extension_class.pxi"
 include "extension_method.pxi"
+include "extension_class.pxi"
+include "extension.pxi"

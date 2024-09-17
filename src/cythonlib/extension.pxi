@@ -1,6 +1,8 @@
 cdef class Extension(gd.Object):
     @staticmethod
     cdef void* _create_callback(void *p_token, void *p_instance) noexcept nogil:
+        with gil:
+            print("EXT CREATE CALLBACK %x" % <int64_t>p_instance)
         return NULL
 
     @staticmethod
@@ -20,20 +22,41 @@ cdef class Extension(gd.Object):
                                              GDExtensionBool p_reference) noexcept nogil:
         return True
 
-    def __init__(self, object godot_class):
-        self._binding_callbacks.create_callback = &Extension._create_callback
-        self._binding_callbacks.free_callback = &Extension._free_callback
-        self._binding_callbacks.reference_callback = &Extension._reference_callback
+    def __init__(self):
+        raise RuntimeError('Not supported, please use Extension.create')
 
-        if not isinstance(godot_class, (gd.Class, str)):
-            raise TypeError("'godot_class' argument must be a Class instance or a string")
+    @staticmethod
+    def create(object godot_class):
+        global registry
 
-        self.__godot_class__ = godot_class if isinstance(godot_class, gd.Class) \
-                                           else gd.Class(godot_class)
-        cdef str class_name = self.__godot_class__.__name__
-        self._owner = _gde_classdb_construct_object(StringName(class_name)._native_ptr())
+        # self._binding_callbacks.create_callback = &Extension._create_callback
+        # self._binding_callbacks.free_callback = &Extension._free_callback
+        # self._binding_callbacks.reference_callback = &Extension._reference_callback
+
+        if isinstance(godot_class, str):
+            try:
+                godot_class = registry[godot_class]
+            except KeyError:
+                raise NameError('Extension class %s not found' % godot_class)
+
+        if not isinstance(godot_class, ExtensionClass):
+            raise TypeError("Argument must be an ExtensionClass instance")
+        if not godot_class.is_registered:
+            raise RuntimeError('Extension class must be registered')
+
+        cdef str class_name = godot_class.__name__
+
+        cdef void *_owner = _gde_classdb_construct_object(StringName(class_name)._native_ptr())
+        print('CONSTRUCT EXT OBJ %x' % <uint64_t>_owner)
+
+        cdef Extension self = <Extension>_owner
+        self._owner = _owner
+        self.__godot_class__ = godot_class
+
         _gde_object_set_instance(self._owner, StringName(class_name)._native_ptr(), <void *><PyObject *>self)
         ref.Py_INCREF(self)
+        print('SET BINDING TO %x' % <uint64_t><PyObject *>self)
         _gde_object_set_instance_binding(self._owner,
-                                         StringName(class_name)._native_ptr(),
-                                         <void *><PyObject *>self, &self._binding_callbacks)
+                                        StringName(class_name)._native_ptr(),
+                                        <void *><PyObject *>self, &self._binding_callbacks)
+        ref.Py_INCREF(self)

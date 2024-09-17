@@ -7,7 +7,7 @@ cdef class Class:
         self.__name__ = name
         try:
             self._methods = pickle.loads(_method_data[name])
-        except IndexError:
+        except KeyError:
             raise NameError('Class %r not found' % name)
 
     def __call__(self):

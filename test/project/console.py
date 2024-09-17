@@ -48,12 +48,10 @@ class GodotInteractiveConsole(InteractiveConsole):
 
                 line = self.raw_input(prompt)
                 if line.strip() in ['exit', 'quit']:
-                    self.write("\n")
                     return
                 else:
                     more = self.push(line)
             except KeyboardInterrupt:
-                self.resetbuffer()
                 return
 
     def write(self, data):

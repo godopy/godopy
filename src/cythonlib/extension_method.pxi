@@ -1,3 +1,22 @@
+cdef class PropertyInfo:
+    cdef public int type
+    cdef public str name
+    cdef public str class_name
+    cdef public uint32_t hint
+    cdef public str hint_string
+    cdef public uint32_t usage
+
+    def __cinit__(self, int type, str name, str class_name, uint32_t hint=0, str hint_string='', uint32_t usage=0):
+        self.type = type
+        self.name = name
+        self.class_name = class_name
+        self.hint = hint
+        self.hint_string = hint_string
+        self.usage = usage
+
+    def __repr__(self):
+        return '<PropertyInfo %s:%s:%s>' % (self.class_name, self.name, vartype_to_str(self.type))
+
 cdef class ExtensionMethod:
     cdef ExtensionClass owner_class
     cdef object method
@@ -17,6 +36,7 @@ cdef class ExtensionMethod:
     cdef Variant bind_call_gil(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
                                const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
                                GDExtensionCallError *r_error):
+        print("METHOD CALL %x" % <uint64_t>p_instance)
         cdef ExtensionMethod self = <object>p_method_userdata
         cdef gd.Object wrapper = <object>p_instance
         cdef int i
@@ -41,6 +61,7 @@ cdef class ExtensionMethod:
                                GDExtensionClassInstancePtr p_instance,
                                const GDExtensionConstTypePtr *p_args,
                                GDExtensionTypePtr r_return):
+        print("METHOD PTRCALL %x" % <uint64_t>p_instance)
         cdef ExtensionMethod self = <object>p_method_userdata
         cdef gd.Object wrapper = <object>p_instance
         cdef size_t i = 0
@@ -54,62 +75,45 @@ cdef class ExtensionMethod:
         cdef Variant gd_ret = <Variant>ret
         set_variant_from_ptr(<Variant *>r_return, gd_ret)
 
-    cdef GDExtensionVariantPtr *get_default_arguments(self):
-        cdef vector[GDExtensionVariantPtr] def_args
-        def_args.resize(len(self.method.__defaults__))
-        cdef Variant arg
-        for i in range(len(self.method.__defaults__)):
-            arg = <Variant>self.method.__defaults__[i]
-            def_args[i] = <GDExtensionVariantPtr>&arg
+    cdef list get_default_arguments(self):
+        if self.method.__defaults__ is None:
+            return []
+        return [arg for arg in self.method.__defaults__]
 
-        return def_args.data()
-
-    cdef GDExtensionPropertyInfo get_argument_info(self, int pos):
-        cdef GDExtensionPropertyInfo pi
-
-        pi.type = GDEXTENSION_VARIANT_TYPE_NIL  # Get from func.__anotations__ if possible
-        pi.name = NULL
-        cdef str class_name = self.method.owner_class.__name__
-        pi.class_name = StringName(class_name)._native_ptr()
-        pi.hint = 0
-        pi.hint_string = NULL
-        pi.usage = 0
-
-        cdef object varname = None
-        cdef StringName _name
+    cdef PropertyInfo get_argument_info(self, int pos):
+        cdef PropertyInfo pi = PropertyInfo(
+            <int>GDEXTENSION_VARIANT_TYPE_FLOAT,
+            '',
+            self.owner_class.__name__
+        )
         if pos >= 0:
             try:
-                varname = self.method.__code__.co_varnames[pos]
-                pi.name = StringName(<str>varname)._native_ptr()
+                pi.name = self.method.__code__.co_varnames[pos]
             except IndexError:
-                pass
+                gd._push_error('Argname is missing in method %s, pos %d' % (self.method.__name__, pos))
 
         return pi
 
-    cdef GDExtensionPropertyInfo *get_argument_info_list(self):
-        cdef vector[GDExtensionPropertyInfo] arg_info
+    cdef PropertyInfo get_return_info(self):
+        return PropertyInfo(
+            <int>GDEXTENSION_VARIANT_TYPE_NIL,
+            '',
+            self.owner_class.__name__
+        )
 
-        cdef int i
-        cdef argcount = self.argument_count()
-        arg_info.reserve(argcount + 1) # 0 is return value
-        for i in range(argcount + 1):
-            arg_info.push_back(self.get_argument_info(i - 1))
+    cdef list get_argument_info_list(self):
+        return [self.get_argument_info(i) for i in range(self.get_argument_count())]
 
-        return arg_info.data()
 
-    cdef GDExtensionClassMethodArgumentMetadata *get_argument_metadata_list(self):
-        cdef vector[GDExtensionClassMethodArgumentMetadata] meta_info
+    cdef int get_return_metadata(self):
+        return <int>GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
 
-        cdef int i
-        cdef argcount = self.argument_count()
-        meta_info.reserve(argcount + 1) # 0 is return value
-        for i in range(argcount + 1):
-            meta_info.push_back(GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE)
-
-        return meta_info.data()
+    cdef list get_argument_metadata_list(self):
+        cdef size_t i
+        return [<int>GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE for i in range(self.get_argument_count())]
 
     cdef GDExtensionBool has_return(self):
-        return <GDExtensionBool>bool(self.method.annotations.get('return'))
+        return <GDExtensionBool>bool(self.method.__annotations__.get('return'))
 
     cdef uint32_t get_hint_flags(self):
         return 0
@@ -118,6 +122,8 @@ cdef class ExtensionMethod:
         return <uint32_t>self.method.__code__.co_argcount
 
     cdef uint32_t get_default_argument_count(self):
+        if self.method.__defaults__ is None:
+            return 0
         return <uint32_t>len(self.method.__defaults__)
 
     def __init__(self, ExtensionClass owner_class, object method: types.FunctionType):

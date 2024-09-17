@@ -8,10 +8,10 @@ cdef extern from "godot_cpp/variant/string.hpp" namespace "godot" nogil:
         String(const char *)
         String(str)
         String(bytes)
-
         bint operator==(const String&)
         bint operator==(const char *)
         bint operator!=(const String&)
+        bint operator!=(const char *)
 
         CharString utf8()
         bytes py_bytes()
