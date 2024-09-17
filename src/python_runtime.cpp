@@ -180,8 +180,8 @@ void PythonRuntime::run_simple_string(const String &p_string) {
 	PyGILState_Release(gil_state);
 }
 
-PythonObject *PythonRuntime::import_module(const String &p_name) {
-	PythonObject *module = memnew(PythonObject);
+Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
+	Ref<PythonObject> module = memnew(PythonObject);
 	module->set_name(p_name);
 
 	PyGILState_STATE gil_state = PyGILState_Ensure();
@@ -228,7 +228,7 @@ void Python::run_simple_string(const String &p_string) {
 	PythonRuntime::get_singleton()->run_simple_string(p_string);
 }
 
-PythonObject *Python::import_module(const String &p_name) {
+Ref<PythonObject> Python::import_module(const String &p_name) {
 	return PythonRuntime::get_singleton()->import_module(p_name);
 }
 

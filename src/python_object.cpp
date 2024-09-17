@@ -64,8 +64,8 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
     return ret;
 }
 
-PythonObject *PythonObject::getattr(const String &p_attr_name) {
-    PythonObject *object = memnew(PythonObject);
+Ref<PythonObject> PythonObject::getattr(const String &p_attr_name) {
+    Ref<PythonObject> object = memnew(PythonObject);
     object->__name__ = p_attr_name;
 
     PyGILState_STATE gil_state = PyGILState_Ensure();
