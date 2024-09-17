@@ -9,7 +9,6 @@
 PyMODINIT_FUNC PyInit__godot(void);
 PyMODINIT_FUNC PyInit__gdextension(void);
 PyMODINIT_FUNC PyInit__vector_types(void);
-PyMODINIT_FUNC PyInit__godot_core_singletons(void);
 
 using namespace godot;
 
@@ -139,7 +138,6 @@ void PythonRuntime::initialize() {
 	PyImport_AppendInittab("_godot", PyInit__godot);
 	PyImport_AppendInittab("_gdextension", PyInit__gdextension);
 	PyImport_AppendInittab("_vector_types", PyInit__vector_types);
-	PyImport_AppendInittab("_godot_core_singletons", PyInit__godot_core_singletons);
 
 	PyConfig_InitIsolatedConfig(&config);
 

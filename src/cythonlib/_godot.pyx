@@ -10,12 +10,10 @@ _print = print # print will be redefined for _godot module, keep the original
 
 include "api_data.pxi"
 include "shortcuts.pxi"
-include "type_converters.pxi"
 
 include "object.pxi"
 include "method_bind.pxi"
 include "class.pxi"
 
 include "io.pxi"
-
 include "register_types_hooks.pxi"

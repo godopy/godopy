@@ -18,7 +18,7 @@ cdef class MethodBind:
             _gde_mem_alloc(len(args) * cython.sizeof(GDExtensionConstTypePtr))
         cdef int i
         for i in range(len(args)):
-            arg = variant_from_pyobject(args[i])
+            arg = <Variant>args[i]
             p_args[i] = &arg
 
         cdef bint unknown_type_error = False
@@ -66,13 +66,13 @@ cdef class UtilityFunction:
     cpdef object _call_internal(self, tuple args):
         cdef Variant ret
         cdef Variant arg
-        cdef int i
-        cdef int size = len(args)
+        cdef size_t i
+        cdef size_t size = len(args)
         cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *>\
             _gde_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
 
         for i in range(size):
-            arg = variant_from_pyobject(args[i])
+            arg = <Variant>args[i]
             p_args[i] = &arg
 
         cdef bint unknown_type_error = False

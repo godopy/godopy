@@ -59,7 +59,7 @@ cdef class ExtensionMethod:
         def_args.resize(len(self.method.__defaults__))
         cdef Variant arg
         for i in range(len(self.method.__defaults__)):
-            arg = variant_from_pyobject(self.method.__defaults__[i])
+            arg = <Variant>self.method.__defaults__[i]
             def_args[i] = <GDExtensionVariantPtr>&arg
 
         return def_args.data()
