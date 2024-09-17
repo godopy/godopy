@@ -1,14 +1,20 @@
-def using_clang(env):
-    return False
+import os
 
-def disable_warnings(self):
-    # 'self' is the environment
-    if self.msvc and not using_clang(self):
+def normalize_path(val, env):
+    return val if os.path.isabs(val) else os.path.join(env.Dir('#').abspath, val)
+
+
+def validate_parent_dir(key, val, env):
+    if not os.path.isdir(normalize_path(os.path.dirname(val), env)):
+        raise UserError("'%s' is not a directory: %s" % (key, os.path.dirname(val)))
+
+def disable_warnings(env):
+    if env['platform'] == 'windows':
         # We have to remove existing warning level defines before appending /w,
         # otherwise we get: "warning D9025 : overriding '/W3' with '/w'"
-        self["CCFLAGS"] = [x for x in self["CCFLAGS"] if not (x.startswith("/W") or x.startswith("/w"))]
-        self["CFLAGS"] = [x for x in self["CFLAGS"] if not (x.startswith("/W") or x.startswith("/w"))]
-        self["CXXFLAGS"] = [x for x in self["CXXFLAGS"] if not (x.startswith("/W") or x.startswith("/w"))]
-        self.AppendUnique(CCFLAGS=["/w"])
+        env["CCFLAGS"] = [x for x in env["CCFLAGS"] if not (x.startswith("/W") or x.startswith("/w"))]
+        env["CFLAGS"] = [x for x in env["CFLAGS"] if not (x.startswith("/W") or x.startswith("/w"))]
+        env["CXXFLAGS"] = [x for x in env["CXXFLAGS"] if not (x.startswith("/W") or x.startswith("/w"))]
+        env.AppendUnique(CCFLAGS=["/w"])
     else:
-        self.AppendUnique(CCFLAGS=["-w"])
+        env.AppendUnique(CCFLAGS=["-w"])

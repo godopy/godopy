@@ -81,13 +81,13 @@ int set_config_paths(PyConfig *config) {
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "bin/pystdlib/runtime")
+		_wide_string_from_string(res_path + "lib/runtime")
 	);
 	CHECK_PYSTATUS(status, 1);
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_string(res_path + "bin/pystdlib/runtime/site-packages")
+		_wide_string_from_string(res_path + "lib/runtime/site-packages")
 	);
 	CHECK_PYSTATUS(status, 1);
 
@@ -116,22 +116,15 @@ int set_config_paths(PyConfig *config) {
 
 		status = PyWideStringList_Append(
 			&config->module_search_paths,
-			_wide_string_from_string(res_path + "/bin/pystdlib/editor")
+			_wide_string_from_string(res_path + "lib/editor")
 		);
 		CHECK_PYSTATUS(status, 1);
 
 		status = PyWideStringList_Append(
 			&config->module_search_paths,
-			_wide_string_from_string(res_path + "/bin/pystdlib/editor/site-packages")
+			_wide_string_from_string(res_path + "lib/editor/site-packages")
 		);
 		CHECK_PYSTATUS(status, 1);
-
-		status = PyWideStringList_Append(
-			&config->module_search_paths,
-			_wide_string_from_string(res_path + "bin/windows/dylib/runtime")
-		);
-		CHECK_PYSTATUS(status, 1);
-
 	}
 
 
@@ -158,7 +151,7 @@ void PythonRuntime::initialize() {
 	config.site_import = 0;
 	// config.faulthandler = 0;
 	// config.user_site_directory = 0;
-	// config.install_signal_handlers = 0;
+	config.install_signal_handlers = 0;
 	config.module_search_paths_set = 1;
 
 	// FIXME: custom faulthandler?

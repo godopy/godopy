@@ -2,41 +2,15 @@
 import os
 import shutil
 import py_compile
-import scons_methods
+from scons_methods import *
 from binding_generator import scons_generate_bindings, scons_emit_files
-
-def normalize_path(val, env):
-    return val if os.path.isabs(val) else os.path.join(env.Dir('#').abspath, val)
-
-
-def validate_parent_dir(key, val, env):
-    if not os.path.isdir(normalize_path(os.path.dirname(val), env)):
-        raise UserError("'%s' is not a directory: %s" % (key, os.path.dirname(val)))
 
 libname = 'GodoPy'
 projectdir = 'test/project'
 
-localEnv = Environment(tools=['default'], PLATFORM='')
+env = Environment(tools=['default'], PLATFORM='')
 
-customs = ['custom.py']
-customs = [os.path.abspath(path) for path in customs]
-
-opts = Variables(customs, ARGUMENTS)
-opts.Add(
-    BoolVariable(
-        key='compiledb',
-        help='Generate compilation DB (`compile_commands.json`) for external tools',
-        default=localEnv.get('compiledb', False),
-    )
-)
-opts.Add(
-    PathVariable(
-        key='compiledb_file',
-        help='Path to a custom `compile_commands.json` file',
-        default=localEnv.get('compiledb_file', 'compile_commands.json'),
-        validator=validate_parent_dir,
-    )
-)
+opts = Variables()
 opts.Add(
     BoolVariable(
         key='python_debug',
@@ -55,7 +29,7 @@ opts.Add(
 )
 opts.Add(
     BoolVariable(
-        key='clean_python_stdlib',
+        key='clean_python_files',
         help='Delete all previously installed files before copying Python standard library',
         default=False,
     )
@@ -71,28 +45,19 @@ opts.Add(
     PathVariable(
         key='project_dir',
         help='Path to a Godot project where the extension should be installed',
-        default=localEnv.get('project_dir', projectdir),
+        default=projectdir,
         validator=validate_parent_dir,
     )
 )
-opts.Update(localEnv)
+opts.Update(env)
 
-Help(opts.GenerateHelpText(localEnv))
-
-env = localEnv.Clone()
-env['compiledb'] = False
+Help(opts.GenerateHelpText(env))
 
 projectdir = env['project_dir']
 
-env.Tool('compilation_db')
-compilation_db = env.CompilationDatabase(
-    normalize_path(localEnv['compiledb_file'], localEnv)
-)
-env.Alias('compiledb', compilation_db)
+env = SConscript('godot-cpp/SCsub', {'env': env})
 
-env = SConscript('godot-cpp/SConstruct', {'env': env, 'customs': customs})
-
-env.mscv = env['platform'] == 'windows'
+# env.mscv = env['platform'] == 'windows'
 
 env.Append(CPPPATH=['src/'])
 sources = Glob('src/*.cpp')
@@ -107,8 +72,7 @@ if env['platform'] == 'windows':
 # TODO: Other platforms
 
 env_cython = env.Clone()
-env_cython.msvc = env.mscv
-scons_methods.disable_warnings(env_cython)
+disable_warnings(env_cython)
 
 cython_opts = ' '.join([
     '-3',
@@ -152,6 +116,7 @@ bindings = env.GodoPyBindings(
         "binding_generator.py",
     ],
 )
+
 # Forces bindings regeneration.
 if env["generate_bindings"]:
     env.AlwaysBuild(bindings)
@@ -227,51 +192,47 @@ else:
     python_runtime_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
     python_editor_dylib_files = []
 
-runtime_modules = set()
 
-if env['clean_python_stdlib']:
+if env['clean_python_files']:
     shutil.rmtree(os.path.join(projectdir, 'bin', 'windows', 'dylib'), ignore_errors=True)
-    shutil.rmtree(os.path.join(projectdir, 'bin', 'pystdlib'), ignore_errors=True)
-
-for srcfile in python_runtime_lib_files:
-    folder, pyfile = os.path.split(str(srcfile))
-    while folder and folder.lower() != 'lib':
-        folder, parent = os.path.split(folder)
-        pyfile = os.path.join(parent, pyfile)
-    if env['compile_python_stdlib']:
-        pyfile += 'c'
-    runtime_modules.add(srcfile)
-    dstfile = os.path.join(projectdir, 'bin', 'pystdlib', 'runtime', pyfile)
-    if env['compile_python_stdlib']:
-        copy_python_deps.append(env.CompilePyc(dstfile, srcfile))
-    else:
-        copy_python_deps.append(env.InstallAs(dstfile, srcfile))
-
-for srcfile in python_editor_lib_files:
-    if srcfile in runtime_modules:
-        continue
-    folder, pyfile = os.path.split(str(srcfile))
-    while folder and folder.lower() != 'lib':
-        folder, parent = os.path.split(folder)
-        pyfile = os.path.join(parent, pyfile)
-    if env['compile_python_stdlib']:
-        pyfile += 'c'
-    dstfile = os.path.join(projectdir, 'bin', 'pystdlib', 'editor', pyfile)
-    if env['compile_python_stdlib']:
-        copy_python_deps.append(env.CompilePyc(dstfile, srcfile))
-    else:
-        copy_python_deps.append(env.InstallAs(dstfile, srcfile))
-
-for srcfile in python_runtime_dylib_files:
-    pyfile = os.path.basename(str(srcfile))
-    dstfile = os.path.join(projectdir, 'bin', 'windows', 'dylib', 'runtime', pyfile)
-    copy_python_deps.append(env.InstallAs(dstfile, srcfile))
+    shutil.rmtree(os.path.join(projectdir, 'lib'), ignore_errors=True)
 
 
-for srcfile in python_editor_dylib_files:
-    pyfile = os.path.basename(str(srcfile))
-    dstfile = os.path.join(projectdir, 'bin', 'windows', 'dylib', 'editor', pyfile)
-    copy_python_deps.append(env.InstallAs(dstfile, srcfile))
+runtime_modules = set()
+src_pylib_root = os.path.join('python', 'lib')
+
+def install_python_files(source_files, target_lib='runtime',
+                         scons_target=copy_python_deps,
+                         root_path=src_pylib_root, site_packages=False):    
+    for srcfile in source_files:
+        if target_lib != 'runtime' and srcfile in runtime_modules:
+            continue
+        folder, pyfile = os.path.split(str(srcfile))
+        while folder and folder.lower() != root_path:
+            folder, parent = os.path.split(folder)
+            pyfile = os.path.join(parent, pyfile)
+        if env['compile_python_stdlib']:
+            pyfile += 'c'
+        if target_lib == 'runtime':
+            runtime_modules.add(srcfile)
+        if site_packages:
+            target_lib = os.path.join(target_lib, 'site-packages')
+        dstfile = os.path.join(projectdir, 'lib', target_lib, pyfile)
+        if env['compile_python_stdlib']:
+            scons_target.append(env.CompilePyc(dstfile, srcfile))
+        else:
+            scons_target.append(env.InstallAs(dstfile, srcfile))
+
+def install_python_dylib_files(source_files, target_lib='runtime', scons_target=copy_python_deps):
+    for srcfile in source_files:
+        pyfile = os.path.basename(str(srcfile))
+        dstfile = os.path.join(projectdir, 'bin', 'windows', 'dylib', target_lib, pyfile)
+        scons_target.append(env.InstallAs(dstfile, srcfile))
+
+install_python_files(python_runtime_lib_files)
+install_python_files(python_editor_lib_files, 'editor')
+install_python_dylib_files(python_runtime_dylib_files)
+install_python_dylib_files(python_editor_dylib_files, 'editor')
 
 if env['platform'] == 'windows':
     # Extension DLL requires Python DLL
@@ -282,15 +243,8 @@ if env['platform'] == 'windows':
 
 copy_python_libs = []
 python_lib_files = Glob('lib/*/*.py')
-for srcfile in python_lib_files:
-    folder, pyfile = os.path.split(str(srcfile))
-    while folder != 'lib':
-        folder, parent = os.path.split(folder)
-        pyfile = os.path.join(parent, pyfile)
-    dstfile = os.path.join(projectdir, 'bin', 'pystdlib', 'runtime', 'site-packages',  pyfile)
-    copy_python_libs.append(env.InstallAs(dstfile, srcfile))
+install_python_files(python_lib_files, 'runtime', copy_python_libs, 'lib', True)
 
 default_args = [library, copy, copy_python_libs, copy_python_deps]
-if localEnv.get('compiledb', False):
-    default_args += [compilation_db]
+
 Default(*default_args)
