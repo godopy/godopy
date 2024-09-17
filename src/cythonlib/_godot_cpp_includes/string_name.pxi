@@ -7,5 +7,6 @@ cdef extern from "godot_cpp/variant/string_name.hpp" namespace "godot" nogil:
         StringName(bytes)
 
         void *_native_ptr()
+        void *ptr "_native_ptr" ()
         bytes py_bytes()
         str py_str()

@@ -5,11 +5,10 @@ cdef class Class:
     """
     def __init__(self, str name):
         self.__name__ = name
+        try:
+            self._methods = pickle.loads(_method_data[name])
+        except IndexError:
+            raise NameError('Class %r not found' % name)
 
     def __call__(self):
         return Object(self)
-
-
-cdef class SingletonClass(Class):
-    def __call__(self):
-        return Singleton(self)

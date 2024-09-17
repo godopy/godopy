@@ -10,7 +10,7 @@ from SCons.Tool import Tool
 from SCons.Variables import BoolVariable, EnumVariable, PathVariable
 from SCons.Variables.BoolVariable import _text2bool
 
-from binding_generator import scons_emit_files, scons_generate_bindings
+from cpp_binding_generator import scons_emit_files, scons_generate_bindings
 
 
 def add_sources(sources, dir, extension):
@@ -528,7 +528,7 @@ def _godot_cpp(env):
         [
             api_file,
             os.path.join(extension_dir, "gdextension_interface.h"),
-            "../binding_generator.py",
+            "../cpp_binding_generator.py",
         ],
     )
     # Forces bindings regeneration.

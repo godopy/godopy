@@ -6,6 +6,7 @@ from cpython cimport ref, PyObject
 
 cdef class Object:
     cdef void *_owner
+    cdef bint is_singleton
     cdef GDExtensionInstanceBindingCallbacks _binding_callbacks
     cdef readonly Class __godot_class__
 
@@ -28,33 +29,23 @@ cdef class Object:
     cdef GDExtensionBool _reference_callback(void *p_token, void *p_instance,
                                              GDExtensionBool p_reference) noexcept nogil
 
-cdef class Singleton(Object):
-    pass
-
 cdef class Class:
+    cdef dict _methods
     cdef str __name__
 
-cdef class SingletonClass(Class):
-    pass
-
-cdef class MethodBindRet:
+cdef class MethodBind:
     cdef void *_owner
     cdef GDExtensionMethodBindPtr _gde_mb
     cdef str returning_type
     cdef Variant _ptrcall_string(self, GDExtensionConstTypePtr *p_args) noexcept nogil
     cpdef object _call_internal(self, tuple args)
 
-cdef class MethodBindNoRet(MethodBindRet):
-    pass
-
-cdef class UtilityFunctionRet:
+cdef class UtilityFunction:
     cdef GDExtensionPtrUtilityFunction _gde_uf
+    cdef str returning_type
     cpdef object _call_internal(self, tuple args)
 
-cdef class UtilityFunctionNoRet(UtilityFunctionRet):
-    pass
-
-cdef UtilityFunctionNoRet _printraw
-cdef UtilityFunctionNoRet _print_rich
-cdef UtilityFunctionNoRet _push_error
-cdef UtilityFunctionNoRet _push_warning
+cdef UtilityFunction _printraw
+cdef UtilityFunction _print_rich
+cdef UtilityFunction _push_error
+cdef UtilityFunction _push_warning

@@ -1,3 +1,6 @@
+ctypedef StringName SN
+ctypedef Variant V
+
 cdef GDExtensionInterfaceGetGodotVersion _gde_get_godot_version = gdextension_interface_get_godot_version
 cdef GDExtensionInterfaceMemAlloc _gde_mem_alloc = gdextension_interface_mem_alloc
 cdef GDExtensionInterfaceMemRealloc _gde_mem_realloc = gdextension_interface_mem_realloc

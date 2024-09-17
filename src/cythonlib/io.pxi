@@ -1,27 +1,25 @@
-cdef UtilityFunctionNoRet _printraw = UtilityFunctionNoRet('printraw', 2648703342)
-cdef UtilityFunctionNoRet _print_rich = UtilityFunctionNoRet('print_rich', 2648703342)
-cdef UtilityFunctionNoRet _push_error = UtilityFunctionNoRet('push_error', 2648703342)
-cdef UtilityFunctionNoRet _push_warning = UtilityFunctionNoRet('push_warning', 2648703342)
+cdef UtilityFunction _printraw = UtilityFunction('printraw')
+cdef UtilityFunction _print_rich = UtilityFunction('print_rich')
+cdef UtilityFunction _push_error = UtilityFunction('push_error')
+cdef UtilityFunction _push_warning = UtilityFunction('push_warning')
 
-print = UtilityFunctionNoRet('print', 2648703342)
-printerr = UtilityFunctionNoRet('printerr', 2648703342)
-printt = UtilityFunctionNoRet('printt', 2648703342)
-prints = UtilityFunctionNoRet('prints', 2648703342)
-printverbose = UtilityFunctionNoRet('print_verbose', 2648703342)
+print = UtilityFunction('print')
+printerr = UtilityFunction('printerr')
+printt = UtilityFunction('printt')
+prints = UtilityFunction('prints')
+printverbose = UtilityFunction('print_verbose')
 
 print_rich = _print_rich
 printraw = _printraw
 push_error = _push_error
 push_warningg = _push_warning
 
-_OS = Singleton('OS')
-_OS__read_string_from_stdin = MethodBindRet(_OS, 'read_string_from_stdin', 2841200299, 'String')
 
 cpdef input(str prompt=None):
     if prompt is not None:
         printraw(prompt)
 
-    return _OS__read_string_from_stdin()
+    return OS.get_singleton().read_string_from_stdin()
 
 
 cdef class StdoutWriter:

@@ -3,4 +3,4 @@ cdef extern from "godot_cpp/classes/os.hpp" namespace "godot" nogil:
         @staticmethod
         OS *get_singleton()
 
-        String read_string_from_stdin()
+        object read_string_from_stdin()

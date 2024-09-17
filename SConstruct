@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import scons_methods
+from binding_generator import scons_generate_bindings, scons_emit_files
 
 def normalize_path(val, env):
     return val if os.path.isabs(val) else os.path.join(env.Dir('#').abspath, val)
@@ -93,6 +94,7 @@ cython_opts = ' '.join([
     '--gdb' if env['debug_symbols'] else '',
     '-EWITH_THREAD=1',
     '-Isrc/cythonlib',
+    '-Igen/cythonlib',
     '-Igdextension',
     '-o',
     '$TARGET',
@@ -104,14 +106,34 @@ cython_builder = Builder(
     suffix='.cpp',
     src_suffox='.pyx'
 )
-env_cython.Append(BUILDERS={'CythonSource': cython_builder})
+env_cython.Append(BUILDERS={
+    'CythonSource': cython_builder,
+    'GodoPyBindings': Builder(action=Action(scons_generate_bindings), emitter=scons_emit_files),
+})
+
+extension_dir = normalize_path(env_cython.get("gdextension_dir", env.Dir("gdextension").abspath), env)
+api_file = normalize_path(env_cython.get("custom_api_file", env.File(extension_dir + "/extension_api.json").abspath), env)
+bindings = env_cython.GodoPyBindings(
+    env_cython.Dir("."),
+    [
+        api_file,
+        os.path.join(extension_dir, "gdextension_interface.h"),
+        "binding_generator.py",
+    ],
+)
+# Forces bindings regeneration.
+if env["generate_bindings"]:
+    env_cython.AlwaysBuild(bindings)
+    env_cython.NoCache(bindings)
 
 cython_sources = [
     env_cython.CythonSource('src/cythonlib/_godot.pyx'),
-    env_cython.CythonSource('src/cythonlib/_gdextension.pyx')
+    env_cython.CythonSource('src/cythonlib/_gdextension.pyx'),
+    env_cython.CythonSource('src/cythonlib/_godot_core_singletons.pyx')
 ]
 
 cython_depends = [
+    bindings,
     *Glob('src/cythonlib/*.pxi'),
     *Glob('src/cythonlib/*.pxd'),
     *Glob('src/cythonlib/_godot_cpp_includes/*.pxi'),

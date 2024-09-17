@@ -4,6 +4,8 @@ from libc.stddef cimport wchar_t
 cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
     cdef cppclass String
     cdef cppclass StringName
+    cdef cppclass Array
+    cdef cppclass Dictionary
 
     cdef cppclass Variant:
         Variant()
@@ -17,6 +19,8 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
         Variant(double)
         Variant(const String &)
         Variant(const StringName &)
+        Variant(const Array &)
+        Vartiant(const Dictionary &)
         Variant(const char *)
         Variant(const wchar_t *)
         Variant(object)

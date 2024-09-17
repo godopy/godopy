@@ -12,7 +12,7 @@ cimport _godot as gd
 
 import types
 
-include "gde_shortcuts.pxi"
+include "shortcuts.pxi"
 include "type_converters.pxi"
 
 include "extension.pxi"

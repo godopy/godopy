@@ -9,8 +9,9 @@ demo/bin/*/*
 !demo/bin/*.gdextension
 .sconsign*.dblite
 
-src/gen
-godot-cpp/gen
+
+gen/
+godot-cpp/gen/
 
 # Ignore custom.py
 custom.py

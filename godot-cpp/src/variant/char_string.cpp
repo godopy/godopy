@@ -188,6 +188,10 @@ String::String(const PyObject *from) {
 	}
 }
 
+String::operator PyObject *() const {
+	return py_str();
+}
+
 String String::utf8(const char *from, int64_t len) {
 	String ret;
 	ret.parse_utf8(from, len);
