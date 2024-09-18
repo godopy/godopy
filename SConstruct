@@ -230,14 +230,17 @@ def install_extension_shared_lib(env, library):
     return copy
 
 class PythonInstaller:
-    def __init__(self, sources, root_path):
+    def __init__(self, env, sources, root_path):
         self.runtime_modules = set()
         self.root = root_path # os.path.join('python', 'lib')
+        self.env = env
         self.sources = sources
 
     def install(self, files, target_lib='runtime', site_packages=False):
+        projectdir = self.env['project_dir']
+
         for srcfile in files:
-            if target_lib != 'runtime' and srcfile in runtime_modules:
+            if target_lib != 'runtime' and srcfile in self.runtime_modules:
                 continue
 
             folder, pyfile = os.path.split(str(srcfile))
@@ -263,10 +266,13 @@ class PythonInstaller:
                 self.sources.append(env.InstallAs(dstfile, srcfile))
 
 class PythonDylibInstaller:
-    def __init__(self, sources):
+    def __init__(self, env, sources):
+        self.env = env
         self.sources = sources
 
     def install(self, files, target_lib='runtime'):
+        projectdir = self.env['project_dir']
+
         for srcfile in files:
             pyfile = os.path.basename(str(srcfile))
             dstfile = os.path.join(projectdir, 'bin', 'windows', 'dylib', target_lib, pyfile)
@@ -274,6 +280,7 @@ class PythonDylibInstaller:
 
 
 def install_python_standard_library(env):
+    projectdir = env['project_dir']
     libs = []
 
     if env['minimal_python_stdlib']:
@@ -293,13 +300,24 @@ def install_python_standard_library(env):
         python_runtime_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
         python_editor_dylib_files = []
 
-    installer = PythonInstaller(libs, os.path.join('python', 'lib'))
-    dylib_installer = PythonDylibInstaller(libs)
+    installer = PythonInstaller(env, libs, os.path.join('python', 'lib'))
+    dylib_installer = PythonDylibInstaller(env, libs)
 
     installer.install(python_runtime_lib_files)
     installer.install(python_editor_lib_files, 'editor')
     dylib_installer.install(python_runtime_dylib_files)
     dylib_installer.install(python_editor_dylib_files, 'editor')
+
+
+    libs.append(env.InstallAs(
+        os.path.join(projectdir, 'lib', '.gdignore'),
+        '.gdignore'
+    ))
+
+    libs.append(env.InstallAs(
+        os.path.join(projectdir, 'bin', 'windows', 'dylib', '.gdignore'),
+        '.gdignore'
+    ))
 
     return libs
 
@@ -308,7 +326,7 @@ def install_godopy_python_libs(env):
     libs = []
     files = Glob('lib/*/*.py') + Glob('lib/*/*/*.py') + Glob('lib/*/*/*/*.py')
 
-    installer = PythonInstaller(libs, 'lib')
+    installer = PythonInstaller(env, libs, 'lib')
     installer.install(files, 'runtime', True)
 
     return libs
@@ -319,6 +337,7 @@ env = Environment(tools=['default'], PLATFORM='')
 build_opts(env)
 
 if env['clear_python_files']:
+    projectdir = env['project_dir']
     shutil.rmtree(os.path.join(projectdir, 'bin', 'windows', 'dylib'), ignore_errors=True)
     shutil.rmtree(os.path.join(projectdir, 'lib'), ignore_errors=True)
 
