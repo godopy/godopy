@@ -3,8 +3,10 @@ from cpython cimport ref
 from libcpp.vector cimport vector
 from cython.operator cimport dereference as deref
 
+import io
 import sys
 import pickle
+import traceback
 
 _print = print # print will be redefined for _godot module, keep the original
 
@@ -16,4 +18,4 @@ include "object.pxi"
 include "method_bind.pxi"
 
 include "io.pxi"
-include "register_types_hooks.pxi"
+include "register_types.pxi"

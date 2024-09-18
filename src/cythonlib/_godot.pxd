@@ -46,7 +46,9 @@ cdef class UtilityFunction:
     cpdef object _call_internal(self, tuple args)
 
 cdef UtilityFunction __print
+cdef UtilityFunction _printerr
 cdef UtilityFunction _printraw
+cdef UtilityFunction _print_verbose
 cdef UtilityFunction _print_rich
 cdef UtilityFunction _push_error
 cdef UtilityFunction _push_warning

@@ -1,15 +1,17 @@
 cdef UtilityFunction __print = UtilityFunction('print')
+cdef UtilityFunction _printerr = UtilityFunction('printerr')
 cdef UtilityFunction _printraw = UtilityFunction('printraw')
+cdef UtilityFunction _print_verbose = UtilityFunction('print_verbose')
 cdef UtilityFunction _print_rich = UtilityFunction('print_rich')
 cdef UtilityFunction _push_error = UtilityFunction('push_error')
 cdef UtilityFunction _push_warning = UtilityFunction('push_warning')
 
-printerr = UtilityFunction('printerr')
 printt = UtilityFunction('printt')
 prints = UtilityFunction('prints')
-printverbose = UtilityFunction('print_verbose')
 
 print = __print
+printerr = _printerr
+print_verbose = _print_verbose
 print_rich = _print_rich
 printraw = _printraw
 push_error = _push_error

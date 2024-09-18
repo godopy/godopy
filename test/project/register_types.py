@@ -1,25 +1,9 @@
 import sys
 import math
 import godot as gd
-import _gdextension as gde
+from godot import extension as gde
 # from _vector_types import Vector2
 
-GDExample = gde.ExtensionClass('GDExample', 'Sprite2D')
-
-# @GDExample.add_method
-def __init__(self):
-    self.time_passed: float = 0.0
-
-# @GDExample.add_method
-def _process(self, delta: float) -> None:
-    self.time_passed += delta
-    new_position = (
-        10.0 + (10.0 * math.sin(self.time_passed * 2.0)),
-        10.0 + (10.0 * math.cos(self.time_passed * 1.5))
-    )
-
-    set_position = gd.MethodBind(self, 'set_position')
-    set_position(new_position)
 
 def initialize():
     lines = ["Active Python paths:"]
@@ -29,8 +13,43 @@ def initialize():
     gd.print_rich('[color=gray]%s[/color]\n' % '\n'.join(lines))
 
 
-GDExample.add_methods(__init__, _process)
+def gdexample():
+    GDExample = gde.ExtensionClass('GDExample', 'Sprite2D')
+
+    def __init__(self):
+        self.time_passed: float = 0.0
+
+    def _process(self, delta: float) -> None:
+        self.time_passed += delta
+        new_position = (
+            10.0 + (10.0 * math.sin(self.time_passed * 2.0)),
+            10.0 + (10.0 * math.cos(self.time_passed * 1.5))
+        )
+
+        set_position = gd.MethodBind(self, 'set_position')
+        set_position(new_position)
+
+    GDExample.add_methods(__init__, _process)
+
+    return GDExample
+
+
+def console():
+    TerminalConsole = gde.ExtensionClass('TerminalConsole', 'SceneTree')
+
+    def _init(self):
+        from godopy.contrib.console import terminal
+
+        terminal.interact()
+
+        quit = gd.MethodBind(self, 'quit')
+        quit()
+
+    TerminalConsole.add_methods(_init)
+
+    return TerminalConsole
 
 
 def register():
-    GDExample.register()
+    gdexample().register()
+    console().register()

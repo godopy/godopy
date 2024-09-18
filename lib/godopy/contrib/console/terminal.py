@@ -2,17 +2,15 @@ import sys
 import atexit  
 from code import InteractiveConsole
 
-import _godot as gd
+import godot as gd
 
-class GodotInteractiveConsole(InteractiveConsole):
+class GodotTerminalConsole(InteractiveConsole):
     def __init__(self):
         super().__init__({
             "__name__": "__console__",
             "__doc__": None,
             "print_rich": gd.print_rich
         })
-        # OS = gd.GodotSingleton('OS')
-        # self._godot_input = gd.GodotMethodBindRet(OS, 'read_string_from_stdin', 2841200299, 'String')
 
     def interact(self, banner):
         try:
@@ -62,13 +60,14 @@ class GodotInteractiveConsole(InteractiveConsole):
 
 
 def interact(godot_version=None):
-    console = GodotInteractiveConsole()
+    console = GodotTerminalConsole()
 
-    console.interact(
-        banner=''.join([
-            f'| Python version {sys.version}\n',
-             '| Godot Engine version %(major)s.%(minor)s.%(status)s.%(build)s.' % godot_version,
+    banner = ['', f'| Python version {sys.version}\n']
+    if godot_version is not None:
+        banner += [
+            '| Godot Engine version %(major)s.%(minor)s.%(status)s.%(build)s.' % godot_version,
             f'{godot_version['hash'][:9]}\n',
-            '| Interactive Console'
-        ])
-    )
+        ]
+    banner += ['| Interactive Console']
+
+    console.interact(banner=''.join(banner))
