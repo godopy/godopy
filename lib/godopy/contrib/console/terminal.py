@@ -50,7 +50,8 @@ class GodotTerminalConsole(InteractiveConsole):
                 else:
                     more = self.push(line)
             except KeyboardInterrupt:
-                return
+                self.resetbuffer()
+                more = 0
 
     def write(self, data):
         gd.printraw(data)
@@ -62,7 +63,7 @@ class GodotTerminalConsole(InteractiveConsole):
 def interact(godot_version=None):
     console = GodotTerminalConsole()
 
-    banner = ['', f'| Python version {sys.version}\n']
+    banner = [f'\n| Python version {sys.version}\n']
     if godot_version is not None:
         banner += [
             '| Godot Engine version %(major)s.%(minor)s.%(status)s.%(build)s.' % godot_version,

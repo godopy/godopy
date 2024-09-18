@@ -30,8 +30,6 @@ def get_file_list(output_dir):
 
     files.append(str((cython_gen_folder / "api_data.pxi").as_posix()))
 
-    print('FILES', files)
-
     return files
 
 
@@ -46,7 +44,7 @@ def generate_bindings(api_filepath, output_dir="."):
     shutil.rmtree(target_dir, ignore_errors=True)
     target_dir.mkdir(parents=True)
 
-    print('GEN')
+    print('Generating API bindings...')
 
     generate_api_data(api, target_dir)
 
