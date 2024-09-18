@@ -61,12 +61,14 @@ class GodotInteractiveConsole(InteractiveConsole):
         return gd.input(prompt)
 
 
-def interact(godot_banner=None):
+def interact(godot_version=None):
     console = GodotInteractiveConsole()
-    if godot_banner is None:
-        godot_banner = console.__class__.name
 
     console.interact(
-        banner='Python %s on %s\n[%s]' % \
-               (sys.version, sys.platform, godot_banner)
+        banner=''.join([
+            f'| Python version {sys.version}\n',
+             '| Godot Engine version %(major)s.%(minor)s.%(status)s.%(build)s.' % godot_version,
+            f'{godot_version['hash'][:9]}\n',
+            '| Interactive Console'
+        ])
     )

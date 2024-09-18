@@ -793,7 +793,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			break;
 		}
 		case Type::INT: {
-			obj =  PyLong_FromSsize_t(int64_t(this));
+			obj =  PyLong_FromSsize_t(int64_t(*this));
 			ERR_FAIL_NULL_V(obj, nullptr);
 			break;
 		}
