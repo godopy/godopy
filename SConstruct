@@ -225,7 +225,15 @@ def install_extension_shared_lib(env, library):
         python_dll_file = 'python312.dll' if not env['python_debug'] else 'python312_d.dll'
         python_dll = os.path.join('python', 'PCBuild', 'amd64', python_dll_file)
         python_dll_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_dll_file)
+
+        # python_exe_file = 'python.exe' if not env['python_debug'] else 'python_d.exe'
+        # python_exe = os.path.join('python', 'PCBuild', 'amd64', python_exe_file)
+        # python_exe_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_exe_file)
+        
         copy.append(env.InstallAs(python_dll_target, python_dll))
+        # copy.append(env.InstallAs(python_exe_target, python_exe))
+
+    # TODO: Other platforms
 
     return copy
 
