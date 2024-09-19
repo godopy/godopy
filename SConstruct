@@ -45,7 +45,8 @@ def build_opts(env):
     opts.Add(
         BoolVariable(
             key='clear_python_files',
-            help='Delete all previously installed files before copying Python standard library',
+            help='Delete all previously installed files before copying Python standard library. ' \
+                 'Always on with install_python_stdlib_files',
             default=False,
         )
     )
@@ -365,6 +366,8 @@ numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
 env = Environment(tools=['default'], PLATFORM='')
 build_opts(env)
 
+if env['install_python_stdlib_files']:
+    env['clear_python_files'] = True
 
 if not numpy_folder.is_relative_to(env.Dir('#').abspath):
     raise Exception("Virtual Env folder must be located inside the current folder")

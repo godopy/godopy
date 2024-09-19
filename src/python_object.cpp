@@ -3,8 +3,6 @@
 #include "python_runtime.h"
 #include <godot_cpp/variant/utility_functions.hpp>
 
-#include <vector>
-
 using namespace godot;
 
 PythonObject::PythonObject() {
