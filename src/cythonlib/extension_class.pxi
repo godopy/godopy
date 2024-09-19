@@ -30,20 +30,20 @@ cdef class ExtensionClass(gd.Class):
     @staticmethod
     cdef bint has_get_property_list():
         # TODO: Check if a class has a property list
-        return True
+        return False
 
     @staticmethod
     cdef GDExtensionPropertyInfo *get_property_list_bind(GDExtensionClassInstancePtr p_instance,
                                                          uint32_t *r_count) noexcept nogil:
-        # if not p_instance:
-        #     if r_count:
-        #         set_uint32_from_ptr(r_count, 0)
-        #     return NULL
-        # # TODO: Create and return property list
-        # if r_count:
-        #     set_uint32_from_ptr(r_count, 0)
         with gil:
             print('GETPROPLIST %x' % (<uint64_t>p_instance))
+        if not p_instance:
+            if r_count:
+                set_uint32_from_ptr(r_count, 0)
+            return NULL
+        # TODO: Create and return property list
+        if r_count:
+            set_uint32_from_ptr(r_count, 0)
         return NULL
 
     @staticmethod
@@ -85,9 +85,20 @@ cdef class ExtensionClass(gd.Class):
                 print('TO STRING BIND %x' % (<uint64_t>p_instance))
 
     @staticmethod
-    cdef void free(void *data, GDExtensionClassInstancePtr ptr) noexcept nogil:
+    cdef void free(void *data, GDExtensionClassInstancePtr p_instance) noexcept nogil:
         with gil:
-            print('FREE %x %x' % (<uint64_t>data, <uint64_t>ptr))
+            print('FREE %x %x' % (<uint64_t>data, <uint64_t>p_instance))
+            ExtensionClass._free(data, p_instance)
+
+    @staticmethod
+    cdef int _free(void *p_class, void *p_instance) except -1:
+        cdef Extension wrapper = <Extension>p_instance
+        ref.Py_DECREF(wrapper)
+
+        cdef ExtensionClass cls = <ExtensionClass>p_class
+        ref.Py_DECREF(cls)
+
+        return 0
 
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance_func(void *data) noexcept nogil:
@@ -97,14 +108,16 @@ cdef class ExtensionClass(gd.Class):
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance_func_gil(void *data):
         print('CREATE INSTANCE %x' % <uint64_t>data)
-        cdef ExtensionClass cls = <ExtensionClass>data
-        # print('GOT CLASS %r' % cls)
-        # ref.Py_INCREF(cls)
-        cdef Extension wrapper = Extension(registry[cls.__name__], from_callback=True)
-        # ref.Py_INCREF(wrapper)
 
-        print("CREATED INSTANCE %r %x" % (wrapper, <uint64_t>wrapper._owner))
-        # ref.Py_INCREF(wrapper)
+        cdef ExtensionClass cls = <ExtensionClass>data
+
+        # cdef ExtensionClass creating = registry[cls.__name__]
+        cdef gd.Class base = cls.inherits
+
+        cdef Extension wrapper = Extension(base, cls)
+
+        print("CREATED INSTANCE %r %x %x" % (wrapper, <uint64_t>wrapper._owner, <uint64_t><PyObject *>wrapper))
+
         return wrapper._owner
 
     @staticmethod
@@ -116,11 +129,29 @@ cdef class ExtensionClass(gd.Class):
     @staticmethod
     cdef GDExtensionClassCallVirtual get_virtual_func(void *p_userdata,
                                                       GDExtensionConstStringNamePtr p_name) noexcept nogil:
-        # TODO
+
         cdef StringName name = deref(<StringName *>p_name) 
         with gil:
             print('GETVIRTUAL %x %s' % (<uint64_t>p_userdata, name.py_str()))
-        return NULL
+            ExtensionClass._get_virtual_func(p_userdata, name.py_str())
+
+    @staticmethod
+    cdef GDExtensionClassCallVirtual _get_virtual_func(void *p_cls, str name):
+        # cdef ExtensionClass cls = <ExtensionClass>p_cls
+        if name == '_process':
+            print("RETURN VURTUALFUNC")
+            return ExtensionClass.virtualfunc
+
+
+    @staticmethod
+    cdef void virtualfunc(GDExtensionClassInstancePtr p_instance, const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_ret) noexcept nogil:
+       with gil:
+            ExtensionClass._virtualfunc(p_instance, p_args, r_ret)
+
+    @staticmethod
+    cdef void _virtualfunc(GDExtensionClassInstancePtr p_instance, const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_ret):
+        cdef object wrapper = <object>p_instance
+        print('virtualmethod call %r' % wrapper)
 
     def __init__(self, name, object inherits, **kwargs):
         if not isinstance(inherits, (gd.Class, str)):
@@ -191,27 +222,27 @@ cdef class ExtensionClassRegistrator:
         ci.is_abstract = kwargs.pop('is_abstract', False)
         ci.is_exposed = kwargs.pop('is_exposed', True)
         ci.is_runtime = kwargs.pop('is_runtime', False)
-        ci.set_func = &ExtensionClass.set_bind
-        ci.get_func = &ExtensionClass.get_bind
+        ci.set_func = NULL # &ExtensionClass.set_bind
+        ci.get_func = NULL # &ExtensionClass.get_bind
         ci.get_property_list_func = NULL
         ci.free_property_list_func = &ExtensionClass.free_property_list_bind
         ci.property_can_revert_func = &ExtensionClass.property_can_revert_bind
         ci.property_get_revert_func = &ExtensionClass.property_get_revert_bind
         ci.validate_property_func = ExtensionClass.validate_property_bind
-        ci.notification_func = &ExtensionClass.notification_bind
+        ci.notification_func = NULL # &ExtensionClass.notification_bind
         ci.to_string_func = &ExtensionClass.to_string_bind
         ci.reference_func = NULL
         ci.unreference_func = NULL
         ci.create_instance_func = &ExtensionClass._create_instance_func
         ci.free_instance_func = &ExtensionClass.free
         ci.recreate_instance_func = &ExtensionClass._recreate_instance_func
-        ci.get_virtual_func = &ExtensionClass.get_virtual_func
+        ci.get_virtual_func = ExtensionClass.get_virtual_func
         ci.get_virtual_call_data_func = NULL
         ci.call_virtual_with_data_func = NULL
         ci.get_rid_func = NULL
         ci.class_userdata = <void *><PyObject *>self.registree
 
-        ref.Py_INCREF(self.registree)
+        ref.Py_INCREF(self.registree) # DECREF in ExtenstionClass._free
 
         # print('Set USERDATA %x' % <uint64_t>ci.class_userdata)
 

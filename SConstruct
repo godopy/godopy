@@ -130,6 +130,7 @@ def main_godopy_cpp_sources(env):
 
     return sources
 
+
 def _generated_cython_sources(env):
     extension_dir = normalize_path(env.get("gdextension_dir", env.Dir("gdextension").abspath), env)
     api_file = normalize_path(env.get("custom_api_file", env.File(extension_dir + "/extension_api.json").abspath), env)
@@ -152,9 +153,6 @@ def _generated_cython_sources(env):
 
 
 def cython_sources(env):
-    # env_cython = env.Clone()
-    # disable_warnings(env)
-
     generated = _generated_cython_sources(env)
 
     sources = [
@@ -214,7 +212,7 @@ def install_extension_shared_lib(env, library):
 
     if env['platform'] == 'windows':
         # Extension DLL requires Python DLL
-        python_dll_file = 'python312.dll' if not env['python_debug'] else 'python312_d.dll'
+        python_dll_file = 'python312.dll' # if not env['python_debug'] else 'python312_d.dll'
         python_dll = os.path.join('python', 'PCBuild', 'amd64', python_dll_file)
         python_dll_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_dll_file)
 
@@ -254,7 +252,7 @@ class PythonInstaller:
             if site_packages:
                 target_lib = os.path.join(target_lib, 'site-packages')
 
-            dstfile = os.path.join(projectdir, target_lib, pyfile)
+            dstfile = os.path.join(projectdir, 'python', target_lib, pyfile)
 
             if env['compile_python_stdlib'] and not force_install:
                 self.sources.append(env.CompilePyc(dstfile, srcfile))
@@ -271,7 +269,7 @@ class PythonDylibInstaller:
 
         for srcfile in files:
             pyfile = os.path.basename(str(srcfile))
-            dstfolder = os.path.join(projectdir, 'bin', 'windows', 'dylib')
+            dstfolder = os.path.join(projectdir, 'python', 'bin', 'windows', 'dylib')
             if folder is not None:
                 dstfolder = os.path.join(dstfolder, folder)
             dstfile = os.path.join(dstfolder, pyfile)
@@ -296,12 +294,7 @@ def install_python_standard_library(env):
     dylib_installer.install(python_editor_dylib_files, 'editor')
 
     packages.append(env.InstallAs(
-        os.path.join(projectdir, 'lib', '.gdignore'),
-        '.gdignore'
-    ))
-
-    packages.append(env.InstallAs(
-        os.path.join(projectdir, 'bin', 'windows', 'dylib', '.gdignore'),
+        os.path.join(projectdir, 'python', '.gdignore'),
         '.gdignore'
     ))
 
@@ -375,8 +368,7 @@ if not numpy_folder.is_relative_to(env.Dir('#').abspath):
 
 if env['clear_python_files']:
     projectdir = env['project_dir']
-    shutil.rmtree(os.path.join(projectdir, 'bin', 'windows', 'dylib'), ignore_errors=True)
-    shutil.rmtree(os.path.join(projectdir, 'lib'), ignore_errors=True)
+    shutil.rmtree(os.path.join(projectdir, 'python'), ignore_errors=True)
 
 
 # Build subdirs

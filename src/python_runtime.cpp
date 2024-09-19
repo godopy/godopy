@@ -92,18 +92,25 @@ int set_config_paths(PyConfig *config) {
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_format("%slib/site-packages", res_path)
+		_wide_string_from_format("%spython/lib", res_path)
+	);
+	CHECK_PYSTATUS(status, 1);
+
+	status = PyWideStringList_Append(
+		&config->module_search_paths,
+		_wide_string_from_format("%spython/lib/site-packages", res_path)
 	);
 	CHECK_PYSTATUS(status, 1);
 
     status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_format("%sbin/windows/dylib", res_path)
+		_wide_string_from_format("%spython/bin/windows/dylib", res_path)
 	);
 	CHECK_PYSTATUS(status, 1);
 
 	String venv_path = OS::get_singleton()->get_environment("VIRTUAL_ENV");
 
+	// Add venv to path only when editing
 	if (Engine::get_singleton()->is_editor_hint() && venv_path != "") {
 		status = PyWideStringList_Append(
 		&config->module_search_paths,

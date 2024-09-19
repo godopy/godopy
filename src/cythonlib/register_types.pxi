@@ -1,24 +1,29 @@
 
-cdef object init_func = None
-cdef object register_func = None
-cdef object unregister_func = None
-cdef object terminate_func = None
+cdef object initialize_func = None
+cdef object uninitialize_func = None
 
 
-cpdef public int initialize_types(ModuleInitializationLevel p_level) except -1:
-    global init_func, register_func, unregister_func, terminate_func
+# cdef public int initialize_python_types(ModuleInitializationLevel p_level) except -1 nogil:
+#     with gil:
+#         return initialize_godopy_types(p_level)
+
+
+# cdef public int uninitialize_python_types(ModuleInitializationLevel p_level) except -1 nogil:
+#     with gil:
+#         return uninitialize_godopy_types(p_level)
+
+
+cpdef int initialize_godopy_types(ModuleInitializationLevel p_level) except -1:
+    global initialize_func, uninitialize_func
 
     redirect_python_stdio()
 
     _print_verbose("GodoPy Python initialization started, level %d" % p_level)
 
-    register_func = None
     try:
         import register_types
-        init_func = getattr(register_types, 'initialize', None)  
-        register_func = getattr(register_types, 'register', None)
-        unregister_func = getattr(register_types, 'unregister', None)
-        terminate_func = getattr(register_types, 'terminate', None)   
+        initialize_func = getattr(register_types, 'initialize', None)  
+        uninitialize_func = getattr(register_types, 'uninitialize', None)   
     except ImportError as exc:
         f = io.StringIO()
         traceback.print_exception(exc, file=f)
@@ -33,23 +38,16 @@ cpdef public int initialize_types(ModuleInitializationLevel p_level) except -1:
                 "\n[color=orange]%s[/color]\n" % exc_text
             )
 
-    if init_func:
-        # TODO: Call with init level, do all levels
-        init_func(p_level)
-
-    if register_func:
-        register_func(p_level)
+    if initialize_func is not None:
+        initialize_func(p_level)
 
 
-cpdef public int terminate_types(ModuleInitializationLevel p_level) except -1:
-    global unregister_func, terminate_func
+cpdef int uninitialize_godopy_types(ModuleInitializationLevel p_level) except -1:
+    global uninitialize_func
 
     print_verbose("GodoPy Python cleanup, level %d" % p_level)
 
-    if unregister_func:
-        unregister_func(p_level)
-    if terminate_func:
-        # TODO: Call with init level
-        terminate_func(p_level)
+    if uninitialize_func:
+        uninitialize_func(p_level)
 
     return 0

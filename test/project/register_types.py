@@ -15,6 +15,9 @@ def initialize(level):
     # TODO: Only in verbose mode (OS.is_stdout_verbose)
     gd.print_rich('[color=gray]%s[/color]\n' % '\n'.join(lines))
 
+    gdexample().register()
+    console().register()
+
 
 def gdexample():
     GDExample = gde.ExtensionClass('GDExample', 'Sprite2D')
@@ -51,9 +54,3 @@ def console():
     TerminalConsole.add_methods(_init)
 
     return TerminalConsole
-
-
-def register(level):
-    if level == 2:
-        gdexample().register()
-        console().register()
