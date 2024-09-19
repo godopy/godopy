@@ -41,6 +41,7 @@ public:
 	}
 
     Variant call(const Array &p_args = Array(), const Dictionary &p_kwargs = Dictionary());
+    Variant call_one_arg(const Variant &p_arg);
 
     Ref<PythonObject> getattr(const String &);
     bool is_callable();

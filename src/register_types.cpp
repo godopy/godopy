@@ -15,43 +15,41 @@ static Python *python;
 
 void initialize_godopy_types(ModuleInitializationLevel p_level)
 {
-	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-		return;
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		runtime = memnew(PythonRuntime);
+		runtime->pre_initialize();
+		runtime->initialize();
+
+		ClassDB::register_class<Python>();
+		python = memnew(Python);
+		Engine::get_singleton()->register_singleton("Python", Python::get_singleton());
+
+		ClassDB::register_class<PythonObject>();
 	}
-	runtime = memnew(PythonRuntime);
-	runtime->pre_initialize();
-	runtime->initialize();
 
-	ClassDB::register_class<Python>();
-	python = memnew(Python);
-	Engine::get_singleton()->register_singleton("Python", Python::get_singleton());
-
-	ClassDB::register_class<PythonObject>();
-
-	Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("_godot");
-	Ref<PythonObject> py_init_func = mod->getattr("initialize_types");
-	py_init_func->call();
-	py_init_func.unref();
-	mod.unref();
+	if (p_level >= MODULE_INITIALIZATION_LEVEL_SCENE) {
+		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("_godot");
+		Ref<PythonObject> py_init_func = mod->getattr("initialize_types");
+		py_init_func->call_one_arg(Variant(p_level));
+		py_init_func.unref();
+		mod.unref();
+	}
 }
 
 void terminate_godopy_types(ModuleInitializationLevel p_level) {
-	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-		return;
+	if (p_level >= MODULE_INITIALIZATION_LEVEL_SCENE) {
+		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("_godot");
+		Ref<PythonObject> py_term_func = mod->getattr("terminate_types");
+		py_term_func->call_one_arg(Variant(p_level));
+		py_term_func.unref();
+		mod.unref();
 	}
 
-	Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("_godot");
-	Ref<PythonObject> py_term_func = mod->getattr("terminate_types");
-	py_term_func->call();
-	py_term_func.unref();
-	mod.unref();
-
-	Engine::get_singleton()->unregister_singleton("Python");
-	if (python) {
-		memdelete(python);
-	}
-	if (runtime) {
-		memdelete(runtime);
+	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
+		Engine::get_singleton()->unregister_singleton("Python");
+		if (python) {
+			memdelete(python);
+		}
 	}
 }
 

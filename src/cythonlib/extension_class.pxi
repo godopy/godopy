@@ -242,8 +242,8 @@ cdef class ExtensionClassRegistrator:
         registry[self.__name__] = registree
         print("%r registered" % self.__name__)
 
-    def register_method(self, object func: types.FunctionType):
-        print("registering method %r" % object)
+    def register_method(self, func: types.FunctionType):
+        print("registering method %r" % func)
         cdef ExtensionMethod method = ExtensionMethod(self.registree, func)
         cdef GDExtensionClassMethodInfo mi
 

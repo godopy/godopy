@@ -44,15 +44,6 @@ def build_opts(env):
     )
     opts.Add(
         BoolVariable(
-            key='minimal_python_stdlib',
-            help='Copy only absolutely required part of Python standard library'
-                ' to the path accessible by the game, editor will still have access'
-                ' to the full library',
-            default=False,
-        )
-    )
-    opts.Add(
-        BoolVariable(
             key='clear_python_files',
             help='Delete all previously installed files before copying Python standard library',
             default=False,
@@ -131,8 +122,8 @@ def main_godopy_cpp_sources(env):
 
         python_lib = 'python312' if not env['python_debug'] else 'python312_d'
         env.Append(packages=[python_lib])
-
         env.Append(CPPDEFINES=['WINDOWS_ENABLED'])
+
 
     # TODO: Other platforms
 
@@ -242,18 +233,14 @@ def install_extension_shared_lib(env, library):
 
 class PythonInstaller:
     def __init__(self, env, sources, root_path):
-        self.runtime_modules = set()
         self.root = str(root_path)
         self.env = env
         self.sources = sources
 
-    def install(self, files, target_lib='runtime', site_packages=False, force_install=False):
+    def install(self, files, site_packages=False, force_install=False):
         projectdir = self.env['project_dir']
 
         for srcfile in files:
-            if target_lib != 'runtime' and srcfile in self.runtime_modules:
-                continue
-
             folder, pyfile = os.path.split(str(srcfile))
             while folder and folder.lower() != self.root.lower():
                 folder, parent = os.path.split(folder)
@@ -262,14 +249,11 @@ class PythonInstaller:
             if env['compile_python_stdlib'] and not force_install:
                 pyfile += 'c'
 
-            if target_lib == 'runtime':
-                self.runtime_modules.add(srcfile)
-
-            real_target_lib = target_lib
+            target_lib = 'lib'
             if site_packages:
-                real_target_lib = os.path.join(target_lib, 'site-packages')
+                target_lib = os.path.join(target_lib, 'site-packages')
 
-            dstfile = os.path.join(projectdir, 'lib', real_target_lib, pyfile)
+            dstfile = os.path.join(projectdir, target_lib, pyfile)
 
             if env['compile_python_stdlib'] and not force_install:
                 self.sources.append(env.CompilePyc(dstfile, srcfile))
@@ -281,12 +265,12 @@ class PythonDylibInstaller:
         self.env = env
         self.sources = sources
 
-    def install(self, files, target_lib='runtime', folder=None):
+    def install(self, files, folder=None):
         projectdir = self.env['project_dir']
 
         for srcfile in files:
             pyfile = os.path.basename(str(srcfile))
-            dstfolder = os.path.join(projectdir, 'bin', 'windows', 'dylib', target_lib)
+            dstfolder = os.path.join(projectdir, 'bin', 'windows', 'dylib')
             if folder is not None:
                 dstfolder = os.path.join(dstfolder, folder)
             dstfile = os.path.join(dstfolder, pyfile)
@@ -297,23 +281,10 @@ def install_python_standard_library(env):
     projectdir = env['project_dir']
     packages = []
 
-    if env['minimal_python_stdlib']:
-        # Python stdlib files - minimal version
-        python_runtime_lib_files = [os.path.join('python', 'Lib', pyfile) for pyfile in [
-            # These are always required
-            'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
-            'io.py', 'abc.py', 'types.py',
-
-            'encodings/latin_1.py',
-        ]]
-        python_editor_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
-        python_runtime_dylib_files = []
-        python_editor_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
-    else:
-        python_runtime_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
-        python_editor_lib_files = []
-        python_runtime_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
-        python_editor_dylib_files = []
+    python_runtime_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
+    python_editor_lib_files = []
+    python_runtime_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
+    python_editor_dylib_files = []
 
     installer = PythonInstaller(env, packages, os.path.join('python', 'lib'))
     dylib_installer = PythonDylibInstaller(env, packages)
@@ -344,47 +315,28 @@ def install_extra_python_packages(env):
 
     packages = []
 
-    if env['minimal_python_stdlib']:
-        files = [
-            str(f).replace(str(build_path), '') for f in [
-                *Glob(str(numpy_folder / '*.py')),
-                *Glob(str(numpy_folder / 'core' / '*.py')),
-                *Glob(str(numpy_folder / '_utils' / '*.py')),
-                *Glob(str(numpy_folder / '_core' / '*.py')),
-                *Glob(str(numpy_folder / 'lib' / '*.py')),
-                *Glob(str(numpy_folder / 'matrixlib' / '*.py')),
-                *Glob(str(numpy_folder / 'linalg' / '*.py')),
-                *Glob(str(numpy_folder / '_typing' / '*.py')),
-            ]
+    files = [
+        str(f).replace(str(build_path), '') for f in [
+            *Glob(str(numpy_folder / '*.py')),
+            *Glob(str(numpy_folder / '*' / '*.py')),
+            *Glob(str(numpy_folder / '*' / '*' / '*.py')),
+            *Glob(str(numpy_folder / '*' / '*' / '*' / '*.py')),
+            *Glob(str(numpy_folder / '*' / '*' / '*' / '*' / '*.py'))
         ]
+    ]
 
-        dylib_files = [str(f).replace(str(build_path), '') for f in [
-            *Glob(str(numpy_folder / '*' / '*.pyd')),
-            *Glob(str(numpylibs_folder / '*.dll'))
-        ]]
-    else:
-        files = [
-            str(f).replace(str(build_path), '') for f in [
-                *Glob(str(numpy_folder / '*.py')),
-                *Glob(str(numpy_folder / '*' / '*.py')),
-                *Glob(str(numpy_folder / '*' / '*' / '*.py')),
-                *Glob(str(numpy_folder / '*' / '*' / '*' / '*.py')),
-                *Glob(str(numpy_folder / '*' / '*' / '*' / '*' / '*.py'))
-            ]
-        ]
-
-        dylib_files = [str(f).replace(str(build_path), '') for f in  [
-            *Glob(str(numpy_folder / '*' / '*.pyd')),
-            *Glob(str(numpylibs_folder / '*.dll'))
-        ]]
+    dylib_files = [str(f).replace(str(build_path), '') for f in  [
+        *Glob(str(numpy_folder / '*' / '*.pyd')),
+        *Glob(str(numpylibs_folder / '*.dll'))
+    ]]
 
     root = Path(str(files[0]).split('site-packages')[0]) / 'site-packages'
 
     installer = PythonInstaller(env, packages, root)
     # dylib_installer = PythonDylibInstaller(env, packages)
 
-    installer.install(files, 'runtime', True)
-    installer.install(dylib_files, 'runtime', True, force_install=True)
+    installer.install(files, True)
+    installer.install(dylib_files, True, force_install=True)
 
     return packages
 
@@ -394,18 +346,18 @@ def install_godopy_python_packages(env):
     files = Glob('lib/*/*.py') + Glob('lib/*/*/*.py') + Glob('lib/*/*/*/*.py')
 
     installer = PythonInstaller(env, packages, 'lib')
-    installer.install(files, 'runtime', True)
+    installer.install(files, True)
 
     return packages
 
 ###############################################################################
 
-if not 'VIRTUAL_ENV' in os.environ:
+if not 'VIRTUAL_ENV' in os.environ and not os.path.exists('./venv'):
     raise Exception("No virtual environment detected. "
                     "Please create and/or activate one "
                     "and install all requirements from 'requirements.txt'")
 
-venv_folder = os.environ['VIRTUAL_ENV']
+venv_folder = os.path.abspath(os.environ.get('VIRTUAL_ENV', 'venv'))
 numpy_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy'
 numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
 
@@ -415,7 +367,7 @@ build_opts(env)
 
 
 if not numpy_folder.is_relative_to(env.Dir('#').abspath):
-    raise Exception("Virtual Env folder must be located the current folder")
+    raise Exception("Virtual Env folder must be located inside the current folder")
 
 
 if env['clear_python_files']:
@@ -437,8 +389,8 @@ sources = main_godopy_cpp_sources(env)
 sources += cython_sources(cython_env)
 sources += docdata_sources(env)
 
-
 library = build_extension_shared_lib(env, sources)
+
 
 default_args = [
     library,

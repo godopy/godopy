@@ -21,9 +21,7 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
 
     if (!PyCallable_Check(instance)) {
         PyGILState_Release(gil_state);
-
         UtilityFunctions::push_error("PythonObject '" + __repr__ + "' is not callable.");
-
         return ret;
     }
 
@@ -54,7 +52,38 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
     PyObject *result = PyObject_Call(instance, args, kwargs);
 
     if (result == nullptr) {
-		PyErr_Print();
+		if (PyErr_Occurred()) {
+            PyErr_Print();
+            PyErr_Clear();
+        }
+	} else {
+        result = Variant(result);
+    }
+    Py_XDECREF(result);
+    PyGILState_Release(gil_state);
+
+    return ret;
+}
+
+
+Variant PythonObject::call_one_arg(const Variant &p_arg) {
+    Variant ret;
+    PyGILState_STATE gil_state = PyGILState_Ensure();
+
+    if (!PyCallable_Check(instance)) {
+        PyGILState_Release(gil_state);
+        UtilityFunctions::push_error("PythonObject '" + __repr__ + "' is not callable.");
+        return ret;
+    }
+
+    PyObject *arg = p_arg.pythonize();
+    PyObject *result = PyObject_CallOneArg(instance, arg);
+
+    if (result == nullptr) {
+		if (PyErr_Occurred()) {
+            PyErr_Print();
+            PyErr_Clear();
+        }
 	} else {
         result = Variant(result);
     }
@@ -70,8 +99,9 @@ Ref<PythonObject> PythonObject::getattr(const String &p_attr_name) {
 
     PyGILState_STATE gil_state = PyGILState_Ensure();
     PyObject *attr = PyObject_GetAttrString(instance, p_attr_name.utf8());
-    if (attr == nullptr) {
+    if (PyErr_Occurred()) {
         PyErr_Print();
+        PyErr_Clear();
     }
     ERR_FAIL_NULL_V(attr, object);
     Py_INCREF(attr);

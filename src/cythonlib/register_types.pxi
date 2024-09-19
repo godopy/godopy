@@ -5,12 +5,13 @@ cdef object unregister_func = None
 cdef object terminate_func = None
 
 
-def initialize_types():
+cpdef public int initialize_types(ModuleInitializationLevel p_level) except -1:
     global init_func, register_func, unregister_func, terminate_func
 
     redirect_python_stdio()
 
-    # print("Python-level initialization started")
+    _print_verbose("GodoPy Python initialization started, level %d" % p_level)
+
     register_func = None
     try:
         import register_types
@@ -34,18 +35,21 @@ def initialize_types():
 
     if init_func:
         # TODO: Call with init level, do all levels
-        init_func()
+        init_func(p_level)
 
     if register_func:
-        register_func()
+        register_func(p_level)
 
 
-def terminate_types():
+cpdef public int terminate_types(ModuleInitializationLevel p_level) except -1:
     global unregister_func, terminate_func
-    # print("Python-level cleanup")
+
+    print_verbose("GodoPy Python cleanup, level %d" % p_level)
 
     if unregister_func:
-        unregister_func()
+        unregister_func(p_level)
     if terminate_func:
         # TODO: Call with init level
-        terminate_func()
+        terminate_func(p_level)
+
+    return 0

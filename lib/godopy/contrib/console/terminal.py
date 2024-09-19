@@ -1,7 +1,5 @@
 import sys
-import atexit  
 from code import InteractiveConsole
-
 import godot as gd
 
 class GodotTerminalConsole(InteractiveConsole):
@@ -25,6 +23,7 @@ class GodotTerminalConsole(InteractiveConsole):
         try:
             import readline
             import rlcompleter
+            import atexit
             readline.parse_and_bind("tab: complete")
             readline.set_completer(rlcompleter.Completer().complete)
 

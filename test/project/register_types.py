@@ -1,11 +1,14 @@
 import sys
-import math
+import numpy as np
 import godot as gd
 from godot import extension as gde
 # from _vector_types import Vector2
 
 
-def initialize():
+def initialize(level):
+    if level != 2:
+        return
+
     lines = ["Active Python paths:"]
     for path in sys.path:
         lines.append('\t[color=green]%s[/color]' % path)
@@ -22,8 +25,8 @@ def gdexample():
     def _process(self, delta: float) -> None:
         self.time_passed += delta
         new_position = (
-            10.0 + (10.0 * math.sin(self.time_passed * 2.0)),
-            10.0 + (10.0 * math.cos(self.time_passed * 1.5))
+            10.0 + (10.0 * np.sin(self.time_passed * 2.0)),
+            10.0 + (10.0 * np.cos(self.time_passed * 1.5))
         )
 
         set_position = gd.MethodBind(self, 'set_position')
@@ -50,6 +53,7 @@ def console():
     return TerminalConsole
 
 
-def register():
-    gdexample().register()
-    console().register()
+def register(level):
+    if level == 2:
+        gdexample().register()
+        console().register()

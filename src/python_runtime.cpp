@@ -55,7 +55,7 @@ int set_config_paths(PyConfig *config) {
 	}
 
 	// TODO: Get from project settings
-	String exec_path = res_path + "bin/windows/libGodoPy.dll";
+	String exec_path = res_path + "bin/windows/python.exe";
 	String exec_prefix = exec_path.get_base_dir();
 
 	UtilityFunctions::print_verbose("Python program name: " + exec_path);
@@ -86,52 +86,28 @@ int set_config_paths(PyConfig *config) {
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_format("%slib/runtime", res_path)
+		_wide_string_from_format("%slib", res_path)
 	);
 	CHECK_PYSTATUS(status, 1);
 
 	status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_format("%slib/runtime/site-packages", res_path)
+		_wide_string_from_format("%slib/site-packages", res_path)
 	);
 	CHECK_PYSTATUS(status, 1);
 
     status = PyWideStringList_Append(
 		&config->module_search_paths,
-		_wide_string_from_format("%sbin/windows/dylib/runtime", res_path)
+		_wide_string_from_format("%sbin/windows/dylib", res_path)
 	);
 	CHECK_PYSTATUS(status, 1);
 
-	MainLoop *ml = Engine::get_singleton()->get_main_loop();
-	bool is_detached_script = ml == nullptr;
+	String venv_path = OS::get_singleton()->get_environment("VIRTUAL_ENV");
 
-	if (Engine::get_singleton()->is_editor_hint() || is_detached_script) {
-
-		String venv_path = OS::get_singleton()->get_environment("VIRTUAL_ENV");
-
-		if (venv_path != "") {
-			status = PyWideStringList_Append(
-			&config->module_search_paths,
-				_wide_string_from_format("%s/Lib/site-packages", venv_path)
-			);
-			CHECK_PYSTATUS(status, 1);
-		}
-
+	if (Engine::get_singleton()->is_editor_hint() && venv_path != "") {
 		status = PyWideStringList_Append(
-			&config->module_search_paths,
-			_wide_string_from_format("%slib/editor", res_path)
-		);
-		CHECK_PYSTATUS(status, 1);
-
-		status = PyWideStringList_Append(
-			&config->module_search_paths,
-			_wide_string_from_format("%slib/editor/site-packages", res_path)
-		);
-		CHECK_PYSTATUS(status, 1);
-
-		status = PyWideStringList_Append(
-			&config->module_search_paths,
-			_wide_string_from_format("%sbin/windows/dylib/editor", res_path)
+		&config->module_search_paths,
+			_wide_string_from_format("%s/Lib/site-packages", venv_path)
 		);
 		CHECK_PYSTATUS(status, 1);
 	}
@@ -156,6 +132,8 @@ void PythonRuntime::initialize() {
 	MainLoop *ml = Engine::get_singleton()->get_main_loop();
 	bool is_detached_script = ml == nullptr;
 
+
+	UtilityFunctions::print_verbose("Python: Configuring paths...");
 	if (set_config_paths(&config) != 0) {
 		goto fail;
 	}
@@ -167,6 +145,7 @@ void PythonRuntime::initialize() {
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
+	UtilityFunctions::print_verbose("Python: Initializeing the interpreter...");
 	status = Py_InitializeFromConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
@@ -196,7 +175,10 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 	PyGILState_STATE gil_state = PyGILState_Ensure();
 	PyObject *m = PyImport_ImportModule(p_name.utf8());
 	if (m == nullptr) {
-		PyErr_Print();
+		if (PyErr_Occurred()) {
+			PyErr_Print();
+			PyErr_Clear();
+		}
 		PyGILState_Release(gil_state);
 		return module;
 	}
