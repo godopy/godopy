@@ -30,19 +30,20 @@ cdef class Object:
                                              GDExtensionBool p_reference) noexcept nogil
 
 cdef class Class:
-    cdef dict _methods
-    cdef public str __name__
+    cdef readonly dict _methods
+    cdef readonly str __name__
 
 cdef class MethodBind:
     cdef void *_owner
     cdef GDExtensionMethodBindPtr _gde_mb
-    cdef str returning_type
+    cdef str return_type
     cdef Variant _ptrcall_string(self, GDExtensionConstTypePtr *p_args) noexcept nogil
     cpdef object _call_internal(self, tuple args)
+    cdef int _call_internal_nil_int_bool(self, int32_t p_arg1, bint p_arg2) except -1
 
 cdef class UtilityFunction:
     cdef GDExtensionPtrUtilityFunction _gde_uf
-    cdef str returning_type
+    cdef str return_type
     cpdef object _call_internal(self, tuple args)
 
 cdef UtilityFunction __print

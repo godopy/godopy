@@ -1,15 +1,31 @@
 cdef class MethodBind:
-    def __cinit__(self, Object wrapper, str method_name):
+    def __cinit__(self, Object wrapper, str method_name, _methods_data=None):
         self._owner = wrapper._owner
         # print('GET MB %x %s %s' % (<uint64_t>self._owner, wrapper.__godot_class__.__name__, method_name))
-        info = wrapper.__godot_class__._methods.get(method_name)
-        # _print(info)
+        if _methods_data is not None:
+            info = _methods_data.get(method_name)
+        else:
+            info = wrapper.__godot_class__._methods.get(method_name)
+        # print("MB %s: %r" % (method_name, info))
         if info is None:
             raise AttributeError('Method %r not found in class %r' % (method_name, wrapper.__godot_class__.__name__))
         
-        self.returning_type = info['return_type']
+        self.return_type = info['return_type']
         self._gde_mb = _gde_classdb_get_method_bind(
             StringName(wrapper.__godot_class__.__name__)._native_ptr(), StringName(method_name)._native_ptr(), info['hash'])
+
+
+    cdef int _call_internal_nil_int_bool(self, int32_t p_arg1, bint p_arg2) except -1:
+        cdef GDExtensionConstTypePtr *p_args = <GDExtensionConstTypePtr *> \
+            _gde_mem_alloc(2 * cython.sizeof(GDExtensionConstTypePtr))
+
+        p_args[0] = &p_arg1
+        p_args[1] = &p_arg2
+        _gde_object_method_bind_ptrcall(self._gde_mb, self._owner, p_args, NULL)
+        _gde_mem_free(p_args)
+
+        return 0
+
 
     cpdef object _call_internal(self, tuple args):
         cdef Variant gd_ret
@@ -23,20 +39,21 @@ cdef class MethodBind:
 
         cdef bint unknown_type_error = False
         with nogil:
-            if self.returning_type == 'Nil':
+            if self.return_type == 'Nil':
                 _gde_object_method_bind_ptrcall(self._gde_mb, self._owner, p_args, NULL)
-            elif self.returning_type == 'String':
+            elif self.return_type == 'String':
                 gd_ret = self._ptrcall_string(p_args)
-            elif self.returning_type == 'Variant':
+            elif self.return_type == 'Variant':
                 _gde_object_method_bind_ptrcall(self._gde_mb, self._owner, p_args, &gd_ret)
             else:
                 unknown_type_error = True
             _gde_mem_free(p_args)
 
         if unknown_type_error:
-            raise NotImplementedError("Don't know how to return %r types" % self.returning_type)
+            _printerr("Don't know how to return %r types" % self.return_type)
+            raise NotImplementedError("Don't know how to return %r types" % self.return_type)
 
-        if self.returning_type != 'Nil':
+        if self.return_type != 'Nil':
             return
 
         return gd_ret.pythonize()
@@ -51,6 +68,7 @@ cdef class MethodBind:
     def __call__(self, *args):
         return self._call_internal(args)
 
+
 cdef dict _utlity_functions = pickle.loads(_utility_function_data)
 
 cdef class UtilityFunction:
@@ -59,7 +77,7 @@ cdef class UtilityFunction:
         if info is None:
             raise NameError('Utility function %s not found' % function_name)
         # _print(info)
-        self.returning_type = info['return_type']
+        self.return_type = info['return_type']
         self._gde_uf = \
             _gde_variant_get_ptr_utility_function(StringName(function_name)._native_ptr(), info['hash'])
 
@@ -77,18 +95,19 @@ cdef class UtilityFunction:
 
         cdef bint unknown_type_error = False
         with nogil:
-            if self.returning_type == 'Nil':
+            if self.return_type == 'Nil':
                 self._gde_uf(&ret, p_args, size)
-            elif self.returning_type == 'Variant':
+            elif self.return_type == 'Variant':
                 self._gde_uf(&ret, p_args, size)
             else:
                 unknown_type_error = True
             _gde_mem_free(p_args)
 
         if unknown_type_error:
-            raise NotImplementedError("Don't know how to return %r types" % self.returning_type)
+            _printerr("Don't know how to return %r types" % self.return_type)
+            raise NotImplementedError("Don't know how to return %r types" % self.return_type)
 
-        if self.returning_type == 'Nil':
+        if self.return_type == 'Nil':
             return
 
         return ret.pythonize()

@@ -15,6 +15,9 @@ import types
 include "shortcuts.pxi"
 include "typeconv.pxi"
 
+include "extension_virtual_method.pxi"
 include "extension_method.pxi"
 include "extension_class.pxi"
+include "extension_callbacks.pxi"
+include "extension_class_registrator.pxi"
 include "extension.pxi"

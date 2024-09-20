@@ -19,3 +19,15 @@ include "method_bind.pxi"
 
 include "io.pxi"
 include "register_types.pxi"
+
+
+def get_class_method_list(str name, no_inheritance=False):
+    cdef list data = (<Variant>ClassDB.get_singleton().class_get_method_list(name, no_inheritance)).pythonize()
+
+    res = {}
+
+    for item in data:
+        name = item.pop('name')
+        res[name] = item
+
+    return res
