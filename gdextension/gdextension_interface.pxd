@@ -240,6 +240,8 @@ cdef extern from "gdextension_interface.h" nogil:
 
     ctypedef GDExtensionObjectPtr (*GDExtensionClassCreateInstance)(void* p_class_userdata)
 
+    ctypedef GDExtensionObjectPtr (*GDExtensionClassCreateInstance2)(void* p_class_userdata, GDExtensionBool p_notify_postinitialize)
+
     ctypedef void (*GDExtensionClassFreeInstance)(void* p_class_userdata, GDExtensionClassInstancePtr p_instance)
 
     ctypedef GDExtensionClassInstancePtr (*GDExtensionClassRecreateInstance)(void* p_class_userdata, GDExtensionObjectPtr p_object)
@@ -324,6 +326,32 @@ cdef extern from "gdextension_interface.h" nogil:
 
     ctypedef _GDExtensionClassCreationInfo3_s GDExtensionClassCreationInfo3
 
+    cdef struct _GDExtensionClassCreationInfo4_s:
+        GDExtensionBool is_virtual
+        GDExtensionBool is_abstract
+        GDExtensionBool is_exposed
+        GDExtensionBool is_runtime
+        GDExtensionClassSet set_func
+        GDExtensionClassGet get_func
+        GDExtensionClassGetPropertyList get_property_list_func
+        GDExtensionClassFreePropertyList2 free_property_list_func
+        GDExtensionClassPropertyCanRevert property_can_revert_func
+        GDExtensionClassPropertyGetRevert property_get_revert_func
+        GDExtensionClassValidateProperty validate_property_func
+        GDExtensionClassNotification2 notification_func
+        GDExtensionClassToString to_string_func
+        GDExtensionClassReference reference_func
+        GDExtensionClassUnreference unreference_func
+        GDExtensionClassCreateInstance2 create_instance_func
+        GDExtensionClassFreeInstance free_instance_func
+        GDExtensionClassRecreateInstance recreate_instance_func
+        GDExtensionClassGetVirtual get_virtual_func
+        GDExtensionClassGetVirtualCallData get_virtual_call_data_func
+        GDExtensionClassCallVirtualWithData call_virtual_with_data_func
+        void* class_userdata
+
+    ctypedef _GDExtensionClassCreationInfo4_s GDExtensionClassCreationInfo4
+
     ctypedef void* GDExtensionClassLibraryPtr
 
     cdef enum _GDExtensionClassMethodFlags_e:
@@ -349,6 +377,8 @@ cdef extern from "gdextension_interface.h" nogil:
         GDEXTENSION_METHOD_ARGUMENT_METADATA_INT_IS_UINT64
         GDEXTENSION_METHOD_ARGUMENT_METADATA_REAL_IS_FLOAT
         GDEXTENSION_METHOD_ARGUMENT_METADATA_REAL_IS_DOUBLE
+        GDEXTENSION_METHOD_ARGUMENT_METADATA_INT_IS_CHAR16
+        GDEXTENSION_METHOD_ARGUMENT_METADATA_INT_IS_CHAR32
 
     ctypedef _GDExtensionClassMethodArgumentMetadata_e GDExtensionClassMethodArgumentMetadata
 
@@ -854,6 +884,8 @@ cdef extern from "gdextension_interface.h" nogil:
 
     ctypedef GDExtensionVariantPtr (*GDExtensionInterfaceDictionaryOperatorIndexConst)(GDExtensionConstTypePtr p_self, GDExtensionConstVariantPtr p_key)
 
+    ctypedef void (*GDExtensionInterfaceDictionarySetTyped)(GDExtensionTypePtr p_self, GDExtensionVariantType p_key_type, GDExtensionConstStringNamePtr p_key_class_name, GDExtensionConstVariantPtr p_key_script, GDExtensionVariantType p_value_type, GDExtensionConstStringNamePtr p_value_class_name, GDExtensionConstVariantPtr p_value_script)
+
     ctypedef void (*GDExtensionInterfaceObjectMethodBindCall)(GDExtensionMethodBindPtr p_method_bind, GDExtensionObjectPtr p_instance, GDExtensionConstVariantPtr* p_args, GDExtensionInt p_arg_count, GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError* r_error)
 
     ctypedef void (*GDExtensionInterfaceObjectMethodBindPtrcall)(GDExtensionMethodBindPtr p_method_bind, GDExtensionObjectPtr p_instance, GDExtensionConstTypePtr* p_args, GDExtensionTypePtr r_ret)
@@ -906,6 +938,8 @@ cdef extern from "gdextension_interface.h" nogil:
 
     ctypedef GDExtensionObjectPtr (*GDExtensionInterfaceClassdbConstructObject)(GDExtensionConstStringNamePtr p_classname)
 
+    ctypedef GDExtensionObjectPtr (*GDExtensionInterfaceClassdbConstructObject2)(GDExtensionConstStringNamePtr p_classname)
+
     ctypedef GDExtensionMethodBindPtr (*GDExtensionInterfaceClassdbGetMethodBind)(GDExtensionConstStringNamePtr p_classname, GDExtensionConstStringNamePtr p_methodname, GDExtensionInt p_hash)
 
     ctypedef void* (*GDExtensionInterfaceClassdbGetClassTag)(GDExtensionConstStringNamePtr p_classname)
@@ -915,6 +949,8 @@ cdef extern from "gdextension_interface.h" nogil:
     ctypedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass2)(GDExtensionClassLibraryPtr p_library, GDExtensionConstStringNamePtr p_class_name, GDExtensionConstStringNamePtr p_parent_class_name, GDExtensionClassCreationInfo2* p_extension_funcs)
 
     ctypedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass3)(GDExtensionClassLibraryPtr p_library, GDExtensionConstStringNamePtr p_class_name, GDExtensionConstStringNamePtr p_parent_class_name, GDExtensionClassCreationInfo3* p_extension_funcs)
+
+    ctypedef void (*GDExtensionInterfaceClassdbRegisterExtensionClass4)(GDExtensionClassLibraryPtr p_library, GDExtensionConstStringNamePtr p_class_name, GDExtensionConstStringNamePtr p_parent_class_name, GDExtensionClassCreationInfo4* p_extension_funcs)
 
     ctypedef void (*GDExtensionInterfaceClassdbRegisterExtensionClassMethod)(GDExtensionClassLibraryPtr p_library, GDExtensionConstStringNamePtr p_class_name, GDExtensionClassMethodInfo* p_method_info)
 
