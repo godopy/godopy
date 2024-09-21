@@ -6,6 +6,7 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
+PyMODINIT_FUNC PyInit__gdextension_interface(void);
 PyMODINIT_FUNC PyInit__godot(void);
 PyMODINIT_FUNC PyInit__gdextension(void);
 PyMODINIT_FUNC PyInit__vector_types(void);
@@ -123,26 +124,32 @@ int set_config_paths(PyConfig *config) {
 	return 0;
 }
 
-void PythonRuntime::initialize() {
+void PythonRuntime::initialize(bool from_scene_initlevel) {
 	UtilityFunctions::print_verbose("Python: Initializing runtime...");
 	UtilityFunctions::print("Python version " + String(Py_GetVersion()));
 
 	PyStatus status;
 	PyConfig config;
 
+	PyImport_AppendInittab("_gdextension_interface", PyInit__gdextension_interface);
 	PyImport_AppendInittab("_godot", PyInit__godot);
 	PyImport_AppendInittab("_gdextension", PyInit__gdextension);
 	PyImport_AppendInittab("_vector_types", PyInit__vector_types);
 
 	PyConfig_InitIsolatedConfig(&config);
 
-	MainLoop *ml = Engine::get_singleton()->get_main_loop();
-	bool is_detached_script = ml == nullptr;
+	MainLoop *ml = nullptr;
+	bool is_detached_script = false;
 
+	if (from_scene_initlevel) {
+		ml = Engine::get_singleton()->get_main_loop();
+		is_detached_script = ml == nullptr;
 
-	UtilityFunctions::print_verbose("Python: Configuring paths...");
-	if (set_config_paths(&config) != 0) {
-		goto fail;
+		UtilityFunctions::print_verbose("Python: Configuring paths...");
+
+		if (set_config_paths(&config) != 0) {
+			goto fail;
+		}
 	}
 
 	config.site_import = 0;

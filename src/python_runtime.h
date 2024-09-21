@@ -22,7 +22,7 @@ public:
 	_ALWAYS_INLINE_ bool is_initialized() const { return initialized; }
 
 	void pre_initialize();
-	void initialize();
+	void initialize(bool from_scene_initlevel=true);
 
 	void run_simple_string(const String &p_string_script);
 	Ref<PythonObject> import_module(const String &p_name);

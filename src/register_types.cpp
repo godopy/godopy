@@ -8,6 +8,8 @@
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
+int entry_symbol_hook(GDExtensionInterfaceGetProcAddress, GDExtensionClassLibraryPtr, GDExtensionInitialization *);
+
 using namespace godot;
 
 static PythonRuntime *runtime;
@@ -15,12 +17,14 @@ static Python *python;
 
 static ModuleInitializationLevel MIN_LEVEL = MODULE_INITIALIZATION_LEVEL_SCENE;
 
+#define LOWLEVEL 0
+
 void initialize_godopy_types(ModuleInitializationLevel p_level)
 {
-	if (p_level == MIN_LEVEL) {
+	if (p_level == MIN_LEVEL && !LOWLEVEL) {
 		runtime = memnew(PythonRuntime);
 		runtime->pre_initialize();
-		runtime->initialize();
+		runtime->initialize(true);
 	}
 
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -61,13 +65,25 @@ void uninitialize_godopy_types(ModuleInitializationLevel p_level) {
 extern "C"
 {
 	// Initialization
-	GDExtensionBool GDE_EXPORT godopy_library_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization)
-	{
-		GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
-		init_obj.register_initializer(initialize_godopy_types);
-		init_obj.register_terminator(uninitialize_godopy_types);
-		init_obj.set_minimum_library_initialization_level(MIN_LEVEL);
+	GDExtensionBool GDE_EXPORT godopy_library_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
+		int result = entry_symbol_hook(p_get_proc_address, p_library, r_initialization);
 
-		return init_obj.init();
+		if (result != 0) {
+			return false;
+		}
+
+		if (LOWLEVEL) {
+			runtime = memnew(PythonRuntime);
+			runtime->pre_initialize();
+			runtime->initialize(false);
+		} else {
+			GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
+
+			init_obj.register_initializer(initialize_godopy_types);
+			init_obj.register_terminator(uninitialize_godopy_types);
+			init_obj.set_minimum_library_initialization_level(MIN_LEVEL);
+
+			return init_obj.init();
+		}
 	}
 }

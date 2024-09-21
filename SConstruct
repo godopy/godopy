@@ -87,6 +87,8 @@ def setup_builders(env):
         '--fast-fail',
         '--gdb' if env['debug_symbols'] else '',
         '-EWITH_THREAD=1',
+        # '-ECYTHON_AVOID_BORROWED_REFS=1',
+        '-Isrc/gdextension_interface',
         '-Isrc/cythonlib',
         '-Igen/cythonlib',
         '-Igdextension',
@@ -156,6 +158,8 @@ def cython_sources(env):
     generated = _generated_cython_sources(env)
 
     sources = [
+        env.Cython('src/gdextension_interface/_gdextension_interface.pyx'),
+
         env.Cython('src/cythonlib/_godot.pyx'),
         env.Cython('src/cythonlib/_gdextension.pyx')
     ]
