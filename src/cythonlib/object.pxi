@@ -7,7 +7,7 @@ cdef class Object:
             raise TypeError("'godot_class' argument must be a Class instance or a string")
 
         self.__godot_class__ = godot_class if isinstance(godot_class, Class) \
-                                           else Class(godot_class)
+                                           else Class.get_class(godot_class)
         cdef str class_name = self.__godot_class__.__name__
 
         if not ClassDB.get_singleton().class_exists(class_name):

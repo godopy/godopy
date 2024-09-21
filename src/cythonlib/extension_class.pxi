@@ -17,7 +17,7 @@ cdef class ExtensionClass(gd.Class):
         if isinstance(inherits, gd.Class):
             self.inherits = inherits
         else:
-            self.inherits = gd.Class(inherits)
+            self.inherits = gd.Class.get_class(inherits)
 
         self.is_registered = False
 

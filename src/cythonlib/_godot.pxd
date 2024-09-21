@@ -38,6 +38,11 @@ cdef class Class:
     cdef readonly dict _methods
     cdef readonly str __name__
 
+    cdef int initialize_class(self) except -1
+
+    @staticmethod
+    cdef Class get_class(str name)
+
 
 cdef class Callable:
     cdef tuple type_info
