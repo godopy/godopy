@@ -1,0 +1,19 @@
+cdef extern from "godot_cpp/variant/utility_functions.hpp" namespace "godot" nogil:
+    cppclass UtilityFunctions:
+        @staticmethod
+        void print(str)
+
+        @staticmethod
+        void print_verbose(str)
+
+        @staticmethod
+        void printerr(str)
+
+        @staticmethod
+        void printraw(str)
+
+        @staticmethod
+        void print_rich(str)
+
+        @staticmethod
+        void push_error(str)

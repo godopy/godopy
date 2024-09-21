@@ -6,16 +6,20 @@ from cython.operator cimport dereference as deref
 import io
 import sys
 import pickle
+import builtins
 import traceback
 
 _print = print # print will be redefined for _godot module, keep the original
 
 include "api_data.pxi"
 include "shortcuts.pxi"
+include "typeconv.pxi"
 
 include "class.pxi"
 include "object.pxi"
+include "callable.pxi"
 include "method_bind.pxi"
+include "utility_function.pxi"
 
 include "io.pxi"
 include "register_types.pxi"

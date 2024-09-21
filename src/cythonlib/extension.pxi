@@ -30,18 +30,14 @@ cdef class Extension(gd.Object):
 
         self._owner = _gde_classdb_construct_object(self._godot_base_class_name._native_ptr())
 
-        cls = gd.Class('Object')
-        cdef gd.MethodBind mb = gd.MethodBind(self, 'notification', _methods_data=cls._methods)
+        # cdef gd.MethodBind mb = gd.MethodBind(self, 'notification')
 
-        if notify:
-            # print("NOTIFICATION POSTINITIALIZE from INIT")
-            mb._call_internal_nil_int_bool(0, False) # NOTIFICATION_POSTINITIALIZE
+        # if notify:
+        #     mb._call_internal_nil_int_bool(0, False) # NOTIFICATION_POSTINITIALIZE
 
-        # print('got OWNER %x, setting INSTANCE to %x' % (<uint64_t>self._owner, <uint64_t><PyObject *>self))
         ref.Py_INCREF(self) # DECREF in ExtensionClass._free
         _gde_object_set_instance(self._owner, self._godot_class_name._native_ptr(), <void *><PyObject *>self)
 
-        # print('SET BINDING TO %x' % <uint64_t><PyObject *>self)
         ref.Py_INCREF(self)  # DECREF in Extension._free_callback
         _gde_object_set_instance_binding(
             self._owner,

@@ -1,8 +1,13 @@
 """\
 This module wraps objects inside the engine
 """
-from godot_cpp cimport *
+from cpp cimport *
 from cpython cimport ref, PyObject
+
+
+cpdef str variant_to_str(VariantType vartype)
+cpdef VariantType str_to_variant(str vartype)
+
 
 cdef class Object:
     cdef void *_owner
@@ -33,23 +38,24 @@ cdef class Class:
     cdef readonly dict _methods
     cdef readonly str __name__
 
-cdef class MethodBind:
+
+cdef class Callable:
+    cdef tuple type_info
+
+    cpdef object _call_internal(self, tuple args)
+    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+
+    # cdef int _ptrcall_string(self, Variant *r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) except -1 nogil
+
+
+cdef class MethodBind(Callable):
     cdef void *_owner
-    cdef GDExtensionMethodBindPtr _gde_mb
-    cdef str return_type
-    cdef Variant _ptrcall_string(self, GDExtensionConstTypePtr *p_args) noexcept nogil
-    cpdef object _call_internal(self, tuple args)
-    cdef int _call_internal_nil_int_bool(self, int32_t p_arg1, bint p_arg2) except -1
+    cdef GDExtensionMethodBindPtr _godot_method_bind
 
-cdef class UtilityFunction:
-    cdef GDExtensionPtrUtilityFunction _gde_uf
-    cdef str return_type
-    cpdef object _call_internal(self, tuple args)
+    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
 
-cdef UtilityFunction __print
-cdef UtilityFunction _printerr
-cdef UtilityFunction _printraw
-cdef UtilityFunction _print_verbose
-cdef UtilityFunction _print_rich
-cdef UtilityFunction _push_error
-cdef UtilityFunction _push_warning
+
+cdef class UtilityFunction(Callable):
+    cdef GDExtensionPtrUtilityFunction _godot_utility_function
+
+    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil

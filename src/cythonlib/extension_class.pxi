@@ -118,7 +118,7 @@ cdef class ExtensionClass(gd.Class):
         print('CREATE INSTANCE %x %s' % (<uint64_t>data, notify))
 
         if data == NULL:
-            gd._printerr("ExtensionClass object pointer is uninitialized")
+            UtilityFunctions.printerr("ExtensionClass object pointer is uninitialized")
             return NULL
 
         cdef ExtensionClass cls = <ExtensionClass>data

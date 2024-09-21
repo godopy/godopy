@@ -69,13 +69,6 @@ cdef int _extgil_notification_bind(void *p_instance, int32_t p_what, _gde_bool p
     cdef object wrapper = <object>p_instance
     # print("NOTIFICATION %r %d %s" % (<uint64_t>p_instance, p_what, p_reversed))
 
-    cls = gd.Class('Object')
-    cdef gd.MethodBind mb = gd.MethodBind(wrapper, 'notification', _methods_data=cls._methods)
-
-    # if p_what == 0:
-    #     print("NOTIFICATION POSTINITIALIZE")
-    #     mb._call_internal_nil_int_bool(0, False) # NOTIFICATION_POSTINITIALIZE
-
     return 0
 
 
@@ -138,7 +131,7 @@ cdef int _extgil_call_virtual_with_data(
     cdef real_t arg
     cdef size_t size = func.__code__.co_argcount - 1
     if size < 0:
-        gd._printerr('Wrong number of arguments %d' % size)
+        UtilityFunctions.printerr('Wrong number of arguments %d' % size)
         raise TypeError('Wrong number of arguments %d' % size)
         return -1
 

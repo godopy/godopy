@@ -1,33 +1,14 @@
-cdef UtilityFunction __print = UtilityFunction('print')
-cdef UtilityFunction _printerr = UtilityFunction('printerr')
-cdef UtilityFunction _printraw = UtilityFunction('printraw')
-cdef UtilityFunction _print_verbose = UtilityFunction('print_verbose')
-cdef UtilityFunction _print_rich = UtilityFunction('print_rich')
-cdef UtilityFunction _push_error = UtilityFunction('push_error')
-cdef UtilityFunction _push_warning = UtilityFunction('push_warning')
-
-printt = UtilityFunction('printt')
-prints = UtilityFunction('prints')
-
-print = __print
-printerr = _printerr
-print_verbose = _print_verbose
-print_rich = _print_rich
-printraw = _printraw
-push_error = _push_error
-push_warningg = _push_warning
-
 
 cpdef input(str prompt=None):
     if prompt is not None:
-        printraw(prompt)
+        UtilityFunctions.printraw(prompt)
 
     return OS.get_singleton().read_string_from_stdin()
 
 
 cdef class StdoutWriter:
     cpdef write(self, data):
-        _printraw(str(data))
+        UtilityFunctions.printraw(str(data))
 
     cpdef flush(self): pass
 
@@ -44,8 +25,8 @@ cdef class StderrWriter:
         self.data.append(str(data))
 
     cpdef flush(self):
-        msg = '[color=red]%s[/color]' % (''.join(self.data))
-        _print_rich(msg)
+        # msg = '[color=red]%s[/color]' % (''.join(self.data))
+        UtilityFunctions.printerr(''.join(self.data))
         self.data = []
 
     cpdef fileno(self):
@@ -55,4 +36,4 @@ cdef class StderrWriter:
 def redirect_python_stdio():
     sys.stdout = StdoutWriter()
     sys.stderr = StderrWriter()
-    # TODO: stdin via custom class with _input
+

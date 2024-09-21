@@ -4,4 +4,5 @@ cdef extern from "godot_cpp/classes/os.hpp" namespace "godot" nogil:
         OS *get_singleton()
 
         str read_string_from_stdin()
-        str get_environment(str)
+        str get_environment(str) const
+        bint is_stdout_verbose() const

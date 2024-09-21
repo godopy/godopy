@@ -1,4 +1,13 @@
-cdef TYPEMAP = {
+cdef GDExtensionTypeFromVariantConstructorFunc to_type_constructor[<int>VARIANT_MAX]
+cdef GDExtensionVariantFromTypeConstructorFunc from_type_constructor[<int>VARIANT_MAX]
+cdef size_t i
+
+for i in range(1, VARIANT_MAX):
+    to_type_constructor[i] = _gde_get_variant_to_type_constructor(<GDExtensionVariantType>i)
+    from_type_constructor[i] = _gde_get_variant_from_type_constructor(<GDExtensionVariantType>i)
+
+
+cdef dict TYPEMAP = {
     VariantType.NIL: 'Nil',
 
     # atomic types
@@ -10,7 +19,7 @@ cdef TYPEMAP = {
     # math types
     VariantType.VECTOR2: 'Vector2',
     VariantType.VECTOR2I: 'Vector2i',
-    # VariantType.RECT2
+    VariantType.RECT2: 'Rect2',
     # VariantType.RECT2I
     # VariantType.VECTOR3
     # VariantType.VECTOR3I
@@ -25,15 +34,15 @@ cdef TYPEMAP = {
     # VariantType.PROJECTION
 
     # # misc types
-    # VariantType.COLOR
-    # VariantType.STRING_NAME
+    VariantType.COLOR: 'Color',
+    VariantType.STRING_NAME: 'StringName',
     # VariantType.NODE_PATH
     # VariantType.RID
     # VariantType.OBJECT
     # VariantType.CALLABLE
     # VariantType.SIGNAL
-    # VariantType.DICTIONARY
-    # VariantType.ARRAY
+    VariantType.DICTIONARY: 'Dictionary',
+    VariantType.ARRAY: 'Array',
 
     # # typed arrays
     # VariantType.PACKED_BYTE_ARRAY
@@ -50,5 +59,10 @@ cdef TYPEMAP = {
     # VariantType.VARIANT_MAX
 }
 
-def vartype_to_str(int vartype):
+cdef dict TYPEMAP_REVERSED = {v: k for k, v in TYPEMAP.iteritems()}
+
+cpdef str variant_to_str(VariantType vartype):
     return TYPEMAP.get(vartype, vartype)
+
+cpdef VariantType str_to_variant(str vartype):
+    return TYPEMAP_REVERSED.get(vartype, -1)

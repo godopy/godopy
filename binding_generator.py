@@ -2,7 +2,7 @@
 #!/usr/bin/env python
 
 import json
-import re
+import gzip
 import shutil
 from pathlib import Path
 import pprint
@@ -55,65 +55,155 @@ def generate_bindings(api_filepath, output_dir="."):
     # generate_engine_classes_bindings(api, target_dir, use_template_get_node)
     # generate_utility_functions(api, target_dir)
 
+
 def generate_api_data(api, output_dir):
     gen_folder = Path(output_dir) / "cythonlib"
     gen_folder.mkdir(parents=True, exist_ok=True)
 
     filename = gen_folder / "api_data.pxi"   
+    ref_filename = gen_folder / "api_data_reference.py"
 
-    print('writing', filename)
+    api_data, reference = generate_api_data_file(
+            api['classes'],
+            api['singletons'],
+            api['utility_functions']
+    )
+
+    print('Writing', filename)
 
     with filename.open("w+", encoding="utf-8") as file:
-            file.write(
-                generate_api_data_file(
-                     api['classes'],
-                     api['singletons'],
-                     api['utility_functions']
-                )
-            )
+        file.write(api_data)
+
+    with ref_filename.open("w+", encoding="utf-8") as file:
+        file.write(reference)
+
+BUILTIN_CLASSES = {
+    'Nil',
+    'bool',
+    'int',
+    'float',
+    'String',
+    'Vector2',
+    'Vector2i',
+    'Rect2',
+    'Rect2i',
+    'Vector3',
+    'Vector3i',
+    'Transform2D',
+    'Vector4',
+    'Vector4i',
+    'Plane',
+    'Quaternion',
+    'AABB',
+    'Basis',
+    'Transform3D',
+    'Projection',
+    'Color',
+    'StringName',
+    'NodePath',
+    'RID',
+    'Callable',
+    'Signal',
+    'Dictionary',
+    'Array',
+    'PackedByteArray',
+    'PackedInt32Array',
+    'PackedInt64Array',
+    'PackedFloat32Array',
+    'PackedFloat64Array',
+    'PackedStringArray',
+    'PackedVector2Array',
+    'PackedVector3Array',
+    'PackedColorArray',
+    'PackedVector4Array'
+}
+
+def type_for_type_info(type):
+    if type in BUILTIN_CLASSES:
+        return type
+    return 'Object'
 
 def generate_api_data_file(classes, singletons, utility_functions):
     singleton_data = set()
+    type_data = set()
+
     for singleton in singletons:
          singleton_data.add(singleton['name'])
     class_method_data = {}
+    class_method_data_pickled = {}
+
     for class_api in classes:
         class_name = class_api['name']
+        class_method_data[class_name] = class_method_data_pickled[class_name] = \
+            { 'is_singleton': class_name in singletons }
+
         if "methods" in class_api:
-            class_method_data[class_name]  = {'is_singleton': class_name in singletons}
             for method in class_api['methods']:
                 hash = method.get('hash')
                 if hash is None:
                     continue
                 method_name = method['name']
+                type_info = []
+                return_type = type_for_type_info(
+                    method.get('return_value', {}).get('type', 'Nil')
+                )
+                type_info.append(return_type)
                 method_info = {
-                    'return_type': method.get('return_value', {}).get('type', 'Nil'),
+                    'return_type': return_type,
                     'hash': hash
                 }
-                # arguments = []
-                # if "arguments" in method:
-                #     for argument in method["arguments"]:
-                #         arg_name = argument['name']
-                #         arguments.append({ argument['name'], argument['type'] })
-                # method_info['arguments'] = arguments
+                arguments = []
+                if "arguments" in method:
+                    for argument in method["arguments"]:
+                        arg_name = argument['name']
+                        arg_type = type_for_type_info(argument['type'])
+                        type_info.append(arg_type)
+                        arguments.append({ arg_name: arg_type })
+                method_info['arguments'] = arguments
+                method_info['type_info'] = tuple(type_info)
+                type_data.add('_'.join(type_info))
                 class_method_data[class_name][method_name] = method_info
-            class_method_data[class_name] = pickle.dumps(class_method_data[class_name])
+                class_method_data_pickled[class_name][method_name] = method_info
+        class_method_data_pickled[class_name] = pickle.dumps(class_method_data[class_name])
 
     utilfunc_data = {}
+    utilfunc_data_pickled = {}
     for method in utility_functions:
         method_name = method['name']
+        type_info = []
+        return_type = type_for_type_info(method.get('return_value', {}).get('type', 'Nil'))
+        type_info.append(return_type)
         method_info = {
-            'return_type': method.get('return_value', {}).get('type', 'Nil'),
+            'return_type': return_type,
             'hash': method['hash']
         }
+        arguments = []
+        if "arguments" in method:
+            for argument in method["arguments"]:
+                arg_name = argument['name']
+                arg_type = argument['type']
+                type_info.append(arg_type)
+                arguments.append({ arg_name: arg_type })
+        method_info['arguments'] = arguments
+        method_info['type_info'] = tuple(type_info)
         utilfunc_data[method_name] = method_info
-    utilfunc_data = pickle.dumps(utilfunc_data)
+        utilfunc_data_pickled[method_name] = method_info
+        type_data.add('_'.join(type_info))
+    utilfunc_data_pickled = pickle.dumps(utilfunc_data)
 
     result = [
-        # 'cdef set _singleton_names = \\\n%s' % pprint.pformat(singleton_data, width=120),
-        'cdef bytes _utility_function_data = \\\n%s' % pprint.pformat(utilfunc_data, width=120),
-        'cdef dict _method_data = \\\n%s' % pprint.pformat(class_method_data, width=120),
-
+        # 'cdef set _singletons = \\\n%s' % pprint.pformat(singleton_data, width=120),
+        # 'cdef set _type_info = \\\n%s' % pprint.pformat(type_data, width=120),
+        'cdef bytes _utility_function_data = \\\n%s' % pprint.pformat(utilfunc_data_pickled, width=120),
+        'cdef dict _method_data = \\\n%s' % pprint.pformat(class_method_data_pickled, width=120),
     ]
-    return '\n\n'.join(result) + '\n'
+
+    result2 = pprint.pformat({
+        'singletons': singleton_data,
+        'type_info': type_data,
+        'uf_method_info': utilfunc_data,
+        'class_method_info': class_method_data
+    }, width=120)
+
+    return '\n\n'.join(result) + '\n', result2
 

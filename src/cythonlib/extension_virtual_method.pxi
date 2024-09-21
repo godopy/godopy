@@ -1,12 +1,12 @@
 cdef class PropertyInfo:
-    cdef public int type
+    cdef public VariantType type
     cdef public str name
     cdef public str class_name
     cdef public uint32_t hint
     cdef public str hint_string
     cdef public uint32_t usage
 
-    def __cinit__(self, int type, str name, str class_name, uint32_t hint=0, str hint_string='', uint32_t usage=0):
+    def __cinit__(self, VariantType type, str name, str class_name, uint32_t hint=0, str hint_string='', uint32_t usage=0):
         self.type = type
         self.name = name
         self.class_name = class_name
@@ -16,7 +16,7 @@ cdef class PropertyInfo:
 
     def __repr__(self):
         return '<PropertyInfo %s:%s:%s:%d:%s:%d>' % (
-            self.class_name, self.name, vartype_to_str(self.type), self.hint, self.hint_string, self.usage)
+            self.class_name, self.name, gd.variant_to_str(self.type), self.hint, self.hint_string, self.usage)
 
 
 cdef class ExtensionVirtualMethod:
@@ -44,7 +44,7 @@ cdef class ExtensionVirtualMethod:
             try:
                 pi.name = self.method.__code__.co_varnames[pos]
             except IndexError:
-                gd._push_error('Argname is missing in method %s, pos %d' % (self.method.__name__, pos))
+                UtilityFunctions.push_error('Argname is missing in method %s, pos %d' % (self.method.__name__, pos))
 
         return pi
 
