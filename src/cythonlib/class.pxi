@@ -6,7 +6,7 @@ cdef class Class:
     def __init__(self, str name):
         self.__name__ = name
         try:
-            self._methods = pickle.loads(_method_data[name])
+            self._methods = pickle.loads(_global_method_info__pickles[name])
         except KeyError:
             raise NameError('Class %r not found' % name)
 

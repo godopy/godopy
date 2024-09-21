@@ -1,4 +1,4 @@
-cdef dict _utlity_functions = pickle.loads(_utility_function_data)
+cdef dict _utlity_functions = pickle.loads(_global_utility_function_info__pickle)
 
 
 cdef class UtilityFunction(Callable):

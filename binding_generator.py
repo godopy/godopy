@@ -125,17 +125,28 @@ def type_for_type_info(type):
 
 def generate_api_data_file(classes, singletons, utility_functions):
     singleton_data = set()
+    singleton_data_pickled = set()
     type_data = set()
+    inheritance_data = {}
+    inheritance_data_pickled = {}
+    api_type_data = {}
+    api_type_data_pickled = {}
+    class_method_data = {}
+    class_method_data_pickled = {}
+    utilfunc_data = {}
+    utilfunc_data_pickled = {}
 
     for singleton in singletons:
          singleton_data.add(singleton['name'])
-    class_method_data = {}
-    class_method_data_pickled = {}
+
+    singleton_data_pickled = pickle.dumps(singleton_data)    
 
     for class_api in classes:
         class_name = class_api['name']
-        class_method_data[class_name] = class_method_data_pickled[class_name] = \
-            { 'is_singleton': class_name in singletons }
+        class_method_data[class_name] = {}
+        class_method_data_pickled[class_name] = {}
+        inheritance_data[class_name] = class_api.get('inherits', None)
+        api_type_data.setdefault(class_api['api_type'], set()).add(class_name)
 
         if "methods" in class_api:
             for method in class_api['methods']:
@@ -166,8 +177,6 @@ def generate_api_data_file(classes, singletons, utility_functions):
                 class_method_data_pickled[class_name][method_name] = method_info
         class_method_data_pickled[class_name] = pickle.dumps(class_method_data[class_name])
 
-    utilfunc_data = {}
-    utilfunc_data_pickled = {}
     for method in utility_functions:
         method_name = method['name']
         type_info = []
@@ -191,19 +200,26 @@ def generate_api_data_file(classes, singletons, utility_functions):
         type_data.add('_'.join(type_info))
     utilfunc_data_pickled = pickle.dumps(utilfunc_data)
 
+    inheritance_data_pickled = pickle.dumps(inheritance_data)
+
+    for (key, value) in api_type_data.items():
+        api_type_data_pickled[key] = pickle.dumps(value)
+
     result = [
-        # 'cdef set _singletons = \\\n%s' % pprint.pformat(singleton_data, width=120),
-        # 'cdef set _type_info = \\\n%s' % pprint.pformat(type_data, width=120),
-        'cdef bytes _utility_function_data = \\\n%s' % pprint.pformat(utilfunc_data_pickled, width=120),
-        'cdef dict _method_data = \\\n%s' % pprint.pformat(class_method_data_pickled, width=120),
+        'cdef bytes _global_singleton_info__pickle = \\\n%s' % pprint.pformat(singleton_data_pickled, width=120),
+        'cdef bytes _global_inheritance_info__pickle = \\\n%s' % pprint.pformat(inheritance_data_pickled, width=120),
+        'cdef dict _global_api_types__pickles = \\\n%s' % pprint.pformat(api_type_data_pickled, width=120),
+        'cdef bytes _global_utility_function_info__pickle = \\\n%s' % pprint.pformat(utilfunc_data_pickled, width=120),
+        'cdef dict _global_method_info__pickles = \\\n%s' % pprint.pformat(class_method_data_pickled, width=120),
     ]
 
-    result2 = pprint.pformat({
-        'singletons': singleton_data,
-        'type_info': type_data,
-        'uf_method_info': utilfunc_data,
-        'class_method_info': class_method_data
-    }, width=120)
+    result2 = [
+        '_global_type_info = \\\n%s' % pprint.pformat(type_data, width=120),
+        '_global_singleton_info = \\\n%s' % pprint.pformat(singleton_data, width=120),
+        '_global_inheritance_info = \\\n%s' % pprint.pformat(inheritance_data, width=120),
+        '_global_api_types = \\\n%s' % pprint.pformat(api_type_data, width=120),
+        '_global_utility_function_info = \\\n%s' % pprint.pformat(utilfunc_data, width=120),
+        '_global_method_info = \\\n%s' % pprint.pformat(class_method_data, width=120),
+    ]
 
-    return '\n\n'.join(result) + '\n', result2
-
+    return '\n\n'.join(result) + '\n', '\n\n'.join(result2) + '\n'
