@@ -30,10 +30,10 @@ cdef class Extension(gd.Object):
 
         self._owner = _gde_classdb_construct_object(self._godot_base_class_name._native_ptr())
 
-        # cdef gd.MethodBind mb = gd.MethodBind(self, 'notification')
+        cdef gd.MethodBind mb = gd.MethodBind(self, 'notification')
 
-        # if notify:
-        #     mb._call_internal_nil_int_bool(0, False) # NOTIFICATION_POSTINITIALIZE
+        if notify:
+            mb(0, False) # NOTIFICATION_POSTINITIALIZE
 
         ref.Py_INCREF(self) # DECREF in ExtensionClass._free
         _gde_object_set_instance(self._owner, self._godot_class_name._native_ptr(), <void *><PyObject *>self)

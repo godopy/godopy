@@ -40,6 +40,7 @@ cdef class Class:
     cdef readonly Class __inherits__
 
     cdef int initialize_class(self, dict opts) except -1
+    cdef dict get_method_info(self, method_name)
 
     @staticmethod
     cdef Class get_class(str name, dict opts)

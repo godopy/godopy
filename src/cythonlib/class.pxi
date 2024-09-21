@@ -11,6 +11,7 @@ def get_method_info(class_name):
     return _method_info_cache[class_name] 
 
 
+DEF ROOT_CLASS = 'Object'
 cdef dict _class_cache = {}
 
 cdef class Class:
@@ -22,8 +23,6 @@ cdef class Class:
         raise TypeError("Godot Engine classes can't be instantiated")
 
     def __call__(self):
-        if self.__name__ == '<None>':
-            raise TypeError("Nothing to instantiate")
         return Object(self)
 
     cdef int initialize_class(self, dict opts) except -1:
@@ -38,7 +37,7 @@ cdef class Class:
             except KeyError:
                 raise NameError('Class %r not found' % self.__name__)
 
-        if self.__name__ not in ('Object', '<None>'):
+        if self.__name__ != ROOT_CLASS:
             try:
                 inherits_name = _global_inheritance_info[self.__name__]
             except KeyError:
@@ -46,9 +45,19 @@ cdef class Class:
 
             self.__inherits__ = Class.get_class(inherits_name, {})
         else:
-            self.__inherits__ = Class.get_class('<None>', dict(skip_method_check=True))
+            self.__inherits__ = None
 
         self.__method_info__ = method_info
+
+    cdef dict get_method_info(self, method_name):
+        cdef dict mi = None
+        if self.__name__ == ROOT_CLASS:
+            return self.__method_info__.get(method_name, None)
+
+        return self.__method_info__.get(
+            method_name,
+            self.__inherits__.get_method_info(method_name)
+        )
 
     @staticmethod
     cdef Class get_class(str name, dict opts):

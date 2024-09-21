@@ -262,12 +262,13 @@ Variant::Variant(const PyObject *v0) {
 
 	} else if (PyBool_Check(v)) {
 		GDExtensionBool encoded;
-		PtrToArg<bool>::encode(PyLong_AsLong(v), &encoded);
+		bool tmp = static_cast<bool>(PyLong_AsSize_t(v));
+		PtrToArg<bool>::encode(tmp, &encoded);
 		from_type_constructor[BOOL](_native_ptr(), &encoded);
 
 	} else if (PyLong_Check(v)) {
 		GDExtensionInt encoded;
-		PtrToArg<int64_t>::encode(PyLong_AsLong(v), &encoded);
+		PtrToArg<int64_t>::encode(PyLong_AsSize_t(v), &encoded);
 		from_type_constructor[INT](_native_ptr(), &encoded);
 
 	} else if (PyFloat_Check(v)) {

@@ -27,6 +27,7 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
 
         void *_native_ptr()
         object pythonize() const
+        GDExtensionBool booleanize() const
         String stringify() const
 
         enum Type:

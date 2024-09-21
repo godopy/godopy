@@ -4,6 +4,12 @@ cdef extern from "godot_cpp/variant/utility_functions.hpp" namespace "godot" nog
         void print(str)
 
         @staticmethod
+        void print(const Variant &)
+
+        @staticmethod
+        void print(const String &)
+
+        @staticmethod
         void print_verbose(str)
 
         @staticmethod
