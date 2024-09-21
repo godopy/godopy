@@ -2,7 +2,6 @@ registry = {}
 
 
 cdef class ExtensionClass(gd.Class):
-    cdef readonly gd.Class inherits
     cdef readonly bint is_registered
     cdef readonly dict method_bindings
     cdef readonly dict virtual_method_bindings
@@ -15,9 +14,11 @@ cdef class ExtensionClass(gd.Class):
 
         self.__name__ = name
         if isinstance(inherits, gd.Class):
-            self.inherits = inherits
+            self.__inherits__ = inherits
         else:
-            self.inherits = gd.Class.get_class(inherits)
+            self.__inherits__ = gd.Class.get_class(inherits)
+
+        self.__method_info__ = {}
 
         self.is_registered = False
 
@@ -71,19 +72,19 @@ cdef class ExtensionClass(gd.Class):
 
 
     cpdef register(self):
-        return ExtensionClassRegistrator(self, self.inherits)
+        return ExtensionClassRegistrator(self, self.__inherits__)
 
 
     cpdef register_abstract(self):
-        return ExtensionClassRegistrator(self, self.inherits, is_abstract=True)
+        return ExtensionClassRegistrator(self, self.__inherits__, is_abstract=True)
 
 
     cpdef register_internal(self):
-        return ExtensionClassRegistrator(self, self.inherits, is_exposed=False)
+        return ExtensionClassRegistrator(self, self.__inherits__, is_exposed=False)
 
 
     cpdef register_runtime(self):
-        return ExtensionClassRegistrator(self, self.inherits, is_runtime=True)
+        return ExtensionClassRegistrator(self, self.__inherits__, is_runtime=True)
 
 
     @staticmethod
@@ -122,7 +123,7 @@ cdef class ExtensionClass(gd.Class):
             return NULL
 
         cdef ExtensionClass cls = <ExtensionClass>data
-        cdef gd.Class base = cls.inherits
+        cdef gd.Class base = cls.__inherits__
         cdef Extension wrapper = Extension(base, cls, notify)
 
         print("CREATED INSTANCE %r %x %x" % (wrapper, <uint64_t>wrapper._owner, <uint64_t><PyObject *>wrapper))

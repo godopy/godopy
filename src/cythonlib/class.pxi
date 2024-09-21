@@ -24,7 +24,7 @@ cdef class Class:
 
     cdef int initialize_class(self) except -1:
         try:
-            self._methods = get_method_info(self.__name__)
+            self.__method_info__ = get_method_info(self.__name__)
         except KeyError:
             raise NameError('Class %r not found' % self.__name__)
 

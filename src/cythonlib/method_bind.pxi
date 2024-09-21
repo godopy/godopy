@@ -1,7 +1,7 @@
 cdef class MethodBind(Callable):
     def __init__(self, Object wrapper, str method_name):
         self._owner = wrapper._owner
-        info = wrapper.__godot_class__._methods.get(method_name)
+        info = wrapper.__godot_class__.__method_info__.get(method_name)
         # print("MB %s: %r" % (method_name, info))
         if info is None:
             raise AttributeError('Method %r not found in class %r' % (method_name, wrapper.__godot_class__.__name__))

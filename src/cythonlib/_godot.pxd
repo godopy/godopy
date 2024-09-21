@@ -35,8 +35,9 @@ cdef class Object:
                                              GDExtensionBool p_reference) noexcept nogil
 
 cdef class Class:
-    cdef readonly dict _methods
+    cdef readonly dict __method_info__
     cdef readonly str __name__
+    cdef readonly Class __inherits__
 
     cdef int initialize_class(self) except -1
 
