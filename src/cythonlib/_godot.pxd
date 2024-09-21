@@ -39,10 +39,10 @@ cdef class Class:
     cdef readonly str __name__
     cdef readonly Class __inherits__
 
-    cdef int initialize_class(self) except -1
+    cdef int initialize_class(self, dict opts) except -1
 
     @staticmethod
-    cdef Class get_class(str name)
+    cdef Class get_class(str name, dict opts)
 
 
 cdef class Callable:

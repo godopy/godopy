@@ -1,3 +1,5 @@
+cdef dict _global_inheritance_info = pickle.loads(_global_inheritance_info__pickle)
+
 cdef dict _method_info_cache = {}
 def get_method_info(class_name):
     cdef bytes mi_pickled
@@ -20,22 +22,41 @@ cdef class Class:
         raise TypeError("Godot Engine classes can't be instantiated")
 
     def __call__(self):
+        if self.__name__ == '<None>':
+            raise TypeError("Nothing to instantiate")
         return Object(self)
 
-    cdef int initialize_class(self) except -1:
-        try:
-            self.__method_info__ = get_method_info(self.__name__)
-        except KeyError:
-            raise NameError('Class %r not found' % self.__name__)
+    cdef int initialize_class(self, dict opts) except -1:
+        cdef dict method_info
+        cdef str inherits_name
 
+        if opts.get('skip_method_check'):
+            method_info = {}
+        else:
+            try:
+                method_info = get_method_info(self.__name__)
+            except KeyError:
+                raise NameError('Class %r not found' % self.__name__)
+
+        if self.__name__ not in ('Object', '<None>'):
+            try:
+                inherits_name = _global_inheritance_info[self.__name__]
+            except KeyError:
+                raise NameError('Parent class of %r not found' % self.__name__)
+
+            self.__inherits__ = Class.get_class(inherits_name, {})
+        else:
+            self.__inherits__ = Class.get_class('<None>', dict(skip_method_check=True))
+
+        self.__method_info__ = method_info
 
     @staticmethod
-    cdef Class get_class(str name):
+    cdef Class get_class(str name, dict opts):
         cdef Class cls
         if name not in _class_cache:
             cls = Class.__new__(Class, name)
             _class_cache[name] = cls
             cls.__name__ = name
-            cls.initialize_class()
+            cls.initialize_class(opts)
 
         return _class_cache[name]

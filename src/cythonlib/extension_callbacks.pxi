@@ -133,7 +133,6 @@ cdef int _extgil_call_virtual_with_data(
     if size < 0:
         UtilityFunctions.printerr('Wrong number of arguments %d' % size)
         raise TypeError('Wrong number of arguments %d' % size)
-        return -1
 
     for i in range(size):
         arg = deref(<real_t *>p_args[i])

@@ -1,9 +1,9 @@
-cdef dict _utlity_functions = pickle.loads(_global_utility_function_info__pickle)
+cdef dict _global_utlity_function_info = pickle.loads(_global_utility_function_info__pickle)
 
 
 cdef class UtilityFunction(Callable):
     def __init__(self, str function_name):
-        info = _utlity_functions.get(function_name, None)
+        info = _global_utlity_function_info.get(function_name, None)
         if info is None:
             raise NameError('Utility function %s not found' % function_name)
         # builtins.print(function_name, info)

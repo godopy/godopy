@@ -8,7 +8,6 @@ cdef class Callable:
 
 
     cpdef object _call_internal(self, tuple args):
-        return
         cdef Variant arg
         cdef size_t i = 0
         cdef size_t size = len(args)
@@ -58,11 +57,11 @@ cdef class Callable:
             _gde_mem_free(p_args)
 
         if unknown_argtype_error:
-            _printerr("Don't know how to convert %r types yet" % arg_type)
+            UtilityFunctions.printerr("Don't know how to convert %r types yet" % arg_type)
             raise NotImplementedError("Don't know how to return %r types" % self.return_type)
 
         if unknown_type_error:
-            _printerr("Don't know how to return %r types" % return_type)
+            UtilityFunctions.printerr("Don't know how to return %r types" % return_type)
             raise NotImplementedError("Don't know how to return %r types" % return_type)
 
         if return_type == 'Nil':
