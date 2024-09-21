@@ -150,9 +150,7 @@ def generate_api_data_file(classes, singletons, utility_functions):
 
         if "methods" in class_api:
             for method in class_api['methods']:
-                hash = method.get('hash')
-                if hash is None:
-                    continue
+                hash = method.get('hash', None)
                 method_name = method['name']
                 type_info = []
                 return_type = type_for_type_info(

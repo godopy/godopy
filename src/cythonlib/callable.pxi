@@ -72,7 +72,7 @@ cdef class Callable:
         elif return_type == 'Variant':
             self._ptr_call(&return_value, <GDExtensionConstTypePtr *>p_args, size)
         elif return_typecode > 0:
-            self._ptr_call(&type_return_value, <GDExtensionConstTypePtr *>p_args, size)
+            self._ptr_call(type_return_value, <GDExtensionConstTypePtr *>p_args, size)
             if return_type == 'String':
                 string_arg = deref(<String *>type_return_value)
             elif return_type == 'float':

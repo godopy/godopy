@@ -16,7 +16,7 @@ cdef class ExtensionClass(gd.Class):
         if isinstance(inherits, gd.Class):
             self.__inherits__ = inherits
         else:
-            self.__inherits__ = gd.Class.get_class(inherits, {})
+            self.__inherits__ = gd.Class.get_class(inherits)
 
         self.__method_info__ = {}
 
