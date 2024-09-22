@@ -362,7 +362,7 @@ def make_doc_source(target, source, env):
 
     g.write("/* THIS FILE IS GENERATED DO NOT EDIT */\n")
     g.write("\n")
-    g.write("#include <godot_cpp/godot.hpp>\n")
+    g.write("#include <binding.h>\n")
     g.write("\n")
 
     g.write('static const char *_doc_data_hash = "' + str(hash(buf)) + '";\n')
@@ -545,7 +545,7 @@ def _godot_cpp(env):
     sources.extend([f for f in bindings if str(f).endswith(".cpp")])
 
     # Includes
-    env.AppendUnique(CPPPATH=[env.Dir(d) for d in [extension_dir, "include", "gen/include"]])
+    env.AppendUnique(CPPPATH=[env.Dir(d) for d in ["../src", extension_dir, "include", "gen/include"]])
     env.AppendUnique(CPPPATH=[env.Dir(os.path.join("..", "python", "Include"))])
     if env['platform'] == 'windows':
         env.AppendUnique(CPPPATH=[env.Dir(os.path.join("..", "python", "PC"))])

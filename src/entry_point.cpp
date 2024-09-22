@@ -1,55 +1,42 @@
-// #include "register_types.h"
 #include "python/python_runtime.h"
 #include "python/python_object.h"
 
 #include <gdextension_interface.h>
+#include <binding.h>
+
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/core/defs.hpp>
-#include <godot_cpp/godot.hpp>
 #include <godot_cpp/classes/engine.hpp>
-#include <godot_cpp/variant/utility_functions.hpp>
-
-int entry_symbol_hook(godot::GDExtensionBinding::InitObject *);
 
 using namespace godot;
 
-static PythonRuntime *runtime;
 static Python *python;
 
-static ModuleInitializationLevel MIN_LEVEL = MODULE_INITIALIZATION_LEVEL_SCENE;
-
-#define LOWLEVEL 0
-
-void initialize_godopy_types(ModuleInitializationLevel p_level)
+void initialize_level(ModuleInitializationLevel p_level)
 {
-	if (p_level == MIN_LEVEL && !LOWLEVEL) {
-		runtime = memnew(PythonRuntime);
-		runtime->pre_initialize();
-		runtime->initialize(true);
-	}
-
 	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		ClassDB::register_class<Python>();
 		python = memnew(Python);
 		Engine::get_singleton()->register_singleton("Python", Python::get_singleton());
+	}
 
+	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
+		ClassDB::register_class<Python>();
 		ClassDB::register_class<PythonObject>();
 	}
 
-
-	if (p_level >= MIN_LEVEL) {
+	if (p_level >= MODULE_INITIALIZATION_LEVEL_SCENE) {
 		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("_godopy_core");
-		Ref<PythonObject> py_init_func = mod->getattr("initialize_godopy_types");
+		Ref<PythonObject> py_init_func = mod->getattr("initialize_level");
 		py_init_func->call_one_arg(Variant(p_level));
 		py_init_func.unref();
 		mod.unref();
 	}
 }
 
-void uninitialize_godopy_types(ModuleInitializationLevel p_level) {
-	if (p_level >= MIN_LEVEL) {
+void deinitialize_level(ModuleInitializationLevel p_level) {
+	if (p_level >= MODULE_INITIALIZATION_LEVEL_CORE) {
 		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("_godopy_core");
-		Ref<PythonObject> py_term_func = mod->getattr("uninitialize_godopy_types");
+		Ref<PythonObject> py_term_func = mod->getattr("deinitialize_level");
 		py_term_func->call_one_arg(Variant(p_level));
 		py_term_func.unref();
 		mod.unref();
@@ -67,31 +54,12 @@ extern "C"
 {
 	// Initialization
 	GDExtensionBool GDE_EXPORT godopy_library_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization) {
+
 		GDExtensionBinding::InitObject init_obj(p_get_proc_address, p_library, r_initialization);
-		init_obj.init(); // preinitialize, initialized APIs are required
 
-		String libpath;
-		internal::gdextension_interface_get_library_path(p_library, &libpath);
+		init_obj.register_initializer(initialize_level);
+		init_obj.register_terminator(deinitialize_level);
 
-		UtilityFunctions::print(String("Library path: {0}").format(Array::make(libpath)));
-
-		int result = entry_symbol_hook(&init_obj);
-
-		if (result != 0) {
-			return false;
-		}
-
-		if (LOWLEVEL) {
-			runtime = memnew(PythonRuntime);
-			runtime->pre_initialize();
-			runtime->initialize(false);
-		} else {
-			
-			init_obj.register_initializer(initialize_godopy_types);
-			init_obj.register_terminator(uninitialize_godopy_types);
-			init_obj.set_minimum_library_initialization_level(MIN_LEVEL);
-
-			return init_obj.init(); // update callbacks and minimum level
-		}
+		return init_obj.init();
 	}
 }

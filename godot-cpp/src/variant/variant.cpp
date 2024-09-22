@@ -30,7 +30,7 @@
 
 #include <godot_cpp/variant/variant.hpp>
 
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 #include <godot_cpp/core/binder_common.hpp>
 #include <godot_cpp/core/class_db.hpp>

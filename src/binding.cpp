@@ -28,7 +28,10 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
 /**************************************************************************/
 
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
+
+#include <python/python_runtime.h>
+#include <python/python_object.h>
 
 #include <godot_cpp/classes/editor_plugin_registration.hpp>
 #include <godot_cpp/classes/wrapped.hpp>
@@ -268,6 +271,8 @@ typedef struct {
 	GDExtensionInterfacePrintErrorWithMessage print_error_with_message;
 } LegacyGDExtensionInterface;
 
+static PythonRuntime *python_runtime;
+
 GDExtensionBool GDExtensionBinding::init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, InitData *p_init_data, GDExtensionInitialization *r_initialization) {
 	// if (!p_init_data || !p_init_data->init_callback) {
 	// 	ERR_FAIL_V_MSG(false, "Initialization callback must be defined.");
@@ -495,6 +500,9 @@ GDExtensionBool GDExtensionBinding::init(GDExtensionInterfaceGetProcAddress p_ge
 	Variant::init_bindings();
 	godot::internal::register_engine_classes();
 
+	python_runtime = memnew(PythonRuntime);
+	python_runtime->initialize();
+
 	api_initialized = true;
 	return true;
 }
@@ -531,6 +539,11 @@ void GDExtensionBinding::deinitialize_level(void *p_userdata, GDExtensionInitial
 	InitData *init_data = static_cast<InitData *>(p_userdata);
 	if (init_data && init_data->terminate_callback) {
 		init_data->terminate_callback(static_cast<ModuleInitializationLevel>(p_level));
+
+		if (p_level == GDEXTENSION_INITIALIZATION_CORE) {
+			python_runtime->finalize();
+        	memdelete(python_runtime);
+		}
 	}
 
 	level_initialized[p_level]--;

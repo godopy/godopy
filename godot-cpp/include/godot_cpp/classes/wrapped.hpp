@@ -38,7 +38,7 @@
 #include <godot_cpp/templates/list.hpp>
 #include <godot_cpp/templates/vector.hpp>
 
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 namespace godot {
 

@@ -1081,7 +1081,7 @@ def generate_builtin_class_source(builtin_api, size, used_classes, fully_used_cl
     result.append("")
     result.append("#include <godot_cpp/core/binder_common.hpp>")
     result.append("")
-    result.append("#include <godot_cpp/godot.hpp>")
+    result.append("#include <binding.h>")
     result.append("")
 
     # Only used since the "fully used" is included in header already.

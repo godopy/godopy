@@ -33,7 +33,7 @@
 #include <godot_cpp/classes/worker_thread_pool.hpp>
 #include <godot_cpp/classes/xml_parser.hpp>
 
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 namespace godot {
 Error XMLParser::_open_buffer(const uint8_t *p_buffer, size_t p_size) {

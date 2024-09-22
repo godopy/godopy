@@ -32,7 +32,7 @@
 #define GODOT_RID_OWNER_HPP
 
 #include <godot_cpp/core/memory.hpp>
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 #include <godot_cpp/templates/list.hpp>
 #include <godot_cpp/templates/spin_lock.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>

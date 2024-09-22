@@ -6,7 +6,6 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
-PyMODINIT_FUNC PyInit__gdextension_interface(void);
 PyMODINIT_FUNC PyInit__godopy_core(void);
 PyMODINIT_FUNC PyInit__godot_types(void);
 
@@ -14,13 +13,11 @@ using namespace godot;
 
 PythonRuntime *PythonRuntime::singleton = nullptr;
 
-_ALWAYS_INLINE_ const wchar_t *_wide_string_from_string(const String &s) {
-	return s.wide_string();
-}
-
-_ALWAYS_INLINE_ const wchar_t *_wide_string_from_format(const String &format, const String &s) {
-	String result = format.replace("%s", s);
-	return result.wide_string();
+PythonRuntime::PythonRuntime() {
+	ERR_FAIL_COND(singleton != nullptr);
+	singleton = this;
+	initialized = false;
+	internal::gdextension_interface_get_library_path(internal::library, &library_path);
 }
 
 void PythonRuntime::pre_initialize() {
@@ -42,116 +39,72 @@ void PythonRuntime::pre_initialize() {
 #define ERR_FAIL_PYSTATUS(status, label) if (PyStatus_Exception(status)) goto label
 #define CHECK_PYSTATUS(status, ret) if (PyStatus_Exception(status)) return ret
 
-int set_config_paths(PyConfig *config) {
+#define SET_PYCONFIG_STRING(config_param, path) \
+	status = PyConfig_SetString(config, config_param, path); \
+	if (PyStatus_Exception(status)) return 1
+
+#define APPEND_PYTHON_PATH(path) \
+	status = PyWideStringList_Append(&config->module_search_paths, path); \
+	if (PyStatus_Exception(status)) return 1
+
+int PythonRuntime::set_config_paths(PyConfig *config) {
 	PyStatus status;
-	ProjectSettings *settings = ProjectSettings::get_singleton();
 
-	String res_path = settings->globalize_path("res://");
-	String project_name = settings->get_setting("application/config/name");
-
-	if (project_name == "") {
-		ERR_PRINT("No Godot/GodoPy project found. Cannot run.");
-		return 1;
-	}
-
-	// TODO: Get from project settings
-	String exec_path = res_path + "bin/windows/python.exe";
+	String exec_path = library_path;
 	String exec_prefix = exec_path.get_base_dir();
 
-	UtilityFunctions::print_verbose("Python program name: " + exec_path);
+	String bin_dir = exec_prefix.get_base_dir();
+	String res_path = bin_dir.get_base_dir();
 
-	status = PyConfig_SetString(config, &config->program_name, _wide_string_from_string(exec_path));
-	CHECK_PYSTATUS(status, 1);
+	UtilityFunctions::print_verbose("Python library name: " + exec_path);
+	UtilityFunctions::print_verbose("Detected project folder: " + res_path);
 
-	status = PyConfig_SetString(config, &config->base_exec_prefix, _wide_string_from_string(exec_prefix));
-	CHECK_PYSTATUS(status, 1);
+	SET_PYCONFIG_STRING(&config->program_name, exec_path.wide_string());
+	SET_PYCONFIG_STRING(&config->base_exec_prefix, exec_prefix.wide_string());
+	SET_PYCONFIG_STRING(&config->base_prefix, res_path.wide_string());
+	SET_PYCONFIG_STRING(&config->exec_prefix, exec_prefix.wide_string());
+	SET_PYCONFIG_STRING(&config->executable, exec_path.wide_string());
+	SET_PYCONFIG_STRING(&config->prefix, res_path.wide_string());
 
-	status = PyConfig_SetString(config, &config->base_prefix, _wide_string_from_string(res_path));
-	CHECK_PYSTATUS(status, 1);
+	String python_lib_path = res_path.path_join("python").path_join("lib");
 
-	status = PyConfig_SetString(config, &config->exec_prefix, _wide_string_from_string(exec_prefix));
-	CHECK_PYSTATUS(status, 1);
-
-	status = PyConfig_SetString(config, &config->executable, _wide_string_from_string(exec_path));
-	CHECK_PYSTATUS(status, 1);
-
-	status = PyConfig_SetString(config, &config->prefix, _wide_string_from_string(res_path));
-	CHECK_PYSTATUS(status, 1);
-
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_string(res_path)
-	);
-	CHECK_PYSTATUS(status, 1);
-
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_format("%slib", res_path)
-	);
-	CHECK_PYSTATUS(status, 1);
-
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_format("%spython/lib", res_path)
-	);
-	CHECK_PYSTATUS(status, 1);
-
-	status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_format("%spython/lib/site-packages", res_path)
-	);
-	CHECK_PYSTATUS(status, 1);
-
-    status = PyWideStringList_Append(
-		&config->module_search_paths,
-		_wide_string_from_format("%spython/bin/windows/dylib", res_path)
-	);
-	CHECK_PYSTATUS(status, 1);
-
-	String venv_path = OS::get_singleton()->get_environment("VIRTUAL_ENV");
+	APPEND_PYTHON_PATH(res_path.wide_string());
+	APPEND_PYTHON_PATH(res_path.path_join("lib").wide_string());
+	APPEND_PYTHON_PATH(python_lib_path.wide_string());
+	APPEND_PYTHON_PATH(python_lib_path.path_join("site-packages").wide_string());
+	APPEND_PYTHON_PATH(exec_prefix.path_join("dylib").wide_string());
 
 	// Add venv to path only when editing
-	if (Engine::get_singleton()->is_editor_hint() && venv_path != "") {
-		status = PyWideStringList_Append(
-		&config->module_search_paths,
-			_wide_string_from_format("%s/Lib/site-packages", venv_path)
-		);
-		CHECK_PYSTATUS(status, 1);
-	}
-
+	// String venv_path = OS::get_singleton()->get_environment("VIRTUAL_ENV");
+	// if (Engine::get_singleton()->is_editor_hint() && venv_path != "") {
+	// 	APPEND_PYTHON_PATH(venv_path.path_join("Lib").path_join("site-packages").wide_string());
+	// }
 
 	return 0;
 }
 
-void PythonRuntime::initialize(bool from_scene_initlevel) {
+void PythonRuntime::initialize() {
+	pre_initialize();
+
 	UtilityFunctions::print_verbose("Python: Initializing runtime...");
 	UtilityFunctions::print("Python version " + String(Py_GetVersion()));
 
 	PyStatus status;
 	PyConfig config;
 
-	PyImport_AppendInittab("_gdextension_interface", PyInit__gdextension_interface);
 	PyImport_AppendInittab("_godopy_core", PyInit__godopy_core);
 	PyImport_AppendInittab("_godot_types", PyInit__godot_types);
 
 	PyConfig_InitIsolatedConfig(&config);
 
-	MainLoop *ml = nullptr;
-	bool is_detached_script = false;
+	UtilityFunctions::print_verbose("Python: Configuring paths...");
 
-	if (from_scene_initlevel) {
-		ml = Engine::get_singleton()->get_main_loop();
-		is_detached_script = ml == nullptr;
-
-		UtilityFunctions::print_verbose("Python: Configuring paths...");
-
-		if (set_config_paths(&config) != 0) {
-			goto fail;
-		}
+	if (set_config_paths(&config) != 0) {
+		goto fail;
 	}
 
 	config.site_import = 0;
-	config.install_signal_handlers = is_detached_script;
+	config.install_signal_handlers = 0;
 	config.module_search_paths_set = 1;
 
 	status = PyConfig_Read(&config);
@@ -207,20 +160,17 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
     return module;
 }
 
-PythonRuntime::PythonRuntime() {
-	ERR_FAIL_COND(singleton != nullptr);
-	singleton = this;
-	initialized = false;
-}
-
-PythonRuntime::~PythonRuntime() {
+void PythonRuntime::finalize() {
 	if (is_initialized()) {
 		if (Py_IsInitialized()) {
 			Py_FinalizeEx();
 		}
+
 		initialized = false;
 	}
+}
 
+PythonRuntime::~PythonRuntime() {
 	ERR_FAIL_COND(singleton != this);
 	singleton = nullptr;
 }

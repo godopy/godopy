@@ -41,7 +41,7 @@
 
 #include <godot_cpp/classes/object.hpp>
 
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 #include <gdextension_interface.h>
 

@@ -30,7 +30,7 @@
 
 #include <godot_cpp/core/memory.hpp>
 
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 namespace godot {
 

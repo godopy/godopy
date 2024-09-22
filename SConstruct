@@ -87,7 +87,8 @@ def setup_builders(env):
         '--fast-fail',
         '--gdb' if env['debug_symbols'] else '',
         '-EWITH_THREAD=1',
-        # '-ECYTHON_AVOID_BORROWED_REFS=1',
+        '-ECYTHON_COMPILING_IN_LIMITED_API=1',
+        '-Isrc',
         '-Isrc/gdextension_interface',
         '-Igen/gdextension_interface',
         '-Isrc/core',
@@ -165,15 +166,14 @@ def cython_sources(env):
     # 'encodings/latin_1.py',
 
     sources = [
-        env.Cython('src/gdextension_interface/_gdextension_interface.pyx'),
         env.Cython('src/core/_godopy_core.pyx'),
     ]
 
     depends = [
         generated,
-        *Glob('src/cythonlib/*.pxi'),
-        *Glob('src/cythonlib/*.pxd'),
-        *Glob('src/cythonlib/_godot_cpp_includes/*.pxi'),
+        *Glob('src/core/*.pxi'),
+        *Glob('src/core/*.pxd'),
+        *Glob('src/godot_cpp/defs/*.pxi'),
         *Glob('gdextension/*.pxd')
     ]
 

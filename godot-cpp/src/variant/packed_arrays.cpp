@@ -30,7 +30,7 @@
 
 // extra functions for packed arrays
 
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 #include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/dictionary.hpp>

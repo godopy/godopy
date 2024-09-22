@@ -1,4 +1,6 @@
-cdef extern from "godot_cpp/godot.hpp" namespace "godot" nogil:
+from gdextension_interface cimport *
+
+cdef extern from "binding.h" namespace "godot" nogil:
     cdef enum ModuleInitializationLevel:
         MODULE_INITIALIZATION_LEVEL_CORE = GDEXTENSION_INITIALIZATION_CORE
         MODULE_INITIALIZATION_LEVEL_SERVERS = GDEXTENSION_INITIALIZATION_SERVERS
@@ -8,7 +10,7 @@ cdef extern from "godot_cpp/godot.hpp" namespace "godot" nogil:
 
 ctypedef void (*Callback)(ModuleInitializationLevel)
 
-cdef extern from "godot_cpp/godot.hpp" namespace "godot" nogil:
+cdef extern from "binding.h" namespace "godot" nogil:
     cppclass InitObject "godot::GDExtensionBinding::InitObject":
         InitObject()
         InitObject(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization)
@@ -19,7 +21,7 @@ cdef extern from "godot_cpp/godot.hpp" namespace "godot" nogil:
 
         GDExtensionBool init() const
 
-cdef extern from "godot_cpp/godot.hpp" namespace "godot::internal" nogil:
+cdef extern from "binding.h" namespace "godot::internal" nogil:
     cdef GDExtensionInterfaceGetProcAddress gdextension_interface_get_proc_address
     cdef GDExtensionClassLibraryPtr gdextension_library "godot::internal::library"
     cdef void *gdextension_token "godot::internal::token"

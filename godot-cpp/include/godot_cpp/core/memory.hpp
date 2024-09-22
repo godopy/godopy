@@ -36,7 +36,7 @@
 
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/core/error_macros.hpp>
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 #include <type_traits>
 

@@ -35,7 +35,7 @@
 #include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/variant/string_name.hpp>
 
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 #include <cmath>
 #include <string>

@@ -12,6 +12,7 @@ using namespace godot;
 class PythonRuntime {
 private:
 	bool initialized;
+	String library_path;
 
 protected:
 	static PythonRuntime *singleton;
@@ -19,10 +20,15 @@ protected:
 public:
 	static PythonRuntime *get_singleton() { return singleton; }
 
+private:
+	int set_config_paths(PyConfig *config);
+	void pre_initialize();
+
 	_ALWAYS_INLINE_ bool is_initialized() const { return initialized; }
 
-	void pre_initialize();
-	void initialize(bool from_scene_initlevel=true);
+public:
+	void initialize();
+	void finalize();
 
 	void run_simple_string(const String &p_string_script);
 	Ref<PythonObject> import_module(const String &p_name);

@@ -31,7 +31,7 @@
 #include <godot_cpp/core/class_db.hpp>
 
 #include <godot_cpp/core/error_macros.hpp>
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 #include <godot_cpp/templates/vector.hpp>
 
 #include <godot_cpp/core/memory.hpp>

@@ -2,8 +2,6 @@ from gdextension_interface cimport *
 
 ctypedef float real_t
 
-include "defs/godot.pxi"
-
 include "defs/variant.pxi"
 include "defs/string.pxi"
 include "defs/string_name.pxi"

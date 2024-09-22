@@ -35,7 +35,7 @@
 
 #include <godot_cpp/core/binder_common.hpp>
 #include <godot_cpp/core/object.hpp>
-#include <godot_cpp/godot.hpp>
+#include <binding.h>
 
 #include <array>
 
