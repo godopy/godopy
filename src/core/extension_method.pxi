@@ -24,7 +24,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
     ):
         print("METHOD CALL %x" % <uint64_t>p_instance)
         cdef ExtensionMethod self = <object>p_method_userdata
-        cdef gd.Object wrapper = <object>p_instance
+        cdef Object wrapper = <object>p_instance
         cdef int i
         cdef list args = []
         cdef Variant arg
@@ -53,7 +53,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
     ):
         print("METHOD PTRCALL %x" % <uint64_t>p_instance)
         cdef ExtensionMethod self = <object>p_method_userdata
-        cdef gd.Object wrapper = <object>p_instance
+        cdef Object wrapper = <object>p_instance
         cdef size_t i = 0
         cdef list args = []
         cdef Variant arg

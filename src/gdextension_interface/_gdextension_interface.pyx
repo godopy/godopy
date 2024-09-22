@@ -1,14 +1,14 @@
 # cython: c_string_type=unicode, c_string_encoding=UTF8
 
-from init_object cimport *
-cimport cpp
+from godot_cpp cimport *
 
-cdef public int entry_symbol_hook(
-    GDExtensionInterfaceGetProcAddress p_get_proc_address,
-    GDExtensionClassLibraryPtr p_library,
-    GDExtensionInitialization *r_initialization
-) except -1 nogil:
+include "api_data.pxi"
+
+cdef public int entry_symbol_hook(InitObject *p_init_object) except -1 nogil:
     # Enough for now
+
+    # cdef InitObject init_object = InitObject(p_get_proc_address, p_library, r_initialization)
+    # init_object.init()
 
     # cpp.UtilityFunctions.print_rich("[color=yellow]Hook is active![/color]")
 
@@ -16,13 +16,9 @@ cdef public int entry_symbol_hook(
 
 
 # Do this later
-cdef int real_entry_symbol_hook(
-    GDExtensionInterfaceGetProcAddress p_get_proc_address,
-    GDExtensionClassLibraryPtr p_library,
-    GDExtensionInitialization *r_initialization
-) except -1:
-    cdef GDExtensionBinding binding = \
-        GDExtensionBinding.from_entry_symbol(p_get_proc_address, p_library, r_initialization)
+cdef int real_entry_symbol_hook(InitObject *p_init_object) except -1:
+    cdef GDExtensionBinding binding = GDExtensionBinding.from_entry_symbol(p_init_object)
+        # GDExtensionBinding.from_entry_symbol(p_get_proc_address, p_library, r_initialization)
 
     try:
         import gdextension_interface
@@ -51,28 +47,18 @@ cdef void deinitialize_level(ModuleInitializationLevel p_level) noexcept nogil:
 
 
 cdef class GDExtensionBinding:
-    cdef InitObject init_object
-
-    cdef GDExtensionInterfaceGetProcAddress get_proc_address
-    cdef GDExtensionClassLibraryPtr library
-    cdef GDExtensionInitialization *initialization
-
+    cdef InitObject *init_object
     cdef ModuleInitializationLevel minimum_initialization_level
 
     def __cinit__(self):
+        self.init_object = NULL
         self.minimum_initialization_level = ModuleInitializationLevel.MODULE_INITIALIZATION_LEVEL_CORE
 
     @staticmethod
-    cdef from_entry_symbol(
-        GDExtensionInterfaceGetProcAddress p_get_proc_address,
-        GDExtensionClassLibraryPtr p_library,
-        GDExtensionInitialization *r_initialization
-    ):
+    cdef from_entry_symbol(InitObject *p_init_object):
         cdef GDExtensionBinding binding = GDExtensionBinding.__new__(GDExtensionBinding)
-        binding.get_proc_address = p_get_proc_address
-        binding.library = p_library
 
-        binding.init_object = InitObject(p_get_proc_address, p_library, r_initialization)
+        binding.init_object = p_init_object
 
         binding.init_object.register_initializer(initialize_level)
         binding.init_object.register_terminator(deinitialize_level)

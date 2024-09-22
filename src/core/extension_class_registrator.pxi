@@ -2,11 +2,11 @@
 cdef class ExtensionClassRegistrator:
     cdef str __name__
     cdef ExtensionClass registree
-    cdef gd.Class inherits
+    cdef Class inherits
     cdef StringName _godot_class_name
     cdef StringName _godot_inherits_name
 
-    def __cinit__(self, ExtensionClass registree, gd.Class inherits, **kwargs):
+    def __cinit__(self, ExtensionClass registree, Class inherits, **kwargs):
         self.__name__ = registree.__name__
         self.registree = registree
         self.inherits = inherits

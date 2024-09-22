@@ -6,6 +6,19 @@ cdef extern from "godot_cpp/godot.hpp" namespace "godot" nogil:
         MODULE_INITIALIZATION_LEVEL_EDITOR = GDEXTENSION_INITIALIZATION_EDITOR
         MODULE_INITIALIZATION_LEVEL_MAX
 
+ctypedef void (*Callback)(ModuleInitializationLevel)
+
+cdef extern from "godot_cpp/godot.hpp" namespace "godot" nogil:
+    cppclass InitObject "godot::GDExtensionBinding::InitObject":
+        InitObject()
+        InitObject(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization)
+
+        void register_initializer(Callback p_init) const
+        void register_terminator(Callback p_init) const
+        void set_minimum_library_initialization_level(ModuleInitializationLevel p_level) const
+
+        GDExtensionBool init() const
+
 cdef extern from "godot_cpp/godot.hpp" namespace "godot::internal" nogil:
     cdef GDExtensionInterfaceGetProcAddress gdextension_interface_get_proc_address
     cdef GDExtensionClassLibraryPtr gdextension_library "godot::internal::library"

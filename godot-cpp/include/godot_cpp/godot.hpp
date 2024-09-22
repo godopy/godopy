@@ -252,7 +252,6 @@ public:
 		mutable InitData *init_data = nullptr;
 
 	public:
-		InitObject() {}
 		InitObject(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization);
 
 		void register_initializer(Callback p_init) const;

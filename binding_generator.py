@@ -57,7 +57,7 @@ def generate_bindings(api_filepath, output_dir="."):
 
 
 def generate_api_data(api, output_dir):
-    gen_folder = Path(output_dir) / "cythonlib"
+    gen_folder = Path(output_dir) / "gdextension_interface"
     gen_folder.mkdir(parents=True, exist_ok=True)
 
     filename = gen_folder / "api_data.pxi"   

@@ -89,8 +89,9 @@ def setup_builders(env):
         '-EWITH_THREAD=1',
         # '-ECYTHON_AVOID_BORROWED_REFS=1',
         '-Isrc/gdextension_interface',
-        '-Isrc/cythonlib',
-        '-Igen/cythonlib',
+        '-Igen/gdextension_interface',
+        '-Isrc/core',
+        '-Isrc/godot_cpp',
         '-Igdextension',
         '-o',
         '$TARGET',
@@ -117,8 +118,9 @@ def setup_builders(env):
 
 
 def main_godopy_cpp_sources(env):
+    # Entry point and Python classes
     env.Append(CPPPATH=['src/'])
-    sources = Glob('src/*.cpp')
+    sources = Glob('src/*.cpp') + Glob('src/python/*.cpp') + Glob('src/variant/*.cpp')
 
     if env['platform'] == 'windows':
         env.Append(LIBPATH=[os.path.join('python', 'PCBuild', 'amd64')])
@@ -157,11 +159,14 @@ def _generated_cython_sources(env):
 def cython_sources(env):
     generated = _generated_cython_sources(env)
 
+    # required:
+    # 'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
+    # 'io.py', 'abc.py', 'types.py',
+    # 'encodings/latin_1.py',
+
     sources = [
         env.Cython('src/gdextension_interface/_gdextension_interface.pyx'),
-
-        env.Cython('src/cythonlib/_godot.pyx'),
-        env.Cython('src/cythonlib/_gdextension.pyx')
+        env.Cython('src/core/_godopy_core.pyx'),
     ]
 
     depends = [

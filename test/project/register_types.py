@@ -1,7 +1,6 @@
 import sys
 import numpy as np
 import godot as gd
-from godot import extension as gde
 # from _vector_types import Vector2
 
 
@@ -20,7 +19,7 @@ def initialize(level):
 
 
 def gdexample():
-    GDExample = gde.ExtensionClass('GDExample', 'Sprite2D')
+    GDExample = gd.ExtensionClass('GDExample', 'Sprite2D')
 
     def __init__(self):
         self.time_passed: float = 0.0
@@ -35,13 +34,14 @@ def gdexample():
         set_position = gd.MethodBind(self, 'set_position')
         set_position(new_position)
 
-    GDExample.add_methods(__init__, _process)
+    GDExample.bind_method(__init__)
+    GDExample.bind_virtual_method(_process)
 
     return GDExample
 
 
 def console():
-    TerminalConsole = gde.ExtensionClass('TerminalConsole', 'SceneTree')
+    TerminalConsole = gd.ExtensionClass('TerminalConsole', 'SceneTree')
 
     def _init(self):
         from godopy.contrib.console import terminal
@@ -51,6 +51,6 @@ def console():
         quit = gd.MethodBind(self, 'quit')
         quit()
 
-    TerminalConsole.add_methods(_init)
+    TerminalConsole.bind_virtual_method(_init)
 
     return TerminalConsole

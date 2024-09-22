@@ -1,17 +1,17 @@
-cdef class Extension(gd.Object):
+cdef class Extension(Object):
     cdef StringName _godot_class_name
     cdef StringName _godot_base_class_name
 
     cdef readonly object _wrapped
 
-    def __init__(self, gd.Class base_class, ExtensionClass ext_class, bint notify=True):
+    def __init__(self, Class base_class, ExtensionClass ext_class, bint notify=True):
         global registry
 
         self._binding_callbacks.create_callback = &Extension._create_callback
         self._binding_callbacks.free_callback = &Extension._free_callback
         self._binding_callbacks.reference_callback = &Extension._reference_callback
 
-        if not isinstance(base_class, gd.Class):
+        if not isinstance(base_class, Class):
             raise TypeError("godot.Class instance is required for 'ext_class', got %r" % type(base_class))
 
         if not isinstance(ext_class, ExtensionClass):
@@ -30,7 +30,7 @@ cdef class Extension(gd.Object):
 
         self._owner = _gde_classdb_construct_object(self._godot_base_class_name._native_ptr())
 
-        cdef gd.MethodBind mb = gd.MethodBind(self, 'notification')
+        cdef MethodBind mb = MethodBind(self, 'notification')
 
         if notify:
             mb(0, False) # NOTIFICATION_POSTINITIALIZE

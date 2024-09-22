@@ -17,6 +17,8 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
     Variant ret;
     PyGILState_STATE gil_state = PyGILState_Ensure();
 
+    ERR_FAIL_NULL_V(instance, ret);
+
     if (!PyCallable_Check(instance)) {
         PyGILState_Release(gil_state);
         UtilityFunctions::push_error("PythonObject '" + __repr__ + "' is not callable.");
@@ -68,6 +70,8 @@ Variant PythonObject::call_one_arg(const Variant &p_arg) {
     Variant ret;
     PyGILState_STATE gil_state = PyGILState_Ensure();
 
+    ERR_FAIL_NULL_V(instance, ret);
+
     if (!PyCallable_Check(instance)) {
         PyGILState_Release(gil_state);
         UtilityFunctions::push_error("PythonObject '" + __repr__ + "' is not callable.");
@@ -94,6 +98,8 @@ Variant PythonObject::call_one_arg(const Variant &p_arg) {
 Ref<PythonObject> PythonObject::getattr(const String &p_attr_name) {
     Ref<PythonObject> object = memnew(PythonObject);
     object->__name__ = p_attr_name;
+
+    ERR_FAIL_NULL_V(instance, object);
 
     PyGILState_STATE gil_state = PyGILState_Ensure();
     PyObject *attr = PyObject_GetAttrString(instance, p_attr_name.utf8());

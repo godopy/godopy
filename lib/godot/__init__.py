@@ -1,1 +1,1 @@
-from _godot import *
+from _godopy_core import *

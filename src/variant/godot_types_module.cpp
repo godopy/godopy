@@ -67,7 +67,7 @@ static PyStructSequence_Desc color_desc = {
 static struct PyModuleDef py_vector_types_module =
 {
     PyModuleDef_HEAD_INIT,
-    "_vector_types", /* name of module */
+    "_godot_types", /* name of module */
     "",          /* module documentation, may be NULL */
     -1,          /* size of per-interpreter state of the module, or -1 if the module keeps state in global variables. */
     NULL
@@ -75,7 +75,7 @@ static struct PyModuleDef py_vector_types_module =
 
 extern "C" {
 PyMODINIT_FUNC
-PyInit__vector_types(void)
+PyInit__godot_types(void)
 {
     PyObject *mod = PyModule_Create(&py_vector_types_module);
 

@@ -7,9 +7,8 @@
 #include <godot_cpp/classes/engine.hpp>
 
 PyMODINIT_FUNC PyInit__gdextension_interface(void);
-PyMODINIT_FUNC PyInit__godot(void);
-PyMODINIT_FUNC PyInit__gdextension(void);
-PyMODINIT_FUNC PyInit__vector_types(void);
+PyMODINIT_FUNC PyInit__godopy_core(void);
+PyMODINIT_FUNC PyInit__godot_types(void);
 
 using namespace godot;
 
@@ -132,9 +131,8 @@ void PythonRuntime::initialize(bool from_scene_initlevel) {
 	PyConfig config;
 
 	PyImport_AppendInittab("_gdextension_interface", PyInit__gdextension_interface);
-	PyImport_AppendInittab("_godot", PyInit__godot);
-	PyImport_AppendInittab("_gdextension", PyInit__gdextension);
-	PyImport_AppendInittab("_vector_types", PyInit__vector_types);
+	PyImport_AppendInittab("_godopy_core", PyInit__godopy_core);
+	PyImport_AppendInittab("_godot_types", PyInit__godot_types);
 
 	PyConfig_InitIsolatedConfig(&config);
 
@@ -194,6 +192,7 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 			PyErr_Clear();
 		}
 		PyGILState_Release(gil_state);
+		ERR_FAIL_NULL_V(m, module);
 		return module;
 	}
 	ERR_FAIL_NULL_V(m, module);

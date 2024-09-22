@@ -1,0 +1,5 @@
+cdef bytes _global_singleton_info__pickle
+cdef bytes _global_inheritance_info__pickle
+cdef dict _global_api_types__pickles
+cdef bytes _global_utility_function_info__pickle
+cdef dict _global_method_info__pickles

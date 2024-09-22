@@ -16,7 +16,7 @@ cdef class PropertyInfo:
 
     def __repr__(self):
         return '<PropertyInfo %s:%s:%s:%d:%s:%d>' % (
-            self.class_name, self.name, gd.variant_to_str(self.type), self.hint, self.hint_string, self.usage)
+            self.class_name, self.name, variant_to_str(self.type), self.hint, self.hint_string, self.usage)
 
 
 cdef class ExtensionVirtualMethod:

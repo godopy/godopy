@@ -1,7 +1,7 @@
 registry = {}
 
 
-cdef class ExtensionClass(gd.Class):
+cdef class ExtensionClass(Class):
     cdef readonly bint is_registered
     cdef readonly dict method_bindings
     cdef readonly dict virtual_method_bindings
@@ -9,14 +9,14 @@ cdef class ExtensionClass(gd.Class):
 
 
     def __init__(self, name, object inherits, **kwargs):
-        if not isinstance(inherits, (gd.Class, str)):
+        if not isinstance(inherits, (Class, str)):
             raise TypeError("'inherits' argument must be a Class instance or a string")
 
         self.__name__ = name
-        if isinstance(inherits, gd.Class):
+        if isinstance(inherits, Class):
             self.__inherits__ = inherits
         else:
-            self.__inherits__ = gd.Class.get_class(inherits)
+            self.__inherits__ = Class.get_class(inherits)
 
         self.__method_info__ = {}
 
@@ -123,7 +123,7 @@ cdef class ExtensionClass(gd.Class):
             return NULL
 
         cdef ExtensionClass cls = <ExtensionClass>data
-        cdef gd.Class base = cls.__inherits__
+        cdef Class base = cls.__inherits__
         cdef Extension wrapper = Extension(base, cls, notify)
 
         print("CREATED INSTANCE %r %x %x" % (wrapper, <uint64_t>wrapper._owner, <uint64_t><PyObject *>wrapper))

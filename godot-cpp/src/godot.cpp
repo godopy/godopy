@@ -269,9 +269,9 @@ typedef struct {
 } LegacyGDExtensionInterface;
 
 GDExtensionBool GDExtensionBinding::init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, InitData *p_init_data, GDExtensionInitialization *r_initialization) {
-	if (!p_init_data || !p_init_data->init_callback) {
-		ERR_FAIL_V_MSG(false, "Initialization callback must be defined.");
-	}
+	// if (!p_init_data || !p_init_data->init_callback) {
+	// 	ERR_FAIL_V_MSG(false, "Initialization callback must be defined.");
+	// }
 
 	if (api_initialized) {
 		r_initialization->initialize = initialize_level;

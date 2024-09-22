@@ -1,9 +1,9 @@
 """\
 This module wraps objects inside the engine
 """
-from cpp cimport *
-from cpython cimport ref, PyObject
-
+from godot_cpp cimport *
+from _gdextension_interface cimport *
+from cpython cimport PyObject
 
 cpdef str variant_to_str(VariantType vartype)
 cpdef VariantType str_to_variant(str vartype)

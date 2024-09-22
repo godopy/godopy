@@ -1,13 +1,12 @@
 import godot as gd
-from godot.extension import ExtensionClass, Extension
 from godot import MethodBind
 
 import numpy as np
 
-GDExample = ExtensionClass('GDExample', 'Sprite2D')
+GDExample = gd.ExtensionClass('GDExample', 'Sprite2D')
 
 
-def __init__(self: Extension):
+def __init__(self: gd.Extension):
     print("INIT0")
     self.time_passed = 0.0
 
@@ -23,7 +22,7 @@ def _process(self, delta: float) -> None:
     # set_position(new_position)
 
 
-def _ready(self: Extension) -> None:
+def _ready(self: gd.Extension) -> None:
     gd.print("READY")
 
 
