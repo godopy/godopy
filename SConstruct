@@ -87,7 +87,6 @@ def setup_builders(env):
         '--fast-fail',
         '--gdb' if env['debug_symbols'] else '',
         '-EWITH_THREAD=1',
-        '-ECYTHON_COMPILING_IN_LIMITED_API=1',
         '-Isrc',
         '-Isrc/gdextension_interface',
         '-Igen/gdextension_interface',

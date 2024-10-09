@@ -50,6 +50,7 @@ cdef class Extension(Object):
             pass
 
         self._wrapped = InnerExtensionObject()
+        self._wrapped.__godot_object__ = self
         cdef object wrapped_init = self.__godot_class__.method_bindings.get('__init__')
         if wrapped_init and callable(wrapped_init):
             wrapped_init(self._wrapped)
@@ -68,7 +69,7 @@ cdef class Extension(Object):
                 Extension._free_callback_gil(p_binding)
 
     @staticmethod
-    cdef void _free_callback_gil(void *p_binding):
+    cdef void _free_callback_gil(void *p_binding) noexcept:
         print("EXT FREE CALLBACK %x" % <int64_t>p_binding)
         cdef Extension self = <object>p_binding
         ref.Py_DECREF(self)

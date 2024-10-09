@@ -12,11 +12,12 @@ def python_runtime_class():
 
 
 def initialize(level):
-    print("Enter godopy initialize %d" % level)
+    # print("Enter godopy initialize %d" % level)
 
     if level == 0:
         python_runtime_class().register()
 
 
 def deinitialize(level):
-    print("Enter godopy deinitialize %d" % level)
+    # print("Enter godopy deinitialize %d" % level)
+    pass

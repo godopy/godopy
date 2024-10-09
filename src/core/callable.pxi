@@ -24,8 +24,11 @@ cdef class Callable:
 
         cdef GDExtensionBool bool_arg
         cdef int64_t int_arg
-        cdef real_t float_arg
+        cdef double float_arg
         cdef String string_arg
+
+        cdef Vector2 vector2_arg
+        cdef double x, y
 
         # TODO: Optimize
         for i in range(size):
@@ -45,6 +48,10 @@ cdef class Callable:
             elif arg_type == 'String':
                 string_arg = <String>args[i]
                 p_args[i] = &string_arg
+            elif arg_type == 'Vector2':
+                x, y = args[i]
+                vector2_arg = Vector2(x, y)
+                p_args[i] = &vector2_arg
             else:
                 unknown_argtype_error = True
                 break
@@ -52,7 +59,7 @@ cdef class Callable:
         if unknown_argtype_error:
             gdextension_interface_mem_free(p_args)
             UtilityFunctions.printerr("Don't know how to convert %r types yet" % arg_type)
-            raise NotImplementedError("Don't know how to return %r types" % arg_type)
+            raise NotImplementedError("Don't know how to convert %r types" % arg_type)
 
         return_type = self.type_info[0]
 
@@ -72,14 +79,18 @@ cdef class Callable:
         elif return_type == 'bool':
             self._ptr_call(&bool_arg, <GDExtensionConstTypePtr *>p_args, size)
             arg = <Variant>bool_arg
+        elif return_type == 'Vector2':
+            self._ptr_call(&vector2_arg, <GDExtensionConstTypePtr *>p_args, size)
+            arg = <Variant>vector2_arg
         else:
             unknown_type_error = True
 
         gdextension_interface_mem_free(p_args)
 
         if unknown_type_error:
-            UtilityFunctions.printerr("Don't know how to return %r types" % return_type)
-            raise NotImplementedError("Don't know how to return %r types" % return_type)
+            UtilityFunctions.printerr("Don't know how to return %r types. Returning None." % return_type)
+            # raise NotImplementedError("Don't know how to return %r types" % return_type)
+            return
 
         if return_type == 'Nil':
             return

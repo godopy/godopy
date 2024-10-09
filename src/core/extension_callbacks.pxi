@@ -90,24 +90,23 @@ cdef int _extgil_to_string_bind(void *p_instance, GDExtensionBool *r_is_valid, G
 
 
 cdef void *_ext_get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil:
-    if p_name == NULL:
-        return NULL
     cdef StringName name = deref(<StringName *>p_name)
     with gil:
         return _extgil_get_virtual_call_data(p_userdata, name.py_str())
 
-cdef void *_extgil_get_virtual_call_data(void *p_cls, str name) except NULL:
+cdef void *_extgil_get_virtual_call_data(void *p_cls, str name) noexcept:
     cdef ExtensionClass cls = <ExtensionClass>p_cls
-    cdef dict func_info
-    cdef tuple func_and_info
-    for fname, func in cls.virtual_method_implementation_bindings.iteritems():
-        if fname == name:
-            func_info = cls.__inherits__.get_method_info(fname)
-            func_and_info = (func, func_info)
-            print(func_and_info)
-            ref.Py_INCREF(func_and_info)
-            # TODO: Store the pointer and decref when freeing the instance
-            return <void *><PyObject *>func_and_info
+    cdef object func = cls.virtual_method_implementation_bindings.get(name)
+    if func is None:
+        return NULL
+
+    cdef dict func_info = cls.__inherits__.get_method_info(name)
+    cdef tuple func_and_info = (func, func_info['type_info'])
+    print(func_and_info)
+    ref.Py_INCREF(func_and_info)
+    # TODO: Store the pointer and decref when freeing the instance
+    return <void *><PyObject *>func_and_info
+
 
 cdef void _ext_call_virtual_with_data(void *p_instance, GDExtensionConstStringNamePtr p_name, void *p_func, GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_ret) noexcept nogil:
     with gil:
@@ -117,13 +116,11 @@ cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info
     cdef object wrapper = <object>p_instance
     cdef func_and_info = <tuple>p_func_and_info
     cdef object func = func_and_info[0]
-    cdef dict func_info = func_and_info[1]
+    cdef tuple type_info = func_and_info[1]
     cdef size_t i = 0
     cdef list args = []
-    cdef tuple type_info = func_info['type_info']
 
-    # cdef GDExtensionTypePtr arg
-    cdef real_t float_arg
+    cdef double float_arg
     cdef size_t size = func.__code__.co_argcount - 1
     if size < 0 or size != (len(type_info) - 1):
         UtilityFunctions.printerr('Wrong number of arguments %d' % size)
@@ -133,15 +130,14 @@ cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info
     for i in range(size):
         arg_type = type_info[i + 1]
         if arg_type == 'float':
-            float_arg = deref(<real_t *>p_args[i])
-            args.append(<object>float_arg)
+            float_arg = deref(<double *>p_args[i])
+            args.append(float_arg)
         else:
             UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r arguments in virtual functions yet" % arg_type)
             args.append(None)
-        i += 1
 
     cdef object res = func(wrapper._wrapped, *args)
-    cdef str return_type = type_info[0]
+    # cdef str return_type = type_info[0]
 
-    if return_type != 'Nil':
-        UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r return types in virtual functions yet" % return_type)
+    # if return_type != 'Nil':
+    #     UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r return types in virtual functions yet" % return_type)
