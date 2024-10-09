@@ -28,7 +28,7 @@ cdef class Extension(Object):
         cdef str base_class_name = base_class.__name__
         self._godot_base_class_name = StringName(base_class_name)
 
-        self._owner = _gde_classdb_construct_object(self._godot_base_class_name._native_ptr())
+        self._owner = gdextension_interface_classdb_construct_object(self._godot_base_class_name._native_ptr())
 
         cdef MethodBind mb = MethodBind(self, 'notification')
 
@@ -36,10 +36,10 @@ cdef class Extension(Object):
             mb(0, False) # NOTIFICATION_POSTINITIALIZE
 
         ref.Py_INCREF(self) # DECREF in ExtensionClass._free
-        _gde_object_set_instance(self._owner, self._godot_class_name._native_ptr(), <void *><PyObject *>self)
+        gdextension_interface_object_set_instance(self._owner, self._godot_class_name._native_ptr(), <void *><PyObject *>self)
 
         ref.Py_INCREF(self)  # DECREF in Extension._free_callback
-        _gde_object_set_instance_binding(
+        gdextension_interface_object_set_instance_binding(
             self._owner,
             self._godot_class_name._native_ptr(),
             <void *><PyObject *>self,

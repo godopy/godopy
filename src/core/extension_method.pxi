@@ -12,7 +12,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         with gil:
             ret = ExtensionMethod.bind_call_gil(p_method_userdata, p_instance,
                                                      p_args, p_argument_count, r_error)
-        _gde_variant_new_copy(r_return, ret._native_ptr())
+        gdextension_interface_variant_new_copy(r_return, ret._native_ptr())
 
     @staticmethod
     cdef Variant bind_call_gil(
@@ -76,10 +76,10 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         cdef GDExtensionPropertyInfo return_value_info
 
         return_value_info.type = <GDExtensionVariantType>_return_value_info.type
-        return_value_info.name = SN(_return_value_info.name).ptr()
-        return_value_info.class_name = SN(_return_value_info.class_name).ptr()
+        return_value_info.name = StringName(_return_value_info.name).ptr()
+        return_value_info.class_name = StringName(_return_value_info.class_name).ptr()
         return_value_info.hint = _return_value_info.hint
-        return_value_info.hint_string = SN(_return_value_info.hint_string).ptr() 
+        return_value_info.hint_string = StringName(_return_value_info.hint_string).ptr() 
         return_value_info.usage = _return_value_info.usage
 
         # print('RETURN: %s' % _return_value_info)
@@ -88,7 +88,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
 
         cdef list _def_args = self.get_default_arguments()
         cdef GDExtensionVariantPtr *def_args = <GDExtensionVariantPtr *> \
-            _gde_mem_alloc(len(_def_args) * cython.sizeof(GDExtensionVariantPtr))
+            gdextension_interface_mem_alloc(len(_def_args) * cython.sizeof(GDExtensionVariantPtr))
         cdef Variant defarg
         for i in range(len(_def_args)):
             defarg = <Variant>_def_args[i]
@@ -98,7 +98,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         cdef list _arguments_info = self.get_argument_info_list()[1:]
         cdef size_t argsize = len(_arguments_info)
         cdef GDExtensionPropertyInfo *arguments_info = <GDExtensionPropertyInfo *> \
-            _gde_mem_alloc(argsize * cython.sizeof(GDExtensionPropertyInfo))
+            gdextension_interface_mem_alloc(argsize * cython.sizeof(GDExtensionPropertyInfo))
 
         cdef str pyname
         cdef str pyclassname
@@ -111,16 +111,16 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
             pyhintstring = _arguments_info[i].hint_string
             pytype = _arguments_info[i].type
             arguments_info[i].type = <GDExtensionVariantType>pytype
-            arguments_info[i].name = (SN(pyname)).ptr()
-            arguments_info[i].class_name = (SN(pyclassname)).ptr()
+            arguments_info[i].name = (StringName(pyname)).ptr()
+            arguments_info[i].class_name = (StringName(pyclassname)).ptr()
             arguments_info[i].hint = _arguments_info[i].hint
-            arguments_info[i].hint_string = (SN(pyhintstring)).ptr()
+            arguments_info[i].hint_string = (StringName(pyhintstring)).ptr()
             arguments_info[i].usage = _arguments_info[i].usage
 
         # print('ARGS: %s' % _arguments_info)
 
         cdef list _arguments_metadata = self.get_argument_metadata_list()[1:]
-        cdef int *arguments_metadata = <int *>_gde_mem_alloc(len(_arguments_metadata) * cython.sizeof(int))
+        cdef int *arguments_metadata = <int *>gdextension_interface_mem_alloc(len(_arguments_metadata) * cython.sizeof(int))
         for i in range(len(_arguments_metadata)):
             arguments_metadata[i] = <int>_arguments_metadata[i]
 
@@ -149,11 +149,11 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         print("REG METHOD %s:%s %x" % (self.owner_class.__name__, self.__name__, <uint64_t><PyObject *>self))
         cdef str name = self.owner_class.__name__
 
-        _gde_classdb_register_extension_class_method(gdextension_library, SN(name).ptr(), &mi)
+        gdextension_interface_classdb_register_extension_class_method(gdextension_library, StringName(name).ptr(), &mi)
 
-        _gde_mem_free(def_args)
-        _gde_mem_free(arguments_info)
-        _gde_mem_free(arguments_metadata)
+        gdextension_interface_mem_free(def_args)
+        gdextension_interface_mem_free(arguments_info)
+        gdextension_interface_mem_free(arguments_metadata)
 
         return 0
 

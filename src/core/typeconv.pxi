@@ -3,8 +3,8 @@
 # cdef size_t i
 
 # for i in range(1, VARIANT_MAX):
-#     to_type_constructor[i] = _gde_get_variant_to_type_constructor(<GDExtensionVariantType>i)
-#     from_type_constructor[i] = _gde_get_variant_from_type_constructor(<GDExtensionVariantType>i)
+#     to_type_constructor[i] = gdextension_interface_get_variant_to_type_constructor(<GDExtensionVariantType>i)
+#     from_type_constructor[i] = gdextension_interface_get_variant_from_type_constructor(<GDExtensionVariantType>i)
 
 
 cdef dict TYPEMAP = {

@@ -1,10 +1,10 @@
-cdef _gde_bool _ext_set_bind(void *p_instance, _gde_const_sn_ptr p_name, _gde_const_var_ptr p_value) noexcept nogil:
+cdef GDExtensionBool _ext_set_bind(void *p_instance, GDExtensionConstStringNamePtr p_name, GDExtensionConstVariantPtr p_value) noexcept nogil:
     if p_instance:
         # TODO: set instance property
         with gil:
             return _extgil_set_bind(p_instance, p_name, p_value)
 
-cdef _gde_bool _extgil_set_bind(void *p_instance, _gde_const_sn_ptr p_name, _gde_const_var_ptr p_value) except -1:
+cdef GDExtensionBool _extgil_set_bind(void *p_instance, GDExtensionConstStringNamePtr p_name, GDExtensionConstVariantPtr p_value) except -1:
     cdef object wrapper = <object>p_instance
     cdef str name = deref(<StringName *>p_name).py_str()
     cdef object value = deref(<Variant *>p_value).pythonize()
@@ -13,13 +13,13 @@ cdef _gde_bool _extgil_set_bind(void *p_instance, _gde_const_sn_ptr p_name, _gde
     return False
 
 
-cdef _gde_bool _ext_get_bind(void *p_instance, _gde_const_sn_ptr p_name, _gde_var_ptr r_ret) noexcept nogil:
+cdef GDExtensionBool _ext_get_bind(void *p_instance, GDExtensionConstStringNamePtr p_name, GDExtensionVariantPtr r_ret) noexcept nogil:
     if p_instance:
         # TODO: get instance property
         with gil:
             return _extgil_get_bind(p_instance, p_name, r_ret)
 
-cdef _gde_bool _extgil_get_bind(void *p_instance, _gde_const_sn_ptr p_name, _gde_var_ptr r_ret) except -1:
+cdef GDExtensionBool _extgil_get_bind(void *p_instance, GDExtensionConstStringNamePtr p_name, GDExtensionVariantPtr r_ret) except -1:
     cdef object wrapper = <object>p_instance
     cdef str name = deref(<StringName *>p_name).py_str()
     print('GET BIND %r %s' % (wrapper, name))
@@ -48,11 +48,11 @@ cdef void _ext_free_property_list_bind(void *p_instance, const GDExtensionProper
             print('FREEPROPLIST %x' % (<uint64_t>p_instance))
 
 
-cdef GDExtensionBool _ext_property_can_revert_bind(void *p_instance, _gde_const_sn_ptr p_name) noexcept nogil:
+cdef GDExtensionBool _ext_property_can_revert_bind(void *p_instance, GDExtensionConstStringNamePtr p_name) noexcept nogil:
     return False
 
 
-cdef GDExtensionBool _ext_property_get_revert_bind(void *p_instance, _gde_const_sn_ptr p_name, _gde_var_ptr r_ret) noexcept nogil:
+cdef GDExtensionBool _ext_property_get_revert_bind(void *p_instance, GDExtensionConstStringNamePtr p_name, GDExtensionVariantPtr r_ret) noexcept nogil:
     return False
 
 
@@ -60,24 +60,24 @@ cdef GDExtensionBool _ext_validate_property_bind(void *p_instance, GDExtensionPr
     return False
 
 
-cdef void _ext_notification_bind(void *p_instance, int32_t p_what, _gde_bool p_reversed) noexcept nogil:
+cdef void _ext_notification_bind(void *p_instance, int32_t p_what, GDExtensionBool p_reversed) noexcept nogil:
     if p_instance:
         with gil:
             _extgil_notification_bind(p_instance, p_what, p_reversed)
 
-cdef int _extgil_notification_bind(void *p_instance, int32_t p_what, _gde_bool p_reversed) except -1:
+cdef int _extgil_notification_bind(void *p_instance, int32_t p_what, GDExtensionBool p_reversed) except -1:
     cdef object wrapper = <object>p_instance
     # print("NOTIFICATION %r %d %s" % (<uint64_t>p_instance, p_what, p_reversed))
 
     return 0
 
 
-cdef void _ext_to_string_bind(void *p_instance, _gde_bool *r_is_valid, GDExtensionStringPtr r_out) noexcept nogil:
+cdef void _ext_to_string_bind(void *p_instance, GDExtensionBool *r_is_valid, GDExtensionStringPtr r_out) noexcept nogil:
     if p_instance:
         with gil:
             _extgil_to_string_bind(p_instance, r_is_valid, r_out)
 
-cdef int _extgil_to_string_bind(void *p_instance, _gde_bool *r_is_valid, GDExtensionStringPtr r_out) except -1:
+cdef int _extgil_to_string_bind(void *p_instance, GDExtensionBool *r_is_valid, GDExtensionStringPtr r_out) except -1:
     cdef object wrapper = <object>p_instance
     cdef str _repr = repr(wrapper)
     print("TO_STRING %r %x" % (wrapper, <uint64_t>p_instance))
@@ -89,7 +89,7 @@ cdef int _extgil_to_string_bind(void *p_instance, _gde_bool *r_is_valid, GDExten
     return 0
 
 
-cdef void *_ext_get_virtual_call_data(void *p_userdata, _gde_const_sn_ptr p_name) noexcept nogil:
+cdef void *_ext_get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil:
     if p_name == NULL:
         return NULL
     cdef StringName name = deref(<StringName *>p_name)
@@ -109,7 +109,7 @@ cdef void *_extgil_get_virtual_call_data(void *p_cls, str name) except NULL:
             # TODO: Store the pointer and decref when freeing the instance
             return <void *><PyObject *>func_and_info
 
-cdef void _ext_call_virtual_with_data(void *p_instance, _gde_const_sn_ptr p_name, void *p_func, GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_ret) noexcept nogil:
+cdef void _ext_call_virtual_with_data(void *p_instance, GDExtensionConstStringNamePtr p_name, void *p_func, GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_ret) noexcept nogil:
     with gil:
         _extgil_call_virtual_with_data(p_instance, p_func, <const void **>p_args, r_ret)
 

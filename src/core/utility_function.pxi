@@ -13,7 +13,7 @@ cdef class UtilityFunction(Callable):
 
         with nogil:
             self._godot_utility_function = \
-                _gde_variant_get_ptr_utility_function(name._native_ptr(), _hash)
+                gdextension_interface_variant_get_ptr_utility_function(name._native_ptr(), _hash)
 
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil:

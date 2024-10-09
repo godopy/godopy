@@ -11,8 +11,8 @@ cdef class MethodBind(Callable):
         cdef StringName class_name = StringName(wrapper.__godot_class__.__name__)
         cdef StringName _method_name = StringName(method_name)
         with nogil:
-            self._godot_method_bind = _gde_classdb_get_method_bind(
+            self._godot_method_bind = gdextension_interface_classdb_get_method_bind(
                 class_name._native_ptr(), _method_name._native_ptr(), _hash)
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil:
-        _gde_object_method_bind_ptrcall(self._godot_method_bind, self._owner, p_args, r_ret)
+        gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._owner, p_args, r_ret)

@@ -140,6 +140,7 @@ cdef extern from "binding.h" namespace "godot::internal" nogil:
     cdef GDExtensionInterfaceArraySetTyped gdextension_interface_array_set_typed
     cdef GDExtensionInterfaceDictionaryOperatorIndex gdextension_interface_dictionary_operator_index
     cdef GDExtensionInterfaceDictionaryOperatorIndexConst gdextension_interface_dictionary_operator_index_const
+    cdef GDExtensionInterfaceDictionarySetTyped gdextension_interface_dictionary_set_typed
     cdef GDExtensionInterfaceObjectMethodBindCall gdextension_interface_object_method_bind_call
     cdef GDExtensionInterfaceObjectMethodBindPtrcall gdextension_interface_object_method_bind_ptrcall
     cdef GDExtensionInterfaceObjectDestroy gdextension_interface_object_destroy

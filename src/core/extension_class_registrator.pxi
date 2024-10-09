@@ -15,7 +15,7 @@ cdef class ExtensionClassRegistrator:
             raise RuntimeError("%r is already registered" % registree)
 
         cdef GDExtensionClassCreationInfo4 *ci = \
-            <GDExtensionClassCreationInfo4 *>_gde_mem_alloc(cython.sizeof(GDExtensionClassCreationInfo4))
+            <GDExtensionClassCreationInfo4 *>gdextension_interface_mem_alloc(cython.sizeof(GDExtensionClassCreationInfo4))
 
         cdef void *registree_ptr = <PyObject *>registree
 
@@ -55,13 +55,13 @@ cdef class ExtensionClassRegistrator:
         self._godot_inherits_name = StringName(inherits_name)
 
         assert registree_ptr != NULL
-        _gde_classdb_register_extension_class4(
+        gdextension_interface_classdb_register_extension_class4(
             gdextension_library,
             &self._godot_class_name,
             &self._godot_inherits_name,
             ci
         )
-        _gde_mem_free(ci)
+        gdextension_interface_mem_free(ci)
 
         for method in registree.method_bindings.itervalues():
             self.register_method(method)

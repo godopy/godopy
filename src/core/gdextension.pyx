@@ -10,7 +10,6 @@ import traceback
 import importlib
 
 include "api_data.pxi"
-include "shortcuts.pxi"
 include "typeconv.pxi"
 
 include "class.pxi"

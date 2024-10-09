@@ -14,7 +14,7 @@ cdef class Object:
             raise NameError('Class %r does not exist' % class_name)
 
         if Engine.get_singleton().has_singleton(class_name):
-            self._owner = _gde_global_get_singleton(SN(class_name).ptr())
+            self._owner = gdextension_interface_global_get_singleton(StringName(class_name).ptr())
             print("AQUIRED SINGLETON OWNER %x" % <int64_t>self._owner)
 
             # FIXME: set_instance?
@@ -27,9 +27,9 @@ cdef class Object:
             self._binding_callbacks.free_callback = &Object._free_callback
             self._binding_callbacks.reference_callback = &Object._reference_callback
 
-            self._owner = _gde_classdb_construct_object(StringName(class_name)._native_ptr())
+            self._owner = gdextension_interface_classdb_construct_object(StringName(class_name)._native_ptr())
             print("CONSTRUCTED OWNER %x" % <int64_t>self._owner)
-            _gde_object_set_instance_binding(
+            gdextension_interface_object_set_instance_binding(
                 self._owner, StringName(class_name)._native_ptr(), <void *><PyObject *>self, &self._binding_callbacks)
 
     @staticmethod
