@@ -6,7 +6,8 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
-PyMODINIT_FUNC PyInit__godopy_core(void);
+PyMODINIT_FUNC PyInit_gdextension(void);
+PyMODINIT_FUNC PyInit_entry_point(void);
 PyMODINIT_FUNC PyInit__godot_types(void);
 
 using namespace godot;
@@ -74,12 +75,6 @@ int PythonRuntime::set_config_paths(PyConfig *config) {
 	APPEND_PYTHON_PATH(python_lib_path.path_join("site-packages").wide_string());
 	APPEND_PYTHON_PATH(exec_prefix.path_join("dylib").wide_string());
 
-	// Add venv to path only when editing
-	// String venv_path = OS::get_singleton()->get_environment("VIRTUAL_ENV");
-	// if (Engine::get_singleton()->is_editor_hint() && venv_path != "") {
-	// 	APPEND_PYTHON_PATH(venv_path.path_join("Lib").path_join("site-packages").wide_string());
-	// }
-
 	return 0;
 }
 
@@ -92,7 +87,8 @@ void PythonRuntime::initialize() {
 	PyStatus status;
 	PyConfig config;
 
-	PyImport_AppendInittab("_godopy_core", PyInit__godopy_core);
+	PyImport_AppendInittab("gdextension", PyInit_gdextension);
+	PyImport_AppendInittab("entry_point", PyInit_entry_point);
 	PyImport_AppendInittab("_godot_types", PyInit__godot_types);
 
 	PyConfig_InitIsolatedConfig(&config);
@@ -139,15 +135,19 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 
 	PyGILState_STATE gil_state = PyGILState_Ensure();
 	PyObject *m = PyImport_ImportModule(p_name.utf8());
-	if (m == nullptr) {
-		if (PyErr_Occurred()) {
-			PyErr_Print();
-			PyErr_Clear();
-		}
-		PyGILState_Release(gil_state);
-		ERR_FAIL_NULL_V(m, module);
-		return module;
+
+	if (PyErr_Occurred()) {
+		PyObject *exc = PyErr_GetRaisedException();
+		ERR_FAIL_NULL_V(exc, module);
+		// PyObject *_traceback = PyException_GetTraceback(exc);
+		// ERR_FAIL_NULL_V(_traceback, module);
+		PyObject *str_exc = PyObject_Str(exc);
+		String traceback = String(str_exc);
+		ERR_PRINT("Python error occured: " + traceback);
+		Py_DECREF(str_exc);
+        Py_DECREF(exc);
 	}
+
 	ERR_FAIL_NULL_V(m, module);
 
     Py_INCREF(m);
@@ -155,6 +155,8 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 	PyObject *repr = PyObject_Repr(m);
     ERR_FAIL_NULL_V(repr, module);
     module->set_repr(String(repr));
+	Py_DECREF(m);
+	Py_DECREF(repr);
     PyGILState_Release(gil_state);
 
     return module;

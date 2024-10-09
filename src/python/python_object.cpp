@@ -104,8 +104,15 @@ Ref<PythonObject> PythonObject::getattr(const String &p_attr_name) {
     PyGILState_STATE gil_state = PyGILState_Ensure();
     PyObject *attr = PyObject_GetAttrString(instance, p_attr_name.utf8());
     if (PyErr_Occurred()) {
-        PyErr_Print();
-        PyErr_Clear();
+        PyObject *exc = PyErr_GetRaisedException();
+		ERR_FAIL_NULL_V(exc, object);
+		// PyObject *_traceback = PyException_GetTraceback(exc);
+		// ERR_FAIL_NULL_V(_traceback, module);
+		PyObject *str_exc = PyObject_Str(exc);
+		String traceback = String(str_exc);
+		ERR_PRINT("Python error occured: " + traceback);
+        Py_DECREF(str_exc);
+        Py_DECREF(exc);
     }
     ERR_FAIL_NULL_V(attr, object);
     Py_INCREF(attr);
@@ -114,6 +121,8 @@ Ref<PythonObject> PythonObject::getattr(const String &p_attr_name) {
     ERR_FAIL_NULL_V(attr, object);
     object->__repr__ = String(repr);
     PyGILState_Release(gil_state);
+    Py_DECREF(repr);
+    Py_DECREF(attr);
 
     return object;
 }

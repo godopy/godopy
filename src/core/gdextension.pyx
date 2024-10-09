@@ -3,12 +3,11 @@ from cpython cimport ref
 from libcpp.vector cimport vector
 from cython.operator cimport dereference as deref
 
-import io
-import sys
 import types
 import pickle
 import builtins
 import traceback
+import importlib
 
 include "api_data.pxi"
 include "shortcuts.pxi"
@@ -27,8 +26,12 @@ include "extension_callbacks.pxi"
 include "extension_class_registrator.pxi"
 include "extension.pxi"
 
-include "io.pxi"
-include "register_types.pxi"
+
+cpdef input(str prompt=None):
+    if prompt is not None:
+        UtilityFunctions.printraw(prompt)
+
+    return OS.get_singleton().read_string_from_stdin()
 
 
 def get_class_method_list(str name, no_inheritance=False):

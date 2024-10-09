@@ -166,7 +166,8 @@ def cython_sources(env):
     # 'encodings/latin_1.py',
 
     sources = [
-        env.Cython('src/core/_godopy_core.pyx'),
+        env.Cython('src/core/gdextension.pyx'),
+        env.Cython('src/core/entry_point.pyx'),
     ]
 
     depends = [

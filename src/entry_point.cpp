@@ -24,8 +24,8 @@ void initialize_level(ModuleInitializationLevel p_level)
 		ClassDB::register_class<PythonObject>();
 	}
 
-	if (p_level >= MODULE_INITIALIZATION_LEVEL_SCENE) {
-		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("_godopy_core");
+	if (p_level >= MODULE_INITIALIZATION_LEVEL_CORE) {
+		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
 		Ref<PythonObject> py_init_func = mod->getattr("initialize_level");
 		py_init_func->call_one_arg(Variant(p_level));
 		py_init_func.unref();
@@ -35,7 +35,7 @@ void initialize_level(ModuleInitializationLevel p_level)
 
 void deinitialize_level(ModuleInitializationLevel p_level) {
 	if (p_level >= MODULE_INITIALIZATION_LEVEL_CORE) {
-		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("_godopy_core");
+		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
 		Ref<PythonObject> py_term_func = mod->getattr("deinitialize_level");
 		py_term_func->call_one_arg(Variant(p_level));
 		py_term_func.unref();

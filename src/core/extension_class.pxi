@@ -35,7 +35,7 @@ cdef class ExtensionClass(Class):
 
     def bind_method(self, method: types.FunctionType):
         if not isinstance(method, types.FunctionType):
-            raise TypeError("Function is required")
+            raise TypeError("Function is required, got %s" % type(method))
         self.method_bindings[method.__name__] = method
 
         return method

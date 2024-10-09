@@ -38,7 +38,7 @@ def gdexample():
     GDExample.bind_virtual_method(_process)
 
     return GDExample
-
+    
 
 def console():
     TerminalConsole = gd.ExtensionClass('TerminalConsole', 'SceneTree')
