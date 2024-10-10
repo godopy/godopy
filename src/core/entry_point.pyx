@@ -59,7 +59,7 @@ def initialize_level(ModuleInitializationLevel p_level):
 
     UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
 
-    if p_level == MODULE_INITIALIZATION_LEVEL_CORE:
+    if p_level == MODULE_INITIALIZATION_LEVEL_SCENE:
         redirect_python_stdio()
 
         venv_path = os.environ.get('VIRTUAL_ENV')

@@ -11,6 +11,9 @@ import traceback
 import importlib
 
 include "api_data.pxi"
+
+cdef set _global_singleton_info = pickle.loads(_global_singleton_info__pickle)
+
 include "typeconv.pxi"
 
 include "class.pxi"
@@ -37,7 +40,15 @@ cpdef input(str prompt=None):
     return OS.get_singleton().read_string_from_stdin()
 
 
-def get_class_method_list(str name, no_inheritance=False):
+def _has_singleton(str name):
+    return name in _global_singleton_info
+
+
+def _singletons_dir():
+    return  _global_singleton_info
+
+
+def _get_class_method_list(str name, no_inheritance=False):
     cdef list data = (<Variant>ClassDB.get_singleton().class_get_method_list(name, no_inheritance)).pythonize()
 
     res = {}
