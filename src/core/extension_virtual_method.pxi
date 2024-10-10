@@ -6,7 +6,7 @@ cdef class PropertyInfo:
     cdef public str hint_string
     cdef public uint32_t usage
 
-    def __cinit__(self, VariantType type, str name, str class_name, uint32_t hint=0, str hint_string='', uint32_t usage=0):
+    def __cinit__(self, VariantType type, str name='', str class_name='', uint32_t hint=0, str hint_string='', uint32_t usage=0):
         self.type = type
         self.name = name
         self.class_name = class_name
@@ -17,6 +17,20 @@ cdef class PropertyInfo:
     def __repr__(self):
         return '<PropertyInfo %s:%s:%s:%d:%s:%d>' % (
             self.class_name, self.name, variant_to_str(self.type), self.hint, self.hint_string, self.usage)
+
+
+cdef VariantType pytype_to_gdtype(object pytype):
+    if pytype is str:
+        return STRING
+    elif pytype is float:
+        return FLOAT
+    elif pytype is int:
+        return INT
+    elif pytype is None:
+        return NIL
+    elif pytype is object:
+        return OBJECT
+    return NIL
 
 
 cdef class ExtensionVirtualMethod:
@@ -35,14 +49,12 @@ cdef class ExtensionVirtualMethod:
         return [arg for arg in self.method.__defaults__]
 
     cdef PropertyInfo get_argument_info(self, int pos):
-        cdef PropertyInfo pi = PropertyInfo(
-            <int>GDEXTENSION_VARIANT_TYPE_FLOAT,
-            '',
-            self.owner_class.__name__
-        )
+        cdef PropertyInfo pi = PropertyInfo(NIL)
+
         if pos >= 0:
             try:
                 pi.name = self.method.__code__.co_varnames[pos]
+                pi.type = pytype_to_gdtype(self.method.__annotations__.get(pi.name, None))
             except IndexError:
                 UtilityFunctions.push_error('Argname is missing in method %s, pos %d' % (self.method.__name__, pos))
 
@@ -50,9 +62,7 @@ cdef class ExtensionVirtualMethod:
 
     cdef PropertyInfo get_return_info(self):
         return PropertyInfo(
-            <int>GDEXTENSION_VARIANT_TYPE_NIL,
-            '',
-            self.owner_class.__name__
+            pytype_to_gdtype(self.method.__annotations__.get('return', None)),
         )
 
     cdef list get_argument_info_list(self):
@@ -83,7 +93,7 @@ cdef class ExtensionVirtualMethod:
         cdef GDExtensionClassVirtualMethodInfo mi
 
         if self.get_argument_count() < 1:
-            raise RuntimeError('At least 1 argument ("self") is required')
+            raise TypeError('At least 1 argument ("self") is required')
 
         cdef PropertyInfo _return_value_info = self.get_return_info()
         cdef GDExtensionPropertyInfo return_value_info

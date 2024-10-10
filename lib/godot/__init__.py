@@ -1,6 +1,6 @@
 from gdextension import *
 
-def set_global_functions():
+def _set_global_functions():
     # printt = UtilityFunction('printt')
     # prints = UtilityFunction('prints')
 
@@ -15,4 +15,4 @@ def set_global_functions():
     globals()['push_warning'] = UtilityFunction('push_warning')
 
 
-set_global_functions()
+_set_global_functions()

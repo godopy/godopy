@@ -33,26 +33,8 @@ public:
 	void run_simple_string(const String &p_string_script);
 	Ref<PythonObject> import_module(const String &p_name);
 
+	PythonObject *python_object_from_pyobject(PyObject *);
+
 	PythonRuntime();
 	~PythonRuntime();
-};
-
-class Python : public Object {
-	GDCLASS(Python, Object);
-
-	friend class PythonRuntime;
-
-	static Python *singleton;
-
-protected:
-	static void _bind_methods();
-
-public:
-	static Python *get_singleton() { return singleton; }
-
-	void run_simple_string(const String &p_string);
-	Ref<PythonObject> import_module(const String &p_name);
-
-	Python();
-	~Python();
 };

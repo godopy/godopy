@@ -34,6 +34,7 @@ cdef class Object:
     cdef GDExtensionBool _reference_callback(void *p_token, void *p_instance,
                                              GDExtensionBool p_reference) noexcept nogil
 
+
 cdef class Class:
     cdef readonly dict __method_info__
     cdef readonly str __name__

@@ -162,6 +162,21 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
     return module;
 }
 
+PythonObject *PythonRuntime::python_object_from_pyobject(PyObject *p_obj) {
+	Ref<PythonObject> obj = memnew(PythonObject);
+
+	PyGILState_STATE gil_state = PyGILState_Ensure();
+
+	Py_INCREF(p_obj);
+	obj->set_instance(p_obj);
+
+	PyGILState_Release(gil_state);
+
+	obj->reference();
+
+	return obj.ptr();
+}
+
 void PythonRuntime::finalize() {
 	if (is_initialized()) {
 		if (Py_IsInitialized()) {
@@ -173,32 +188,6 @@ void PythonRuntime::finalize() {
 }
 
 PythonRuntime::~PythonRuntime() {
-	ERR_FAIL_COND(singleton != this);
-	singleton = nullptr;
-}
-
-
-Python *Python::singleton = nullptr;
-
-void Python::run_simple_string(const String &p_string) {
-	PythonRuntime::get_singleton()->run_simple_string(p_string);
-}
-
-Ref<PythonObject> Python::import_module(const String &p_name) {
-	return PythonRuntime::get_singleton()->import_module(p_name);
-}
-
-void Python::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("run_simple_string", "string"), &Python::run_simple_string);
-	ClassDB::bind_method(D_METHOD("import_module", "string"), &Python::import_module);
-}
-
-Python::Python() {
-	ERR_FAIL_COND(singleton != nullptr);
-	singleton = this;
-}
-
-Python::~Python() {
 	ERR_FAIL_COND(singleton != this);
 	singleton = nullptr;
 }

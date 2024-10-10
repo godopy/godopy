@@ -26,6 +26,9 @@ cdef class Callable:
         cdef int64_t int_arg
         cdef double float_arg
         cdef String string_arg
+        cdef StringName stringname_arg
+
+        cdef Object object_arg
 
         cdef Vector2 vector2_arg
         cdef double x, y
@@ -48,10 +51,16 @@ cdef class Callable:
             elif arg_type == 'String':
                 string_arg = <String>args[i]
                 p_args[i] = &string_arg
+            elif arg_type == 'StringName':
+                stringname_arg = <StringName>args[i]
+                p_args[i] = &stringname_arg
             elif arg_type == 'Vector2':
                 x, y = args[i]
                 vector2_arg = Vector2(x, y)
                 p_args[i] = &vector2_arg
+            elif arg_type == 'Object' and isinstance(args[i], Object):
+                object_arg = <Object>args[i]
+                p_args[i] = &object_arg._owner
             else:
                 unknown_argtype_error = True
                 break

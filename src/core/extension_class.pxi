@@ -4,6 +4,7 @@ registry = {}
 cdef class ExtensionClass(Class):
     cdef readonly bint is_registered
     cdef readonly dict method_bindings
+    cdef readonly dict python_method_bindings
     cdef readonly dict virtual_method_bindings
     cdef readonly dict virtual_method_implementation_bindings
 
@@ -23,6 +24,7 @@ cdef class ExtensionClass(Class):
         self.is_registered = False
 
         self.method_bindings = {}
+        self.python_method_bindings = {}
         self.virtual_method_bindings = {}
         self.virtual_method_implementation_bindings = {}
 
@@ -30,13 +32,21 @@ cdef class ExtensionClass(Class):
     def __call__(self):
         if not self.is_registered:
             raise RuntimeError("Extension class is not registered")
-        return Extension(self.__name__)
+        return Extension(self, self.__inherits__)
 
 
     def bind_method(self, method: types.FunctionType):
         if not isinstance(method, types.FunctionType):
             raise TypeError("Function is required, got %s" % type(method))
         self.method_bindings[method.__name__] = method
+
+        return method
+
+
+    def bind_python_method(self, method: types.FunctionType):
+        if not isinstance(method, types.FunctionType):
+            raise TypeError("Function is required, got %s" % type(method))
+        self.python_method_bindings[method.__name__] = method
 
         return method
 
@@ -115,7 +125,7 @@ cdef class ExtensionClass(Class):
 
 
     @staticmethod
-    cdef GDExtensionObjectPtr _create_instance(void *data, bint notify) except NULL:
+    cdef GDExtensionObjectPtr _create_instance(void *data, bint notify) except? NULL:
         print('CREATE INSTANCE %x %s' % (<uint64_t>data, notify))
 
         if data == NULL:
@@ -123,8 +133,7 @@ cdef class ExtensionClass(Class):
             return NULL
 
         cdef ExtensionClass cls = <ExtensionClass>data
-        cdef Class base = cls.__inherits__
-        cdef Extension wrapper = Extension(base, cls, notify)
+        cdef Extension wrapper = Extension(cls, cls.__inherits__, notify, True)
 
         print("CREATED INSTANCE %r %x %x" % (wrapper, <uint64_t>wrapper._owner, <uint64_t><PyObject *>wrapper))
 

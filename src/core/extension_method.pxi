@@ -51,35 +51,44 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         const GDExtensionConstTypePtr *p_args,
         GDExtensionTypePtr r_return
     ):
-        print("METHOD PTRCALL %x" % <uint64_t>p_instance)
+        # print("METHOD PTRCALL %x" % <uint64_t>p_instance)
         cdef ExtensionMethod self = <object>p_method_userdata
         cdef Object wrapper = <object>p_instance
         cdef size_t i = 0
         cdef list args = []
-        cdef Variant arg
-        while p_args[i] != NULL:
-            arg = deref(<Variant *>p_args[i])
-            args.append(<object>arg)
-            i += 1
+        cdef String arg
+        # print('FOUND METHOD %r, argcount %d' % (self.method, self.get_argument_count()))
+        for i in range(self.get_argument_count() - 1):
+            arg = deref(<String *>p_args[i])
+            args.append(arg.py_str())
+
         cdef object ret = self.method(wrapper, *args)
-        cdef Variant gd_ret = <Variant>ret
-        set_variant_from_ptr(<Variant *>r_return, gd_ret)
+        print("PTRCALL RETURNED %r" % ret)
+
+        cdef PythonObject *gd_ret = PythonRuntime.get_singleton().python_object_from_pyobject(ret)
+
+        (<void **>r_return)[0] = gd_ret._owner
 
 
     cdef int register(self) except -1:
         cdef GDExtensionClassMethodInfo mi
 
         if self.get_argument_count() < 1:
-            raise RuntimeError('At least 1 argument ("self") is required')
+            raise TypeError('At least 1 argument ("self") is required')
 
         cdef PropertyInfo _return_value_info = self.get_return_info()
         cdef GDExtensionPropertyInfo return_value_info
 
-        return_value_info.type = <GDExtensionVariantType>_return_value_info.type
-        return_value_info.name = StringName(_return_value_info.name).ptr()
-        return_value_info.class_name = StringName(_return_value_info.class_name).ptr()
+        cdef str pyname = _return_value_info.name
+        cdef str pyclassname = _return_value_info.class_name
+        cdef str pyhintstring = _return_value_info.hint_string
+        cdef int pytype = _return_value_info.type
+
+        return_value_info.type = <GDExtensionVariantType>pytype
+        return_value_info.name = StringName(pyname).ptr()
+        return_value_info.class_name = StringName(pyclassname).ptr()
         return_value_info.hint = _return_value_info.hint
-        return_value_info.hint_string = StringName(_return_value_info.hint_string).ptr() 
+        return_value_info.hint_string = StringName(pyhintstring).ptr()
         return_value_info.usage = _return_value_info.usage
 
         # print('RETURN: %s' % _return_value_info)
@@ -99,11 +108,6 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         cdef size_t argsize = len(_arguments_info)
         cdef GDExtensionPropertyInfo *arguments_info = <GDExtensionPropertyInfo *> \
             gdextension_interface_mem_alloc(argsize * cython.sizeof(GDExtensionPropertyInfo))
-
-        cdef str pyname
-        cdef str pyclassname
-        cdef str pyhintstring
-        cdef int pytype
 
         for i in range(argsize):
             pyname = _arguments_info[i].name
@@ -136,7 +140,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         mi.ptrcall_func = &ExtensionMethod.bind_ptrcall
         mi.method_flags = self.get_hint_flags()
         mi.has_return_value = self.has_return()
-        mi.return_value_info = NULL # &return_value_info
+        mi.return_value_info = &return_value_info
         mi.return_value_metadata = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
         mi.argument_count = argsize
         mi.arguments_info = arguments_info
@@ -146,7 +150,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
 
         ref.Py_INCREF(self)  # DECREF ??? TODO
 
-        print("REG METHOD %s:%s %x" % (self.owner_class.__name__, self.__name__, <uint64_t><PyObject *>self))
+        # print("REG METHOD %s:%s %x" % (self.owner_class.__name__, self.__name__, <uint64_t><PyObject *>self))
         cdef str name = self.owner_class.__name__
 
         gdextension_interface_classdb_register_extension_class_method(gdextension_library, StringName(name).ptr(), &mi)

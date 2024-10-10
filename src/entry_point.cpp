@@ -10,44 +10,25 @@
 
 using namespace godot;
 
-static Python *python;
-
 void initialize_level(ModuleInitializationLevel p_level)
 {
-	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		python = memnew(Python);
-		Engine::get_singleton()->register_singleton("Python", Python::get_singleton());
-	}
-
 	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
-		ClassDB::register_class<Python>();
 		ClassDB::register_class<PythonObject>();
 	}
 
-	if (p_level >= MODULE_INITIALIZATION_LEVEL_CORE) {
-		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
-		Ref<PythonObject> py_init_func = mod->getattr("initialize_level");
-		py_init_func->call_one_arg(Variant(p_level));
-		py_init_func.unref();
-		mod.unref();
-	}
+	Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
+	Ref<PythonObject> py_init_func = mod->getattr("initialize_level");
+	py_init_func->call_one_arg(Variant(p_level));
+	py_init_func.unref();
+	mod.unref();
 }
 
 void deinitialize_level(ModuleInitializationLevel p_level) {
-	if (p_level >= MODULE_INITIALIZATION_LEVEL_CORE) {
-		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
-		Ref<PythonObject> py_term_func = mod->getattr("deinitialize_level");
-		py_term_func->call_one_arg(Variant(p_level));
-		py_term_func.unref();
-		mod.unref();
-	}
-
-	if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-		Engine::get_singleton()->unregister_singleton("Python");
-		if (python) {
-			memdelete(python);
-		}
-	}
+	Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
+	Ref<PythonObject> py_term_func = mod->getattr("deinitialize_level");
+	py_term_func->call_one_arg(Variant(p_level));
+	py_term_func.unref();
+	mod.unref();
 }
 
 extern "C"

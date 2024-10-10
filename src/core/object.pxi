@@ -15,9 +15,8 @@ cdef class Object:
 
         if Engine.get_singleton().has_singleton(class_name):
             self._owner = gdextension_interface_global_get_singleton(StringName(class_name).ptr())
-            print("AQUIRED SINGLETON OWNER %x" % <int64_t>self._owner)
+            # print("AQUIRED SINGLETON OWNER %x" % <int64_t>self._owner)
 
-            # FIXME: set_instance?
             self.is_singleton = True
         else:
             if not ClassDB.get_singleton().can_instantiate(class_name):

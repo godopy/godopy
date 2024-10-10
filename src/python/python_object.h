@@ -1,6 +1,7 @@
 #pragma once
 
 #include <godot_cpp/classes/resource.hpp>
+#include <godot_cpp/variant/variant.hpp>
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
@@ -11,6 +12,7 @@ class PythonObject : public RefCounted {
 	GDCLASS(PythonObject, RefCounted);
 
     friend class PythonRuntime;
+    friend class Variant;
 private:
     PyObject *instance;
     String __name__;

@@ -2,6 +2,7 @@ cimport cython
 from cpython cimport ref
 from libcpp.vector cimport vector
 from cython.operator cimport dereference as deref
+from python_runtime cimport *
 
 import types
 import pickle
@@ -24,6 +25,9 @@ include "extension_class.pxi"
 include "extension_callbacks.pxi"
 include "extension_class_registrator.pxi"
 include "extension.pxi"
+
+
+cdef public type GDPyType__Object = Object
 
 
 cpdef input(str prompt=None):

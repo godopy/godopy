@@ -26,6 +26,6 @@ def _ready(self: gd.Extension) -> None:
     gd.print("READY")
 
 
-GDExample.bind_method(__init__)
+GDExample.bind_python_method(__init__)
 GDExample.bind_virtual_method(_process)
 GDExample.bind_virtual_method(_ready)
