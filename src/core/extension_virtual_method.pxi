@@ -98,11 +98,20 @@ cdef class ExtensionVirtualMethod:
         cdef PropertyInfo _return_value_info = self.get_return_info()
         cdef GDExtensionPropertyInfo return_value_info
 
-        return_value_info.type = <GDExtensionVariantType>_return_value_info.type
-        return_value_info.name = StringName(_return_value_info.name).ptr()
-        return_value_info.class_name = StringName(_return_value_info.class_name).ptr()
+        cdef str pyname = _return_value_info.name
+        cdef str pyclassname = _return_value_info.class_name
+        cdef str pyhintstring = _return_value_info.hint_string
+        cdef int pytype = _return_value_info.type
+
+        cdef StringName _name = StringName(pyname)
+        cdef StringName classname = StringName(pyclassname)
+        cdef StringName hintstring = StringName(pyhintstring)
+
+        return_value_info.type = <GDExtensionVariantType>pytype
+        return_value_info.name = _name._native_ptr()
+        return_value_info.class_name = classname._native_ptr()
         return_value_info.hint = _return_value_info.hint
-        return_value_info.hint_string = StringName(_return_value_info.hint_string).ptr() 
+        return_value_info.hint_string = hintstring._native_ptr()
         return_value_info.usage = _return_value_info.usage
 
         # print('RETURN: %s' % _return_value_info)
@@ -123,21 +132,20 @@ cdef class ExtensionVirtualMethod:
         cdef GDExtensionPropertyInfo *arguments_info = <GDExtensionPropertyInfo *> \
             gdextension_interface_mem_alloc(argsize * cython.sizeof(GDExtensionPropertyInfo))
 
-        cdef str pyname
-        cdef str pyclassname
-        cdef str pyhintstring
-        cdef int pytype
 
         for i in range(argsize):
             pyname = _arguments_info[i].name
-            pytype = _arguments_info[i].type
             pyclassname = _arguments_info[i].class_name
             pyhintstring = _arguments_info[i].hint_string
+            pytype = _arguments_info[i].type
+            _name = StringName(pyname)
+            classname = StringName(pyclassname)
+            hintstring = StringName(pyhintstring)
             arguments_info[i].type = <GDExtensionVariantType>pytype
-            arguments_info[i].name = (StringName(pyname)).ptr()
-            arguments_info[i].class_name = (StringName(pyclassname)).ptr()
+            arguments_info[i].name = _name._native_ptr()
+            arguments_info[i].class_name = classname._native_ptr()
             arguments_info[i].hint = _arguments_info[i].hint
-            arguments_info[i].hint_string = (StringName(pyhintstring)).ptr()
+            arguments_info[i].hint_string = hintstring._native_ptr()
             arguments_info[i].usage = _arguments_info[i].usage
 
         # print('ARGS: %s' % _arguments_info)
