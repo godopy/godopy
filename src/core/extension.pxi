@@ -40,7 +40,7 @@ cdef class Extension(Object):
         if wrapped_init and callable(wrapped_init):
             wrapped_init(self._wrapped)
 
-        print("INITIALIZED EXT OBJ %r %s %x" % (self, self.__godot_class__.__name__, <uint64_t>self._owner))
+        # print("INITIALIZED EXT OBJ %r %s %x" % (self, self.__godot_class__.__name__, <uint64_t>self._owner))
 
 
     cpdef destroy(self):

@@ -102,7 +102,7 @@ cdef void *_extgil_get_virtual_call_data(void *p_cls, str name) noexcept:
 
     cdef dict func_info = cls.__inherits__.get_method_info(name)
     cdef tuple func_and_info = (func, func_info['type_info'])
-    print(func_and_info)
+    # print(func_and_info)
     ref.Py_INCREF(func_and_info)
     # TODO: Store the pointer and decref when freeing the instance
     return <void *><PyObject *>func_and_info

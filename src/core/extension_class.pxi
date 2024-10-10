@@ -100,7 +100,7 @@ cdef class ExtensionClass(Class):
     @staticmethod
     cdef void free_instance(void *data, void *p_instance) noexcept nogil:
         with gil:
-            print('EXT CLASS FREE %x %x' % (<uint64_t>data, <uint64_t>p_instance))
+            # print('EXT CLASS FREE %x %x' % (<uint64_t>data, <uint64_t>p_instance))
             ExtensionClass._free_instance(data, p_instance)
 
 
@@ -126,7 +126,7 @@ cdef class ExtensionClass(Class):
 
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance(void *data, bint notify) except? NULL:
-        print('CREATE INSTANCE %x %s' % (<uint64_t>data, notify))
+        # print('CREATE INSTANCE %x %s' % (<uint64_t>data, notify))
 
         if data == NULL:
             UtilityFunctions.printerr("ExtensionClass object pointer is uninitialized")
@@ -135,7 +135,7 @@ cdef class ExtensionClass(Class):
         cdef ExtensionClass cls = <ExtensionClass>data
         cdef Extension wrapper = Extension(cls, cls.__inherits__, notify, True)
 
-        print("CREATED INSTANCE %r %x %x" % (wrapper, <uint64_t>wrapper._owner, <uint64_t><PyObject *>wrapper))
+        # print("CREATED INSTANCE %r %x %x" % (wrapper, <uint64_t>wrapper._owner, <uint64_t><PyObject *>wrapper))
 
         return wrapper._owner
 

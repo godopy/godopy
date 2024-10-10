@@ -63,7 +63,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
             args.append(arg.py_str())
 
         cdef object ret = self.method(wrapper, *args)
-        print("PTRCALL RETURNED %r" % ret)
+        # print("PTRCALL RETURNED %r" % ret)
 
         cdef PythonObject *gd_ret = PythonRuntime.get_singleton().python_object_from_pyobject(ret)
 
