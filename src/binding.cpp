@@ -541,11 +541,11 @@ void GDExtensionBinding::deinitialize_level(void *p_userdata, GDExtensionInitial
 	InitData *init_data = static_cast<InitData *>(p_userdata);
 	if (init_data && init_data->terminate_callback) {
 		init_data->terminate_callback(static_cast<ModuleInitializationLevel>(p_level));
+	}
 
-		if (p_level == GDEXTENSION_INITIALIZATION_CORE) {
-			python_runtime->finalize();
-        	memdelete(python_runtime);
-		}
+	if (p_level == GDEXTENSION_INITIALIZATION_CORE) {
+		python_runtime->finalize();
+		memdelete(python_runtime);
 	}
 
 	level_initialized[p_level]--;

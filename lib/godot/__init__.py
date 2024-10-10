@@ -15,4 +15,10 @@ def _set_global_functions():
     globals()['push_warning'] = UtilityFunction('push_warning')
 
 
+MODULE_INITIALIZATION_LEVEL_CORE = 0
+MODULE_INITIALIZATION_LEVEL_SERVERS = 1
+MODULE_INITIALIZATION_LEVEL_SCENE = 2
+MODULE_INITIALIZATION_LEVEL_EDITOR = 3
+
+
 _set_global_functions()

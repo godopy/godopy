@@ -106,7 +106,7 @@ void PythonRuntime::initialize() {
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
-	UtilityFunctions::print_verbose("Python: Initializeing the interpreter...");
+	UtilityFunctions::print_verbose("Python: Initializing the interpreter...");
 	status = Py_InitializeFromConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 

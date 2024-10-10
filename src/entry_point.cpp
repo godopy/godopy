@@ -10,25 +10,30 @@
 
 using namespace godot;
 
-void initialize_level(ModuleInitializationLevel p_level)
-{
-	if (p_level == MODULE_INITIALIZATION_LEVEL_CORE) {
+#define MINIMUM_INITIALIZATION_LEVEL MODULE_INITIALIZATION_LEVEL_SCENE
+
+void initialize_level(ModuleInitializationLevel p_level) {
+	if (p_level == MINIMUM_INITIALIZATION_LEVEL) {
 		ClassDB::register_class<PythonObject>();
 	}
 
-	Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
-	Ref<PythonObject> py_init_func = mod->getattr("initialize_level");
-	py_init_func->call_one_arg(Variant(p_level));
-	py_init_func.unref();
-	mod.unref();
+	if (p_level >= MINIMUM_INITIALIZATION_LEVEL) {
+		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
+		Ref<PythonObject> py_init_func = mod->getattr("initialize_level");
+		py_init_func->call_one_arg(Variant(p_level));
+		py_init_func.unref();
+		mod.unref();
+	}
 }
 
 void deinitialize_level(ModuleInitializationLevel p_level) {
-	Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
-	Ref<PythonObject> py_term_func = mod->getattr("deinitialize_level");
-	py_term_func->call_one_arg(Variant(p_level));
-	py_term_func.unref();
-	mod.unref();
+	if (p_level >= MINIMUM_INITIALIZATION_LEVEL) {
+		Ref<PythonObject> mod = PythonRuntime::get_singleton()->import_module("entry_point");
+		Ref<PythonObject> py_term_func = mod->getattr("deinitialize_level");
+		py_term_func->call_one_arg(Variant(p_level));
+		py_term_func.unref();
+		mod.unref();
+	}
 }
 
 extern "C"
@@ -40,6 +45,7 @@ extern "C"
 
 		init_obj.register_initializer(initialize_level);
 		init_obj.register_terminator(deinitialize_level);
+		init_obj.set_minimum_library_initialization_level(MINIMUM_INITIALIZATION_LEVEL);
 
 		return init_obj.init();
 	}

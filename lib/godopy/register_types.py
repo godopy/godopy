@@ -17,7 +17,7 @@ def python_runtime_class():
 def initialize(level):
     global python_runtime_singleton
 
-    if level == 2:
+    if level == gd.MODULE_INITIALIZATION_LEVEL_SCENE:
         PythonRuntime = python_runtime_class()
         PythonRuntime.register()
 
@@ -31,7 +31,7 @@ def initialize(level):
 def deinitialize(level):
     global python_runtime_singleton
 
-    if level == 2:
+    if level == gd.MODULE_INITIALIZATION_LEVEL_SCENE:
         Engine = gd.Object('Engine')
         unregister_singleton = gd.MethodBind(Engine, 'unregister_singleton')
         unregister_singleton('PythonRuntime')
