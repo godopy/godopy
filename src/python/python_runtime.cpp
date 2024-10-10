@@ -48,6 +48,9 @@ void PythonRuntime::pre_initialize() {
 	status = PyWideStringList_Append(&config->module_search_paths, path); \
 	if (PyStatus_Exception(status)) return 1
 
+#define QUOTE(name) #name
+#define STR(macro) QUOTE(macro)
+
 int PythonRuntime::set_config_paths(PyConfig *config) {
 	PyStatus status;
 
@@ -67,13 +70,17 @@ int PythonRuntime::set_config_paths(PyConfig *config) {
 	SET_PYCONFIG_STRING(&config->executable, exec_path.wide_string());
 	SET_PYCONFIG_STRING(&config->prefix, res_path.wide_string());
 
-	String python_lib_path = res_path.path_join("python").path_join("lib");
+	String python_lib_path = res_path.path_join("python").path_join("windows").path_join("lib");
 
 	APPEND_PYTHON_PATH(res_path.wide_string());
 	APPEND_PYTHON_PATH(res_path.path_join("lib").wide_string());
 	APPEND_PYTHON_PATH(python_lib_path.wide_string());
 	APPEND_PYTHON_PATH(python_lib_path.path_join("site-packages").wide_string());
-	APPEND_PYTHON_PATH(exec_prefix.path_join("dylib").wide_string());
+
+#ifdef GODOPY_LIB_PATH
+	String godopy_lib_path = STR(GODOPY_LIB_PATH);
+	APPEND_PYTHON_PATH(godopy_lib_path.wide_string());
+#endif
 
 	return 0;
 }

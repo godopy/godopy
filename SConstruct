@@ -261,7 +261,7 @@ class PythonInstaller:
             if site_packages:
                 target_lib = os.path.join(target_lib, 'site-packages')
 
-            dstfile = os.path.join(projectdir, 'python', target_lib, pyfile)
+            dstfile = os.path.join(projectdir, 'python', 'windows', target_lib, pyfile)
 
             if env['compile_python_stdlib'] and not force_install:
                 self.sources.append(env.CompilePyc(dstfile, srcfile))
@@ -278,7 +278,7 @@ class PythonDylibInstaller:
 
         for srcfile in files:
             pyfile = os.path.basename(str(srcfile))
-            dstfolder = os.path.join(projectdir, 'python', 'bin', 'windows', 'dylib')
+            dstfolder = os.path.join(projectdir, 'python', 'windows', 'lib')
             if folder is not None:
                 dstfolder = os.path.join(dstfolder, folder)
             dstfile = os.path.join(dstfolder, pyfile)
@@ -289,18 +289,14 @@ def install_python_standard_library(env):
     projectdir = env['project_dir']
     packages = []
 
-    python_runtime_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
-    python_editor_lib_files = []
-    python_runtime_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
-    python_editor_dylib_files = []
+    python_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
+    python_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
 
     installer = PythonInstaller(env, packages, os.path.join('python', 'lib'))
     dylib_installer = PythonDylibInstaller(env, packages)
 
-    installer.install(python_runtime_lib_files)
-    installer.install(python_editor_lib_files, 'editor')
-    dylib_installer.install(python_runtime_dylib_files)
-    dylib_installer.install(python_editor_dylib_files, 'editor')
+    installer.install(python_lib_files)
+    dylib_installer.install(python_dylib_files)
 
     packages.append(env.InstallAs(
         os.path.join(projectdir, 'python', '.gdignore'),
@@ -386,6 +382,14 @@ SConscript('godot-cpp/SCsub')
 
 setup_builders(env)
 
+if env.dev_build:
+    # Use local GodoPy Python libs in dev mode
+    env.Append(
+        CPPDEFINES=(
+            'GODOPY_LIB_PATH',
+            os.path.join(env.Dir('#').abspath, 'lib').replace(os.sep, '/')
+        )
+    )
 
 cython_env = env.Clone()
 
@@ -398,9 +402,11 @@ library = build_extension_shared_lib(env, sources)
 
 default_args = [
     library,
-    install_extension_shared_lib(env, library),
-    install_godopy_python_packages(env)
+    install_extension_shared_lib(env, library)
 ]
+
+if not env.dev_build:
+    default_args += install_godopy_python_packages(env)
 
 if env['install_python_stdlib_files']:
     default_args += install_python_standard_library(env)
