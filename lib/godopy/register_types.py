@@ -1,5 +1,7 @@
 import godot as gd
 
+from .core.python_runtime import PythonRuntime
+from .core.python_script import ResourceFormatLoaderPythonScript
 
 python_runtime_singleton = None
 loader = None
@@ -10,8 +12,6 @@ def initialize(level):
 
     if level == gd.MODULE_INITIALIZATION_LEVEL_SCENE:
         from godot.singletons import Engine, ResourceLoader
-        from .core.python_runtime import PythonRuntime
-        from .core.python_script import ResourceFormatLoaderPythonScript
 
         PythonRuntime.register()
         python_runtime_singleton = PythonRuntime()
@@ -20,8 +20,7 @@ def initialize(level):
         # PythonScript.register()
         ResourceFormatLoaderPythonScript.register()
         loader = ResourceFormatLoaderPythonScript()
-        loader_reference = gd.MethodBind(loader, 'reference')
-        loader_reference()
+        loader.reference()
         ResourceLoader.add_resource_format_loader(loader, False)
 
 
@@ -32,8 +31,7 @@ def deinitialize(level):
         from godot.singletons import Engine, ResourceLoader
 
         ResourceLoader.remove_resource_format_loader(loader)
-        loader_unreference = gd.MethodBind(loader, 'unreference')
-        loader_unreference()
+        loader.unreference()
         loader.destroy()
         loader = None
 

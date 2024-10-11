@@ -1,23 +1,28 @@
-from gdextension import *
+import gdextension as gd
 
-# class Extension(gd.Extension):
-#     def __getattr__(self, name):
-#         mb = gd.MethodBind(self, name)
+MethodBind = gd.MethodBind
 
-#         self.__dict__[name] = mb
+input = gd.input
 
-#         return mb
+class Extension(gd.Extension):
+    def __getattr__(self, name):
+        mb = gd.MethodBind(self, name)
+
+        self.__dict__[name] = mb
+
+        return mb
 
 
-#     def __dir__(self):
-#         return self.__godot_class__.__method_info__.keys()
+    def __dir__(self):
+        return self.__godot_class__.__method_info__.keys()
 
 
-# class ExtensionClass(gd.ExtensionClass):
-#     def __call__(self):
-#         if not self.is_registered:
-#             raise RuntimeError("Extension class is not registered")
-#         return Extension(self, self.__inherits__)
+class ExtensionClass(gd.ExtensionClass):
+    def __call__(self):
+        if not self.is_registered:
+            raise RuntimeError("Extension class is not registered")
+        return Extension(self, self.__inherits__)
+
 
 def _set_global_functions():
     # printt = UtilityFunction('printt')
@@ -25,13 +30,13 @@ def _set_global_functions():
 
     # TODO: set all available functions dynamically
 
-    globals()['print'] = UtilityFunction('print')
-    globals()['printerr'] = UtilityFunction('printerr')
-    globals()['print_verbose'] = UtilityFunction('print_verbose')
-    globals()['print_rich'] = UtilityFunction('print_rich')
-    globals()['printraw'] = UtilityFunction('printraw')
-    globals()['push_error'] = UtilityFunction('push_error')
-    globals()['push_warning'] = UtilityFunction('push_warning')
+    globals()['print'] = gd.UtilityFunction('print')
+    globals()['printerr'] = gd.UtilityFunction('printerr')
+    globals()['print_verbose'] = gd.UtilityFunction('print_verbose')
+    globals()['print_rich'] = gd.UtilityFunction('print_rich')
+    globals()['printraw'] = gd.UtilityFunction('printraw')
+    globals()['push_error'] = gd.UtilityFunction('push_error')
+    globals()['push_warning'] = gd.UtilityFunction('push_warning')
 
 
 MODULE_INITIALIZATION_LEVEL_CORE = 0
