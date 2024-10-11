@@ -29,6 +29,7 @@
 /**************************************************************************/
 
 #include <godot_cpp/variant/variant.hpp>
+#include <godot_cpp/variant/godopy.hpp>
 
 #include <binding.h>
 
@@ -309,6 +310,10 @@ Variant::Variant(const PyObject *v0) {
 	} else if (PyObject_CheckBuffer(v)) {
 		internal::gdextension_interface_variant_new_nil(_native_ptr());
 		ERR_PRINT("NOT IMPLEMENTED: Packed*Array Variant from Python buffer");
+
+	} else if (PyObject_IsInstance(v, (PyObject *)&GDPy_ObjectType)) {
+		from_type_constructor[OBJECT](_native_ptr(), ((GDPy_Object *)v)->_owner);
+
 	} else {
 		internal::gdextension_interface_variant_new_nil(_native_ptr());
 		ERR_PRINT("NOT IMPLEMENTED: Could not cast Python object to Godot Variant. "

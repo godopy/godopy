@@ -102,7 +102,7 @@ cdef void *_extgil_get_virtual_call_data(void *p_cls, str name) noexcept:
 
     cdef dict func_info = cls.__inherits__.get_method_info(name)
     cdef tuple func_and_info = (func, func_info['type_info'])
-    # print(func_and_info)
+    print(func_and_info)
     ref.Py_INCREF(func_and_info)
     # TODO: Store the pointer and decref when freeing the instance
     return <void *><PyObject *>func_and_info
@@ -120,7 +120,14 @@ cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info
     cdef size_t i = 0
     cdef list args = []
 
+    cdef Variant variant_arg
     cdef double float_arg
+    cdef String string_arg
+    cdef StringName stringname_arg
+    cdef GDExtensionBool bool_arg
+    cdef int64_t int_arg
+    cdef PackedStringArray packstringarray_arg
+
     cdef size_t size = func.__code__.co_argcount - 1
     if size < 0 or size != (len(type_info) - 1):
         UtilityFunctions.printerr('Wrong number of arguments %d' % size)
@@ -132,12 +139,39 @@ cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info
         if arg_type == 'float':
             float_arg = deref(<double *>p_args[i])
             args.append(float_arg)
+        elif arg_type == 'String':
+            string_arg = deref(<String *>p_args[i])
+            args.append(string_arg.py_str())
+        elif arg_type == 'StringName':
+            stringname_arg = deref(<StringName *>p_args[i])
+            args.append(stringname_arg.py_str())
+        elif arg_type == 'bool':
+            bool_arg = deref(<GDExtensionBool *>p_args[i])
+            args.append(bool(bool_arg))
+        elif arg_type == 'int':
+            int_arg = deref(<int64_t *>p_args[i])
+            args.append(int_arg)
         else:
             UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r arguments in virtual functions yet" % arg_type)
             args.append(None)
 
     cdef object res = func(wrapper._wrapped, *args)
-    # cdef str return_type = type_info[0]
+    cdef str return_type = type_info[0]
 
-    # if return_type != 'Nil':
-    #     UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r return types in virtual functions yet" % return_type)
+    if return_type == 'PackedStringArray':
+        packstringarray_arg = PackedStringArray(res)
+        (<PackedStringArray *>r_ret)[0] = packstringarray_arg
+    elif return_type == 'bool':
+        bool_arg = bool(res)
+        (<GDExtensionBool *>r_ret)[0] = bool_arg
+    elif return_type == 'String':
+        string_arg = <String>res
+        (<String *>r_ret)[0] = string_arg
+    elif return_type == 'Variant' or return_type == 'Object':
+        ref.Py_INCREF(res) # TODO! Handle Python refs
+        # ResourceFormatLoader._load expects Variant, but Object is declared
+        variant_arg = Variant(res)
+        (<Variant *>r_ret)[0] = variant_arg
+
+    elif return_type != 'Nil':
+        UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r return types in virtual functions yet" % return_type)

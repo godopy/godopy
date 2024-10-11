@@ -45,6 +45,8 @@
 #include <godot_cpp/variant/packed_vector3_array.hpp>
 #include <godot_cpp/variant/packed_vector4_array.hpp>
 
+#include <godot_cpp/core/builtin_ptrcall.hpp>
+
 namespace godot {
 
 const uint8_t &PackedByteArray::operator[](int64_t p_index) const {
@@ -250,6 +252,24 @@ void Dictionary::set_typed(uint32_t p_key_type, const StringName &p_key_class_na
 	// p_key_type/p_value_type are not Variant::Type so that header doesn't depend on <variant.hpp>.
 	internal::gdextension_interface_dictionary_set_typed((GDExtensionTypePtr *)this, (GDExtensionVariantType)p_key_type, (GDExtensionConstStringNamePtr)&p_key_class_name, (GDExtensionConstVariantPtr)&p_key_script,
 			(GDExtensionVariantType)p_value_type, (GDExtensionConstStringNamePtr)&p_value_class_name, (GDExtensionConstVariantPtr)&p_value_script);
+}
+
+PackedStringArray::PackedStringArray(const PyObject *from) {
+	internal::_call_builtin_constructor(_method_bindings.constructor_0, &opaque);
+
+	if (PyTuple_Check(from)) {
+		size_t size = PyTuple_Size((PyObject *)from);
+		resize(size);
+		PyObject *value;
+		String _value;
+		for (size_t i = 0; i < size; i++) {
+			value = PyTuple_GetItem((PyObject *)from, i);
+			_value = String(value);
+			set(i, _value);
+		}
+	} else {
+		// TODO: print error or warning
+	}
 }
 
 } // namespace godot

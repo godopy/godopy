@@ -4,7 +4,7 @@ cdef class Extension(Object):
 
     cdef readonly object _wrapped
 
-    def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=False, bint from_callback=False):
+    def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=True, bint from_callback=False):
         if not isinstance(base_class, Class):
             raise TypeError("godot.Class instance is required for 'ext_class', got %r" % type(base_class))
 
@@ -25,6 +25,7 @@ cdef class Extension(Object):
         self._owner = gdextension_interface_classdb_construct_object(self._godot_base_class_name._native_ptr())
 
         if notify:
+            print("POSTINIT from %s" % class_name)
             notification = MethodBind(self, 'notification')
             notification(0, False) # NOTIFICATION_POSTINITIALIZE
 
@@ -40,7 +41,8 @@ cdef class Extension(Object):
         if wrapped_init and callable(wrapped_init):
             wrapped_init(self._wrapped)
 
-        # print("INITIALIZED EXT OBJ %r %s %x" % (self, self.__godot_class__.__name__, <uint64_t>self._owner))
+        print("INITIALIZED EXT OBJ %r %s %x %s" % \
+            (self, self.__godot_class__.__name__, <uint64_t>self._owner, from_callback))
 
 
     cpdef destroy(self):

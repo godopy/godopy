@@ -1,4 +1,4 @@
-cdef class Object:
+cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
     def __cinit__(self):
         self.is_singleton = False
 

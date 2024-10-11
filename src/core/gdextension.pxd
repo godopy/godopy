@@ -9,7 +9,7 @@ cpdef str variant_to_str(VariantType vartype)
 cpdef VariantType str_to_variant(str vartype)
 
 
-cdef class Object:
+cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
     cdef void *_owner
     cdef bint is_singleton
     cdef GDExtensionInstanceBindingCallbacks _binding_callbacks

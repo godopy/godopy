@@ -795,6 +795,8 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
         result.append(f"\t{class_name}(const char16_t *p_from);")
         result.append(f"\t{class_name}(const char32_t *p_from);")
         result.append(f"\t{class_name}(const PyObject *p_from);")
+    if class_name == "PackedStringArray":
+        result.append(f"\t{class_name}(const PyObject *p_from);")
     if class_name == "Callable":
         result.append("\tCallable(CallableCustom *p_custom);")
         result.append("\tCallableCustom *get_custom() const;")

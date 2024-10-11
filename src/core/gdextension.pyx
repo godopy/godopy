@@ -30,9 +30,6 @@ include "extension_class_registrator.pxi"
 include "extension.pxi"
 
 
-cdef public type GDPyType__Object = Object
-
-
 cpdef input(str prompt=None):
     if prompt is not None:
         UtilityFunctions.printraw(prompt)

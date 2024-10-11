@@ -9,20 +9,10 @@ include "defs/dictionary.pxi"
 include "defs/array.pxi"
 
 include "defs/vector2.pxi"
+include "defs/packed_string_array.pxi"
 
 include "defs/classdb.pxi"
 include "defs/engine.pxi"
 include "defs/os.pxi"
 
 include "defs/utility_functions.pxi"
-
-
-# ctypedef fused type_t:
-#     bint
-#     uint32_t
-#     real_t
-#     String
-#     StringName
-#     Dictionary
-#     Array
-#     Vector2
