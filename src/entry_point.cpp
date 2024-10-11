@@ -14,7 +14,9 @@ using namespace godot;
 
 void initialize_level(ModuleInitializationLevel p_level) {
 	if (p_level == MINIMUM_INITIALIZATION_LEVEL) {
-		ClassDB::register_class<PythonObject>();
+		// The only GDExtension class defined at godot-cpp level
+		// Simple PyObject* wrapper, provides getattr and call methods
+		GDREGISTER_CLASS(PythonObject);
 	}
 
 	if (p_level >= MINIMUM_INITIALIZATION_LEVEL) {
