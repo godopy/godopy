@@ -155,7 +155,7 @@ cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info
             UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r arguments in virtual functions yet" % arg_type)
             args.append(None)
 
-    cdef object res = func(wrapper._wrapped, *args)
+    cdef object res = func(wrapper, *args)
     cdef str return_type = type_info[0]
 
     if return_type == 'PackedStringArray':

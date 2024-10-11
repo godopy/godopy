@@ -4,11 +4,10 @@ import numpy as np
 GDExample = gd.ExtensionClass('GDExample', 'Sprite2D')
 
 
-def __init__(self: gd.Extension):
-    print("INIT0")
+def __init__(self):
     self.time_passed = 0.0
 
-    self.set_position = gd.MethodBind(self.__godot_object__, 'set_position')
+    # self.set_position = gd.MethodBind(self.__godot_object__, 'set_position')
 
 
 def _process(self, delta: float) -> None:
@@ -22,7 +21,7 @@ def _process(self, delta: float) -> None:
     self.set_position(new_position)
 
 
-def _ready(self: gd.Extension) -> None:
+def _ready(self) -> None:
     gd.print("READY")
 
 

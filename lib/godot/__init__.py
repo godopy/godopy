@@ -1,6 +1,5 @@
 import gdextension as gd
 
-MethodBind = gd.MethodBind
 
 input = gd.input
 
@@ -22,6 +21,26 @@ class ExtensionClass(gd.ExtensionClass):
         if not self.is_registered:
             raise RuntimeError("Extension class is not registered")
         return Extension(self, self.__inherits__)
+
+
+
+class Object(gd.Object):
+    def __getattr__(self, name):
+        mb = gd.MethodBind(self, name)
+
+        self.__dict__[name] = mb
+
+        return mb
+
+
+    def __dir__(self):
+        return self.__godot_class__.__method_info__.keys()
+
+
+class Class(gd.Class):
+    def __call__(self):
+        return Object(self)
+
 
 
 def _set_global_functions():

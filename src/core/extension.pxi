@@ -25,21 +25,16 @@ cdef class Extension(Object):
         self._owner = gdextension_interface_classdb_construct_object(self._godot_base_class_name._native_ptr())
 
         if notify:
-            print("POSTINIT from %s" % class_name)
             notification = MethodBind(self, 'notification')
             notification(0, False) # NOTIFICATION_POSTINITIALIZE
 
         ref.Py_INCREF(self) # DECREF in ExtensionClass._free
         gdextension_interface_object_set_instance(self._owner, self._godot_class_name._native_ptr(), <void *><PyObject *>self)
 
-        class InnerExtensionObject:
-            pass
 
-        self._wrapped = InnerExtensionObject()
-        self._wrapped.__godot_object__ = self
-        cdef object wrapped_init = self.__godot_class__.python_method_bindings.get('__init__')
-        if wrapped_init and callable(wrapped_init):
-            wrapped_init(self._wrapped)
+        cdef object impl_init = self.__godot_class__.python_method_bindings.get('__init__')
+        if impl_init:
+            impl_init(self)
 
         print("INITIALIZED EXT OBJ %r %s %x %s" % \
             (self, self.__godot_class__.__name__, <uint64_t>self._owner, from_callback))

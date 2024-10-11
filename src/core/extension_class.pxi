@@ -132,8 +132,10 @@ cdef class ExtensionClass(Class):
             UtilityFunctions.printerr("ExtensionClass object pointer is uninitialized")
             return NULL
 
+        from godot import Extension as PyExtension
+
         cdef ExtensionClass cls = <ExtensionClass>data
-        cdef Extension wrapper = Extension(cls, cls.__inherits__, notify, True)
+        cdef Extension wrapper = PyExtension(cls, cls.__inherits__, notify, True)
 
         # print("CREATED INSTANCE %r %x %x" % (wrapper, <uint64_t>wrapper._owner, <uint64_t><PyObject *>wrapper))
 
