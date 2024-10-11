@@ -18,6 +18,6 @@ struct GDPy_Object {
   void *__godot_class__;
 };
 
-PyTypeObject GDPy_ObjectType;
+extern PyTypeObject GDPy_ObjectType;
 
 #endif
