@@ -8,11 +8,12 @@
 #include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
-#include <godot_cpp/classes/resource_loader.hpp>
 
 using namespace godot;
 
 #define MINIMUM_INITIALIZATION_LEVEL MODULE_INITIALIZATION_LEVEL_SCENE
+
+//Ref<ResourceFormatLoaderPythonScript> resource_loader_python;
 
 void initialize_level(ModuleInitializationLevel p_level) {
 	if (p_level == MINIMUM_INITIALIZATION_LEVEL) {

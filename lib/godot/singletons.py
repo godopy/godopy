@@ -1,12 +1,12 @@
-import gdextension as gd
+import gdextension as gde
 
 
-__all__ = list(gd._singletons_dir())
+__all__ = list(gde._singletons_dir())
 
 
-class Singleton(gd.Object):
+class Singleton(gde.Object):
     def __getattr__(self, name):
-        mb = gd.MethodBind(self, name)
+        mb = gde.MethodBind(self, name)
 
         self.__dict__[name] = mb
 
@@ -18,8 +18,9 @@ class Singleton(gd.Object):
 
 
 def __getattr__(name):
-    if gd._has_singleton(name):
+    if gde._has_singleton(name):
         return Singleton(name)
+    # TODO: Extension singletons
     else:
         raise AttributeError('%r singleton does not exist' % name)
 

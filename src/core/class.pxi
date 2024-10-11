@@ -44,13 +44,18 @@ cdef class Class:
             self.__inherits__ = Class.get_class(inherits_name)
 
 
-    cdef object get_method_info(self, method_name):
+    cpdef object get_method_info(self, method_name):
         cdef object mi = self.__method_info__.get(method_name, None)
 
         if mi is None and self.__inherits__ is not None:
             mi = self.__inherits__.get_method_info(method_name)
 
         return mi
+
+
+    @staticmethod
+    def _get_class(str name):
+        return Class.get_class(name)
 
 
     @staticmethod

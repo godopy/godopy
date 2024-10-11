@@ -41,7 +41,7 @@ cdef class Class:
     cdef readonly Class __inherits__
 
     cdef int initialize_class(self) except -1
-    cdef object get_method_info(self, method_name)
+    cpdef object get_method_info(self, method_name)
 
     @staticmethod
     cdef Class get_class(str name)
@@ -52,8 +52,6 @@ cdef class Callable:
 
     cpdef object _call_internal(self, tuple args)
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
-
-    # cdef int _ptrcall_string(self, Variant *r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) except -1 nogil
 
 
 cdef class MethodBind(Callable):

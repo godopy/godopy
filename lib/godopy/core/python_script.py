@@ -8,7 +8,7 @@ import godot as gd
 #     self.source = ''
 
 
-ResourceFormatLoaderPythonScript = gd.ExtensionClass('ResourceFormatLoaderPythonScript', 'ResourceFormatLoader')
+ResourceFormatLoaderPythonScript = gd.ExtensionClass('ResourceFormatLoaderPythonScript2', 'ResourceFormatLoader')
 
 def _get_recognized_extensions(self) -> tuple:
     # print('GET EXT')
