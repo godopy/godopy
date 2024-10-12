@@ -14,6 +14,8 @@ import importlib
 include "api_data.pxi"
 
 cdef set _global_singleton_info = pickle.loads(_global_singleton_info__pickle)
+cdef dict _global_inheritance_info = pickle.loads(_global_inheritance_info__pickle)
+cdef dict _global_utility_function_info = pickle.loads(_global_utility_function_info__pickle)
 
 include "typeconv.pxi"
 
@@ -38,9 +40,15 @@ cpdef input(str prompt=None):
     return OS.get_singleton().read_string_from_stdin()
 
 
+def _has_class(str name):
+    return name in _global_inheritance_info
+
 def _has_singleton(str name):
     return name in _global_singleton_info
 
+
+def _classdb_dir():
+    return _global_inheritance_info.keys()
 
 def _singletons_dir():
     return  _global_singleton_info

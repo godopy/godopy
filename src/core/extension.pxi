@@ -3,6 +3,7 @@ cdef class Extension(Object):
     cdef StringName _godot_base_class_name
 
     cdef readonly object _wrapped
+    cdef bint _needs_cleanup
 
     def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=False, bint from_callback=False):
         if not isinstance(base_class, Class):
@@ -13,6 +14,8 @@ cdef class Extension(Object):
 
         if not ext_class.is_registered:
             raise RuntimeError('Extension class must be registered')
+
+        self._needs_cleanup = not from_callback
 
         self.__godot_class__ = ext_class
 
@@ -37,12 +40,28 @@ cdef class Extension(Object):
         if impl_init:
             impl_init(self)
 
-        print("EXT OBJ READY %r %s %x %s" % \
-            (self, self.__godot_class__.__name__, <uint64_t>self._owner, from_callback))
+        print("%r initialized, from callback: %r" % (self, from_callback))
+
+
+    def __repr__(self):
+        class_name = 'Extension[%s]' % self.__godot_class__.__name__ if self.__class__.__name__ == 'Extension' else self.__class__.__name__
+        return "<%s.%s object at 0x%016X[0x%016X]>" % (
+            self.__class__.__module__, class_name, <uint64_t><PyObject *>self, <uint64_t>self._owner)
 
 
     cpdef destroy(self):
-        # Will call ExtensionClass._free
-        gdextension_interface_object_destroy(self._owner)
+        with nogil:
+            # Will call ExtensionClass._free
+            gdextension_interface_object_destroy(self._owner)
+            self._owner = NULL
+            self._needs_cleanup = False
 
-        self._owner = NULL
+
+    def __del__(self):
+        if self._needs_cleanup:
+            print('Clean %r' % self)
+            with nogil:
+                # Will call ExtensionClass._free
+                gdextension_interface_object_destroy(self._owner)
+                self._owner = NULL
+                self._needs_cleanup = False

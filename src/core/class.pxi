@@ -1,5 +1,3 @@
-cdef dict _global_inheritance_info = pickle.loads(_global_inheritance_info__pickle)
-
 cdef dict _method_info_cache = {}
 def get_method_info(class_name):
     cdef bytes mi_pickled
@@ -23,6 +21,10 @@ cdef class Class:
 
     def __call__(self):
         return Object(self)
+
+    def __repr__(self):
+        class_name = '%s[%s]' % (self.__class__.__name__, self.__name__)
+        return "<%s.%s at 0x%016X>" % (self.__class__.__module__, class_name, <uint64_t><PyObject *>self)
 
     cdef int initialize_class(self) except -1:
         cdef dict method_info

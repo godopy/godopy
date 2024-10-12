@@ -54,7 +54,7 @@ cdef class ExtensionClassRegistrator:
         self._godot_class_name = StringName(_name)
         self._godot_inherits_name = StringName(inherits_name)
 
-        print("REGISTER CLASS %s" % self.__name__)
+        print("%r is registered" % self.registree)
 
         with nogil:
             gdextension_interface_classdb_register_extension_class4(

@@ -42,15 +42,23 @@ def redirect_python_stdio():
 
 cdef object initialize_func = None
 cdef object deinitialize_func = None
+cdef bint first_level = True
+
 
 try:
     from godot import register_types as godot_register_types
 except ImportError as exc:
+    UtilityFunctions.print_rich(
+        "\n[color=red]ERROR: 'godot.register types' module was not found or raised an exception.[/color]\n"
+    )
     raise SystemError("GodoPy was not properly installed, 'godot.register_types' is missing")
 
 try:
     from godopy import register_types as godopy_register_types
 except ImportError as exc:
+    UtilityFunctions.print_rich(
+        "\n[color=red]ERROR: 'godopy.register types' module was not found or raised an exception.[/color]\n"
+    )
     raise SystemError("GodoPy was not properly installed, 'godopy.register_types' is missing")
 
 
@@ -63,34 +71,36 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
 
 
 cdef int _python_initialize_level(ModuleInitializationLevel p_level) noexcept with gil:
-    global initialize_func, deinitialize_func
+    global initialize_func, deinitialize_func, first_level
 
     UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
 
-    if p_level == MODULE_INITIALIZATION_LEVEL_SCENE:
+    if first_level:
         redirect_python_stdio()
 
         venv_path = os.environ.get('VIRTUAL_ENV')
         if venv_path and Engine.get_singleton().is_editor_hint():
             sys.path.append(os.path.join(venv_path, 'Lib', 'site-packages'))
 
-    try:
-        import register_types
-        initialize_func = getattr(register_types, 'initialize', None)  
-        deinitialize_func = getattr(register_types, 'deinitialize', None)   
-    except ImportError as exc:
-        f = io.StringIO()
-        traceback.print_exception(exc, file=f)
-        exc_text = f.getvalue()
-        if isinstance(exc, ModuleNotFoundError) and "'register_types'" in exc_text:
-            UtilityFunctions.print_rich(
-                "\n[color=orange]WARNING: 'register types' module was not found.[/color]\n"
+        try:
+            import register_types
+            initialize_func = getattr(register_types, 'initialize', None)
+            deinitialize_func = getattr(register_types, 'deinitialize', None)
+        except ImportError as exc:
+            f = io.StringIO()
+            traceback.print_exception(exc, file=f)
+            exc_text = f.getvalue()
+            if isinstance(exc, ModuleNotFoundError) and "'register_types'" in exc_text:
+                UtilityFunctions.print_rich(
+                    "\n[color=orange]WARNING: 'register types' module was not found.[/color]\n"
+                )
+            else:
+                UtilityFunctions.print_rich(
+                    "\n[color=red]ERROR: 'register types' module rased an exception:[/color]"
+                    "\n[color=orange]%s[/color]\n" % exc_text
             )
-        else:
-            UtilityFunctions.print_rich(
-                "\n[color=red]ERROR: 'register types' module rased an exception:[/color]"
-                "\n[color=orange]%s[/color]\n" % exc_text
-            )
+
+        first_level = False
 
     godot_register_types.initialize(p_level)
     godopy_register_types.initialize(p_level)

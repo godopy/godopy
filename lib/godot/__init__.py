@@ -1,6 +1,7 @@
 import types
-import builtins
+
 import gdextension as gde
+from . import classdb, singletons
 
 
 input = gde.input
@@ -30,6 +31,15 @@ MODULE_INITIALIZATION_LEVEL_EDITOR = 3
 _set_global_functions()
 
 
+def method(func):
+    func._gdmethod = func.__name__
+    return func
+
+
+def virtual_method(func):
+    func._gdvirtualmethod = func.__name__
+    return func
+
 class GodotClassBase(type):
     """Metaclass for all Godot engine and extension classes"""
 
@@ -39,6 +49,8 @@ class GodotClassBase(type):
         godot_cls = attrs.get('__godot_class__', None)
         if godot_cls is not None:
             # Engine class
+            cls._is_extension = False
+            print('Setup Engine class %s' % name)
             return super_new(cls, name, bases, attrs)
 
         # Ensure initialization is only performed for subclasses of Godot classes
@@ -57,17 +69,18 @@ class GodotClassBase(type):
             '__godot_class__': godot_cls
         }
 
-        cls.register = godot_cls.register
-        cls.register_abstract = godot_cls.register_abstract
-        cls.register_internal = godot_cls.register_internal
-        cls.register_runtime = godot_cls.register_runtime
+        extension_bases = tuple(b for b in bases if issubclass(b, Class))
+        if not extension_bases:
+            extension_bases = (Class,)
+
+        cls._is_extension = True
 
         for attr, value in attrs.items():
             parent_method_info = godot_cls.__inherits__.get_method_info(attr)
             if attr == '__init__':
                 new_attrs[attr] = godot_cls.bind_python_method(value)
             elif attr.startswith('_') and parent_method_info is not None:
-                builtins.print('Meta: FOUND VIRTUAL', attr, parent_method_info)
+                print('Meta: FOUND VIRTUAL %s %r' % (attr, parent_method_info))
                 new_attrs[attr] = godot_cls.bind_virtual_method(value)
             elif getattr(value, '_gdmethod', False):
                 new_attrs[attr] = godot_cls.bind_method(value)
@@ -78,7 +91,10 @@ class GodotClassBase(type):
             else:
                 new_attrs[attr] = value
 
-        return super_new(cls, name, bases, new_attrs, **kwargs)
+        return super_new(cls, name, extension_bases, new_attrs, **kwargs)
+
+    def __getattr__(cls, name):
+        return getattr(cls.__godot_class__, name)
 
 
 class Extension(gde.Extension):
@@ -95,11 +111,6 @@ class Extension(gde.Extension):
             self.__dict__.keys()
         ))
 
-
-class ExtensionClass(gde.ExtensionClass):
-    def __call__(self):
-        if self.is_registered:
-            return Extension(self, self.__inherits__)
 
 class Class(Extension, metaclass=GodotClassBase):
     def __init__(self):

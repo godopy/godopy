@@ -1,11 +1,8 @@
-import godot as gd
-import gdextension as gde
 import numpy as np
+from godot import classdb
 
-class Sprite2D(gd.EngineClass):
-    __godot_class__ = gde.Class._get_class('Sprite2D')
 
-class GDExample(Sprite2D):
+class GDExample(classdb.Sprite2D):
     def __init__(self):
         self.time_passed = 0.0
 
@@ -20,4 +17,4 @@ class GDExample(Sprite2D):
         self.set_position(new_position)
 
     def _ready(self) -> None:
-        gd.print("READY")
+        print("READY")
