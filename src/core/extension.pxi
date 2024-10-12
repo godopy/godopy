@@ -4,7 +4,7 @@ cdef class Extension(Object):
 
     cdef readonly object _wrapped
 
-    def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=True, bint from_callback=False):
+    def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=False, bint from_callback=False):
         if not isinstance(base_class, Class):
             raise TypeError("godot.Class instance is required for 'ext_class', got %r" % type(base_class))
 
@@ -22,21 +22,22 @@ cdef class Extension(Object):
         cdef str base_class_name = base_class.__name__
         self._godot_base_class_name = StringName(base_class_name)
 
-        self._owner = gdextension_interface_classdb_construct_object(self._godot_base_class_name._native_ptr())
+        with nogil:
+            self._owner = gdextension_interface_classdb_construct_object(self._godot_base_class_name._native_ptr())
 
         if notify:
             notification = MethodBind(self, 'notification')
             notification(0, False) # NOTIFICATION_POSTINITIALIZE
 
         ref.Py_INCREF(self) # DECREF in ExtensionClass._free
-        gdextension_interface_object_set_instance(self._owner, self._godot_class_name._native_ptr(), <void *><PyObject *>self)
-
+        with nogil:
+            gdextension_interface_object_set_instance(self._owner, self._godot_class_name._native_ptr(), <void *><PyObject *>self)
 
         cdef object impl_init = self.__godot_class__.python_method_bindings.get('__init__')
         if impl_init:
             impl_init(self)
 
-        print("INITIALIZED EXT OBJ %r %s %x %s" % \
+        print("EXT OBJ READY %r %s %x %s" % \
             (self, self.__godot_class__.__name__, <uint64_t>self._owner, from_callback))
 
 

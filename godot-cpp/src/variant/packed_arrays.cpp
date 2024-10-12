@@ -257,6 +257,7 @@ void Dictionary::set_typed(uint32_t p_key_type, const StringName &p_key_class_na
 PackedStringArray::PackedStringArray(const PyObject *from) {
 	internal::_call_builtin_constructor(_method_bindings.constructor_0, &opaque);
 
+	// PyGILState_STATE gil_state = PyGILState_Ensure();
 	if (PyTuple_Check(from)) {
 		size_t size = PyTuple_Size((PyObject *)from);
 		resize(size);
@@ -270,6 +271,7 @@ PackedStringArray::PackedStringArray(const PyObject *from) {
 	} else {
 		// TODO: print error or warning
 	}
+	// PyGILState_Release(gil_state);
 }
 
 } // namespace godot

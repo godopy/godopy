@@ -118,11 +118,11 @@ Ref<PythonObject> PythonObject::getattr(const String &p_attr_name) {
     Py_INCREF(attr);
     object->instance = attr;
     PyObject *repr = PyObject_Repr(attr);
-    ERR_FAIL_NULL_V(attr, object);
+    ERR_FAIL_NULL_V(repr, object);
     object->__repr__ = String(repr);
-    PyGILState_Release(gil_state);
     Py_DECREF(repr);
     Py_DECREF(attr);
+    PyGILState_Release(gil_state);
 
     return object;
 }

@@ -91,12 +91,19 @@ cdef int _extgil_to_string_bind(void *p_instance, GDExtensionBool *r_is_valid, G
 
 cdef void *_ext_get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil:
     cdef StringName name = deref(<StringName *>p_name)
-    with gil:
-        return _extgil_get_virtual_call_data(p_userdata, name.py_str())
 
-cdef void *_extgil_get_virtual_call_data(void *p_cls, str name) noexcept:
+    # Create PyThreadState for every Godot thread,
+    # otherwise calling GIL function from different threads would create a deadlock
+    PythonRuntime.get_singleton().ensure_current_thread_state()
+
+    return _extgil_get_virtual_call_data(p_userdata, name)
+
+
+cdef void *_extgil_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil:
     cdef ExtensionClass cls = <ExtensionClass>p_cls
+    cdef str name = p_name.py_str()
     cdef object func = cls.virtual_method_implementation_bindings.get(name)
+    # print("_VIRTUAL CHECK %s.%s" % (cls.__name__, name))
     if func is None:
         return NULL
 
@@ -105,14 +112,14 @@ cdef void *_extgil_get_virtual_call_data(void *p_cls, str name) noexcept:
     print(func_and_info)
     ref.Py_INCREF(func_and_info)
     # TODO: Store the pointer and decref when freeing the instance
+
     return <void *><PyObject *>func_and_info
 
 
 cdef void _ext_call_virtual_with_data(void *p_instance, GDExtensionConstStringNamePtr p_name, void *p_func, GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_ret) noexcept nogil:
-    with gil:
-        _extgil_call_virtual_with_data(p_instance, p_func, <const void **>p_args, r_ret)
+    _extgil_call_virtual_with_data(p_instance, p_func, <const void **>p_args, r_ret)
 
-cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info, const void **p_args, GDExtensionTypePtr r_ret) noexcept:
+cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info, const void **p_args, GDExtensionTypePtr r_ret) noexcept with gil:
     cdef object wrapper = <object>p_instance
     cdef func_and_info = <tuple>p_func_and_info
     cdef object func = func_and_info[0]
@@ -156,6 +163,7 @@ cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info
             args.append(None)
 
     cdef object res = func(wrapper, *args)
+
     cdef str return_type = type_info[0]
 
     if return_type == 'PackedStringArray':
@@ -168,7 +176,6 @@ cdef void _extgil_call_virtual_with_data(void *p_instance, void *p_func_and_info
         string_arg = <String>res
         (<String *>r_ret)[0] = string_arg
     elif return_type == 'Variant' or return_type == 'Object':
-        ref.Py_INCREF(res) # TODO! Handle Python refs
         # ResourceFormatLoader._load expects Variant, but Object is declared
         variant_arg = Variant(res)
         (<Variant *>r_ret)[0] = variant_arg

@@ -15,4 +15,5 @@ cdef class MethodBind(Callable):
                 class_name._native_ptr(), _method_name._native_ptr(), _hash)
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil:
-        gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._owner, p_args, r_ret)
+        with nogil:
+            gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._owner, p_args, r_ret)

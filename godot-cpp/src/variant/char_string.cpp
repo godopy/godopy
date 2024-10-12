@@ -175,6 +175,7 @@ String::String(const char32_t *from) {
 }
 
 String::String(const PyObject *from) {
+	// PyGILState_STATE gil_state = PyGILState_Ensure();
 	if (PyUnicode_Check(from)) {
 		Py_ssize_t size;
 		const wchar_t *contents = PyUnicode_AsWideCharString((PyObject *)from, &size);
@@ -186,6 +187,7 @@ String::String(const PyObject *from) {
 		// TODO: print error or warning
 		internal::gdextension_interface_string_new_with_latin1_chars(_native_ptr(), "");
 	}
+	// PyGILState_Release(gil_state);
 }
 
 String::operator PyObject *() const {
@@ -317,12 +319,11 @@ PyObject *String::py_str() const {
 	internal::gdextension_interface_string_to_wide_chars(_native_ptr(), str.ptrw(), length);
 	str[length] = '\0';
 
-	PyGILState_STATE gil_state = PyGILState_Ensure();
-
+	// PyGILState_STATE gil_state = PyGILState_Ensure();
 	PyObject *ret = PyUnicode_FromWideChar(str, length);
 	ERR_FAIL_NULL_V(ret, nullptr);
 	Py_XINCREF(ret);
-	PyGILState_Release(gil_state);
+	// PyGILState_Release(gil_state);
 
 	return ret;
 }
@@ -335,13 +336,13 @@ PyObject *String::py_bytes() const {
 	internal::gdextension_interface_string_to_utf8_chars(_native_ptr(), str.ptrw(), length);
 	str[length] = '\0';
 
-	PyGILState_STATE gil_state = PyGILState_Ensure();
+	// PyGILState_STATE gil_state = PyGILState_Ensure();
 
 	PyObject *ret = PyBytes_FromString(str);
 	ERR_FAIL_NULL_V(ret, nullptr);
 	Py_XINCREF(ret);
 
-	PyGILState_Release(gil_state);
+	// PyGILState_Release(gil_state);
 	return ret;
 }
 

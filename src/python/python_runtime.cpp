@@ -18,6 +18,10 @@ PythonRuntime::PythonRuntime() {
 	ERR_FAIL_COND(singleton != nullptr);
 	singleton = this;
 	initialized = false;
+	interpreter_state = nullptr;
+	main_thread_state = nullptr;
+	main_thread_id = 0;
+
 	internal::gdextension_interface_get_library_path(internal::library, &library_path);
 }
 
@@ -121,6 +125,12 @@ void PythonRuntime::initialize() {
 
 	PyConfig_Clear(&config);
 
+	interpreter_state = PyInterpreterState_Get();
+
+	// Also releases the GIL
+	// This seems to be important, otherwise callbacks from different threads create deadlocks
+	main_thread_state = PyEval_SaveThread();
+
 	return;
 
 fail:
@@ -169,6 +179,27 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
     return module;
 }
 
+void PythonRuntime::init_module(const String &p_name) {
+	PyGILState_STATE gil_state = PyGILState_Ensure();
+	PyObject *m = PyImport_ImportModule(p_name.utf8());
+
+	if (PyErr_Occurred()) {
+		PyObject *exc = PyErr_GetRaisedException();
+		ERR_FAIL_NULL(exc);
+		// PyObject *_traceback = PyException_GetTraceback(exc);
+		// ERR_FAIL_NULL_V(_traceback, module);
+		PyObject *str_exc = PyObject_Str(exc);
+		String traceback = String(str_exc);
+		ERR_PRINT("Python error occured: " + traceback);
+		Py_DECREF(str_exc);
+		Py_DECREF(exc);
+	}
+
+	ERR_FAIL_NULL(m);
+	Py_DECREF(m);
+	PyGILState_Release(gil_state);
+}
+
 PythonObject *PythonRuntime::python_object_from_pyobject(PyObject *p_obj) {
 	Ref<PythonObject> obj = memnew(PythonObject);
 
@@ -184,9 +215,44 @@ PythonObject *PythonRuntime::python_object_from_pyobject(PyObject *p_obj) {
 	return obj.ptr();
 }
 
+void PythonRuntime::ensure_current_thread_state(bool setdefault) {
+	PyThreadState *tstate;
+	uint64_t thread_id = OS::get_singleton()->get_thread_caller_id();
+
+	if (setdefault) {
+		main_thread_id = thread_id;
+		UtilityFunctions::print_verbose("Main thread id #", main_thread_id);
+		PyGILState_STATE gil_state = PyGILState_Ensure();
+		tstate = PyThreadState_Get();
+		thread_states[thread_id] = tstate;
+		PyGILState_Release(gil_state);
+
+	} else if (thread_states.find(thread_id) == thread_states.end()) {
+		// Python requires separate thread states for each C++ thread
+		tstate = PyThreadState_New(interpreter_state);
+		thread_states[thread_id] = tstate;
+
+		UtilityFunctions::print_verbose("Set Python thread state for Godot thread #", thread_id);
+	}
+}
+
 void PythonRuntime::finalize() {
 	if (is_initialized()) {
 		if (Py_IsInitialized()) {
+			PyGILState_STATE gil_state = PyGILState_Ensure();
+			for (auto it: thread_states) {
+				if (it.first != main_thread_id) {
+					PyThreadState_Clear(it.second);
+					PyThreadState_Delete(it.second);
+					thread_states[it.first] = nullptr;
+				}
+			}
+			PyGILState_Release(gil_state);
+			PyEval_RestoreThread(main_thread_state);
+
+			main_thread_state = nullptr;
+			interpreter_state = nullptr;
+
 			Py_FinalizeEx();
 		}
 

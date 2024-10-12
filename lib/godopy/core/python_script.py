@@ -8,7 +8,7 @@ import godot as gd
 #     self.source = ''
 
 
-ResourceFormatLoaderPythonScript = gd.ExtensionClass('ResourceFormatLoaderPythonScript2', 'ResourceFormatLoader')
+ResourceFormatLoaderPythonScript = gd.ExtensionClass('ResourceFormatLoaderPythonScript', 'ResourceFormatLoader')
 
 def _get_recognized_extensions(self) -> tuple:
     # print('GET EXT')
@@ -19,7 +19,7 @@ def _handles_type(self, type: str) -> bool:
     return type == 'PythonScript'
 
 def _get_resource_type(self, path: str) -> str:
-    # print("GET RESOURCE TYPE", path)
+    print("GET RESOURCE TYPE", path)
     return 'PythonScript' if path.endswith('.py') else ''
 
 def _load(self, path: str, original_path: str, use_sub_threads: bool, cache_mode: int) -> gd.Extension:
@@ -31,5 +31,5 @@ ResourceFormatLoaderPythonScript.bind_virtual_methods(
     _get_recognized_extensions,
     _handles_type,
     _get_resource_type,
-    _load
+    _load,
 )

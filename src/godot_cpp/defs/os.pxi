@@ -6,3 +6,4 @@ cdef extern from "godot_cpp/classes/os.hpp" namespace "godot" nogil:
         str read_string_from_stdin()
         str get_environment(str) const
         bint is_stdout_verbose() const
+        uint64_t get_thread_caller_id() const

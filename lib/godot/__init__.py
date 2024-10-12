@@ -6,26 +6,50 @@ import gdextension as gde
 input = gde.input
 
 
+def _set_global_functions():
+    # printt = UtilityFunction('printt')
+    # prints = UtilityFunction('prints')
+
+    # TODO: set all available functions dynamically
+
+    globals()['print'] = gde.UtilityFunction('print')
+    globals()['printerr'] = gde.UtilityFunction('printerr')
+    globals()['print_verbose'] = gde.UtilityFunction('print_verbose')
+    globals()['print_rich'] = gde.UtilityFunction('print_rich')
+    globals()['printraw'] = gde.UtilityFunction('printraw')
+    globals()['push_error'] = gde.UtilityFunction('push_error')
+    globals()['push_warning'] = gde.UtilityFunction('push_warning')
+
+
+MODULE_INITIALIZATION_LEVEL_CORE = 0
+MODULE_INITIALIZATION_LEVEL_SERVERS = 1
+MODULE_INITIALIZATION_LEVEL_SCENE = 2
+MODULE_INITIALIZATION_LEVEL_EDITOR = 3
+
+
+_set_global_functions()
+
+
 class GodotClassBase(type):
     """Metaclass for all Godot engine and extension classes"""
 
     def __new__(cls, name, bases, attrs, **kwargs):
         super_new = super().__new__
 
-        # Ensure initialization is only performed for subclasses of Godot classes
-        # (excluding Class itself).
-        parents = [b for b in bases if isinstance(b, GodotClassBase)]
-        if not parents:
-            # if cls is not Class:
-            #     push_warning("Attempt to create a Godot class without valid base")
-            return super_new(cls, name, bases, attrs)
-
         godot_cls = attrs.get('__godot_class__', None)
-        if godot_cls is None:
-            godot_cls = gde.ExtensionClass(name, parents[0].__godot_class__)
-        else:
+        if godot_cls is not None:
             # Engine class
             return super_new(cls, name, bases, attrs)
+
+        # Ensure initialization is only performed for subclasses of Godot classes
+        # (excluding Class/EngineClass).
+        parents = [b for b in bases if isinstance(b, GodotClassBase)]
+        if not parents:
+            if name != 'Class' and name != 'EngineClass':
+                push_warning("Attempt to create %r Godot class without a valid base" % name)
+            return super_new(cls, name, bases, attrs)
+
+        godot_cls = gde.ExtensionClass(name, parents[0].__godot_class__)
 
         module = attrs.pop('__module__')
         new_attrs = {
@@ -39,7 +63,6 @@ class GodotClassBase(type):
         cls.register_runtime = godot_cls.register_runtime
 
         for attr, value in attrs.items():
-            builtins.print(attr, value)
             parent_method_info = godot_cls.__inherits__.get_method_info(attr)
             if attr == '__init__':
                 new_attrs[attr] = godot_cls.bind_python_method(value)
@@ -101,28 +124,3 @@ class EngineClass(EngineObject, metaclass=GodotClassBase):
     def __init__(self):
         godot_cls = self.__class__.__godot_class__
         super().__init__(godot_cls)
-
-
-
-def _set_global_functions():
-    # printt = UtilityFunction('printt')
-    # prints = UtilityFunction('prints')
-
-    # TODO: set all available functions dynamically
-
-    globals()['print'] = gde.UtilityFunction('print')
-    globals()['printerr'] = gde.UtilityFunction('printerr')
-    globals()['print_verbose'] = gde.UtilityFunction('print_verbose')
-    globals()['print_rich'] = gde.UtilityFunction('print_rich')
-    globals()['printraw'] = gde.UtilityFunction('printraw')
-    globals()['push_error'] = gde.UtilityFunction('push_error')
-    globals()['push_warning'] = gde.UtilityFunction('push_warning')
-
-
-MODULE_INITIALIZATION_LEVEL_CORE = 0
-MODULE_INITIALIZATION_LEVEL_SERVERS = 1
-MODULE_INITIALIZATION_LEVEL_SCENE = 2
-MODULE_INITIALIZATION_LEVEL_EDITOR = 3
-
-
-_set_global_functions()

@@ -256,7 +256,7 @@ Variant::Variant(const PackedVector4Array &v) {
 
 Variant::Variant(const PyObject *v0) {
 	ERR_FAIL_NULL(v0);
-	PyGILState_STATE gil_state = PyGILState_Ensure();
+	// PyGILState_STATE gil_state = PyGILState_Ensure();
 	PyObject *v = const_cast<PyObject *>(v0);
 	if (v == Py_None) {
 		internal::gdextension_interface_variant_new_nil(_native_ptr());
@@ -319,7 +319,7 @@ Variant::Variant(const PyObject *v0) {
 		ERR_PRINT("NOT IMPLEMENTED: Could not cast Python object to Godot Variant. "
 				  "Unsupported or unknown Python object.");
 	}
-	PyGILState_Release(gil_state);
+	// PyGILState_Release(gil_state);
 }
 
 Variant::~Variant() {

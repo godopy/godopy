@@ -1,6 +1,7 @@
 cimport cython
-from cpython cimport ref
+from cpython cimport ref, pystate
 from libcpp.vector cimport vector
+from libcpp.unordered_map cimport unordered_map
 from cython.operator cimport dereference as deref
 from python_runtime cimport *
 

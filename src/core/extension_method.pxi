@@ -158,13 +158,15 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         ref.Py_INCREF(self)  # DECREF ??? TODO
 
         # print("REG METHOD %s:%s %x" % (self.owner_class.__name__, self.__name__, <uint64_t><PyObject *>self))
-        cdef str name = self.owner_class.__name__
+        cdef str class_name = self.owner_class.__name__
+        cdef StringName _class_name = StringName(class_name)
 
-        gdextension_interface_classdb_register_extension_class_method(gdextension_library, StringName(name).ptr(), &mi)
+        with nogil:
+            gdextension_interface_classdb_register_extension_class_method(gdextension_library, _class_name._native_ptr(), &mi)
 
-        gdextension_interface_mem_free(def_args)
-        gdextension_interface_mem_free(arguments_info)
-        gdextension_interface_mem_free(arguments_metadata)
+            gdextension_interface_mem_free(def_args)
+            gdextension_interface_mem_free(arguments_info)
+            gdextension_interface_mem_free(arguments_metadata)
 
         return 0
 

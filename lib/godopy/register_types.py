@@ -21,7 +21,7 @@ def initialize(level):
         ResourceFormatLoaderPythonScript.register()
         loader = ResourceFormatLoaderPythonScript()
         loader.reference()
-        ResourceLoader.add_resource_format_loader(loader, False)
+        ResourceLoader.add_resource_format_loader(loader, True)
 
 
 def deinitialize(level):

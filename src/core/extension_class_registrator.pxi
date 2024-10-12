@@ -26,17 +26,17 @@ cdef class ExtensionClassRegistrator:
         ci.set_func = NULL # &_ext_set_bind
         ci.get_func = NULL # &_ext_.get_bind
         ci.get_property_list_func = NULL
-        ci.free_property_list_func = &_ext_free_property_list_bind
-        ci.property_can_revert_func = &_ext_property_can_revert_bind
-        ci.property_get_revert_func = &_ext_property_get_revert_bind
-        ci.validate_property_func = _ext_validate_property_bind
-        ci.notification_func = &_ext_notification_bind
-        ci.to_string_func = &_ext_to_string_bind
+        ci.free_property_list_func = NULL # &_ext_free_property_list_bind
+        ci.property_can_revert_func = NULL # &_ext_property_can_revert_bind
+        ci.property_get_revert_func = NULL # &_ext_property_get_revert_bind
+        ci.validate_property_func = NULL # _ext_validate_property_bind
+        ci.notification_func = NULL # &_ext_notification_bind
+        ci.to_string_func = NULL # &_ext_to_string_bind
         ci.reference_func = NULL
         ci.unreference_func = NULL
         ci.create_instance_func = &ExtensionClass.create_instance
         ci.free_instance_func = &ExtensionClass.free_instance
-        ci.recreate_instance_func = &ExtensionClass.recreate_instance
+        ci.recreate_instance_func = NULL # &ExtensionClass.recreate_instance
         ci.get_virtual_func = NULL #&_ext_get_virtual
         ci.get_virtual_call_data_func = &_ext_get_virtual_call_data
         ci.call_virtual_with_data_func = \
@@ -54,14 +54,16 @@ cdef class ExtensionClassRegistrator:
         self._godot_class_name = StringName(_name)
         self._godot_inherits_name = StringName(inherits_name)
 
-        assert registree_ptr != NULL
-        gdextension_interface_classdb_register_extension_class4(
-            gdextension_library,
-            &self._godot_class_name,
-            &self._godot_inherits_name,
-            ci
-        )
-        gdextension_interface_mem_free(ci)
+        print("REGISTER CLASS %s" % self.__name__)
+
+        with nogil:
+            gdextension_interface_classdb_register_extension_class4(
+                gdextension_library,
+                &self._godot_class_name,
+                &self._godot_inherits_name,
+                ci
+            )
+            gdextension_interface_mem_free(ci)
 
         for method in registree.method_bindings.itervalues():
             self.register_method(method)

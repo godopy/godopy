@@ -54,7 +54,15 @@ except ImportError as exc:
     raise SystemError("GodoPy was not properly installed, 'godopy.register_types' is missing")
 
 
-def initialize_level(ModuleInitializationLevel p_level):
+cdef public int python_initialize_level(ModuleInitializationLevel p_level) noexcept nogil:
+    return _python_initialize_level(p_level)
+
+
+cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noexcept nogil:
+    return _python_deinitialize_level(p_level)
+
+
+cdef int _python_initialize_level(ModuleInitializationLevel p_level) noexcept with gil:
     global initialize_func, deinitialize_func
 
     UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
@@ -83,15 +91,17 @@ def initialize_level(ModuleInitializationLevel p_level):
                 "\n[color=red]ERROR: 'register types' module rased an exception:[/color]"
                 "\n[color=orange]%s[/color]\n" % exc_text
             )
-    
+
     godot_register_types.initialize(p_level)
     godopy_register_types.initialize(p_level)
 
     if initialize_func is not None:
         initialize_func(p_level)
 
+    return 0
 
-def deinitialize_level(ModuleInitializationLevel p_level):
+
+cdef int _python_deinitialize_level(ModuleInitializationLevel p_level) noexcept with gil:
     global deinitialize_func
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup, level %d" % p_level)
