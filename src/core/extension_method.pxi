@@ -75,8 +75,6 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         return_value_info.hint_string = hintstring._native_ptr()
         return_value_info.usage = _return_value_info.usage
 
-        # print('RETURN: %s' % _return_value_info)
-
         cdef size_t i
 
         cdef list _def_args = self.get_default_arguments()
@@ -108,8 +106,6 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
             arguments_info[i].hint_string = hintstring._native_ptr()
             arguments_info[i].usage = _arguments_info[i].usage
 
-        # print('ARGS: %s' % _arguments_info)
-
         cdef list _arguments_metadata = self.get_argument_metadata_list()[1:]
         cdef int *arguments_metadata = <int *>gdextension_interface_mem_alloc(len(_arguments_metadata) * cython.sizeof(int))
         for i in range(len(_arguments_metadata)):
@@ -135,9 +131,9 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         mi.default_argument_count = self.get_default_argument_count()
         mi.default_arguments = def_args
 
-        ref.Py_INCREF(self)  # DECREF ??? TODO
+        ref.Py_INCREF(self)
+        self.owner_class._used_refs.append(self)
 
-        # print("REG METHOD %s:%s %x" % (self.owner_class.__name__, self.__name__, <uint64_t><PyObject *>self))
         cdef str class_name = self.owner_class.__name__
         cdef StringName _class_name = StringName(class_name)
 

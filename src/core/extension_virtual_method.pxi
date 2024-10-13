@@ -100,8 +100,6 @@ cdef class ExtensionVirtualMethod:
         return_value_info.hint_string = hintstring._native_ptr()
         return_value_info.usage = _return_value_info.usage
 
-        # print('RETURN: %s' % _return_value_info)
-
         cdef size_t i
 
         cdef list _def_args = self.get_default_arguments()
@@ -134,10 +132,9 @@ cdef class ExtensionVirtualMethod:
             arguments_info[i].hint_string = hintstring._native_ptr()
             arguments_info[i].usage = _arguments_info[i].usage
 
-        # print('ARGS: %s' % _arguments_info)
-
         cdef list _arguments_metadata = self.get_argument_metadata_list()[1:]
-        cdef int *arguments_metadata = <int *>gdextension_interface_mem_alloc(len(_arguments_metadata) * cython.sizeof(int))
+        cdef int *arguments_metadata = \
+            <int *>gdextension_interface_mem_alloc(len(_arguments_metadata) * cython.sizeof(int))
         for i in range(len(_arguments_metadata)):
             arguments_metadata[i] = <int>_arguments_metadata[i]
 
@@ -155,10 +152,12 @@ cdef class ExtensionVirtualMethod:
         mi.arguments = arguments_info
         mi.arguments_metadata = <GDExtensionClassMethodArgumentMetadata *>arguments_metadata
 
-        print("REG VIRTUAL METHOD %s:%s %x" % (self.owner_class.__name__, self.__name__, <uint64_t><PyObject *>self))
         cdef str name = self.owner_class.__name__
+        cdef StringName _class_name = StringName(name)
 
-        gdextension_interface_classdb_register_extension_class_virtual_method(gdextension_library, StringName(name).ptr(), &mi)
+        gdextension_interface_classdb_register_extension_class_virtual_method(
+            gdextension_library, _class_name._native_ptr(), &mi
+        )
 
         gdextension_interface_mem_free(def_args)
         gdextension_interface_mem_free(arguments_info)

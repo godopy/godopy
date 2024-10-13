@@ -42,7 +42,7 @@ cdef class ExtensionClassRegistrator:
         ci.call_virtual_with_data_func = &Extension.call_virtual_with_data
         ci.class_userdata = registree_ptr
 
-        ref.Py_INCREF(self.registree) # TODO: Unregister and clean collected refs
+        ref.Py_INCREF(self.registree) # DECREF in ExtensionClass.__dealoc__
 
         # if kwargs.pop('has_get_property_list', False):
         #     ci.get_property_list_func = <GDExtensionClassGetPropertyList>&_ext_get_property_list_bind
@@ -56,16 +56,16 @@ cdef class ExtensionClassRegistrator:
         with nogil:
             gdextension_interface_classdb_register_extension_class4(
                 gdextension_library,
-                &self._godot_class_name,
-                &self._godot_inherits_name,
+                self._godot_class_name._native_ptr(),
+                self._godot_inherits_name._native_ptr(),
                 ci
             )
             gdextension_interface_mem_free(ci)
 
-        for method in registree.method_bindings.itervalues():
+        for method in registree.method_bindings.values():
             self.register_method(method)
 
-        for method in registree.virtual_method_bindings.itervalues():
+        for method in registree.virtual_method_bindings.values():
             self.register_virtual_method(method)
 
         registree.set_registered()

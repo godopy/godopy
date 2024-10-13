@@ -116,15 +116,21 @@ cdef class ExtensionClass(Class):
         cdef ExtensionClass self = <ExtensionClass>p_self
         cdef Extension instance = <Extension>p_instance
 
-        UtilityFunctions.print("Freeing %r and %r" % (self, instance))
-
-        # for reference in self._used_refs:
-        #     ref.Py_DECREF(reference)
-
-        # self._used_refs = []
+        UtilityFunctions.print("Freeing %r" % instance)
 
         ref.Py_DECREF(instance)
-        # ref.Py_DECREF(self)
+
+
+    def __dealoc__(self):
+        for reference in self._used_refs:
+            ref.Py_DECREF(reference)
+
+        self._used_refs = []
+
+        ref.Py_DECREF(self)
+
+        cdef StringName class_name = StringName(self.__name__)
+        gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name._native_ptr())
 
 
     @staticmethod
