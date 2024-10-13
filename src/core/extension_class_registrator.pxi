@@ -36,25 +36,22 @@ cdef class ExtensionClassRegistrator:
         ci.unreference_func = NULL
         ci.create_instance_func = &ExtensionClass.create_instance
         ci.free_instance_func = &ExtensionClass.free_instance
-        ci.recreate_instance_func = NULL # &ExtensionClass.recreate_instance
-        ci.get_virtual_func = NULL #&_ext_get_virtual
-        ci.get_virtual_call_data_func = &_ext_get_virtual_call_data
-        ci.call_virtual_with_data_func = \
-            <GDExtensionClassCallVirtualWithData>&_ext_call_virtual_with_data
+        ci.recreate_instance_func = &ExtensionClass.recreate_instance
+        ci.get_virtual_func = NULL
+        ci.get_virtual_call_data_func = &Extension.get_virtual_call_data
+        ci.call_virtual_with_data_func = &Extension.call_virtual_with_data
         ci.class_userdata = registree_ptr
 
-        ref.Py_INCREF(self.registree) # DECREF in ExtenstionClass._free
+        ref.Py_INCREF(self.registree) # TODO: Unregister and clean collected refs
 
-        if kwargs.pop('has_get_property_list', False):
-            ci.get_property_list_func = <GDExtensionClassGetPropertyList>&_ext_get_property_list_bind
+        # if kwargs.pop('has_get_property_list', False):
+        #     ci.get_property_list_func = <GDExtensionClassGetPropertyList>&_ext_get_property_list_bind
 
         cdef str name = self.__name__
         cdef str inherits_name = inherits.__name__
         cdef StringName _name = StringName(name)
         self._godot_class_name = StringName(_name)
         self._godot_inherits_name = StringName(inherits_name)
-
-        print("%r is registered" % self.registree)
 
         with nogil:
             gdextension_interface_classdb_register_extension_class4(
@@ -72,8 +69,8 @@ cdef class ExtensionClassRegistrator:
             self.register_virtual_method(method)
 
         registree.set_registered()
-        registry[self.__name__] = registree
-        # print("%r registered" % self.__name__)
+
+        print("%r is registered\n" % self.registree)
 
 
     cdef int register_method(self, func: types.FunctionType) except -1:

@@ -2,7 +2,7 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
     def __cinit__(self):
         self.is_singleton = False
 
-    def __init__(self, object godot_class):
+    def __init__(self, object godot_class, bint is_reference=False):
         if not isinstance(godot_class, (Class, str)):
             raise TypeError("'godot_class' argument must be a Class instance or a string")
 
@@ -23,10 +23,11 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
             if not ClassDB.get_singleton().can_instantiate(class_name):
                 raise TypeError('Class %r can not be instantiated' % class_name)
 
+            ref.Py_INCREF(self)  # DECREF in free_callback
             with nogil:
-                self._binding_callbacks.create_callback = &Object._create_callback
-                self._binding_callbacks.free_callback = &Object._free_callback
-                self._binding_callbacks.reference_callback = &Object._reference_callback
+                self._binding_callbacks.create_callback = &Object.create_callback
+                self._binding_callbacks.free_callback = &Object.free_callback
+                self._binding_callbacks.reference_callback = &Object.reference_callback
 
                 self._owner = gdextension_interface_classdb_construct_object(_class_name._native_ptr())
                 gdextension_interface_object_set_instance_binding(
@@ -34,8 +35,12 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
 
     def __repr__(self):
         class_name = self.__class__.__name__
-        if not hasattr(self.__class__, '__godot_class__'):
+        if self.__class__ is Object or class_name == 'Extension':
             class_name = '%s[%s]' % (self.__class__.__name__, self.__godot_class__.__name__)
+
+        if self._ref_owner != NULL:
+            return "<%s.%s object at 0x%016X[0x%016X[0x%016X]]>" % (
+                self.__class__.__module__, class_name, <uint64_t><PyObject *>self, <uint64_t>self._owner, <uint64_t>self._ref_owner)
 
         return "<%s.%s object at 0x%016X[0x%016X]>" % (
             self.__class__.__module__, class_name, <uint64_t><PyObject *>self, <uint64_t>self._owner)
@@ -46,6 +51,16 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
     def owner_id(self):
         return <uint64_t>self._owner
 
+    def ref_owner_id(self):
+        return <uint64_t>self._ref_owner
+
+    def ref_get_object(self):
+        self._ref_owner = gdextension_interface_ref_get_object(self._owner)
+
+    def ref_set_object(self):
+        if self._ref_owner != NULL:
+            gdextension_interface_ref_set_object(self._owner, self._ref_owner)
+
     @staticmethod
     cdef Object from_ptr(void *ptr):
         cdef Object self = Object.__new__(Object)
@@ -54,33 +69,30 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
         return self
 
     @staticmethod
-    cdef PyObject* _create_callback_gil(void *p_token, void *p_instance):
-        print("CREATE CALLBACK %x" % <int64_t>p_instance)
-        cdef Object wrapper = Object.from_ptr(p_instance)
-        ref.Py_INCREF(wrapper)
-
-        return <PyObject *>wrapper
+    cdef void* create_callback(void *p_token, void *p_instance) noexcept nogil:
+        return <void *>Object._create_callback(p_instance)
 
     @staticmethod
-    cdef void _free_callback_gil(void *p_binding):
-        print("FREE CALLBACK %x" % <int64_t>p_binding)
-        cdef Object wrapper = <object>p_binding
-        ref.Py_DECREF(wrapper)
+    cdef PyObject *_create_callback(void *p_owner) except NULL with gil:
+        cdef Object self = Object.from_ptr(p_owner)
+        print("Create callback %r" % self)
+        ref.Py_INCREF(self)
+
+        return <PyObject *>self
 
     @staticmethod
-    cdef void* _create_callback(void *p_token, void *p_instance) noexcept nogil:
-        with gil:
-            return <void *>Object._create_callback_gil(p_token, p_instance)
+    cdef void free_callback(void *p_token, void *p_instance, void *p_binding) noexcept nogil:
+        if p_binding != NULL:
+            Object._free_callback(p_binding)
 
     @staticmethod
-    cdef void _free_callback(void *p_token, void *p_instance, void *p_binding) noexcept nogil:
-        if p_binding:
-            with gil:
-                Object._free_callback_gil(p_binding)
+    cdef void _free_callback(void *p_self) noexcept with gil:
+        cdef Object self = <object>p_self
+        print("Free callback %r" % self)
+        ref.Py_DECREF(self)
 
     @staticmethod
-    cdef GDExtensionBool _reference_callback(void *p_token, void *p_instance,
-                                             GDExtensionBool p_reference) noexcept nogil:
+    cdef GDExtensionBool reference_callback(void *p_token, void *p_instance, GDExtensionBool p_ref) noexcept nogil:
         return True
 
 

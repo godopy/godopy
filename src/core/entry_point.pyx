@@ -3,6 +3,7 @@ from godot_cpp cimport UtilityFunctions, OS, Engine
 
 import io
 import os
+import gc
 import sys
 import traceback
 
@@ -42,8 +43,8 @@ def redirect_python_stdio():
 
 cdef object initialize_func = None
 cdef object deinitialize_func = None
-cdef bint first_level = True
-
+cdef bint is_first_level = True
+cdef int first_level = 0
 
 try:
     from godot import register_types as godot_register_types
@@ -70,12 +71,14 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
     return _python_deinitialize_level(p_level)
 
 
+
+
 cdef int _python_initialize_level(ModuleInitializationLevel p_level) noexcept with gil:
-    global initialize_func, deinitialize_func, first_level
+    global initialize_func, deinitialize_func, is_first_level, first_level
 
     UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
 
-    if first_level:
+    if is_first_level:
         redirect_python_stdio()
 
         venv_path = os.environ.get('VIRTUAL_ENV')
@@ -100,7 +103,10 @@ cdef int _python_initialize_level(ModuleInitializationLevel p_level) noexcept wi
                     "\n[color=orange]%s[/color]\n" % exc_text
             )
 
-        first_level = False
+        is_first_level = False
+        first_level = p_level
+
+        # gc.set_debug(gc.DEBUG_LEAK)
 
     godot_register_types.initialize(p_level)
     godopy_register_types.initialize(p_level)
@@ -121,5 +127,9 @@ cdef int _python_deinitialize_level(ModuleInitializationLevel p_level) noexcept 
 
     godopy_register_types.deinitialize(p_level)
     godot_register_types.deinitialize(p_level)
+
+    if p_level == first_level:
+        UtilityFunctions.print("Calling gc.collect() in python_deinitialize_level")
+        UtilityFunctions.print(str(gc.collect()))
 
     return 0

@@ -82,7 +82,7 @@ cdef class _CallableBase:
         elif return_type == 'float':
             self._ptr_call(&float_arg, <GDExtensionConstTypePtr *>p_args, size)
             arg = <Variant>float_arg
-        elif return_type == 'int':
+        elif return_type == 'int' or return_type == 'RID':
             self._ptr_call(&int_arg, <GDExtensionConstTypePtr *>p_args, size)
             arg = <Variant>int_arg
         elif return_type == 'bool':

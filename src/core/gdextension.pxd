@@ -11,6 +11,7 @@ cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
 
 cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
     cdef void *_owner
+    cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
     cdef bint is_singleton
     cdef GDExtensionInstanceBindingCallbacks _binding_callbacks
     cdef readonly Class __godot_class__
@@ -19,20 +20,42 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
     cdef Object from_ptr(void *ptr)
 
     @staticmethod
-    cdef PyObject* _create_callback_gil(void *p_token, void *p_instance)
+    cdef void* create_callback(void *p_token, void *p_instance) noexcept nogil
 
     @staticmethod
-    cdef void _free_callback_gil(void *p_binding)
+    cdef PyObject *_create_callback(void *p_owner) except NULL with gil
 
     @staticmethod
-    cdef void* _create_callback(void *p_token, void *p_instance) noexcept nogil
+    cdef void free_callback(void *p_token, void *p_instance, void *p_binding) noexcept nogil
 
     @staticmethod
-    cdef void _free_callback(void *p_token, void *p_instance, void *p_binding) noexcept nogil
+    cdef void _free_callback(void *p_self) noexcept with gil
 
     @staticmethod
-    cdef GDExtensionBool _reference_callback(void *p_token, void *p_instance,
-                                             GDExtensionBool p_reference) noexcept nogil
+    cdef GDExtensionBool reference_callback(void *p_token, void *p_instance, GDExtensionBool p_ref) noexcept nogil
+
+
+cdef public class Extension(Object) [object GDPy_Extension, type GDPy_ExtensionType]:
+    cdef StringName _godot_class_name
+    cdef StringName _godot_base_class_name
+    cdef bint _needs_cleanup
+
+    cpdef destroy(self)
+
+    @staticmethod
+    cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil
+
+    @staticmethod
+    cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil
+
+    @staticmethod
+    cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
+                                     void *p_func, const GDExtensionConstTypePtr *p_args,
+                                     GDExtensionTypePtr r_ret) noexcept nogil
+
+    @staticmethod
+    cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
+                                      GDExtensionTypePtr r_ret) noexcept with gil
 
 
 cdef class Class:
@@ -45,6 +68,35 @@ cdef class Class:
 
     @staticmethod
     cdef Class get_class(str name)
+
+
+cdef class ExtensionClass(Class):
+    cdef readonly bint is_registered
+    cdef readonly dict method_bindings
+    cdef readonly dict python_method_bindings
+    cdef readonly dict virtual_method_bindings
+    cdef readonly dict virtual_method_implementation_bindings
+
+    cdef list _used_refs
+
+    cdef object get_method_and_method_type_info(self, str name)
+    cdef void *get_method_and_method_type_info_ptr(self, str name) except NULL
+    cdef void set_registered(self) noexcept nogil
+
+    @staticmethod
+    cdef void free_instance(void *data, void *p_instance) noexcept nogil
+
+    @staticmethod
+    cdef void _free_instance(void *p_self, void *p_instance) noexcept with gil
+
+    @staticmethod
+    cdef GDExtensionObjectPtr create_instance(void *p_class_userdata, GDExtensionBool p_notify) noexcept nogil
+
+    @staticmethod
+    cdef GDExtensionObjectPtr _create_instance(void *p_self, bint p_notify) except? NULL with gil
+
+    @staticmethod
+    cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
 
 
 cdef class _CallableBase:

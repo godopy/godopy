@@ -1,27 +1,18 @@
 
 cdef class ExtensionMethod(ExtensionVirtualMethod):
     @staticmethod
-    cdef void bind_call(
-        void *p_method_userdata,
-        GDExtensionClassInstancePtr p_instance,
-        const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
-        GDExtensionVariantPtr r_return,
-        GDExtensionCallError *r_error
-    ) noexcept nogil:
+    cdef void bind_call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
+                        const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
+                        GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil:
         cdef Variant ret
-        with gil:
-            ret = ExtensionMethod.bind_call_gil(p_method_userdata, p_instance,
-                                                     p_args, p_argument_count, r_error)
+
+        ret = ExtensionMethod._bind_call(p_method_userdata, p_instance, p_args, p_argument_count, r_error)
         gdextension_interface_variant_new_copy(r_return, ret._native_ptr())
 
     @staticmethod
-    cdef Variant bind_call_gil(
-        void *p_method_userdata,
-        GDExtensionClassInstancePtr p_instance,
-        const GDExtensionConstVariantPtr *p_args,
-        GDExtensionInt p_argument_count,
-        GDExtensionCallError *r_error
-    ):
+    cdef Variant _bind_call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
+                            const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
+                            GDExtensionCallError *r_error) noexcept with gil:
         print("METHOD CALL %x" % <uint64_t>p_instance)
         cdef ExtensionMethod self = <object>p_method_userdata
         cdef Object wrapper = <object>p_instance
@@ -35,38 +26,27 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         return <Variant>ret
 
     @staticmethod
-    cdef void bind_ptrcall(
-        void *p_method_userdata,
-        GDExtensionClassInstancePtr p_instance,
-        const GDExtensionConstTypePtr *p_args,
-        GDExtensionTypePtr r_return
-    ) noexcept nogil:
-        with gil:
-            ExtensionMethod.bind_ptrcall_gil(p_method_userdata, p_instance, p_args, r_return)
+    cdef void bind_ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
+                           const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept nogil:
+        ExtensionMethod._bind_ptrcall(p_method_userdata, p_instance, p_args, r_return)
 
     @staticmethod
-    cdef void bind_ptrcall_gil(
-        void *p_method_userdata,
-        GDExtensionClassInstancePtr p_instance,
-        const GDExtensionConstTypePtr *p_args,
-        GDExtensionTypePtr r_return
-    ):
-        # print("METHOD PTRCALL %x" % <uint64_t>p_instance)
+    cdef void _bind_ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
+                            const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept with gil:
+        # TODO: Support any arg/return type, not just str/PythonObject
         cdef ExtensionMethod self = <object>p_method_userdata
         cdef Object wrapper = <object>p_instance
         cdef size_t i = 0
         cdef list args = []
         cdef String arg
-        # print('FOUND METHOD %r, argcount %d' % (self.method, self.get_argument_count()))
+
         for i in range(self.get_argument_count() - 1):
             arg = deref(<String *>p_args[i])
             args.append(arg.py_str())
 
         cdef object ret = self.method(wrapper, *args)
-        # print("PTRCALL RETURNED %r" % ret)
 
         cdef PythonObject *gd_ret = PythonRuntime.get_singleton().python_object_from_pyobject(ret)
-
         (<void **>r_return)[0] = gd_ret._owner
 
 

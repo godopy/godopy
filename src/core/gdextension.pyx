@@ -5,6 +5,7 @@ from libcpp.unordered_map cimport unordered_map
 from cython.operator cimport dereference as deref
 from python_runtime cimport *
 
+import gc
 import types
 import pickle
 import builtins
