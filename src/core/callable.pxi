@@ -1,4 +1,4 @@
-cdef class Callable:
+cdef class _CallableBase:
     def __init__(self):
         raise NotImplementedError("Base class, cannot instantiate")
 

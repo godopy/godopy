@@ -8,6 +8,7 @@
 
 PyMODINIT_FUNC PyInit_gdextension(void);
 PyMODINIT_FUNC PyInit_entry_point(void);
+PyMODINIT_FUNC PyInit__godot_type_tuples(void);
 PyMODINIT_FUNC PyInit__godot_types(void);
 
 using namespace godot;
@@ -100,6 +101,7 @@ void PythonRuntime::initialize() {
 
 	PyImport_AppendInittab("gdextension", PyInit_gdextension);
 	PyImport_AppendInittab("entry_point", PyInit_entry_point);
+	PyImport_AppendInittab("_godot_type_tuples", PyInit__godot_type_tuples);
 	PyImport_AppendInittab("_godot_types", PyInit__godot_types);
 
 	PyConfig_InitIsolatedConfig(&config);

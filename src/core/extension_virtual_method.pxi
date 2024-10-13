@@ -15,22 +15,8 @@ cdef class PropertyInfo:
         self.usage = usage
 
     def __repr__(self):
-        return '<PropertyInfo %s:%s:%s:%d:%s:%d>' % (
-            self.class_name, self.name, variant_to_str(self.type), self.hint, self.hint_string, self.usage)
-
-
-cdef VariantType pytype_to_gdtype(object pytype):
-    if pytype is str:
-        return STRING
-    elif pytype is float:
-        return FLOAT
-    elif pytype is int:
-        return INT
-    elif pytype is None:
-        return NIL
-    elif pytype is object:
-        return OBJECT
-    return NIL
+        cls_name = '%s.' % self.class_name if self.class_name else ''
+        return '<PropertyInfo %s%s:%s>' % (cls_name, self.name, variant_type_to_str(self.type))
 
 
 cdef class ExtensionVirtualMethod:

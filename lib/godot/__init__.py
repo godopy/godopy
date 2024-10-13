@@ -50,7 +50,7 @@ class GodotClassBase(type):
         if godot_cls is not None:
             # Engine class
             cls._is_extension = False
-            print('Setup Engine class %s' % name)
+            # print('Setup Engine class %s' % name)
             return super_new(cls, name, bases, attrs)
 
         # Ensure initialization is only performed for subclasses of Godot classes
@@ -77,10 +77,10 @@ class GodotClassBase(type):
 
         for attr, value in attrs.items():
             parent_method_info = godot_cls.__inherits__.get_method_info(attr)
-            if attr == '__init__':
+            if attr == '__init__' or attr == '_init':
                 new_attrs[attr] = godot_cls.bind_python_method(value)
             elif attr.startswith('_') and parent_method_info is not None:
-                print('Meta: FOUND VIRTUAL %s %r' % (attr, parent_method_info))
+                # print('Meta: FOUND VIRTUAL %s %r' % (attr, parent_method_info))
                 new_attrs[attr] = godot_cls.bind_virtual_method(value)
             elif getattr(value, '_gdmethod', False):
                 new_attrs[attr] = godot_cls.bind_method(value)

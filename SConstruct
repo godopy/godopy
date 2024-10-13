@@ -167,6 +167,7 @@ def cython_sources(env):
     sources = [
         env.Cython('src/core/gdextension.pyx'),
         env.Cython('src/core/entry_point.pyx'),
+        env.Cython('src/core/_godot_types.pyx'),
     ]
 
     depends = [

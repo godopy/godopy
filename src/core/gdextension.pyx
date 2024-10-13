@@ -11,6 +11,8 @@ import builtins
 import traceback
 import importlib
 
+import _godot_types as gdtypes
+
 include "api_data.pxi"
 
 cdef set _global_singleton_info = pickle.loads(_global_singleton_info__pickle)

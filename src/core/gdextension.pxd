@@ -5,8 +5,8 @@ from binding cimport *
 from godot_cpp cimport *
 from cpython cimport PyObject
 
-cpdef str variant_to_str(VariantType vartype)
-cpdef VariantType str_to_variant(str vartype)
+cpdef str variant_type_to_str(VariantType vartype)
+cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
 
 
 cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
@@ -47,21 +47,21 @@ cdef class Class:
     cdef Class get_class(str name)
 
 
-cdef class Callable:
+cdef class _CallableBase:
     cdef tuple type_info
 
     cpdef object _call_internal(self, tuple args)
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
 
 
-cdef class MethodBind(Callable):
+cdef class MethodBind(_CallableBase):
     cdef void *_owner
     cdef GDExtensionMethodBindPtr _godot_method_bind
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
 
 
-cdef class UtilityFunction(Callable):
+cdef class UtilityFunction(_CallableBase):
     cdef GDExtensionPtrUtilityFunction _godot_utility_function
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil

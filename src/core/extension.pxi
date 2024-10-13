@@ -36,17 +36,14 @@ cdef class Extension(Object):
         with nogil:
             gdextension_interface_object_set_instance(self._owner, self._godot_class_name._native_ptr(), <void *><PyObject *>self)
 
-        cdef object impl_init = self.__godot_class__.python_method_bindings.get('__init__')
-        if impl_init:
-            impl_init(self)
+        cdef object impl_init_0 = self.__godot_class__.python_method_bindings.get('__init__')
+        cdef object imple_init_1 = self.__godot_class__.python_method_bindings.get('_init')
+        if impl_init_0:
+            impl_init_0(self)
+        if imple_init_1:
+            imple_init_1(self)
 
         print("%r initialized, from callback: %r" % (self, from_callback))
-
-
-    def __repr__(self):
-        class_name = 'Extension[%s]' % self.__godot_class__.__name__ if self.__class__.__name__ == 'Extension' else self.__class__.__name__
-        return "<%s.%s object at 0x%016X[0x%016X]>" % (
-            self.__class__.__module__, class_name, <uint64_t><PyObject *>self, <uint64_t>self._owner)
 
 
     cpdef destroy(self):

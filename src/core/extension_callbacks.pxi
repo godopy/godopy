@@ -103,13 +103,11 @@ cdef void *_extgil_get_virtual_call_data(void *p_cls, const StringName &p_name) 
     cdef ExtensionClass cls = <ExtensionClass>p_cls
     cdef str name = p_name.py_str()
     cdef object func = cls.virtual_method_implementation_bindings.get(name)
-    # print("_VIRTUAL CHECK %s.%s" % (cls.__name__, name))
     if func is None:
         return NULL
 
     cdef dict func_info = cls.__inherits__.get_method_info(name)
     cdef tuple func_and_info = (func, func_info['type_info'])
-    print(func_and_info)
     ref.Py_INCREF(func_and_info)
     # TODO: Store the pointer and decref when freeing the instance
 

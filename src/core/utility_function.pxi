@@ -1,4 +1,4 @@
-cdef class UtilityFunction(Callable):
+cdef class UtilityFunction(_CallableBase):
     def __init__(self, str function_name):
         info = _global_utility_function_info.get(function_name, None)
         if info is None:

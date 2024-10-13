@@ -1,4 +1,4 @@
-cdef class MethodBind(Callable):
+cdef class MethodBind(_CallableBase):
     def __init__(self, Object wrapper, str method_name):
         self._owner = wrapper._owner
         info = wrapper.__godot_class__.get_method_info(method_name)

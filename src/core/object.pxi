@@ -32,6 +32,20 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
                 gdextension_interface_object_set_instance_binding(
                     self._owner, _class_name._native_ptr(), <void *><PyObject *>self, &self._binding_callbacks)
 
+    def __repr__(self):
+        class_name = self.__class__.__name__
+        if not hasattr(self.__class__, '__godot_class__'):
+            class_name = '%s[%s]' % (self.__class__.__name__, self.__godot_class__.__name__)
+
+        return "<%s.%s object at 0x%016X[0x%016X]>" % (
+            self.__class__.__module__, class_name, <uint64_t><PyObject *>self, <uint64_t>self._owner)
+
+    def owner_hash(self):
+        return self.owner_id()
+
+    def owner_id(self):
+        return <uint64_t>self._owner
+
     @staticmethod
     cdef Object from_ptr(void *ptr):
         cdef Object self = Object.__new__(Object)
@@ -68,3 +82,11 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
     cdef GDExtensionBool _reference_callback(void *p_token, void *p_instance,
                                              GDExtensionBool p_reference) noexcept nogil:
         return True
+
+
+class Callable(Object):
+    pass
+
+
+class Signal(Object):
+    pass

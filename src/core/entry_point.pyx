@@ -96,7 +96,7 @@ cdef int _python_initialize_level(ModuleInitializationLevel p_level) noexcept wi
                 )
             else:
                 UtilityFunctions.print_rich(
-                    "\n[color=red]ERROR: 'register types' module rased an exception:[/color]"
+                    "\n[color=red]ERROR: 'register types' module raised an exception:[/color]"
                     "\n[color=orange]%s[/color]\n" % exc_text
             )
 
