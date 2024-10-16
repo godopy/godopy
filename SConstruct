@@ -125,7 +125,7 @@ def main_godopy_cpp_sources(env):
     if env['platform'] == 'windows':
         env.Append(LIBPATH=[os.path.join('python', 'PCBuild', 'amd64')])
 
-        python_lib = 'python312' if not env['python_debug'] else 'python312_d'
+        python_lib = 'python312_d' if env['python_debug'] else 'python312'
         env.Append(packages=[python_lib])
         env.Append(CPPDEFINES=['WINDOWS_ENABLED'])
 
@@ -223,19 +223,11 @@ def install_extension_shared_lib(env, library):
 
     if env['platform'] == 'windows':
         # Extension DLL requires Python DLL
-        python_dll_file = 'python312.dll' # if not env['python_debug'] else 'python312_d.dll'
+        python_dll_file = 'python312_d.dll' if env['python_debug'] else 'python312.dll'
         python_dll = os.path.join('python', 'PCBuild', 'amd64', python_dll_file)
         python_dll_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_dll_file)
-
-        # FIXME: Build custom Python executable with modified paths?
-        #        Needed to create the correct venv
-
-        # python_exe_file = 'python.exe' if not env['python_debug'] else 'python_d.exe'
-        # python_exe = os.path.join('python', 'PCBuild', 'amd64', python_exe_file)
-        # python_exe_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_exe_file)
         
         copy.append(env.InstallAs(python_dll_target, python_dll))
-        # copy.append(env.InstallAs(python_exe_target, python_exe))
 
     # TODO: Other platforms
 
