@@ -115,9 +115,10 @@ cdef class ExtensionClass(Class):
 
         self._used_refs = []
 
-        ref.Py_DECREF(self)
-        cdef StringName class_name = StringName(self.__name__)
-        gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name._native_ptr())
+        # FIXME: following code sometimes leads to crashes (ObjectGDExtension::is_class + StringName::operator String)
+        # ref.Py_DECREF(self)
+        # cdef StringName class_name = StringName(self.__name__)
+        # gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name._native_ptr())
 
         return 0
 

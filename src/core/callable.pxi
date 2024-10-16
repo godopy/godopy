@@ -28,6 +28,8 @@ cdef class _CallableBase:
         cdef String string_arg
         cdef StringName stringname_arg
 
+        cdef PackedStringArray packed_string_array_arg
+
         cdef Object object_arg
         cdef Extension ext_arg
         cdef void *void_ptr_arg
@@ -93,6 +95,9 @@ cdef class _CallableBase:
         elif return_type == 'Vector2':
             self._ptr_call(&vector2_arg, <GDExtensionConstTypePtr *>p_args, size)
             arg = <Variant>vector2_arg
+        elif return_type == 'PackedStringArray':
+            self._ptr_call(&packed_string_array_arg, <GDExtensionConstTypePtr *>p_args, size)
+            arg = <Variant>packed_string_array_arg
         elif return_type in _global_inheritance_info:
             self._ptr_call(&void_ptr_arg, <GDExtensionConstTypePtr *>p_args, size)
             object_arg = _OBJECTDB.get(<uint64_t>void_ptr_arg, None)

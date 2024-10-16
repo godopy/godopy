@@ -1,14 +1,15 @@
 import sys
 import godot as gd
 
+from example import ExampleRef, ExampleMin, Example
+from test_main_node import TestMainNode
 
 def initialize(level):
     if level != 2:
         return
 
-    lines = ["[color=gray]Active Python paths:[/color]"]
-    for path in sys.path:
-        lines.append('\t[color=green]%s[/color]' % path)
+    ExampleRef.register()
+    ExampleMin.register()
+    Example.register()
 
-    gd.print_rich('%s\n' % '\n'.join(lines))
-
+    TestMainNode.register()
