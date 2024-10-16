@@ -26,7 +26,7 @@ def scons_generate_bindings(target, source, env):
 def get_file_list(output_dir):
     files = []
 
-    cython_gen_folder = Path(output_dir) / "gen" / "cythonlib"
+    cython_gen_folder = Path(output_dir) / "gen" / "gdextension_interface"
 
     files.append(str((cython_gen_folder / "api_data.pxi").as_posix()))
 

@@ -18,3 +18,9 @@ update procedure used to sync this repository with upstream releases:
 ```
 godot --dump-extension-api --dump-gdextension-interface
 ```
+
+- Generate `gdextension_interface.pxd`
+
+```
+python pxd_generator.py [<path to folder containing `gdextension` folder with `gdextension_interface.h`>]
+```

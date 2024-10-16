@@ -71,11 +71,12 @@ stdint_declarations = [
 ]
 
 
-def write_api_pxd(echo=print):
-    output_dir = BASE_DIR / 'gdextension'
-    input_dir = BASE_DIR / 'gdextension'
+def write_api_pxd(echo=print, base_dir=BASE_DIR):
+    output_dir = base_dir / 'gdextension'
+    input_dir = base_dir / 'gdextension'
 
-    print(input_dir, output_dir)
+    echo("Working in %r directory" % str(input_dir))
+
     if not os.path.isdir(output_dir):
         echo(f'"{output_dir}" does not exist. Something went wrong…')
         sys.exit(1)
@@ -115,4 +116,8 @@ def write_api_pxd(echo=print):
         f.write(pxd)
 
 if __name__ == '__main__':
-    write_api_pxd()
+    if os.path.exists(sys.argv[-1]) and os.path.isdir(sys.argv[-1]):
+        base_dir = Path(sys.argv[-1])
+        write_api_pxd(base_dir=base_dir)
+    else:
+        write_api_pxd()
