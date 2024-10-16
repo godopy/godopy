@@ -1,3 +1,5 @@
+cdef list _registered_classes = []
+
 cdef class ExtensionClass(Class):
     def __init__(self, name, object inherits, **kwargs):
         if not isinstance(inherits, (Class, str)):
@@ -27,7 +29,7 @@ cdef class ExtensionClass(Class):
         return Extension(self, self.__inherits__)
 
 
-    cdef object get_method_and_method_type_info(self, str name):
+    cdef tuple get_method_and_method_type_info(self, str name):
         cdef object method = self.virtual_method_implementation_bindings[name]
         cdef dict method_info = self.__inherits__.get_method_info(name)
         cdef tuple method_and_method_type_info = (method, method_info['type_info'])
@@ -42,6 +44,15 @@ cdef class ExtensionClass(Class):
         ref.Py_INCREF(method_and_method_type_info)
 
         return <void *><PyObject *>method_and_method_type_info
+
+
+    cdef void *get_special_method_info_ptr(self, SpecialMethod method) except NULL:
+        cdef tuple info = (method,)
+
+        self._used_refs.append(info)
+        ref.Py_INCREF(info)
+
+        return <void *><PyObject *>info
 
 
     def bind_method(self, method: types.FunctionType):
@@ -86,8 +97,29 @@ cdef class ExtensionClass(Class):
             self.bind_virtual_method(method)
 
 
-    cdef void set_registered(self) noexcept nogil:
+    cdef int set_registered(self) except -1:
         self.is_registered = True
+        _registered_classes.append(self)
+
+        return 0
+
+
+    cdef int unregister(self) except -1:
+        if not self.is_registered:
+            return 0
+
+        print("Cleaning Godot class %r" % self)
+
+        for reference in self._used_refs:
+            ref.Py_DECREF(reference)
+
+        self._used_refs = []
+
+        ref.Py_DECREF(self)
+        cdef StringName class_name = StringName(self.__name__)
+        gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name._native_ptr())
+
+        return 0
 
 
     def register(self):
@@ -121,25 +153,14 @@ cdef class ExtensionClass(Class):
         ref.Py_DECREF(instance)
 
 
-    def __dealoc__(self):
-        for reference in self._used_refs:
-            ref.Py_DECREF(reference)
-
-        self._used_refs = []
-
-        ref.Py_DECREF(self)
-
-        cdef StringName class_name = StringName(self.__name__)
-        gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name._native_ptr())
-
-
     @staticmethod
-    cdef GDExtensionObjectPtr create_instance(void *p_class_userdata, GDExtensionBool p_notify_postinitialize) noexcept nogil:
+    cdef GDExtensionObjectPtr create_instance(void *p_class_userdata,
+                                              GDExtensionBool p_notify_postinitialize) noexcept nogil:
         return ExtensionClass._create_instance(p_class_userdata, p_notify_postinitialize)
 
 
     @staticmethod
-    cdef GDExtensionObjectPtr _create_instance(void *p_self, bint p_notify) except? NULL with gil:
+    cdef GDExtensionObjectPtr _create_instance(void *p_self, bint p_notify_postinitialize) except? NULL with gil:
         if p_self == NULL:
             UtilityFunctions.printerr("ExtensionClass object pointer is uninitialized")
             return NULL
@@ -147,7 +168,7 @@ cdef class ExtensionClass(Class):
         from godot import Extension as PyExtension
 
         cdef ExtensionClass self = <ExtensionClass>p_self
-        cdef Extension instance = PyExtension(self, self.__inherits__, p_notify, True)
+        cdef Extension instance = PyExtension(self, self.__inherits__, p_notify_postinitialize, True)
 
         return instance._owner
 
@@ -155,5 +176,6 @@ cdef class ExtensionClass(Class):
     @staticmethod
     cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil:
         with gil:
-            print('ExtensinoClass recreate callback called; classs ptr:%x instance ptr:%x' % (<uint64_t>p_data, <uint64_t>p_instance))
+            print('ExtensinoClass recreate callback called; classs ptr:%x instance ptr:%x'
+                  % (<uint64_t>p_data, <uint64_t>p_instance))
         return NULL

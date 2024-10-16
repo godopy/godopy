@@ -1,3 +1,13 @@
+cdef GDExtensionInstanceBindingCallbacks _Extension_binding_callbacks
+
+
+cdef dict special_method_to_enum = {
+    '_thread_enter': _THREAD_ENTER,
+    '_thread_exit': _THREAD_EXIT,
+    '_frame': _FRAME
+}
+
+
 cdef class Extension(Object):
     def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=False, bint from_callback=False):
         if not isinstance(base_class, Class):
@@ -14,31 +24,32 @@ cdef class Extension(Object):
         self.__godot_class__ = ext_class
 
         cdef str class_name = ext_class.__name__
-        self._godot_class_name = StringName(class_name)
+        cdef StringName _godot_class_name = StringName(class_name)
 
         cdef str base_class_name = base_class.__name__
-        self._godot_base_class_name = StringName(base_class_name)
+        cdef StringName _godot_base_class_name = StringName(base_class_name)
 
         with nogil:
-            self._owner = gdextension_interface_classdb_construct_object(self._godot_base_class_name._native_ptr())
+            self._owner = gdextension_interface_classdb_construct_object(_godot_base_class_name._native_ptr())
 
         if notify:
             notification = MethodBind(self, 'notification')
             notification(0, False) # NOTIFICATION_POSTINITIALIZE
 
-        ref.Py_INCREF(self) # DECREF in ExtensionClass._free_instance
+        # INCREF because we lend a references of 'self' to Godot engine
+        ref.Py_INCREF(self) # for set_instance, DECREF in ExtensionClass._free_instance
 
         cdef void *self_ptr = <void *><PyObject *>self
 
         with nogil:
-            gdextension_interface_object_set_instance(self._owner, self._godot_class_name._native_ptr(), self_ptr)
+            gdextension_interface_object_set_instance(self._owner, _godot_class_name._native_ptr(), self_ptr)
 
-        cdef object impl_init_0 = self.__godot_class__.python_method_bindings.get('__init__')
-        cdef object imple_init_1 = self.__godot_class__.python_method_bindings.get('_init')
-        if impl_init_0:
-            impl_init_0(self)
-        if imple_init_1:
-            imple_init_1(self)
+        _OBJECTDB[self.owner_id()] = self
+
+        cdef object inner_init = self.__godot_class__.python_method_bindings.get('__inner_init__')
+
+        if inner_init:
+            inner_init(self)
 
         print("%r initialized, from callback: %r" % (self, from_callback))
 
@@ -52,7 +63,7 @@ cdef class Extension(Object):
 
 
     def __del__(self):
-        if self._needs_cleanup:
+        if self._needs_cleanup and self._owner != NULL:
             print('Clean %r' % self)
             with nogil:
                 # Will call ExtensionClass._free_instance
@@ -64,8 +75,8 @@ cdef class Extension(Object):
     cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil:
         cdef StringName name = deref(<StringName *>p_name)
 
-        # Create PyThreadState for every Godot thread,
-        # otherwise calling GIL function from different threads would create a deadlock
+        # Ensure that PyThreadState is created for the current Godot thread,
+        # otherwise calling a GIL function from uninitialized threads would create a deadlock
         PythonRuntime.get_singleton().ensure_current_thread_state()
 
         return Extension._get_virtual_call_data(p_userdata, name)
@@ -74,12 +85,36 @@ cdef class Extension(Object):
     cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil:
         cdef ExtensionClass cls = <ExtensionClass>p_cls
         cdef str name = p_name.py_str()
+
+        cdef void* func_and_typeinfo_ptr
+
+        # Special case, some virtual methods of ScriptLanguageExtension
+        # which does not belong to Python ScriptLanguage implementations
+        if name in special_method_to_enum:
+            func_and_typeinfo_ptr = cls.get_special_method_info_ptr(special_method_to_enum[name])
+
+            return func_and_typeinfo_ptr
+
         if name not in cls.virtual_method_implementation_bindings:
             return NULL
 
-        cdef void* func_and_typeinfo_ptr = cls.get_method_and_method_type_info_ptr(name)
+        func_and_typeinfo_ptr = cls.get_method_and_method_type_info_ptr(name)
 
         return func_and_typeinfo_ptr
+
+    @staticmethod
+    cdef void _call_special_virtual(SpecialMethod method) noexcept nogil:
+        if method == _THREAD_ENTER:
+            # Create PyThreadState for every Godot thread
+            PythonRuntime.get_singleton().ensure_current_thread_state()
+
+        elif method == _THREAD_EXIT:
+            # PyThreadStates are destroyed on exit, do nothing here
+            pass
+
+        elif method == _FRAME:
+            # Called every frame, might be useful later
+            pass
 
     @staticmethod
     cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
@@ -90,10 +125,18 @@ cdef class Extension(Object):
     @staticmethod
     cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
                                       GDExtensionTypePtr r_ret) noexcept with gil:
-        cdef object self = <object>p_self
         cdef tuple func_and_info = <tuple>p_func_and_info
         cdef object func = func_and_info[0]
+        cdef SpecialMethod _special_func
+
+        if isinstance(func, int):
+            _special_func = <SpecialMethod>func
+            with nogil:
+                Extension._call_special_virtual(_special_func)
+            return
+
         cdef tuple type_info = func_and_info[1]
+        cdef object self = <object>p_self
 
         cdef size_t i = 0
         cdef list args = []
@@ -105,13 +148,21 @@ cdef class Extension(Object):
         cdef String string_arg
         cdef StringName stringname_arg
 
+        cdef Dictionary dictionary_arg
+        cdef Array array_arg
         cdef PackedStringArray packstringarray_arg
+        cdef Object object_arg
         cdef Extension ext_arg
+        cdef void *void_ptr_arg
 
         cdef size_t size = func.__code__.co_argcount - 1
-        if size < 0 or size != (len(type_info) - 1):
-            UtilityFunctions.printerr('Wrong number of arguments %d' % size)
-            raise TypeError('Wrong number of arguments %d' % size)
+        if size != (len(type_info) - 1):
+            msg = (
+                'Virtual method %r: wrong number of arguments: %d, %d expected. Arg types: %r. Return type: %r'
+                    % (func, size, len(type_info) - 1, type_info[1:], type_info[0])
+            )
+            UtilityFunctions.printerr(msg)
+            raise TypeError(msg)
 
         cdef str arg_type
         for i in range(size):
@@ -128,33 +179,67 @@ cdef class Extension(Object):
             elif arg_type == 'bool':
                 bool_arg = deref(<GDExtensionBool *>p_args[i])
                 args.append(bool(bool_arg))
-            elif arg_type == 'int':
+            elif arg_type == 'int' or arg_type == 'RID' or arg_type[6:] in _global_enum_info:
                 int_arg = deref(<int64_t *>p_args[i])
                 args.append(int_arg)
+            elif arg_type in _global_inheritance_info:
+                void_ptr_arg = deref(<void **>p_args[i])
+                object_arg = _OBJECTDB.get(<uint64_t>void_ptr_arg, None)
+                print("Process %s argument %d in %r: %r" % (arg_type, i, func, object_arg))
+                if object_arg is None and void_ptr_arg != NULL:
+                    object_arg = Object(arg_type, from_ptr=<uint64_t>void_ptr_arg)
+                    print("Created %s argument from pointer %X: %r" % (arg_type, <uint64_t>void_ptr_arg, object_arg))
+                args.append(object_arg)
             else:
-                UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r arguments in virtual functions yet" % arg_type)
+                UtilityFunctions.printerr(
+                    "NOT IMPLEMENTED: Can't convert %r arguments in virtual functions yet" % arg_type)
                 args.append(None)
 
-        cdef object res = func(self, *args)
+        cdef object result = func(self, *args)
 
         cdef str return_type = type_info[0]
 
         if return_type == 'PackedStringArray':
-            packstringarray_arg = PackedStringArray(res)
+            packstringarray_arg = PackedStringArray(result)
             (<PackedStringArray *>r_ret)[0] = packstringarray_arg
         elif return_type == 'bool':
-            bool_arg = bool(res)
+            bool_arg = bool(result)
             (<GDExtensionBool *>r_ret)[0] = bool_arg
-        elif return_type == 'int' or return_type == 'RID':
-            int_arg = res
+        elif return_type == 'int' or return_type == 'RID' or return_type.startswith('enum:'):
+            int_arg = result
             (<int64_t *>r_ret)[0] = int_arg
         elif return_type == 'String':
-            string_arg = <String>res
+            string_arg = <String>result
             (<String *>r_ret)[0] = string_arg
-        elif return_type == 'Variant' or return_type == 'Object':
-            # FIXME: ResourceFormatLoader._load expects Variant, but Object is declared
-            variant_arg = Variant(res)
+        elif return_type == 'StringName':
+            stringname_arg = <StringName>result
+            (<StringName *>r_ret)[0] = stringname_arg
+        elif return_type == 'Array' or return_type.startswith('typedarray:'):
+            variant_arg = Variant(result)
+            array_arg = <Array>variant_arg
+            (<Array *>r_ret)[0] = array_arg
+        elif return_type == 'Dictionary':
+            variant_arg = Variant(result)
+            dictionary_arg = <Dictionary>variant_arg
+            (<Dictionary *>r_ret)[0] = dictionary_arg
+        elif return_type == 'Variant':
+            variant_arg = Variant(result)
             (<Variant *>r_ret)[0] = variant_arg
+        elif return_type in _global_inheritance_info and isinstance(result, Object):
+            object_arg = <Object>result
+            (<void **>r_ret)[0] = object_arg._owner
+        elif return_type in _global_inheritance_info and result is None:
+            UtilityFunctions.push_warning("Expected %r but %r returned %r" % (return_type, func, result))
 
         elif return_type != 'Nil':
-            UtilityFunctions.printerr("NOT IMPLEMENTED: Can't convert %r return types in virtual functions yet" % return_type)
+            if return_type in _global_inheritance_info:
+                UtilityFunctions.push_error(
+                    "NOT IMPLEMENTED: Can't convert %r from %r in %r" % (return_type, result, func)
+                )
+
+            else:
+                UtilityFunctions.push_error(
+                    "NOT IMPLEMENTED: "
+                    ("Can't convert %r return types in virtual functions yet. Result was: %r in function %r"
+                        % (return_type, result, func))
+                )

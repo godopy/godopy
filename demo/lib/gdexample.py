@@ -1,8 +1,9 @@
 import numpy as np
+import godot as gd
 from godot import classdb
 
 
-class GDExample(classdb.Sprite2D):
+class GDExample(gd.Class, inherits=classdb.Sprite2D):
     def __init__(self):
         self.time_passed = 0.0
 

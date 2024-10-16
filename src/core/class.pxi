@@ -1,15 +1,16 @@
-cdef dict _method_info_cache = {}
+cdef dict _METHODDB = {}
+cdef dict _CLASSDB = {}
+
+
 def get_method_info(class_name):
     cdef bytes mi_pickled
 
-    if class_name not in _method_info_cache:
+    if class_name not in _METHODDB:
         mi_pickled = _global_method_info__pickles[class_name]
-        _method_info_cache[class_name] = pickle.loads(mi_pickled)
+        _METHODDB[class_name] = pickle.loads(mi_pickled)
 
-    return _method_info_cache[class_name] 
+    return _METHODDB[class_name] 
 
-
-cdef dict _class_cache = {}
 
 cdef class Class:
     """\
@@ -63,10 +64,10 @@ cdef class Class:
     @staticmethod
     cdef Class get_class(str name):
         cdef Class cls
-        if name not in _class_cache:
+        if name not in _CLASSDB:
             cls = Class.__new__(Class, name)
-            _class_cache[name] = cls
+            _CLASSDB[name] = cls
             cls.__name__ = name
             cls.initialize_class()
 
-        return _class_cache[name]
+        return _CLASSDB[name]

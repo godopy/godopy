@@ -29,6 +29,8 @@ cdef class _CallableBase:
         cdef StringName stringname_arg
 
         cdef Object object_arg
+        cdef Extension ext_arg
+        cdef void *void_ptr_arg
 
         cdef Vector2 vector2_arg
         cdef double x, y
@@ -42,7 +44,7 @@ cdef class _CallableBase:
             elif arg_type == 'bool':
                 bool_arg = arg.booleanize()
                 p_args[i] = &bool_arg
-            elif arg_type == 'int':
+            elif arg_type == 'int' or arg_type == 'RID' or arg_type[6:] in _global_enum_info:
                 int_arg = args[i]
                 p_args[i] = &int_arg
             elif arg_type == 'float':
@@ -58,7 +60,7 @@ cdef class _CallableBase:
                 x, y = args[i]
                 vector2_arg = Vector2(x, y)
                 p_args[i] = &vector2_arg
-            elif arg_type == 'Object' and isinstance(args[i], Object):
+            elif arg_type in _global_inheritance_info and isinstance(args[i], Object):
                 object_arg = <Object>args[i]
                 p_args[i] = &object_arg._owner
             else:
@@ -82,7 +84,7 @@ cdef class _CallableBase:
         elif return_type == 'float':
             self._ptr_call(&float_arg, <GDExtensionConstTypePtr *>p_args, size)
             arg = <Variant>float_arg
-        elif return_type == 'int' or return_type == 'RID':
+        elif return_type == 'int' or return_type == 'RID' or return_type[6:] in _global_enum_info:
             self._ptr_call(&int_arg, <GDExtensionConstTypePtr *>p_args, size)
             arg = <Variant>int_arg
         elif return_type == 'bool':
@@ -91,6 +93,12 @@ cdef class _CallableBase:
         elif return_type == 'Vector2':
             self._ptr_call(&vector2_arg, <GDExtensionConstTypePtr *>p_args, size)
             arg = <Variant>vector2_arg
+        elif return_type in _global_inheritance_info:
+            self._ptr_call(&void_ptr_arg, <GDExtensionConstTypePtr *>p_args, size)
+            object_arg = _OBJECTDB.get(<uint64_t>void_ptr_arg, None)
+            print("Process Object return %r" % object_arg)
+            gdextension_interface_mem_free(p_args)
+            return object_arg
         else:
             unknown_type_error = True
 
@@ -102,7 +110,7 @@ cdef class _CallableBase:
             return
 
         if return_type == 'Nil':
-            return
+            return None
 
         return arg.pythonize()
 

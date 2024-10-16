@@ -13,31 +13,10 @@ cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
     cdef void *_owner
     cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
     cdef bint is_singleton
-    cdef GDExtensionInstanceBindingCallbacks _binding_callbacks
     cdef readonly Class __godot_class__
-
-    @staticmethod
-    cdef Object from_ptr(void *ptr)
-
-    @staticmethod
-    cdef void* create_callback(void *p_token, void *p_instance) noexcept nogil
-
-    @staticmethod
-    cdef PyObject *_create_callback(void *p_owner) except NULL with gil
-
-    @staticmethod
-    cdef void free_callback(void *p_token, void *p_instance, void *p_binding) noexcept nogil
-
-    @staticmethod
-    cdef void _free_callback(void *p_self) noexcept with gil
-
-    @staticmethod
-    cdef GDExtensionBool reference_callback(void *p_token, void *p_instance, GDExtensionBool p_ref) noexcept nogil
 
 
 cdef public class Extension(Object) [object GDPy_Extension, type GDPy_ExtensionType]:
-    cdef StringName _godot_class_name
-    cdef StringName _godot_base_class_name
     cdef bint _needs_cleanup
 
     cpdef destroy(self)
@@ -47,6 +26,9 @@ cdef public class Extension(Object) [object GDPy_Extension, type GDPy_ExtensionT
 
     @staticmethod
     cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil
+
+    @staticmethod
+    cdef void _call_special_virtual(SpecialMethod placeholder) noexcept nogil
 
     @staticmethod
     cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
@@ -70,6 +52,15 @@ cdef class Class:
     cdef Class get_class(str name)
 
 
+cdef list _registered_classes
+
+
+cdef enum SpecialMethod:
+    _THREAD_ENTER = 1
+    _THREAD_EXIT = 2
+    _FRAME = 3
+
+
 cdef class ExtensionClass(Class):
     cdef readonly bint is_registered
     cdef readonly dict method_bindings
@@ -79,9 +70,11 @@ cdef class ExtensionClass(Class):
 
     cdef list _used_refs
 
-    cdef object get_method_and_method_type_info(self, str name)
+    cdef tuple get_method_and_method_type_info(self, str name)
     cdef void *get_method_and_method_type_info_ptr(self, str name) except NULL
-    cdef void set_registered(self) noexcept nogil
+    cdef void *get_special_method_info_ptr(self, SpecialMethod method) except NULL
+    cdef int set_registered(self) except -1
+    cdef int unregister(self) except -1
 
     @staticmethod
     cdef void free_instance(void *data, void *p_instance) noexcept nogil

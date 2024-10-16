@@ -145,8 +145,3 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
             gdextension_interface_mem_free(arguments_metadata)
 
         return 0
-
-
-cdef inline void set_variant_from_ptr(Variant *v, Variant value) noexcept nogil:
-    cdef Variant result = cython.operator.dereference(v)
-    result = value

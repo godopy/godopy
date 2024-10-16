@@ -191,6 +191,7 @@ String::String(const PyObject *from) {
 }
 
 String::operator PyObject *() const {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
 	return py_str();
 }
 
@@ -312,6 +313,8 @@ CharWideString String::wide_string() const {
 }
 
 PyObject *String::py_str() const {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
+
 	int64_t length = internal::gdextension_interface_string_to_wide_chars(_native_ptr(), nullptr, 0);
 	int64_t size = length + 1;
 	CharWideString str;
@@ -319,16 +322,16 @@ PyObject *String::py_str() const {
 	internal::gdextension_interface_string_to_wide_chars(_native_ptr(), str.ptrw(), length);
 	str[length] = '\0';
 
-	// PyGILState_STATE gil_state = PyGILState_Ensure();
 	PyObject *ret = PyUnicode_FromWideChar(str, length);
 	ERR_FAIL_NULL_V(ret, nullptr);
 	Py_XINCREF(ret);
-	// PyGILState_Release(gil_state);
 
 	return ret;
 }
 
 PyObject *String::py_bytes() const {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
+
 	int64_t length = internal::gdextension_interface_string_to_utf8_chars(_native_ptr(), nullptr, 0);
 	int64_t size = length + 1;
 	CharString str;
@@ -336,13 +339,10 @@ PyObject *String::py_bytes() const {
 	internal::gdextension_interface_string_to_utf8_chars(_native_ptr(), str.ptrw(), length);
 	str[length] = '\0';
 
-	// PyGILState_STATE gil_state = PyGILState_Ensure();
-
 	PyObject *ret = PyBytes_FromString(str);
 	ERR_FAIL_NULL_V(ret, nullptr);
 	Py_XINCREF(ret);
 
-	// PyGILState_Release(gil_state);
 	return ret;
 }
 
@@ -532,11 +532,13 @@ StringName::StringName(const PyObject *from) :
 		StringName(String(from)) {}
 
 PyObject *StringName::py_str() const {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
 	String str = String(*this);
 	return str.py_str();
 }
 
 PyObject *StringName::py_bytes() const {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
 	String str = String(*this);
 	return str.py_bytes();
 }
@@ -557,11 +559,13 @@ NodePath::NodePath(const PyObject *from) :
 		NodePath(String(from)) {}
 
 PyObject *NodePath::py_str() const {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
 	String str = String(*this);
 	return str.py_str();
 }
 
 PyObject *NodePath::py_bytes() const {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
 	String str = String(*this);
 	return str.py_bytes();
 }

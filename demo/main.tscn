@@ -5,5 +5,5 @@
 [node name="Main" type="Node"]
 
 [node name="GDExample" type="GDExample" parent="."]
-position = Vector2(17.6068, 0.093874)
+position = Vector2(0.186049, 12.4527)
 texture = ExtResource("1_ig7tw")

@@ -48,13 +48,6 @@ def generate_bindings(api_filepath, output_dir="."):
 
     generate_api_data(api, target_dir)
 
-    # generate_global_constants(api, target_dir)
-    # generate_version_header(api, target_dir)
-    # generate_global_constant_binds(api, target_dir)
-    # generate_builtin_bindings(api, target_dir, real_t + "_" + bits)
-    # generate_engine_classes_bindings(api, target_dir, use_template_get_node)
-    # generate_utility_functions(api, target_dir)
-
 
 def generate_api_data(api, output_dir):
     gen_folder = Path(output_dir) / "gdextension_interface"
@@ -66,7 +59,9 @@ def generate_api_data(api, output_dir):
     api_data, reference = generate_api_data_file(
             api['classes'],
             api['singletons'],
-            api['utility_functions']
+            api['utility_functions'],
+            api['global_enums'],
+            api['native_structures']
     )
 
     print('Writing', filename)
@@ -115,31 +110,40 @@ BUILTIN_CLASSES = {
     'PackedVector2Array',
     'PackedVector3Array',
     'PackedColorArray',
-    'PackedVector4Array'
+    'PackedVector4Array',
+
+    'Variant'
 }
 
-def type_for_type_info(type):
-    if type in BUILTIN_CLASSES:
-        return type
-    return 'Object'
 
-def generate_api_data_file(classes, singletons, utility_functions):
+def generate_api_data_file(classes, singletons, utility_functions, enums, structs):
     singleton_data = set()
-    singleton_data_pickled = set()
     type_data = set()
     inheritance_data = {}
-    inheritance_data_pickled = {}
     api_type_data = {}
     api_type_data_pickled = {}
     class_method_data = {}
     class_method_data_pickled = {}
     utilfunc_data = {}
-    utilfunc_data_pickled = {}
+    enum_data = {}
+    struct_data = {}
 
     for singleton in singletons:
          singleton_data.add(singleton['name'])
 
     singleton_data_pickled = pickle.dumps(singleton_data)    
+
+    for enum in enums:
+        enum_data[enum['name']] = []
+        for value in enum['values']:
+            enum_data[enum['name']].append((value['name'], value['value']))
+
+    enum_data_pickled = pickle.dumps(enum_data)
+
+    for struct in structs:
+        struct_data[struct['name']] = struct['format']
+
+    struct_data_pickled = pickle.dumps(struct_data)
 
     for class_api in classes:
         class_name = class_api['name']
@@ -153,19 +157,16 @@ def generate_api_data_file(classes, singletons, utility_functions):
                 hash = method.get('hash', None)
                 method_name = method['name']
                 type_info = []
-                return_type = type_for_type_info(
-                    method.get('return_value', {}).get('type', 'Nil')
-                )
+                return_type = method.get('return_value', {}).get('type', 'Nil')
                 type_info.append(return_type)
                 method_info = {
-                    'return_type': return_type,
                     'hash': hash
                 }
                 arguments = []
                 if "arguments" in method:
                     for argument in method["arguments"]:
                         arg_name = argument['name']
-                        arg_type = type_for_type_info(argument['type'])
+                        arg_type = argument['type']
                         type_info.append(arg_type)
                         arguments.append({ arg_name: arg_type })
                 method_info['arguments'] = arguments
@@ -178,10 +179,9 @@ def generate_api_data_file(classes, singletons, utility_functions):
     for method in utility_functions:
         method_name = method['name']
         type_info = []
-        return_type = type_for_type_info(method.get('return_value', {}).get('type', 'Nil'))
+        return_type = method.get('return_value', {}).get('type', 'Nil')
         type_info.append(return_type)
         method_info = {
-            'return_type': return_type,
             'hash': method['hash']
         }
         arguments = []
@@ -194,10 +194,9 @@ def generate_api_data_file(classes, singletons, utility_functions):
         method_info['arguments'] = arguments
         method_info['type_info'] = tuple(type_info)
         utilfunc_data[method_name] = method_info
-        utilfunc_data_pickled[method_name] = method_info
         type_data.add('_'.join(type_info))
-    utilfunc_data_pickled = pickle.dumps(utilfunc_data)
 
+    utilfunc_data_pickled = pickle.dumps(utilfunc_data)
     inheritance_data_pickled = pickle.dumps(inheritance_data)
 
     for (key, value) in api_type_data.items():
@@ -205,6 +204,8 @@ def generate_api_data_file(classes, singletons, utility_functions):
 
     result = [
         'cdef bytes _global_singleton_info__pickle = \\\n%s' % pprint.pformat(singleton_data_pickled, width=120),
+        'cdef bytes _global_enum_info__pickle = \\\n%s' % pprint.pformat(enum_data_pickled, width=120),
+        'cdef bytes _global_struct_info__pickle = \\\n%s' % pprint.pformat(struct_data_pickled, width=120),
         'cdef bytes _global_inheritance_info__pickle = \\\n%s' % pprint.pformat(inheritance_data_pickled, width=120),
         'cdef dict _global_api_types__pickles = \\\n%s' % pprint.pformat(api_type_data_pickled, width=120),
         'cdef bytes _global_utility_function_info__pickle = \\\n%s' % pprint.pformat(utilfunc_data_pickled, width=120),
@@ -212,10 +213,11 @@ def generate_api_data_file(classes, singletons, utility_functions):
     ]
 
     result2 = [
-        '_global_type_info = \\\n%s' % pprint.pformat(type_data, width=120),
+        # '_global_type_info = \\\n%s' % pprint.pformat(type_data, width=120),
         '_global_singleton_info = \\\n%s' % pprint.pformat(singleton_data, width=120),
+        '_global_enum_info = \\\n%s' % pprint.pformat(enum_data, width=120),
         '_global_inheritance_info = \\\n%s' % pprint.pformat(inheritance_data, width=120),
-        '_global_api_types = \\\n%s' % pprint.pformat(api_type_data, width=120),
+        #'_global_api_types = \\\n%s' % pprint.pformat(api_type_data, width=120),
         '_global_utility_function_info = \\\n%s' % pprint.pformat(utilfunc_data, width=120),
         '_global_method_info = \\\n%s' % pprint.pformat(class_method_data, width=120),
     ]

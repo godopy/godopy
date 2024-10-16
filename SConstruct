@@ -175,7 +175,8 @@ def cython_sources(env):
         *Glob('src/core/*.pxi'),
         *Glob('src/core/*.pxd'),
         *Glob('src/godot_cpp/defs/*.pxi'),
-        *Glob('gdextension/*.pxd')
+        *Glob('gdextension/*.pxd'),
+        *Glob('gen/gdextension_interface/*.pxi'),
     ]
 
     Depends(sources, depends)

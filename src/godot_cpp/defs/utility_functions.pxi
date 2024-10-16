@@ -23,3 +23,6 @@ cdef extern from "godot_cpp/variant/utility_functions.hpp" namespace "godot" nog
 
         @staticmethod
         void push_error(str)
+
+        @staticmethod
+        void push_warning(str)

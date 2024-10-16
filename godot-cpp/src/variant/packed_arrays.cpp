@@ -255,23 +255,24 @@ void Dictionary::set_typed(uint32_t p_key_type, const StringName &p_key_class_na
 }
 
 PackedStringArray::PackedStringArray(const PyObject *from) {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
+
 	internal::_call_builtin_constructor(_method_bindings.constructor_0, &opaque);
 
-	// PyGILState_STATE gil_state = PyGILState_Ensure();
-	if (PyTuple_Check(from)) {
-		size_t size = PyTuple_Size((PyObject *)from);
+	if (PySequence_Check((PyObject *)from)) {
+		size_t size = PySequence_Size((PyObject *)from);
 		resize(size);
 		PyObject *value;
 		String _value;
 		for (size_t i = 0; i < size; i++) {
-			value = PyTuple_GetItem((PyObject *)from, i);
+			value = PySequence_GetItem((PyObject *)from, i);
 			_value = String(value);
 			set(i, _value);
 		}
 	} else {
-		// TODO: print error or warning
+		ERR_PRINT("Could not cast Python object to PackedStringArray. "
+				  "Sequence is required. Created empty PackedStringArray.");
 	}
-	// PyGILState_Release(gil_state);
 }
 
 } // namespace godot

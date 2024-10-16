@@ -1,25 +1,192 @@
-import types
+import enum
 
 import gdextension as gde
 from . import classdb, singletons
+from .core import *
 
 
 input = gde.input
 
 
-def _set_global_functions():
-    # printt = UtilityFunction('printt')
-    # prints = UtilityFunction('prints')
+__all__ = [
+    'classdb',
+    'singletons',
 
-    # TODO: set all available functions dynamically
+    'input',
 
-    globals()['print'] = gde.UtilityFunction('print')
-    globals()['printerr'] = gde.UtilityFunction('printerr')
-    globals()['print_verbose'] = gde.UtilityFunction('print_verbose')
-    globals()['print_rich'] = gde.UtilityFunction('print_rich')
-    globals()['printraw'] = gde.UtilityFunction('printraw')
-    globals()['push_error'] = gde.UtilityFunction('push_error')
-    globals()['push_warning'] = gde.UtilityFunction('push_warning')
+    'MODULE_INITIALIZATION_LEVEL_CORE',
+    'MODULE_INITIALIZATION_LEVEL_EDITOR',
+    'MODULE_INITIALIZATION_LEVEL_SCENE',
+    'MODULE_INITIALIZATION_LEVEL_SERVERS',
+
+    'method',
+    'virtual_method',
+
+    'GodotClassBase',
+    'Class',
+    'EngineClass',
+    'EngineObject',
+    'Extension',
+
+    'ClockDirection',
+    'Corner',
+    'Error',
+    'EulerOrder',
+    'HorizontalAlignment',
+    'InlineAlignment',
+    'JoyAxis',
+    'JoyButton',
+    'Key',
+    'KeyLocation',
+    'KeyModifierMask',
+    'MIDIMessage',
+    'MethodFlags',
+    'MouseButton',
+    'MouseButtonMask',
+    'Orientation',
+    'PropertyHint',
+    'PropertyUsageFlags',
+    'Side',
+    'VariantOperator',
+    'VariantType',
+    'VerticalAlignment',
+
+    'abs',
+    'absf',
+    'absi',
+    'acos',
+    'acosh',
+    'angle_difference',
+    'asin',
+    'asinh',
+    'atan',
+    'atan2',
+    'atanh',
+    'bezier_derivative',
+    'bezier_interpolate',
+    'ceil',
+    'ceilf',
+    'ceili',
+    'clamp',
+    'clampf',
+    'clampi',
+    'cos',
+    'cosh',
+    'cubic_interpolate',
+    'cubic_interpolate_angle',
+    'cubic_interpolate_angle_in_time',
+    'cubic_interpolate_in_time',
+    'db_to_linear',
+    'deg_to_rad',
+    'ease',
+    'error_string',
+    'exp',
+    'floor',
+    'floorf',
+    'floori',
+    'fmod',
+    'fposmod',
+    'hash',
+    'instance_from_id',
+    'inverse_lerp',
+    'is_equal_approx',
+    'is_finite',
+    'is_inf',
+    'is_instance_id_valid',
+    'is_instance_valid',
+    'is_nan',
+    'is_same',
+    'is_zero_approx',
+    'lerp',
+    'lerp_angle',
+    'lerpf',
+    'linear_to_db',
+    'log',
+    'max',
+    'maxf',
+    'maxi',
+    'min',
+    'minf',
+    'mini',
+    'move_toward',
+    'nearest_po2',
+    'pingpong',
+    'posmod',
+    'pow',
+    'print',
+    'print_rich',
+    'print_verbose',
+    'printerr',
+    'printraw',
+    'prints',
+    'printt',
+    'push_error',
+    'push_warning',
+    'rad_to_deg',
+    'rand_from_seed',
+    'randf',
+    'randf_range',
+    'randfn',
+    'randi',
+    'randi_range',
+    'randomize',
+    'remap',
+    'rid_allocate_id',
+    'rid_from_int64',
+    'rotate_toward',
+    'round',
+    'roundf',
+    'roundi',
+    'seed',
+    'sign',
+    'signf',
+    'signi',
+    'sin',
+    'sinh',
+    'smoothstep',
+    'snapped',
+    'snappedf',
+    'snappedi',
+    'sqrt',
+    'step_decimals',
+    'str',
+    'tan',
+    'tanh',
+    'type_convert',
+    'type_string',
+    'typeof',
+    'weakref',
+    'wrap',
+    'wrapf',
+    'wrapi',
+]
+
+
+_SKIP_UTILITY_FUNCTION = [
+    'bytes_to_var',
+    'bytes_to_var_with_objects',
+    'str_to_var',
+    'var_to_bytes',
+    'var_to_bytes_with_objects',
+    'var_to_str',
+]
+
+
+class _classdict(dict):
+    pass
+
+
+def _set_globals():
+    for func_name in gde._utility_functions_dir():
+        if func_name in _SKIP_UTILITY_FUNCTION:
+            continue
+        globals()[func_name] = gde.UtilityFunction(func_name)
+
+    for enum_name, enum_data_list in gde._enums_dir().items():
+        enum_name = enum_name.replace('.', '')
+        enum_data = _classdict(enum_data_list)
+        enum_data._member_names = enum_data.keys()
+        globals()[enum_name] = enum.EnumType(enum_name, (enum.IntEnum,), enum_data)
 
 
 MODULE_INITIALIZATION_LEVEL_CORE = 0
@@ -28,110 +195,4 @@ MODULE_INITIALIZATION_LEVEL_SCENE = 2
 MODULE_INITIALIZATION_LEVEL_EDITOR = 3
 
 
-_set_global_functions()
-
-
-def method(func):
-    func._gdmethod = func.__name__
-    return func
-
-
-def virtual_method(func):
-    func._gdvirtualmethod = func.__name__
-    return func
-
-class GodotClassBase(type):
-    """Metaclass for all Godot engine and extension classes"""
-
-    def __new__(cls, name, bases, attrs, **kwargs):
-        super_new = super().__new__
-
-        godot_cls = attrs.get('__godot_class__', None)
-        if godot_cls is not None:
-            # Engine class
-            cls._is_extension = False
-            # print('Setup Engine class %s' % name)
-            return super_new(cls, name, bases, attrs)
-
-        # Ensure initialization is only performed for subclasses of Godot classes
-        # (excluding Class/EngineClass).
-        parents = [b for b in bases if isinstance(b, GodotClassBase)]
-        if not parents:
-            if name != 'Class' and name != 'EngineClass':
-                push_warning("Attempt to create %r Godot class without a valid base" % name)
-            return super_new(cls, name, bases, attrs)
-
-        godot_cls = gde.ExtensionClass(name, parents[0].__godot_class__)
-
-        module = attrs.pop('__module__')
-        new_attrs = {
-            '__module__': module,
-            '__godot_class__': godot_cls
-        }
-
-        extension_bases = tuple(b for b in bases if issubclass(b, Class))
-        if not extension_bases:
-            extension_bases = (Class,)
-
-        cls._is_extension = True
-
-        for attr, value in attrs.items():
-            parent_method_info = godot_cls.__inherits__.get_method_info(attr)
-            if attr == '__init__' or attr == '_init':
-                new_attrs[attr] = godot_cls.bind_python_method(value)
-            elif attr.startswith('_') and parent_method_info is not None:
-                # print('Meta: FOUND VIRTUAL %s %r' % (attr, parent_method_info))
-                new_attrs[attr] = godot_cls.bind_virtual_method(value)
-            elif getattr(value, '_gdmethod', False):
-                new_attrs[attr] = godot_cls.bind_method(value)
-            elif getattr(value, '_gdvirtualmethod', False):
-                new_attrs[attr] = godot_cls.add_virtual_method(value)
-            elif isinstance(value, types.FunctionType):
-                new_attrs[attr] = godot_cls.bind_python_method(value)
-            else:
-                new_attrs[attr] = value
-
-        return super_new(cls, name, extension_bases, new_attrs, **kwargs)
-
-    def __getattr__(cls, name):
-        return getattr(cls.__godot_class__, name)
-
-
-class Extension(gde.Extension):
-    def __getattr__(self, name):
-        mb = gde.MethodBind(self, name)
-
-        self.__dict__[name] = mb
-
-        return mb
-
-    def __dir__(self):
-        return list(set(
-            self.__godot_class__.__method_info__.keys() +
-            self.__dict__.keys()
-        ))
-
-
-class Class(Extension, metaclass=GodotClassBase):
-    def __init__(self):
-        godot_cls = self.__class__.__godot_class__
-        super().__init__(godot_cls, godot_cls.__inherits__)
-
-
-class EngineObject(gde.Object):
-    def __getattr__(self, name):
-        mb = gde.MethodBind(self, name)
-
-        self.__dict__[name] = mb
-
-        return mb
-
-
-    def __dir__(self):
-        return self.__godot_class__.__method_info__.keys()
-
-
-class EngineClass(EngineObject, metaclass=GodotClassBase):
-    def __init__(self):
-        godot_cls = self.__class__.__godot_class__
-        super().__init__(godot_cls)
+_set_globals()

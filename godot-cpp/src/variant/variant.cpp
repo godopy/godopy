@@ -255,46 +255,97 @@ Variant::Variant(const PackedVector4Array &v) {
 	from_type_constructor[PACKED_VECTOR4_ARRAY](_native_ptr(), v._native_ptr());
 }
 
-Variant::Variant(const PyObject *v0) {
-	ERR_FAIL_NULL(v0);
-	// PyGILState_STATE gil_state = PyGILState_Ensure();
-	PyObject *v = const_cast<PyObject *>(v0);
+Variant::Variant(const PyObject *v_const) {
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
+
+	ERR_FAIL_NULL(v_const);
+
+	PyObject *v = const_cast<PyObject *>(v_const);
+
 	if (v == Py_None) {
 		internal::gdextension_interface_variant_new_nil(_native_ptr());
 
 	} else if (PyBool_Check(v)) {
 		GDExtensionBool encoded;
-		bool tmp = static_cast<bool>(PyLong_AsSize_t(v));
-		PtrToArg<bool>::encode(tmp, &encoded);
+		if (v == Py_True) {
+			PtrToArg<bool>::encode(true, &encoded);
+		} else {
+			PtrToArg<bool>::encode(false, &encoded);
+		}
+
 		from_type_constructor[BOOL](_native_ptr(), &encoded);
 
 	} else if (PyLong_Check(v)) {
 		GDExtensionInt encoded;
 		PtrToArg<int64_t>::encode(PyLong_AsSize_t(v), &encoded);
+
 		from_type_constructor[INT](_native_ptr(), &encoded);
 
 	} else if (PyFloat_Check(v)) {
 		double encoded;
 		PtrToArg<double>::encode(PyFloat_AsDouble(v), &encoded);
+
 		from_type_constructor[FLOAT](_native_ptr(), &encoded);
 
 	} else if (PyUnicode_Check(v) || PyBytes_Check(v)) {
-		from_type_constructor[STRING](_native_ptr(), String(v)._native_ptr());
+		String s = String(v);
+		from_type_constructor[STRING](_native_ptr(), s._native_ptr());
 
-	} else if (PyByteArray_Check(v)) {
-		// TODO: Convert to PackedByteArray
-		internal::gdextension_interface_variant_new_nil(_native_ptr());
-		ERR_PRINT("NOT IMPLEMENTED: PackedByteArray Variant from Python bytearrays");
+	} else if (PyByteArray_Check(v) || PyObject_CheckBuffer(v)) {
+		// TODO: Check for various numpy arrays first and create types accordingly
+
+		PackedByteArray a = PackedByteArray();
+		Py_buffer *view = nullptr;
+		uint8_t *buf;
+		int result = PyObject_GetBuffer(v, view, PyBUF_SIMPLE | PyBUF_C_CONTIGUOUS);
+
+		if (result == 0 && view != nullptr) {
+			buf = (uint8_t *)view->buf;
+			a.resize(view->len);
+			for (size_t i = 0; i < view->len; i++) {
+				a[i] = buf[i];
+			}
+
+			PyBuffer_Release(view);
+		}
+
+		from_type_constructor[PACKED_BYTE_ARRAY](_native_ptr(), a._native_ptr());
 
 	} else if (PySequence_Check(v)) {
-		// TODO: Convert to Array
-		internal::gdextension_interface_variant_new_nil(_native_ptr());
-		ERR_PRINT("NOT IMPLEMENTED: Array Variant from Python sequences (list, tuple, etc)");
+		Array a = Array();
+		Py_ssize_t size = PySequence_Size(v);
+		a.resize(size);
+
+		PyObject *item;
+		Variant _item;
+
+		for (size_t i = 0; i < size; i++) {
+			item = PySequence_GetItem(v, i);
+			_item = Variant(item);
+			a[i] = _item;
+		}
+
+		from_type_constructor[ARRAY](_native_ptr(), a._native_ptr());
 
 	} else if (PyMapping_Check(v)) {
-		// TODO: Convert to Dictionary
-		internal::gdextension_interface_variant_new_nil(_native_ptr());
-		ERR_PRINT("NOT IMPLEMENTED: Dictionary Variant from mapping/dict");
+		Dictionary d = Dictionary();
+		PyObject *keys = PyMapping_Keys(v);
+		Py_ssize_t size = PySequence_Size(keys);
+
+		PyObject *key;
+		Variant _key;
+		PyObject *value;
+		Variant _value;
+
+		for (size_t i = 0; i < size; i++) {
+			key = PySequence_GetItem(keys, i);
+			_key = Variant(key);
+			value = PyObject_GetItem(v, key);
+			_value = Variant(value);
+			d[_key] = _value;
+		}
+
+		from_type_constructor[DICTIONARY](_native_ptr(), d._native_ptr());
 
 	} else if (PyIndex_Check(v)) {
 		GDExtensionInt encoded;
@@ -308,10 +359,6 @@ Variant::Variant(const PyObject *v0) {
 		PtrToArg<double>::encode(PyFloat_AsDouble(number), &encoded);
 		from_type_constructor[FLOAT](_native_ptr(), &encoded);
 
-	} else if (PyObject_CheckBuffer(v)) {
-		internal::gdextension_interface_variant_new_nil(_native_ptr());
-		ERR_PRINT("NOT IMPLEMENTED: Packed*Array Variant from Python buffer");
-
 	} else if (PyObject_IsInstance(v, (PyObject *)&GDPy_ObjectType)) {
 		from_type_constructor[OBJECT](_native_ptr(), &((GDPy_Object *)v)->_owner);
 
@@ -320,7 +367,6 @@ Variant::Variant(const PyObject *v0) {
 		ERR_PRINT("NOT IMPLEMENTED: Could not cast Python object to Godot Variant. "
 				  "Unsupported or unknown Python object.");
 	}
-	// PyGILState_Release(gil_state);
 }
 
 Variant::~Variant() {

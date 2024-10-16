@@ -1,0 +1,2 @@
+class GDExample:
+	pass

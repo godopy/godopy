@@ -1,6 +1,8 @@
 from binding cimport *
 from godot_cpp cimport UtilityFunctions, OS, Engine
 
+from gdextension cimport ExtensionClass, _registered_classes
+
 import io
 import os
 import gc
@@ -64,16 +66,38 @@ except ImportError as exc:
 
 
 cdef public int python_initialize_level(ModuleInitializationLevel p_level) noexcept nogil:
-    return _python_initialize_level(p_level)
+    with gil:
+        try:
+            _python_initialize_level(p_level)
+        except Exception as exc:
+            f = io.StringIO()
+            traceback.print_exception(exc, file=f)
+            exc_text = f.getvalue()
+            UtilityFunctions.print_rich(
+                "\n[color=red]ERROR: '_python_initialize_level' raised an exception:[/color]"
+                "\n[color=orange]%s[/color]\n" % exc_text
+            )
+            return -1
+    return 0
 
 
 cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noexcept nogil:
-    return _python_deinitialize_level(p_level)
+    with gil:
+        try:
+            _python_deinitialize_level(p_level)
+        except Exception as exc:
+            f = io.StringIO()
+            traceback.print_exception(exc, file=f)
+            exc_text = f.getvalue()
+            UtilityFunctions.print_rich(
+                "\n[color=red]ERROR: '_python_deinitialize_level' raised an exception:[/color]"
+                "\n[color=orange]%s[/color]\n" % exc_text
+            )
+            return -1
+    return 0
 
 
-
-
-cdef int _python_initialize_level(ModuleInitializationLevel p_level) noexcept with gil:
+cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
     global initialize_func, deinitialize_func, is_first_level, first_level
 
     UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
@@ -101,23 +125,24 @@ cdef int _python_initialize_level(ModuleInitializationLevel p_level) noexcept wi
                 UtilityFunctions.print_rich(
                     "\n[color=red]ERROR: 'register types' module raised an exception:[/color]"
                     "\n[color=orange]%s[/color]\n" % exc_text
-            )
+                )
 
         is_first_level = False
         first_level = p_level
 
         # gc.set_debug(gc.DEBUG_LEAK)
 
-    godot_register_types.initialize(p_level)
-    godopy_register_types.initialize(p_level)
+    try:
+        godot_register_types.initialize(p_level)
+        godopy_register_types.initialize(p_level)
+    except NameError as exc:
+        raise SystemError("GodoPy was not properly installed: %s" % exc)
 
     if initialize_func is not None:
         initialize_func(p_level)
 
-    return 0
 
-
-cdef int _python_deinitialize_level(ModuleInitializationLevel p_level) noexcept with gil:
+cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *:
     global deinitialize_func
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup, level %d" % p_level)
@@ -128,8 +153,9 @@ cdef int _python_deinitialize_level(ModuleInitializationLevel p_level) noexcept 
     godopy_register_types.deinitialize(p_level)
     godot_register_types.deinitialize(p_level)
 
+    cdef ExtensionClass cls
     if p_level == first_level:
-        UtilityFunctions.print("Calling gc.collect() in python_deinitialize_level")
-        UtilityFunctions.print(str(gc.collect()))
-
-    return 0
+        for cls in _registered_classes:
+            cls.unregister()
+        # UtilityFunctions.print("Calling gc.collect() in python_deinitialize_level")
+        gc.collect()
