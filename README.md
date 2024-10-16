@@ -17,7 +17,7 @@ GodoPy offers support for both **Extension** and **Script** languages with Pytho
 
 - **Extension Language Support:** GodoPy allows you to implement custom Godot types, such as custom Resources, Resource loaders and savers, custom Script languages, and anything else supported by the GDExtension API.
 
-- **Python Script Language Support:** At this stage, GodoPy provides the ability to use Python as a scripting language within Godot, much like GDScript or C#. This feature is still being developed and refined, but is already usable in certain scenarios.
+- **Python Script Language Support:** At this stage, the Python scripting feature is still under development and not yet fully usable. Once complete, it will enable the use of Python as a scripting language within Godot, similar to GDScript or C#.
 
 ---
 
