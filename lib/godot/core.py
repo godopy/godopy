@@ -36,7 +36,7 @@ class GodotClassBase(type):
         if godot_cls is not None:
             # Engine class
             cls._is_extension = False
-            gd.print('Setup Engine class %s' % name)
+            # gd.print('Setup Engine class %s' % name)
             return super_new(cls, name, bases, attrs)
 
         # Ensure initialization is only performed for subclasses of Godot classes
@@ -71,7 +71,7 @@ class GodotClassBase(type):
 
             # Virtual functions have no hash
             elif parent_method_info is not None and parent_method_info['hash'] is None:
-                gd.print('Meta: FOUND VIRTUAL %s.%s %r' % (godot_cls.__inherits__.__name__, attr, parent_method_info))
+                # gd.print('Meta: FOUND VIRTUAL %s.%s %r' % (godot_cls.__inherits__.__name__, attr, parent_method_info))
                 new_attrs[attr] = godot_cls.bind_virtual_method(value)
 
             elif attr.startswith('_') and isinstance(value, types.FunctionType):

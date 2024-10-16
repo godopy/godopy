@@ -108,7 +108,7 @@ cdef class ExtensionClass(Class):
         if not self.is_registered:
             return 0
 
-        print("Cleaning Godot class %r" % self)
+        # print("Cleaning Godot class %r" % self)
 
         for reference in self._used_refs:
             ref.Py_DECREF(reference)
@@ -148,7 +148,7 @@ cdef class ExtensionClass(Class):
         cdef ExtensionClass self = <ExtensionClass>p_self
         cdef Extension instance = <Extension>p_instance
 
-        UtilityFunctions.print("Freeing %r" % instance)
+        # UtilityFunctions.print("Freeing %r" % instance)
 
         ref.Py_DECREF(instance)
 

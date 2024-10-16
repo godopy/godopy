@@ -1,6 +1,5 @@
 from binding cimport *
-from godot_cpp cimport UtilityFunctions, OS, Engine
-
+from godot_cpp cimport Variant, UtilityFunctions, OS, Engine, ProjectSettings
 from gdextension cimport ExtensionClass, _registered_classes
 
 import io
@@ -104,6 +103,10 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
 
     if is_first_level:
         redirect_python_stdio()
+
+        if ProjectSettings.get_singleton().has_setting("application/run/print_header"):
+            UtilityFunctions.print("GodoPy version %s" % '0.0.0.5dev')
+            UtilityFunctions.print("Python version %s\n" % sys.version)
 
         venv_path = os.environ.get('VIRTUAL_ENV')
         if venv_path and Engine.get_singleton().is_editor_hint():

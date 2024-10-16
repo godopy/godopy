@@ -94,7 +94,6 @@ void PythonRuntime::initialize() {
 	pre_initialize();
 
 	UtilityFunctions::print_verbose("Python: Initializing runtime...");
-	UtilityFunctions::print("Python version " + String(Py_GetVersion()));
 
 	PyStatus status;
 	PyConfig config;

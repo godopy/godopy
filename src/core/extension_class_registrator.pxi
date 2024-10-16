@@ -70,7 +70,7 @@ cdef class ExtensionClassRegistrator:
 
         registree.set_registered()
 
-        print("%r is registered\n" % self.registree)
+        # print("%r is registered\n" % self.registree)
 
 
     cdef int register_method(self, func: types.FunctionType) except -1:

@@ -51,7 +51,7 @@ cdef class Extension(Object):
         if inner_init:
             inner_init(self)
 
-        print("%r initialized, from callback: %r" % (self, from_callback))
+        # print("%r initialized, from callback: %r" % (self, from_callback))
 
 
     cpdef destroy(self):
@@ -185,14 +185,15 @@ cdef class Extension(Object):
             elif arg_type in _global_inheritance_info:
                 void_ptr_arg = deref(<void **>p_args[i])
                 object_arg = _OBJECTDB.get(<uint64_t>void_ptr_arg, None)
-                print("Process %s argument %d in %r: %r" % (arg_type, i, func, object_arg))
+                # print("Process %s argument %d in %r: %r" % (arg_type, i, func, object_arg))
                 if object_arg is None and void_ptr_arg != NULL:
                     object_arg = Object(arg_type, from_ptr=<uint64_t>void_ptr_arg)
-                    print("Created %s argument from pointer %X: %r" % (arg_type, <uint64_t>void_ptr_arg, object_arg))
+                    # print("Created %s argument from pointer %X: %r" % (arg_type, <uint64_t>void_ptr_arg, object_arg))
                 args.append(object_arg)
             else:
-                UtilityFunctions.printerr(
-                    "NOT IMPLEMENTED: Can't convert %r arguments in virtual functions yet" % arg_type)
+                UtilityFunctions.push_error(
+                    "NOT IMPLEMENTED: Can't convert %r arguments in virtual functions yet" % arg_type
+                )
                 args.append(None)
 
         cdef object result = func(self, *args)
