@@ -2,20 +2,20 @@
 #include <structmember.h>
 #include <structseq.h>
 
-static PyTypeObject Vector2_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Vector2i_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Size2_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Rect2_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Rect2i_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Vector3_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Vector3i_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Vector4_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Vector4i_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Plane_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Quaternion_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject AABB_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Transform3D_Type = {0, 0, 0, 0, 0, 0};
-static PyTypeObject Color_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Vector2_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Vector2i_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Size2_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Rect2_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Rect2i_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Vector3_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Vector3i_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Vector4_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Vector4i_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Plane_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Quaternion_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject AABB_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Transform3D_Type = {0, 0, 0, 0, 0, 0};
+PyTypeObject Color_Type = {0, 0, 0, 0, 0, 0};
 
 static PyStructSequence_Field vector2_fields[] = {
     {"x", "x coordinate"},

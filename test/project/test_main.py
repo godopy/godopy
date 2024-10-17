@@ -14,7 +14,7 @@ import unittest
 
 import godot as gd
 import gdextension as gde
-from godot import classdb
+from godot import classdb, types
 
 from classes import TestResource
 
@@ -60,20 +60,20 @@ class TestCaseArgTypes(BaseTestCase):
 
         r = mb.call('get_resource')
 
-        self.assertIsInstance(r.arg01, tuple)
-        self.assertIsInstance(r.arg01[0], float)
+        self.assertIsInstance(r.arg01, types.Vector2)
+        self.assertIsInstance(r.arg01.x, float)
         self.assertEqual(r.arg01, (2.5, 5.0))
-        self.assertIsInstance(r.arg02, tuple)
-        self.assertIsInstance(r.arg02[0], int)
+        self.assertIsInstance(r.arg02, types.Vector2i)
+        self.assertIsInstance(r.arg02.x, int)
         self.assertEqual(r.arg02, (5, 10))
-        self.assertIsInstance(r.arg03, tuple)
-        self.assertIsInstance(r.arg03[0], tuple)
-        self.assertIsInstance(r.arg03[0][0], float)
+        self.assertIsInstance(r.arg03, types.Rect2)
+        self.assertIsInstance(r.arg03.position, types.Vector2)
+        self.assertIsInstance(r.arg03.position.x, float)
         self.assertEqual(r.arg03, ((0.0, 0.0), (100.0, 200.0)))
-        self.assertIsInstance(r.arg04, tuple)
-        self.assertIsInstance(r.arg04[0], tuple)
-        self.assertIsInstance(r.arg04[0][0], int)
-        self.assertEqual(r.arg03, ((0, 0.0), (100, 200)))
+        self.assertIsInstance(r.arg04, types.Rect2i)
+        self.assertIsInstance(r.arg04.position, types.Vector2i)
+        self.assertIsInstance(r.arg04.position.x, int)
+        self.assertEqual(r.arg03, ((0, 0), (100, 200)))
 
 class TestCaseSceneExtension(BaseTestCase):
     def test_owner(self):

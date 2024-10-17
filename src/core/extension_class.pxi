@@ -176,7 +176,7 @@ cdef class ExtensionClass(Class):
     @staticmethod
     cdef GDExtensionObjectPtr _create_instance(void *p_self, bint p_notify_postinitialize) except? NULL with gil:
         if p_self == NULL:
-            UtilityFunctions.printerr("ExtensionClass object pointer is uninitialized")
+            UtilityFunctions.push_error("ExtensionClass object pointer is uninitialized")
             return NULL
 
         from godot import Extension as PyExtension
@@ -191,7 +191,7 @@ cdef class ExtensionClass(Class):
             )
         else:
             # print('Saved %r instance %r' % (self, instance))
-    
+
             _NODEDB[self.__name__] = instance
 
         return instance._owner

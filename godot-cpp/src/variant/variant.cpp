@@ -829,65 +829,73 @@ bool Variant::booleanize() const {
 }
 
 PyObject *Variant::pythonize(const Dictionary &type_hints) const {
+	// GIL must be active, caller is responsible
 	PyObject *obj;
-	PyGILState_STATE gil_state = PyGILState_Ensure();
+
 	switch (get_type()) {
 		case Type::STRING:
 		case Type::STRING_NAME:
 		case Type::NODE_PATH:
 		{
-			String s = String(this);
+			String s = operator String();
 			obj = s.py_str();
 			break;
 		}
-		case Type::BOOL: {
-			obj = bool(this) ? Py_True : Py_False;
+		case Type::BOOL:
+		{
+			bool b = operator bool();
+			obj = b ? Py_True : Py_False;
 			Py_INCREF(obj);
 			break;
 		}
-		case Type::INT: {
-			obj =  PyLong_FromSsize_t(int64_t(*this));
+		case Type::INT:
+		{
+			int64_t i = operator int64_t();
+			obj = PyLong_FromSsize_t(i);
 			ERR_FAIL_NULL_V(obj, nullptr);
 			break;
 		}
-		case Type::FLOAT: {
-			obj = PyFloat_FromDouble(double(*this));
+		case Type::FLOAT:
+		{
+			double d = operator double();
+			obj = PyFloat_FromDouble(d);
 			ERR_FAIL_NULL_V(obj, nullptr);
 			break;
 		}
 		case Type::VECTOR2:
 		{
-			obj = PyTuple_New(2);
+			Vector2 vec = operator Vector2();
+			obj = PyStructSequence_New(&Vector2_Type);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			Vector2 vec = Vector2(*this);
 			PyObject *x = PyFloat_FromDouble(vec.x);
 			ERR_FAIL_NULL_V(x, nullptr);
 			PyObject *y = PyFloat_FromDouble(vec.y);
 			ERR_FAIL_NULL_V(y, nullptr);
-			PyTuple_SetItem(obj, 0, x);
-			PyTuple_SetItem(obj, 1, y);
+			PyStructSequence_SET_ITEM(obj, 0, x);
+			PyStructSequence_SET_ITEM(obj, 1, y);
 			break;
 		}
-		case Type::VECTOR2I: {
-			obj = PyTuple_New(2);
+		case Type::VECTOR2I:
+		{
+			Vector2i vec = operator Vector2i();
+			obj = PyStructSequence_New(&Vector2i_Type);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			Vector2 vec = Vector2i(*this);
 			PyObject *x = PyLong_FromSsize_t(vec.x);
 			ERR_FAIL_NULL_V(x, nullptr);
 			PyObject *y = PyLong_FromSsize_t(vec.y);
 			ERR_FAIL_NULL_V(y, nullptr);
-			PyTuple_SetItem(obj, 0, x);
-			PyTuple_SetItem(obj, 1, y);
+			PyStructSequence_SET_ITEM(obj, 0, x);
+			PyStructSequence_SET_ITEM(obj, 1, y);
 			break;
 		}
 		case Type::RECT2:
 		{
-			obj = PyTuple_New(2);
+			Rect2 rect = operator Rect2();
+			obj = PyStructSequence_New(&Rect2_Type);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			Rect2 rect = Rect2(*this);
-			PyObject *position = PyTuple_New(2);
+			PyObject *position = PyStructSequence_New(&Vector2_Type);
 			ERR_FAIL_NULL_V(position, nullptr);
-			PyObject *size = PyTuple_New(2);
+			PyObject *size = PyStructSequence_New(&Size2_Type);
 			ERR_FAIL_NULL_V(size, nullptr);
 			PyObject *x = PyFloat_FromDouble(rect.position.x);
 			ERR_FAIL_NULL_V(x, nullptr);
@@ -897,22 +905,22 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			ERR_FAIL_NULL_V(width, nullptr);
 			PyObject *height = PyFloat_FromDouble(rect.size.height);
 			ERR_FAIL_NULL_V(height, nullptr);
-			PyTuple_SetItem(position, 0, x);
-			PyTuple_SetItem(position, 1, y);
-			PyTuple_SetItem(size, 0, width);
-			PyTuple_SetItem(size, 1, height);
-			PyTuple_SetItem(obj, 0, position);
-			PyTuple_SetItem(obj, 1, size);
+			PyStructSequence_SET_ITEM(position, 0, x);
+			PyStructSequence_SET_ITEM(position, 1, y);
+			PyStructSequence_SET_ITEM(size, 0, width);
+			PyStructSequence_SET_ITEM(size, 1, height);
+			PyStructSequence_SET_ITEM(obj, 0, position);
+			PyStructSequence_SET_ITEM(obj, 1, size);
 			break;
 		}
 		case Type::RECT2I:
 		{
-			obj = PyTuple_New(2);
+			Rect2i rect = operator Rect2i();
+			obj = PyStructSequence_New(&Rect2i_Type);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			Rect2i rect = Rect2i(*this);
-			PyObject *position = PyTuple_New(2);
+			PyObject *position = PyStructSequence_New(&Vector2i_Type);
 			ERR_FAIL_NULL_V(position, nullptr);
-			PyObject *size = PyTuple_New(2);
+			PyObject *size = PyStructSequence_New(&Size2_Type);
 			ERR_FAIL_NULL_V(size, nullptr);
 			PyObject *x = PyLong_FromSsize_t(rect.position.x);
 			ERR_FAIL_NULL_V(x, nullptr);
@@ -922,50 +930,379 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			ERR_FAIL_NULL_V(width, nullptr);
 			PyObject *height = PyLong_FromSsize_t(rect.size.height);
 			ERR_FAIL_NULL_V(height, nullptr);
-			PyTuple_SetItem(position, 0, x);
-			PyTuple_SetItem(position, 1, y);
-			PyTuple_SetItem(size, 0, width);
-			PyTuple_SetItem(size, 1, height);
-			PyTuple_SetItem(obj, 0, position);
-			PyTuple_SetItem(obj, 1, size);
+			PyStructSequence_SET_ITEM(position, 0, x);
+			PyStructSequence_SET_ITEM(position, 1, y);
+			PyStructSequence_SET_ITEM(size, 0, width);
+			PyStructSequence_SET_ITEM(size, 1, height);
+			PyStructSequence_SET_ITEM(obj, 0, position);
+			PyStructSequence_SET_ITEM(obj, 1, size);
 			break;
 		}
-		case Type::VECTOR3: {
-			obj = PyTuple_New(3);
+		case Type::VECTOR3:
+		{
+			Vector3 vec = operator Vector3();
+			obj = PyStructSequence_New(&Vector3_Type);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			Vector3 vec = Vector3(*this);
 			PyObject *x = PyFloat_FromDouble(vec.x);
 			ERR_FAIL_NULL_V(x, nullptr);
 			PyObject *y = PyFloat_FromDouble(vec.y);
 			ERR_FAIL_NULL_V(y, nullptr);
 			PyObject *z = PyFloat_FromDouble(vec.z);
 			ERR_FAIL_NULL_V(z, nullptr);
-			PyTuple_SetItem(obj, 0, x);
-			PyTuple_SetItem(obj, 1, y);
-			PyTuple_SetItem(obj, 2, z);
+			PyStructSequence_SET_ITEM(obj, 0, x);
+			PyStructSequence_SET_ITEM(obj, 1, y);
+			PyStructSequence_SET_ITEM(obj, 2, z);
 			break;
 		}
 		case Type::VECTOR3I:
 		{
-			obj = PyTuple_New(3);
+			Vector3i vec = operator Vector3i();
+			obj = PyStructSequence_New(&Vector3i_Type);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			Vector3i vec = Vector3i(*this);
 			PyObject *x = PyLong_FromSsize_t(vec.x);
 			ERR_FAIL_NULL_V(x, nullptr);
 			PyObject *y = PyLong_FromSsize_t(vec.y);
 			ERR_FAIL_NULL_V(y, nullptr);
 			PyObject *z = PyLong_FromSsize_t(vec.z);
+			ERR_FAIL_NULL_V(z, nullptr);
+			PyStructSequence_SET_ITEM(obj, 0, x);
+			PyStructSequence_SET_ITEM(obj, 1, y);
+			PyStructSequence_SET_ITEM(obj, 2, z);
+			break;
+		}
+		case Type::TRANSFORM2D:
+		{
+			Transform2D t = operator Transform2D();
+			obj = PyTuple_New(3);
+			ERR_FAIL_NULL_V(obj, nullptr);
+
+			PyObject *x = PyTuple_New(2);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyTuple_New(2);
 			ERR_FAIL_NULL_V(y, nullptr);
-			PyTuple_SetItem(obj, 0, x);
-			PyTuple_SetItem(obj, 1, y);
-			PyTuple_SetItem(obj, 2, z);
+			PyObject *o = PyTuple_New(2);
+			ERR_FAIL_NULL_V(o, nullptr);
+
+			PyObject *xx = PyFloat_FromDouble(t.columns[0][0]);
+			ERR_FAIL_NULL_V(xx, nullptr);
+			PyObject *xy = PyFloat_FromDouble(t.columns[0][1]);
+			ERR_FAIL_NULL_V(xy, nullptr);
+			PyTuple_SET_ITEM(x, 0, xx);
+			PyTuple_SET_ITEM(x, 1, xy);
+			PyObject *yx = PyFloat_FromDouble(t.columns[1][0]);
+			ERR_FAIL_NULL_V(yx, nullptr);
+			PyObject *yy = PyFloat_FromDouble(t.columns[1][1]);
+			ERR_FAIL_NULL_V(yy, nullptr);
+			PyTuple_SET_ITEM(y, 0, yx);
+			PyTuple_SET_ITEM(y, 1, yy);
+			PyObject *ox = PyFloat_FromDouble(t.columns[2][0]);
+			ERR_FAIL_NULL_V(ox, nullptr);
+			PyObject *oy = PyFloat_FromDouble(t.columns[2][1]);
+			ERR_FAIL_NULL_V(oy, nullptr);
+			PyTuple_SET_ITEM(o, 0, ox);
+			PyTuple_SET_ITEM(o, 1, oy);
+
+			PyTuple_SET_ITEM(obj, 0, x);
+			PyTuple_SET_ITEM(obj, 1, y);
+			PyTuple_SET_ITEM(obj, 2, o);
+			break;
+		}
+		case Type::VECTOR4: {
+			Vector4 vec = operator Vector4();
+			obj = PyStructSequence_New(&Vector4_Type);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *x = PyFloat_FromDouble(vec.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyFloat_FromDouble(vec.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyFloat_FromDouble(vec.z);
+			ERR_FAIL_NULL_V(z, nullptr);
+			PyObject *w = PyFloat_FromDouble(vec.w);
+			ERR_FAIL_NULL_V(w, nullptr);
+			PyStructSequence_SET_ITEM(obj, 0, x);
+			PyStructSequence_SET_ITEM(obj, 1, y);
+			PyStructSequence_SET_ITEM(obj, 2, z);
+			PyStructSequence_SET_ITEM(obj, 3, w);
+			break;
+		}
+		case Type::VECTOR4I:
+		{
+			Vector4i vec = operator Vector4i();
+			obj = PyStructSequence_New(&Vector4i_Type);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *x = PyLong_FromSsize_t(vec.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyLong_FromSsize_t(vec.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyLong_FromSsize_t(vec.z);
+			ERR_FAIL_NULL_V(z, nullptr);
+			PyObject *w = PyLong_FromSsize_t(vec.w);
+			ERR_FAIL_NULL_V(w, nullptr);
+			PyStructSequence_SET_ITEM(obj, 0, x);
+			PyStructSequence_SET_ITEM(obj, 1, y);
+			PyStructSequence_SET_ITEM(obj, 2, z);
+			PyStructSequence_SET_ITEM(obj, 3, w);
+			break;
+		}
+		case Type::PLANE:
+		{
+			Plane plane = operator Plane();
+			obj = PyStructSequence_New(&Plane_Type);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *normal = PyStructSequence_New(&Vector3_Type);
+			ERR_FAIL_NULL_V(normal, nullptr);
+			PyObject *d = PyFloat_FromDouble(plane.d);;
+			ERR_FAIL_NULL_V(d, nullptr);
+			PyObject *x = PyFloat_FromDouble(plane.normal.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyFloat_FromDouble(plane.normal.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyFloat_FromDouble(plane.normal.z);
+			ERR_FAIL_NULL_V(z, nullptr);
+
+			PyStructSequence_SET_ITEM(normal, 0, x);
+			PyStructSequence_SET_ITEM(normal, 1, y);
+			PyStructSequence_SET_ITEM(normal, 2, z);
+			PyStructSequence_SET_ITEM(obj, 0, normal);
+			PyStructSequence_SET_ITEM(obj, 1, d);
+			break;
+		}
+		case Type::QUATERNION:
+		{
+			Quaternion q = operator Quaternion();
+			obj = PyStructSequence_New(&Quaternion_Type);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *x = PyFloat_FromDouble(q.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyFloat_FromDouble(q.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyFloat_FromDouble(q.z);
+			ERR_FAIL_NULL_V(z, nullptr);
+			PyObject *w = PyFloat_FromDouble(q.w);
+			ERR_FAIL_NULL_V(w, nullptr);
+			PyStructSequence_SET_ITEM(obj, 0, x);
+			PyStructSequence_SET_ITEM(obj, 1, y);
+			PyStructSequence_SET_ITEM(obj, 2, z);
+			PyStructSequence_SET_ITEM(obj, 3, w);
+			break;
+		}
+		case Type::AABB:
+		{
+			godot::AABB aabb = operator godot::AABB();
+			obj = PyStructSequence_New(&AABB_Type);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *position = PyStructSequence_New(&Vector3_Type);
+			ERR_FAIL_NULL_V(position, nullptr);
+			PyObject *size = PyStructSequence_New(&Vector3_Type);
+			ERR_FAIL_NULL_V(size, nullptr);
+			PyObject *x = PyFloat_FromDouble(aabb.position.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyFloat_FromDouble(aabb.position.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyFloat_FromDouble(aabb.position.z);
+			ERR_FAIL_NULL_V(z, nullptr);
+			PyObject *sx = PyFloat_FromDouble(aabb.size.x);
+			ERR_FAIL_NULL_V(sx, nullptr);
+			PyObject *sy = PyFloat_FromDouble(aabb.size.y);
+			ERR_FAIL_NULL_V(sy, nullptr);
+			PyObject *sz = PyFloat_FromDouble(aabb.size.z);
+			ERR_FAIL_NULL_V(sz, nullptr);
+			PyStructSequence_SET_ITEM(position, 0, x);
+			PyStructSequence_SET_ITEM(position, 1, y);
+			PyStructSequence_SET_ITEM(position, 2, z);
+			PyStructSequence_SET_ITEM(size, 0, sx);
+			PyStructSequence_SET_ITEM(size, 1, sy);
+			PyStructSequence_SET_ITEM(size, 2, sz);
+			PyStructSequence_SET_ITEM(obj, 0, position);
+			PyStructSequence_SET_ITEM(obj, 1, size);
+			break;
+		}
+		case Type::BASIS:
+		{
+			Basis b = operator Basis();
+			obj = PyTuple_New(3);
+			ERR_FAIL_NULL_V(obj, nullptr);
+
+			PyObject *x = PyTuple_New(3);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyTuple_New(3);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyTuple_New(3);
+			ERR_FAIL_NULL_V(z, nullptr);
+
+			PyObject *xx = PyFloat_FromDouble(b.rows[0][0]);
+			ERR_FAIL_NULL_V(xx, nullptr);
+			PyObject *xy = PyFloat_FromDouble(b.rows[0][1]);
+			ERR_FAIL_NULL_V(xy, nullptr);
+			PyObject *xz = PyFloat_FromDouble(b.rows[0][2]);
+			ERR_FAIL_NULL_V(xz, nullptr);
+			PyTuple_SET_ITEM(x, 0, xx);
+			PyTuple_SET_ITEM(x, 1, xy);
+			PyTuple_SET_ITEM(x, 2, xz);
+			PyObject *yx = PyFloat_FromDouble(b.rows[1][0]);
+			ERR_FAIL_NULL_V(yx, nullptr);
+			PyObject *yy = PyFloat_FromDouble(b.rows[1][1]);
+			ERR_FAIL_NULL_V(yy, nullptr);
+			PyObject *yz = PyFloat_FromDouble(b.rows[1][2]);
+			ERR_FAIL_NULL_V(yz, nullptr);
+			PyTuple_SET_ITEM(y, 0, yx);
+			PyTuple_SET_ITEM(y, 1, yy);
+			PyTuple_SET_ITEM(y, 2, yz);
+			PyObject *zx = PyFloat_FromDouble(b.rows[2][0]);
+			ERR_FAIL_NULL_V(zx, nullptr);
+			PyObject *zy = PyFloat_FromDouble(b.rows[2][1]);
+			ERR_FAIL_NULL_V(zy, nullptr);
+			PyObject *zz = PyFloat_FromDouble(b.rows[2][2]);
+			ERR_FAIL_NULL_V(zz, nullptr);
+			PyTuple_SET_ITEM(z, 0, zx);
+			PyTuple_SET_ITEM(z, 1, zy);
+			PyTuple_SET_ITEM(z, 2, zz);
+
+			PyTuple_SET_ITEM(obj, 0, x);
+			PyTuple_SET_ITEM(obj, 1, y);
+			PyTuple_SET_ITEM(obj, 2, z);
+			break;
+		}
+		case Type::TRANSFORM3D:
+		{
+			Transform3D t = operator Transform3D();
+			obj = PyStructSequence_New(&Transform3D_Type);
+			ERR_FAIL_NULL_V(obj, nullptr);
+
+			PyObject *basis = PyTuple_New(3);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Basis b = operator Basis();
+
+			PyObject *x = PyTuple_New(3);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyTuple_New(3);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyTuple_New(3);
+			ERR_FAIL_NULL_V(z, nullptr);
+
+			PyObject *xx = PyFloat_FromDouble(t.basis.rows[0][0]);
+			ERR_FAIL_NULL_V(xx, nullptr);
+			PyObject *xy = PyFloat_FromDouble(t.basis.rows[0][1]);
+			ERR_FAIL_NULL_V(xy, nullptr);
+			PyObject *xz = PyFloat_FromDouble(t.basis.rows[0][2]);
+			ERR_FAIL_NULL_V(xz, nullptr);
+			PyTuple_SET_ITEM(x, 0, xx);
+			PyTuple_SET_ITEM(x, 1, xy);
+			PyTuple_SET_ITEM(x, 2, xz);
+			PyObject *yx = PyFloat_FromDouble(t.basis.rows[1][0]);
+			ERR_FAIL_NULL_V(yx, nullptr);
+			PyObject *yy = PyFloat_FromDouble(t.basis.rows[1][1]);
+			ERR_FAIL_NULL_V(yy, nullptr);
+			PyObject *yz = PyFloat_FromDouble(t.basis.rows[1][2]);
+			ERR_FAIL_NULL_V(yz, nullptr);
+			PyTuple_SET_ITEM(y, 0, yx);
+			PyTuple_SET_ITEM(y, 1, yy);
+			PyTuple_SET_ITEM(y, 2, yz);
+			PyObject *zx = PyFloat_FromDouble(t.basis.rows[2][0]);
+			ERR_FAIL_NULL_V(zx, nullptr);
+			PyObject *zy = PyFloat_FromDouble(t.basis.rows[2][1]);
+			ERR_FAIL_NULL_V(zy, nullptr);
+			PyObject *zz = PyFloat_FromDouble(t.basis.rows[2][2]);
+			ERR_FAIL_NULL_V(zz, nullptr);
+			PyTuple_SET_ITEM(z, 0, zx);
+			PyTuple_SET_ITEM(z, 1, zy);
+			PyTuple_SET_ITEM(z, 2, zz);
+
+			PyTuple_SET_ITEM(basis, 0, x);
+			PyTuple_SET_ITEM(basis, 1, y);
+			PyTuple_SET_ITEM(basis, 2, z);
+
+			PyObject *origin = PyStructSequence_New(&Vector3_Type);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Vector3 vec = operator Vector3();
+			PyObject *ox = PyFloat_FromDouble(t.origin.x);
+			ERR_FAIL_NULL_V(ox, nullptr);
+			PyObject *oy = PyFloat_FromDouble(t.origin.y);
+			ERR_FAIL_NULL_V(oy, nullptr);
+			PyObject *oz = PyFloat_FromDouble(t.origin.z);
+			ERR_FAIL_NULL_V(oz, nullptr);
+			PyStructSequence_SET_ITEM(origin, 0, ox);
+			PyStructSequence_SET_ITEM(origin, 1, oy);
+			PyStructSequence_SET_ITEM(origin, 2, oz);
+
+			PyStructSequence_SET_ITEM(obj, 0, basis);
+			PyStructSequence_SET_ITEM(obj, 1, origin);
+		}
+		case Type::PROJECTION:
+		{
+			Projection p = operator Projection();
+			obj = PyTuple_New(4);
+			ERR_FAIL_NULL_V(obj, nullptr);
+
+			PyObject *x = PyTuple_New(4);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyTuple_New(4);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *z = PyTuple_New(4);
+			ERR_FAIL_NULL_V(z, nullptr);
+			PyObject *w = PyTuple_New(4);
+			ERR_FAIL_NULL_V(w, nullptr);
+
+			PyObject *xx = PyFloat_FromDouble(p.columns[0][0]);
+			ERR_FAIL_NULL_V(xx, nullptr);
+			PyObject *xy = PyFloat_FromDouble(p.columns[0][1]);
+			ERR_FAIL_NULL_V(xy, nullptr);
+			PyObject *xz = PyFloat_FromDouble(p.columns[0][2]);
+			ERR_FAIL_NULL_V(xz, nullptr);
+			PyObject *xw = PyFloat_FromDouble(p.columns[0][3]);
+			ERR_FAIL_NULL_V(xw, nullptr);
+			PyTuple_SET_ITEM(x, 0, xx);
+			PyTuple_SET_ITEM(x, 1, xy);
+			PyTuple_SET_ITEM(x, 2, xz);
+			PyTuple_SET_ITEM(x, 3, xw);
+			PyObject *yx = PyFloat_FromDouble(p.columns[1][0]);
+			ERR_FAIL_NULL_V(yx, nullptr);
+			PyObject *yy = PyFloat_FromDouble(p.columns[1][1]);
+			ERR_FAIL_NULL_V(yy, nullptr);
+			PyObject *yz = PyFloat_FromDouble(p.columns[1][2]);
+			ERR_FAIL_NULL_V(yz, nullptr);
+			PyObject *yw = PyFloat_FromDouble(p.columns[1][3]);
+			ERR_FAIL_NULL_V(yw, nullptr);
+			PyTuple_SET_ITEM(y, 0, yx);
+			PyTuple_SET_ITEM(y, 1, yy);
+			PyTuple_SET_ITEM(y, 2, yz);
+			PyTuple_SET_ITEM(y, 3, yw);
+			PyObject *zx = PyFloat_FromDouble(p.columns[2][0]);
+			ERR_FAIL_NULL_V(zx, nullptr);
+			PyObject *zy = PyFloat_FromDouble(p.columns[2][1]);
+			ERR_FAIL_NULL_V(zy, nullptr);
+			PyObject *zz = PyFloat_FromDouble(p.columns[2][2]);
+			ERR_FAIL_NULL_V(zz, nullptr);
+			PyObject *zw = PyFloat_FromDouble(p.columns[2][3]);
+			ERR_FAIL_NULL_V(zw, nullptr);
+			PyTuple_SET_ITEM(z, 0, zx);
+			PyTuple_SET_ITEM(z, 1, zy);
+			PyTuple_SET_ITEM(z, 2, zz);
+			PyTuple_SET_ITEM(z, 3, zw);
+			PyObject *wx = PyFloat_FromDouble(p.columns[3][0]);
+			ERR_FAIL_NULL_V(zx, nullptr);
+			PyObject *wy = PyFloat_FromDouble(p.columns[3][1]);
+			ERR_FAIL_NULL_V(zy, nullptr);
+			PyObject *wz = PyFloat_FromDouble(p.columns[3][2]);
+			ERR_FAIL_NULL_V(zz, nullptr);
+			PyObject *ww = PyFloat_FromDouble(p.columns[3][3]);
+			ERR_FAIL_NULL_V(zw, nullptr);
+			PyTuple_SET_ITEM(w, 0, wx);
+			PyTuple_SET_ITEM(w, 1, wy);
+			PyTuple_SET_ITEM(w, 2, wz);
+			PyTuple_SET_ITEM(w, 3, ww);
+
+			PyTuple_SET_ITEM(obj, 0, x);
+			PyTuple_SET_ITEM(obj, 1, y);
+			PyTuple_SET_ITEM(obj, 2, z);
+			PyTuple_SET_ITEM(obj, 3, z);
 			break;
 		}
 		case Type::COLOR:
 		{
-			obj = PyTuple_New(4);
+			Color c = operator Color();
+			obj = PyStructSequence_New(&Color_Type);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			Color c = Color(this);
 			PyObject *r = PyFloat_FromDouble(static_cast<double>(c.r));
 			ERR_FAIL_NULL_V(r, nullptr);
 			PyObject *g = PyFloat_FromDouble(static_cast<double>(c.g));
@@ -974,16 +1311,16 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			ERR_FAIL_NULL_V(b, nullptr);
 			PyObject *a = PyFloat_FromDouble(static_cast<double>(c.a));
 			ERR_FAIL_NULL_V(a, nullptr);
-			PyTuple_SetItem(obj, 0, r);
-			PyTuple_SetItem(obj, 1, g);
-			PyTuple_SetItem(obj, 2, b);
-			PyTuple_SetItem(obj, 3, a);
+			PyStructSequence_SET_ITEM(obj, 0, r);
+			PyStructSequence_SET_ITEM(obj, 1, g);
+			PyStructSequence_SET_ITEM(obj, 2, b);
+			PyStructSequence_SET_ITEM(obj, 3, a);
 			break;
 		}
 		case Type::RID:
 		{
-			godot::RID ridobj = (godot::RID)this;
-			obj =  PyLong_FromSsize_t(int64_t(ridobj.get_id()));
+			godot::RID rid = operator godot::RID();
+			obj =  PyLong_FromSsize_t(int64_t(rid.get_id()));
 			ERR_FAIL_NULL_V(obj, nullptr);
 			break;
 		}
@@ -1003,7 +1340,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 		}
 		case Type::DICTIONARY:
 		{
-			const Dictionary dict = Dictionary(this);
+			const Dictionary dict = operator Dictionary();
 			const Array keys = dict.keys();
 			obj = PyDict_New();
 			ERR_FAIL_NULL_V(obj, nullptr);
@@ -1020,7 +1357,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 		}
 		case Type::ARRAY:
 		{
-			const Array arr = *this;
+			const Array arr = operator Array();
 			if (type_hints.has("Array") && type_hints["Array"] == "tuple") {
 				obj = PyTuple_New(arr.size());
 				ERR_FAIL_NULL_V(obj, nullptr);
@@ -1037,7 +1374,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 				for (size_t i = 0; i < arr.size(); i++) {
 					PyObject *item = arr[i];
 					ERR_FAIL_NULL_V(item, nullptr);
-					PyList_SetItem(obj, i, item);
+					PyList_SET_ITEM(obj, i, item);
 				}
 			}
 			break;
@@ -1048,7 +1385,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 
 		case Variant::Type::PACKED_BYTE_ARRAY:
 		{
-			PackedByteArray a = PackedByteArray(this);
+			PackedByteArray a = operator PackedByteArray();
 			if (type_hints.has("PackedByteArray") && type_hints["PackedByteArray"] == "bytes") {
 				obj = PyBytes_FromStringAndSize(reinterpret_cast<const char *>(a.ptr()), a.size());
 			} else {
@@ -1059,90 +1396,157 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 		}
 		case Variant::Type::PACKED_INT32_ARRAY:
 		{
-			PackedInt32Array a = PackedInt32Array(this);
+			PackedInt32Array a = operator PackedInt32Array();
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
 			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = PyLong_FromSsize_t(int64_t(a[i]));
 				ERR_FAIL_NULL_V(elem, nullptr);
-				PyTuple_SetItem(obj, i, nullptr);
+				PyTuple_SET_ITEM(obj, i, nullptr);
 			}
 			break;
 		}
 		case Variant::Type::PACKED_INT64_ARRAY:
 		{
-			PackedInt64Array a = PackedInt64Array(this);
+			PackedInt64Array a = operator PackedInt64Array();
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
 			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = PyLong_FromSsize_t(a[i]);
 				ERR_FAIL_NULL_V(elem, nullptr);
-				PyTuple_SetItem(obj, i, elem);
+				PyTuple_SET_ITEM(obj, i, elem);
 			}
 			break;
 		}
 		case Variant::Type::PACKED_FLOAT32_ARRAY:
 		{
-			PackedFloat32Array a = PackedFloat32Array(this);
+			PackedFloat32Array a = operator PackedFloat32Array();
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
 			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = PyFloat_FromDouble(static_cast<double>(a[i]));
 				ERR_FAIL_NULL_V(elem, nullptr);
-				PyTuple_SetItem(obj, i, elem);
+				PyTuple_SET_ITEM(obj, i, elem);
 			}
 			break;
 		}
 		case Variant::Type::PACKED_FLOAT64_ARRAY:
 		{
-			PackedFloat64Array a = PackedFloat64Array(this);
+			PackedFloat64Array a = operator PackedFloat64Array();
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
 			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = PyFloat_FromDouble(a[i]);
 				ERR_FAIL_NULL_V(elem, nullptr);
-				PyTuple_SetItem(obj, i, elem);
+				PyTuple_SET_ITEM(obj, i, elem);
 			}
 			break;
 		}
 		case Variant::Type::PACKED_STRING_ARRAY:
 		{
-			PackedStringArray a = PackedStringArray(this);
+			PackedStringArray a = operator PackedStringArray();
 			obj = PyTuple_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
 			for (size_t i = 0; i < a.size(); i++) {
 				PyObject *elem = a[i].py_str();
 				ERR_FAIL_NULL_V(elem, nullptr);
-				PyTuple_SetItem(obj, i, elem);
+				PyTuple_SET_ITEM(obj, i, elem);
 			}
 			break;
 		}
 		case Variant::Type::PACKED_VECTOR2_ARRAY:
 		{
-			PackedVector2Array a = PackedVector2Array(this);
+			PackedVector2Array a = operator PackedVector2Array();
 			obj = PyList_New(a.size());
 			ERR_FAIL_NULL_V(obj, nullptr);
 			PyObject *vec;
 			for (size_t i = 0; i < a.size(); i++) {
-				// TODO: Use custom PyStructSequence
-				vec = PyTuple_New(2);
+				vec = PyStructSequence_New(&Vector2_Type);
 				ERR_FAIL_NULL_V(vec, nullptr);
-				Vector2 p_elem = a[i];
-				PyObject *x = PyFloat_FromDouble(static_cast<double>(p_elem.x));
+				Vector2 elem = a[i];
+				PyObject *x = PyFloat_FromDouble(static_cast<double>(elem.x));
 				ERR_FAIL_NULL_V(x, nullptr);
-				PyObject *y = PyFloat_FromDouble(static_cast<double>(p_elem.y));
+				PyObject *y = PyFloat_FromDouble(static_cast<double>(elem.y));
 				ERR_FAIL_NULL_V(y, nullptr);
-				PyTuple_SetItem(vec, 0, x);
-				PyTuple_SetItem(vec, 1, y);
-				PyList_SetItem(obj, i, vec);
+				PyStructSequence_SET_ITEM(vec, 0, x);
+				PyStructSequence_SET_ITEM(vec, 1, y);
+				PyList_SET_ITEM(obj, i, vec);
 			}
 			break;
 		}
 		case Type::PACKED_VECTOR3_ARRAY:
 		{
-			Py_INCREF(Py_None);
-			obj = Py_None;
-			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Vector3 arrays");
+			PackedVector3Array a = operator PackedVector3Array();
+			obj = PyList_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *vec;
+			for (size_t i = 0; i < a.size(); i++) {
+				vec = PyStructSequence_New(&Vector3_Type);
+				ERR_FAIL_NULL_V(vec, nullptr);
+				Vector3 elem = a[i];
+				PyObject *x = PyFloat_FromDouble(static_cast<double>(elem.x));
+				ERR_FAIL_NULL_V(x, nullptr);
+				PyObject *y = PyFloat_FromDouble(static_cast<double>(elem.y));
+				ERR_FAIL_NULL_V(y, nullptr);
+				PyObject *z = PyFloat_FromDouble(static_cast<double>(elem.z));
+				ERR_FAIL_NULL_V(z, nullptr);
+				PyStructSequence_SET_ITEM(vec, 0, x);
+				PyStructSequence_SET_ITEM(vec, 1, y);
+				PyStructSequence_SET_ITEM(vec, 2, z);
+				PyList_SET_ITEM(obj, i, vec);
+			}
+			break;
+		}
+		case Type::PACKED_COLOR_ARRAY:
+		{
+			PackedColorArray a = operator PackedColorArray();
+			obj = PyList_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *c;
+			for (size_t i = 0; i < a.size(); i++) {
+				c = PyStructSequence_New(&Color_Type);
+				ERR_FAIL_NULL_V(c, nullptr);
+				Color elem = a[i];
+				PyObject *r = PyFloat_FromDouble(static_cast<double>(elem.r));
+				ERR_FAIL_NULL_V(r, nullptr);
+				PyObject *g = PyFloat_FromDouble(static_cast<double>(elem.g));
+				ERR_FAIL_NULL_V(g, nullptr);
+				PyObject *b = PyFloat_FromDouble(static_cast<double>(elem.b));
+				ERR_FAIL_NULL_V(b, nullptr);
+				PyObject *a = PyFloat_FromDouble(static_cast<double>(elem.a));
+				ERR_FAIL_NULL_V(a, nullptr);
+				PyStructSequence_SET_ITEM(c, 0, r);
+				PyStructSequence_SET_ITEM(c, 1, g);
+				PyStructSequence_SET_ITEM(c, 2, b);
+				PyStructSequence_SET_ITEM(c, 3, a);
+				PyList_SET_ITEM(obj, i, c);
+			}
+			break;
+		}
+		case Type::PACKED_VECTOR4_ARRAY:
+		{
+			PackedVector4Array a = operator PackedVector4Array();
+			obj = PyList_New(a.size());
+			ERR_FAIL_NULL_V(obj, nullptr);
+			PyObject *vec;
+			for (size_t i = 0; i < a.size(); i++) {
+				vec = PyStructSequence_New(&Vector4_Type);
+				ERR_FAIL_NULL_V(vec, nullptr);
+				Vector4 elem = a[i];
+				PyObject *x = PyFloat_FromDouble(static_cast<double>(elem.x));
+				ERR_FAIL_NULL_V(x, nullptr);
+				PyObject *y = PyFloat_FromDouble(static_cast<double>(elem.y));
+				ERR_FAIL_NULL_V(y, nullptr);
+				PyObject *z = PyFloat_FromDouble(static_cast<double>(elem.z));
+				ERR_FAIL_NULL_V(z, nullptr);
+				PyObject *w = PyFloat_FromDouble(static_cast<double>(elem.w));
+				ERR_FAIL_NULL_V(w, nullptr);
+				PyStructSequence_SET_ITEM(vec, 0, x);
+				PyStructSequence_SET_ITEM(vec, 1, y);
+				PyStructSequence_SET_ITEM(vec, 2, z);
+				PyStructSequence_SET_ITEM(vec, 3, w);
+				PyList_SET_ITEM(obj, i, vec);
+			}
 			break;
 		}
 		case Variant::Type::NIL:
@@ -1154,11 +1558,10 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 		default:
 			Py_INCREF(Py_None);
 			obj = Py_None;
-			ERR_PRINT("Could not determine Variant type, probably the wrong type was passed");
+			ERR_PRINT(vformat("Unknown variant type %d, returning None", (int)get_type()));
 			break;
 	}
 
-	PyGILState_Release(gil_state);
 	return obj;
 }
 
