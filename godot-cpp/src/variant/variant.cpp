@@ -880,6 +880,56 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			PyTuple_SetItem(obj, 1, y);
 			break;
 		}
+		case Type::RECT2:
+		{
+			obj = PyTuple_New(2);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Rect2 rect = Rect2(*this);
+			PyObject *position = PyTuple_New(2);
+			ERR_FAIL_NULL_V(position, nullptr);
+			PyObject *size = PyTuple_New(2);
+			ERR_FAIL_NULL_V(size, nullptr);
+			PyObject *x = PyFloat_FromDouble(rect.position.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyFloat_FromDouble(rect.position.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *width = PyFloat_FromDouble(rect.size.width);
+			ERR_FAIL_NULL_V(width, nullptr);
+			PyObject *height = PyFloat_FromDouble(rect.size.height);
+			ERR_FAIL_NULL_V(height, nullptr);
+			PyTuple_SetItem(position, 0, x);
+			PyTuple_SetItem(position, 1, y);
+			PyTuple_SetItem(size, 0, width);
+			PyTuple_SetItem(size, 1, height);
+			PyTuple_SetItem(obj, 0, position);
+			PyTuple_SetItem(obj, 1, size);
+			break;
+		}
+		case Type::RECT2I:
+		{
+			obj = PyTuple_New(2);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			Rect2i rect = Rect2i(*this);
+			PyObject *position = PyTuple_New(2);
+			ERR_FAIL_NULL_V(position, nullptr);
+			PyObject *size = PyTuple_New(2);
+			ERR_FAIL_NULL_V(size, nullptr);
+			PyObject *x = PyLong_FromSsize_t(rect.position.x);
+			ERR_FAIL_NULL_V(x, nullptr);
+			PyObject *y = PyLong_FromSsize_t(rect.position.y);
+			ERR_FAIL_NULL_V(y, nullptr);
+			PyObject *width = PyLong_FromSsize_t(rect.size.width);
+			ERR_FAIL_NULL_V(width, nullptr);
+			PyObject *height = PyLong_FromSsize_t(rect.size.height);
+			ERR_FAIL_NULL_V(height, nullptr);
+			PyTuple_SetItem(position, 0, x);
+			PyTuple_SetItem(position, 1, y);
+			PyTuple_SetItem(size, 0, width);
+			PyTuple_SetItem(size, 1, height);
+			PyTuple_SetItem(obj, 0, position);
+			PyTuple_SetItem(obj, 1, size);
+			break;
+		}
 		case Type::VECTOR3: {
 			obj = PyTuple_New(3);
 			ERR_FAIL_NULL_V(obj, nullptr);
@@ -932,30 +982,23 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 		}
 		case Type::RID:
 		{
-			Py_INCREF(Py_None);
-			obj = Py_None;
-			ERR_PRINT("NOT IMPLEMENTED: PyObject* from RID Variants");
-			break;
-		}
-		case Type::OBJECT:
-		{
-			Py_INCREF(Py_None);
-			obj = Py_None;
-			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Object Variants");
+			godot::RID ridobj = (godot::RID)this;
+			obj =  PyLong_FromSsize_t(int64_t(ridobj.get_id()));
+			ERR_FAIL_NULL_V(obj, nullptr);
 			break;
 		}
 		case Type::CALLABLE:
-		{
-			Py_INCREF(Py_None);
-			obj = Py_None;
-			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Callable Variants");
-			break;
-		}
 		case Type::SIGNAL:
 		{
 			Py_INCREF(Py_None);
 			obj = Py_None;
-			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Signal Variants");
+			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Callable/Signal Variants. Returning None");
+			break;
+		}
+		case Type::OBJECT:
+		{
+			Object *o = operator Object *();
+			obj = _get_object_from_owner(o->_owner, o->get_class());
 			break;
 		}
 		case Type::DICTIONARY:
@@ -1099,7 +1142,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 		{
 			Py_INCREF(Py_None);
 			obj = Py_None;
-			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Callable Variants");
+			ERR_PRINT("NOT IMPLEMENTED: PyObject* from Vector3 arrays");
 			break;
 		}
 		case Variant::Type::NIL:

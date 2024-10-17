@@ -1,5 +1,13 @@
 cdef dict _OBJECTDB = {}
 
+
+cdef public _get_object_from_owner(void *owner, const String &objtype):
+    cdef Object obj = _OBJECTDB.get(<uint64_t>owner, None)
+    if obj is None and owner != NULL:
+        obj = Object(objtype.py_str(), from_ptr=<uint64_t>owner)
+    return obj
+
+
 cdef class Object:
     def __cinit__(self):
         self.is_singleton = False

@@ -21,4 +21,6 @@ struct GDPy_Object {
 extern PyTypeObject GDPy_ObjectType;
 extern PyTypeObject GDPy_ExtensionType;
 
+extern PyObject *_get_object_from_owner(void *, const godot::String &);
+
 #endif

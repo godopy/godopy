@@ -3,18 +3,20 @@ GodoPy testing framework
 
 Run with::
  
-    <godot-executable> --path test/project --debug --headless --quit
+    <godot-executable> --path test/project --headless --quit
 
 or::
 
-    <godot-executable> --path test/project --debug --headless --verbose-tests --quit
+    <godot-executable> --path test/project --headless --verbose-tests --quit
 """
+import math
 import unittest
 
 import godot as gd
+import gdextension as gde
 from godot import classdb
 
-from example import Example
+from classes import TestResource
 
 
 class BaseTestCase(unittest.TestCase):
@@ -33,6 +35,45 @@ class TestCaseEngineSingleton(BaseTestCase):
         ProjectSettings = gd.singletons.ProjectSettings
         self.assertEqual(ProjectSettings.get('application/run/main_scene'), 'res://main.tscn')
 
+
+class TestCaseArgTypes(BaseTestCase):
+    def test_atomic_types(self):
+        gdscript = self._main.get_node('TestCasesGDScript')
+        mb = gde.MethodBind(gdscript, 'call')
+        mb.call('test_atomic_types')
+
+        r = mb.call('get_resource')
+
+        self.assertIsInstance(r.arg01, bool)
+        self.assertEqual(r.arg01, True)
+        self.assertIsInstance(r.arg02, int)
+        self.assertEqual(r.arg02, 42)
+        self.assertIsInstance(r.arg03, float)
+        self.assertEqual(r.arg03, math.tau)
+        self.assertIsInstance(r.arg04, str)
+        self.assertEqual(r.arg04, 'GodoPy')
+
+    def test_amath_types_1(self):
+        gdscript = self._main.get_node('TestCasesGDScript')
+        mb = gde.MethodBind(gdscript, 'call')
+        mb.call('test_math_types_1')
+
+        r = mb.call('get_resource')
+
+        self.assertIsInstance(r.arg01, tuple)
+        self.assertIsInstance(r.arg01[0], float)
+        self.assertEqual(r.arg01, (2.5, 5.0))
+        self.assertIsInstance(r.arg02, tuple)
+        self.assertIsInstance(r.arg02[0], int)
+        self.assertEqual(r.arg02, (5, 10))
+        self.assertIsInstance(r.arg03, tuple)
+        self.assertIsInstance(r.arg03[0], tuple)
+        self.assertIsInstance(r.arg03[0][0], float)
+        self.assertEqual(r.arg03, ((0.0, 0.0), (100.0, 200.0)))
+        self.assertIsInstance(r.arg04, tuple)
+        self.assertIsInstance(r.arg04[0], tuple)
+        self.assertIsInstance(r.arg04[0][0], int)
+        self.assertEqual(r.arg03, ((0, 0.0), (100, 200)))
 
 class TestCaseSceneExtension(BaseTestCase):
     def test_owner(self):

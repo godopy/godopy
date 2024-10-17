@@ -31,3 +31,29 @@ cdef class MethodBind(_CallableBase):
                         size_t p_numargs) noexcept nogil:
         with nogil:
             gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._owner, p_args, r_ret)
+
+
+    # TODO: Auto-detect vararg methods and call them with method_bind_call and not method_bind_ptrcall
+    def call(self, *args):
+        cdef Variant ret
+        cdef GDExtensionCallError err
+
+        err.error = GDEXTENSION_CALL_OK
+
+        cdef size_t i = 0, size = len(args)
+
+        cdef Variant *p_args = <Variant *> gdextension_interface_mem_alloc(size * cython.sizeof(Variant))
+
+        for i in range(size):
+            p_args[i] = <Variant>args[i]
+
+        with nogil:
+            gdextension_interface_object_method_bind_call(self._godot_method_bind, self._owner,
+                                                          <GDExtensionConstVariantPtr *>&p_args, size, &ret, &err)
+
+        gdextension_interface_mem_free(p_args)
+
+        if err.error != GDEXTENSION_CALL_OK:
+            raise RuntimeError(ret.pythonize())
+
+        return ret.pythonize()

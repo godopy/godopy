@@ -2,14 +2,21 @@ from gdextension_interface cimport *
 
 ctypedef float real_t
 
-include "defs/variant.pxi"
+
 include "defs/string.pxi"
+include "defs/vector2.pxi"
+include "defs/vector2i.pxi"
+include "defs/rect2.pxi"
+include "defs/rect2i.pxi"
+
+include "defs/variant.pxi"
+
 include "defs/string_name.pxi"
 include "defs/node_path.pxi"
 include "defs/dictionary.pxi"
 include "defs/array.pxi"
 
-include "defs/vector2.pxi"
+
 include "defs/packed_string_array.pxi"
 
 include "defs/classdb.pxi"

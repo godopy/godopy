@@ -26,6 +26,11 @@ cdef class _CallableBase:
         cdef int64_t int_arg
         cdef double float_arg
         cdef String string_arg
+        cdef Vector2 vector2_arg
+        cdef Vector2i vector2i_arg
+        cdef Rect2 rect2_arg
+        cdef Rect2i rect2i_arg
+
         cdef StringName stringname_arg
         cdef NodePath nodepath_arg
 
@@ -34,9 +39,9 @@ cdef class _CallableBase:
         cdef Object object_arg
         cdef Extension ext_arg
         cdef void *void_ptr_arg
-
-        cdef Vector2 vector2_arg
-        cdef double x, y
+        
+        cdef double x, y, z, w
+        cdef int32_t xi, yi, zi, wi
 
         cdef object pyarg
 
@@ -50,13 +55,11 @@ cdef class _CallableBase:
         for i in range(size):
             arg_type = self.type_info[i + 1]
             pyarg = args[i]
-            if arg_type == 'Variant':
-                arg = Variant(pyarg)
-                p_args[i] = &arg
-            elif arg_type == 'bool':
+            
+            if arg_type == 'bool':
                 bool_arg = arg.booleanize()
                 p_args[i] = &bool_arg
-            elif arg_type == 'int' or arg_type == 'RID' or arg_type[6:] in _global_enum_info:
+            elif arg_type == 'int' or arg_type == 'RID' or arg_type.startswith('enum:'):
                 int_arg = pyarg
                 p_args[i] = &int_arg
             elif arg_type == 'float':
@@ -65,16 +68,35 @@ cdef class _CallableBase:
             elif arg_type == 'String':
                 string_arg = <String>pyarg
                 p_args[i] = &string_arg
+            elif arg_type == 'Vector2':
+                x, y = pyarg
+                vector2_arg = Vector2(x, y)
+                p_args[i] = &vector2_arg
+            elif arg_type == 'Vector2i':
+                xi, yi = pyarg
+                vector2i_arg = Vector2i(xi, yi)
+                p_args[i] = &vector2i_arg
+            elif arg_type == 'Rect2':
+                position, size = pyarg
+                x, y = position
+                z, w = size
+                rect2_arg = Rect2(x, y, z, w)
+                p_args[i] = &rect2_arg
+            elif arg_type == 'Rect2i':
+                position, size = pyarg
+                xi, yi = position
+                zi, wi = size
+                rect2i_arg = Rect2i(xi, yi, zi, wi)
+                p_args[i] = &rect2_arg
             elif arg_type == 'StringName':
                 stringname_arg = <StringName>pyarg
                 p_args[i] = &stringname_arg
             elif arg_type == 'NodePath':
                 nodepath_arg = <NodePath>pyarg
                 p_args[i] = &nodepath_arg
-            elif arg_type == 'Vector2':
-                x, y = pyarg
-                vector2_arg = Vector2(x, y)
-                p_args[i] = &vector2_arg
+            elif arg_type == 'Variant':
+                arg = Variant(pyarg)
+                p_args[i] = &arg
             elif arg_type in _global_inheritance_info and isinstance(pyarg, Object):
                 object_arg = <Object>pyarg
                 p_args[i] = &object_arg._owner
@@ -118,7 +140,10 @@ cdef class _CallableBase:
             # print("Calling from %r with %r, receiving %s" % (self, args, return_type))
             self._ptr_call(&void_ptr_arg, <GDExtensionConstTypePtr *>p_args, size)
             object_arg = _OBJECTDB.get(<uint64_t>void_ptr_arg, None)
-            # print("Process %s return %r" % (return_type, object_arg))
+            # print("Process %s return value %r" % (return_type, object_arg))
+            if object_arg is None and void_ptr_arg != NULL:
+                object_arg = Object(return_type, from_ptr=<uint64_t>void_ptr_arg)
+                # print("Created %s return value from pointer %X: %r" % (return_type, <uint64_t>void_ptr_arg, object_arg))
             gdextension_interface_mem_free(p_args)
             return object_arg
         else:

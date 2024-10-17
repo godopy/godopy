@@ -184,9 +184,15 @@ cdef class ExtensionClass(Class):
         cdef ExtensionClass self = <ExtensionClass>p_self
         cdef Extension instance = PyExtension(self, self.__inherits__, p_notify_postinitialize, True)
 
-        assert self.__name__ not in _NODEDB
-        # print('Saved %r instance %r' % (self, instance))
-        _NODEDB[self.__name__] = instance
+        if self.__name__ in _NODEDB:
+            UtilityFunctions.push_warning(
+                "%s instance already saved to _NODEDB: %r, but another instance %r was requested, skipping"
+                % (self.__name__, _NODEDB[self.__name__], instance)
+            )
+        else:
+            # print('Saved %r instance %r' % (self, instance))
+    
+            _NODEDB[self.__name__] = instance
 
         return instance._owner
 
