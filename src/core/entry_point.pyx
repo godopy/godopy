@@ -1,6 +1,13 @@
 from binding cimport *
 from godot_cpp cimport Variant, UtilityFunctions, OS, Engine, ProjectSettings
-from gdextension cimport ExtensionClass, _registered_classes
+from gdextension cimport (
+    ExtensionClass,
+    _registered_classes,
+    _NODEDB,
+    _OBJECTDB,
+    _METHODDB,
+    _CLASSDB
+)
 
 import io
 import os
@@ -146,7 +153,7 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
 
 
 cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *:
-    global deinitialize_func
+    global deinitialize_func, _registered_classes
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup, level %d" % p_level)
 
@@ -158,7 +165,14 @@ cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *
 
     cdef ExtensionClass cls
     if p_level == first_level:
+        _NODEDB = {}
+        _OBJECTDB = {}
+        _METHODDB = {}
+        _CLASSDB = {}
+
         for cls in _registered_classes:
             cls.unregister()
-        # UtilityFunctions.print("Calling gc.collect() in python_deinitialize_level")
+
+        _registered_classes = []
+
         gc.collect()

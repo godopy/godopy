@@ -1,4 +1,6 @@
+cdef dict _NODEDB = {}
 cdef list _registered_classes = []
+
 
 cdef class ExtensionClass(Class):
     def __init__(self, name, object inherits, **kwargs):
@@ -108,19 +110,25 @@ cdef class ExtensionClass(Class):
         if not self.is_registered:
             return 0
 
-        # print("Cleaning Godot class %r" % self)
+        # print("Unregistering Godot class %r" % self)
 
         for reference in self._used_refs:
             ref.Py_DECREF(reference)
 
         self._used_refs = []
 
-        # FIXME: following code sometimes leads to crashes (ObjectGDExtension::is_class + StringName::operator String)
-        # ref.Py_DECREF(self)
-        # cdef StringName class_name = StringName(self.__name__)
-        # gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name._native_ptr())
+        ref.Py_DECREF(self)
+        cdef StringName class_name = StringName(self.__name__)
+        gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name._native_ptr())
+
+        self.is_registered = False
 
         return 0
+
+
+    def __del__(self):
+        if self.is_registered:
+            self.unregister()
 
 
     def register(self):
@@ -145,13 +153,18 @@ cdef class ExtensionClass(Class):
 
 
     @staticmethod
-    cdef void _free_instance(void *p_self, void *p_instance) noexcept with gil:
+    cdef int _free_instance(void *p_self, void *p_instance) except -1 with gil:
         cdef ExtensionClass self = <ExtensionClass>p_self
         cdef Extension instance = <Extension>p_instance
 
         # UtilityFunctions.print("Freeing %r" % instance)
 
+        if self.__name__ in _NODEDB:
+            del _NODEDB[self.__name__]
+
         ref.Py_DECREF(instance)
+
+        return 0
 
 
     @staticmethod
@@ -170,6 +183,10 @@ cdef class ExtensionClass(Class):
 
         cdef ExtensionClass self = <ExtensionClass>p_self
         cdef Extension instance = PyExtension(self, self.__inherits__, p_notify_postinitialize, True)
+
+        assert self.__name__ not in _NODEDB
+        # print('Saved %r instance %r' % (self, instance))
+        _NODEDB[self.__name__] = instance
 
         return instance._owner
 

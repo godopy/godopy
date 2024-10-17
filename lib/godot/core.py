@@ -32,10 +32,16 @@ class GodotClassBase(type):
     def __new__(cls, name, bases, attrs, **kwargs):
         super_new = super().__new__
 
-        godot_cls = attrs.get('__godot_class__', None)
+        godot_cls = attrs.pop('__godot_class__', None)
         if godot_cls is not None:
             # Engine class
-            cls._is_extension = False
+            new_attrs = {
+                '_is_extension': False,
+                '__godot_class__': godot_cls
+            }
+
+            attrs.update(new_attrs)
+
             # gd.print('Setup Engine class %s' % name)
             return super_new(cls, name, bases, attrs)
 
@@ -57,10 +63,9 @@ class GodotClassBase(type):
         module = attrs.pop('__module__')
         new_attrs = {
             '__module__': module,
+            '_is_extension': True,
             '__godot_class__': godot_cls
         }
-
-        cls._is_extension = True
 
         for attr, value in attrs.items():
             parent_method_info = inherits.get_method_info(attr)

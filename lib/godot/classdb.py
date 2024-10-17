@@ -10,9 +10,6 @@ def __getattr__(name):
         globals()[name] = cls
 
         return cls
-
-    # TODO: Extension classes
-
     else:
         raise AttributeError('%r class does not exist' % name)
 

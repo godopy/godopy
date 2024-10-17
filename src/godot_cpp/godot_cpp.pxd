@@ -5,6 +5,7 @@ ctypedef float real_t
 include "defs/variant.pxi"
 include "defs/string.pxi"
 include "defs/string_name.pxi"
+include "defs/node_path.pxi"
 include "defs/dictionary.pxi"
 include "defs/array.pxi"
 

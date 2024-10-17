@@ -3,8 +3,6 @@ cdef class ExtensionClassRegistrator:
     cdef str __name__
     cdef ExtensionClass registree
     cdef Class inherits
-    cdef StringName _godot_class_name
-    cdef StringName _godot_inherits_name
 
     def __cinit__(self, ExtensionClass registree, Class inherits, **kwargs):
         self.__name__ = registree.__name__
@@ -50,14 +48,13 @@ cdef class ExtensionClassRegistrator:
         cdef str name = self.__name__
         cdef str inherits_name = inherits.__name__
         cdef StringName _name = StringName(name)
-        self._godot_class_name = StringName(_name)
-        self._godot_inherits_name = StringName(inherits_name)
+        cdef StringName _inherits_name = StringName(inherits_name)
 
         with nogil:
             gdextension_interface_classdb_register_extension_class4(
                 gdextension_library,
-                self._godot_class_name._native_ptr(),
-                self._godot_inherits_name._native_ptr(),
+                _name._native_ptr(),
+                _inherits_name._native_ptr(),
                 ci
             )
             gdextension_interface_mem_free(ci)
@@ -69,6 +66,8 @@ cdef class ExtensionClassRegistrator:
             self.register_virtual_method(method)
 
         registree.set_registered()
+
+        _CLASSDB[name] = registree
 
         # print("%r is registered\n" % self.registree)
 

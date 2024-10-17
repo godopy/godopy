@@ -5,8 +5,16 @@ from binding cimport *
 from godot_cpp cimport *
 from cpython cimport PyObject
 
+
 cpdef str variant_type_to_str(VariantType vartype)
 cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
+
+
+cdef dict _NODEDB
+cdef dict _OBJECTDB
+cdef dict _METHODDB
+cdef dict _CLASSDB
+cdef list _registered_classes
 
 
 cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
@@ -52,9 +60,6 @@ cdef class Class:
     cdef Class get_class(str name)
 
 
-cdef list _registered_classes
-
-
 cdef enum SpecialMethod:
     _THREAD_ENTER = 1
     _THREAD_EXIT = 2
@@ -80,7 +85,7 @@ cdef class ExtensionClass(Class):
     cdef void free_instance(void *data, void *p_instance) noexcept nogil
 
     @staticmethod
-    cdef void _free_instance(void *p_self, void *p_instance) noexcept with gil
+    cdef int _free_instance(void *p_self, void *p_instance) except -1 with gil
 
     @staticmethod
     cdef GDExtensionObjectPtr create_instance(void *p_class_userdata, GDExtensionBool p_notify) noexcept nogil
@@ -93,6 +98,7 @@ cdef class ExtensionClass(Class):
 
 
 cdef class _CallableBase:
+    cdef str __name__
     cdef tuple type_info
 
     cpdef object _call_internal(self, tuple args)
@@ -102,6 +108,7 @@ cdef class _CallableBase:
 cdef class MethodBind(_CallableBase):
     cdef void *_owner
     cdef GDExtensionMethodBindPtr _godot_method_bind
+    cdef Object __owner__
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
 

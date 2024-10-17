@@ -1,15 +1,12 @@
 import sys
 import godot as gd
 
-from example import ExampleRef, ExampleMin, Example
-from test_main_node import TestMainNode
+from example import Example
+from test_main import TestMain
 
 def initialize(level):
     if level != 2:
         return
 
-    ExampleRef.register()
-    ExampleMin.register()
     Example.register()
-
-    TestMainNode.register()
+    TestMain.register()

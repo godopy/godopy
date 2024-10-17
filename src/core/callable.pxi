@@ -27,6 +27,7 @@ cdef class _CallableBase:
         cdef double float_arg
         cdef String string_arg
         cdef StringName stringname_arg
+        cdef NodePath nodepath_arg
 
         cdef PackedStringArray packed_string_array_arg
 
@@ -37,41 +38,50 @@ cdef class _CallableBase:
         cdef Vector2 vector2_arg
         cdef double x, y
 
+        cdef object pyarg
+
         # TODO: Optimize
         for i in range(size):
-            arg_type = self.type_info[i + 1]            
+            arg_type = self.type_info[i + 1]
+            pyarg = args[i]
             if arg_type == 'Variant':
-                arg = Variant(args[i])
+                arg = Variant(pyarg)
                 p_args[i] = &arg
             elif arg_type == 'bool':
                 bool_arg = arg.booleanize()
                 p_args[i] = &bool_arg
             elif arg_type == 'int' or arg_type == 'RID' or arg_type[6:] in _global_enum_info:
-                int_arg = args[i]
+                int_arg = pyarg
                 p_args[i] = &int_arg
             elif arg_type == 'float':
-                float_arg = args[i]
+                float_arg = pyarg
                 p_args[i] = &float_arg
             elif arg_type == 'String':
-                string_arg = <String>args[i]
+                string_arg = <String>pyarg
                 p_args[i] = &string_arg
             elif arg_type == 'StringName':
-                stringname_arg = <StringName>args[i]
+                stringname_arg = <StringName>pyarg
                 p_args[i] = &stringname_arg
+            elif arg_type == 'NodePath':
+                nodepath_arg = <NodePath>pyarg
+                p_args[i] = &nodepath_arg
             elif arg_type == 'Vector2':
-                x, y = args[i]
+                x, y = pyarg
                 vector2_arg = Vector2(x, y)
                 p_args[i] = &vector2_arg
-            elif arg_type in _global_inheritance_info and isinstance(args[i], Object):
-                object_arg = <Object>args[i]
+            elif arg_type in _global_inheritance_info and isinstance(pyarg, Object):
+                object_arg = <Object>pyarg
                 p_args[i] = &object_arg._owner
+
             else:
                 unknown_argtype_error = True
                 break
 
         if unknown_argtype_error:
             gdextension_interface_mem_free(p_args)
-            UtilityFunctions.printerr("Don't know how to convert %r types yet" % arg_type)
+            UtilityFunctions.printerr(
+                "Don't know how to convert %r types, passed arg was: %r" % (arg_type, pyarg)
+            )
             raise NotImplementedError("Don't know how to convert %r types" % arg_type)
 
         return_type = self.type_info[0]
@@ -99,9 +109,10 @@ cdef class _CallableBase:
             self._ptr_call(&packed_string_array_arg, <GDExtensionConstTypePtr *>p_args, size)
             arg = <Variant>packed_string_array_arg
         elif return_type in _global_inheritance_info:
+            # print("Calling from %r with %r, receiving %s" % (self, args, return_type))
             self._ptr_call(&void_ptr_arg, <GDExtensionConstTypePtr *>p_args, size)
             object_arg = _OBJECTDB.get(<uint64_t>void_ptr_arg, None)
-            print("Process Object return %r" % object_arg)
+            # print("Process %s return %r" % (return_type, object_arg))
             gdextension_interface_mem_free(p_args)
             return object_arg
         else:

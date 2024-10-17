@@ -1,6 +1,3 @@
-cdef GDExtensionInstanceBindingCallbacks _Extension_binding_callbacks
-
-
 cdef dict special_method_to_enum = {
     '_thread_enter': _THREAD_ENTER,
     '_thread_exit': _THREAD_EXIT,
