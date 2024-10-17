@@ -40,6 +40,12 @@ cdef class _CallableBase:
 
         cdef object pyarg
 
+        # Optimized get_node for Python nodes
+        if self.__name__ == 'get_node' and size == 1 and args[0] in _NODEDB:
+            pyarg = _NODEDB[args[0]]
+            # print("'get_node' shortcut for %r" % pyarg)
+            return pyarg
+
         # TODO: Optimize
         for i in range(size):
             arg_type = self.type_info[i + 1]
