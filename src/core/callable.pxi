@@ -95,7 +95,7 @@ cdef class _CallableBase:
                 nodepath_arg = <NodePath>pyarg
                 p_args[i] = &nodepath_arg
             elif arg_type == 'Variant':
-                arg = Variant(pyarg)
+                arg = Variant(<const PyObject *>pyarg)
                 p_args[i] = &arg
             elif arg_type in _global_inheritance_info and isinstance(pyarg, Object):
                 object_arg = <Object>pyarg

@@ -1,4 +1,12 @@
 cdef extern from "godot_cpp/variant/vector2i.hpp" namespace "godot" nogil:
     cppclass Vector2i:
+        int32_t x
+        int32_t y
+
+        int32_t width
+        int32_t height
+
+        int32_t[2] coords
+
         Vector2i()
-        Vector2i(int32_t, int32_t)
+        Vector2i(const int32_t, const int32_t)

@@ -220,6 +220,12 @@ public:
 	Variant(const PyObject *v);
 	~Variant();
 
+	// Cython cannot work with operator <Type> methods, but can work with templates
+	template<typename T>
+	_FORCE_INLINE_ T to_type() const {
+		operator T();
+	}
+
 	operator PyObject *() const;
 	operator bool() const;
 	operator int64_t() const;

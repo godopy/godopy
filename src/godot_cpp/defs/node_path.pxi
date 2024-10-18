@@ -9,6 +9,6 @@ cdef extern from "godot_cpp/variant/node_path.hpp" namespace "godot" nogil:
         NodePath(const String&)
 
         void *_native_ptr()
-        void *ptr "_native_ptr" ()
+
         bytes py_bytes()
         str py_str()

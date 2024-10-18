@@ -213,15 +213,15 @@ cdef class Extension(Object):
             stringname_arg = <StringName>result
             (<StringName *>r_ret)[0] = stringname_arg
         elif return_type == 'Array' or return_type.startswith('typedarray:'):
-            variant_arg = Variant(result)
+            variant_arg = Variant(<const PyObject *>result)
             array_arg = <Array>variant_arg
             (<Array *>r_ret)[0] = array_arg
         elif return_type == 'Dictionary':
-            variant_arg = Variant(result)
+            variant_arg = Variant(<const PyObject *>result)
             dictionary_arg = <Dictionary>variant_arg
             (<Dictionary *>r_ret)[0] = dictionary_arg
         elif return_type == 'Variant':
-            variant_arg = Variant(result)
+            variant_arg = Variant(<const PyObject *>result)
             (<Variant *>r_ret)[0] = variant_arg
         elif return_type in _global_inheritance_info and isinstance(result, Object):
             object_arg = <Object>result

@@ -17,6 +17,6 @@ cdef extern from "godot_cpp/variant/string_name.hpp" namespace "godot" nogil:
         bint operator!=(const char *)
 
         void *_native_ptr()
-        void *ptr "_native_ptr" ()
+
         bytes py_bytes()
         str py_str()
