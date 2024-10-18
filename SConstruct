@@ -392,7 +392,7 @@ sources += cython_sources(cython_env)
 sources += docdata_sources(env)
 
 library = build_extension_shared_lib(env, sources)
-
+env.NoCache(library)
 
 default_args = [
     library,
