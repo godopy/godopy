@@ -119,7 +119,7 @@ def setup_builders(env):
 
 def main_godopy_cpp_sources(env):
     # Entry point and Python classes
-    env.Append(CPPPATH=['src/'])
+    env.AppendUnique(CPPPATH=['src/'])
     sources = Glob('src/*.cpp') + Glob('src/python/*.cpp') + Glob('src/variant/*.cpp')
 
     if env['platform'] == 'windows':

@@ -1,5 +1,4 @@
 from cpython cimport PyObject
-from libc.stddef cimport wchar_t
 
 cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
     cdef cppclass String
@@ -71,6 +70,7 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
         Variant(const StringName &)
         Variant(const NodePath &)
         Variant(const _RID &)
+        Variant(void *)
         Variant(const _Object &)
         Variant(const _Callable &)
         Variant(const _Signal &)

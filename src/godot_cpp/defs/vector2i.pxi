@@ -6,7 +6,7 @@ cdef extern from "godot_cpp/variant/vector2i.hpp" namespace "godot" nogil:
         int32_t width
         int32_t height
 
-        int32_t[2] coords
+        int32_t[2] coord
 
         Vector2i()
         Vector2i(const int32_t, const int32_t)
