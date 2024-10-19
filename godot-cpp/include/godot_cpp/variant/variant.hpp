@@ -223,7 +223,7 @@ public:
 	// Cython cannot work with operator <Type> methods, but can work with templates
 	template<typename T>
 	_FORCE_INLINE_ T to_type() const {
-		operator T();
+		return operator T();
 	}
 
 	operator PyObject *() const;

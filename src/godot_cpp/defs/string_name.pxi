@@ -1,3 +1,5 @@
+from cpython cimport PyObject
+
 cdef extern from "godot_cpp/variant/string_name.hpp" namespace "godot" nogil:
     cdef cppclass String
 
@@ -7,6 +9,7 @@ cdef extern from "godot_cpp/variant/string_name.hpp" namespace "godot" nogil:
         StringName(const char *, bint)
         StringName(str)
         StringName(bytes)
+        StringName(const PyObject *)
         StringName(const String&)
         StringName(const StringName&)
         bint operator==(const StringName&)

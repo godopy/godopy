@@ -1,10 +1,21 @@
 #ifndef GODOT_GODOPY_HPP
 #define GODOT_GODOPY_HPP
 
+#ifndef PY_SSIZE_T_CLEAN
+#define PY_SSIZE_T_CLEAN
+#endif
+#ifndef NPY_NO_DEPRECATED_API
+#define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION
+#endif
+
 #include <Python.h>
 #include <gdextension_interface.h>
-#include <godot_cpp/variant/string_name.hpp>
+#include <numpy/arrayobject.h>
 
+#include <godot_cpp/variant/variant.hpp>
+
+
+// Old simple PyStructSequences, will be removed
 extern PyTypeObject Vector2_Type;
 extern PyTypeObject Vector2i_Type;
 extern PyTypeObject Size2_Type;
@@ -20,7 +31,9 @@ extern PyTypeObject AABB_Type;
 extern PyTypeObject Transform3D_Type;
 extern PyTypeObject Color_Type;
 
-struct GDPy_Object {
+
+// gdextension.Object instance
+struct GDPyObject {
   PyObject_HEAD
   void *_owner;
   void *_ref_owner;
@@ -28,9 +41,35 @@ struct GDPy_Object {
   void *__godot_class__;
 };
 
-extern PyTypeObject GDPy_ObjectType;
-extern PyTypeObject GDPy_ExtensionType;
+// gdextension.Object type
+extern PyTypeObject GDPyObject_Type;
 
-extern PyObject *_get_object_from_owner(void *, const godot::String &);
+// Type conversion functions
+extern PyObject *object_to_pyobject(void *);
+
+extern PyObject *bool_to_pyobject(GDExtensionBool);
+extern PyObject *variant_bool_to_pyobject(godot::Variant const &);
+extern GDExtensionBool bool_from_pyobject(PyObject *);
+extern godot::Variant variant_bool_from_pyobject(PyObject *);
+extern PyObject *int_to_pyobject(int64_t);
+extern PyObject *variant_int_to_pyobject(godot::Variant const &);
+extern int64_t int_from_pyobject(PyObject *);
+extern godot::Variant variant_int_from_pyobject(PyObject *);
+extern PyObject *float_to_pyobject(double);
+extern PyObject *variant_float_to_pyobject(godot::Variant const &);
+extern double float_from_pyobject(PyObject *);
+extern godot::Variant variant_float_from_pyobject(PyObject *);
+extern PyObject *string_to_pyobject(godot::String const &);
+extern PyObject *variant_string_to_pyobject(godot::Variant const &);
+extern godot::String string_from_pyobject(PyObject *);
+extern godot::Variant variant_string_from_pyobject(PyObject *);
+extern PyObject *vector2_to_pyobject(godot::Vector2 &);
+extern PyObject *vector2i_to_pyobject(godot::Vector2i &);
+extern PyObject *variant_vector2_to_pyobject(godot::Variant const &);
+extern PyObject *variant_vector2i_to_pyobject(godot::Variant const &);
+extern godot::Vector2 vector2_from_pyobject(PyObject *);
+extern godot::Vector2i vector2i_from_pyobject(PyObject *);
+extern godot::Variant variant_vector2_from_pyobject(PyObject *);
+extern godot::Variant variant_vector2i_from_pyobject(PyObject *);
 
 #endif

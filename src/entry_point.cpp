@@ -23,6 +23,7 @@ void initialize_level(ModuleInitializationLevel p_level) {
 		PythonRuntime::get_singleton()->ensure_current_thread_state(true);
 
 		// Import core modules so we can safely call initialization functions from C++
+		PythonRuntime::get_singleton()->init_module("_godot_types");
 		PythonRuntime::get_singleton()->init_module("entry_point");
 		PythonRuntime::get_singleton()->init_module("gdextension");
 	}

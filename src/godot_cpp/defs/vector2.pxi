@@ -6,7 +6,7 @@ cdef extern from "godot_cpp/variant/vector2.hpp" namespace "godot" nogil:
         real_t width
         real_t height
 
-        real_t[2] coords
+        real_t[2] coord
 
         Vector2()
         Vector2(const real_t, const real_t)

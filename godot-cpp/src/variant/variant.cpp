@@ -291,9 +291,9 @@ Variant::Variant(const PyObject *v_const) {
 		String s = String(v);
 		from_type_constructor[STRING](_native_ptr(), s._native_ptr());
 
-	} else if (PyByteArray_Check(v) || PyObject_CheckBuffer(v)) {
-		// TODO: Check for various numpy arrays first and create types accordingly
-
+	} /* else if (PyArray_Check(v)) {
+	
+	} */ else if (PyByteArray_Check(v) || PyObject_CheckBuffer(v)) {
 		PackedByteArray a = PackedByteArray();
 		Py_buffer *view = nullptr;
 		uint8_t *buf;
@@ -359,8 +359,8 @@ Variant::Variant(const PyObject *v_const) {
 		PtrToArg<double>::encode(PyFloat_AsDouble(number), &encoded);
 		from_type_constructor[FLOAT](_native_ptr(), &encoded);
 
-	} else if (PyObject_IsInstance(v, (PyObject *)&GDPy_ObjectType)) {
-		from_type_constructor[OBJECT](_native_ptr(), &((GDPy_Object *)v)->_owner);
+	} else if (PyObject_IsInstance(v, (PyObject *)&GDPyObject_Type)) {
+		from_type_constructor[OBJECT](_native_ptr(), &((GDPyObject *)v)->_owner);
 
 	} else {
 		internal::gdextension_interface_variant_new_nil(_native_ptr());
@@ -833,61 +833,42 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 	PyObject *obj;
 
 	switch (get_type()) {
+		case Variant::Type::NIL:
+			Py_INCREF(Py_None);
+			obj = Py_None;
+			break;
+
+		case Type::BOOL:
+			obj = variant_bool_to_pyobject(*this);
+			break;
+
+		case Type::INT:
+			obj = variant_int_to_pyobject(*this);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			break;
+
+		case Type::FLOAT:
+			obj = variant_float_to_pyobject(*this);
+			ERR_FAIL_NULL_V(obj, nullptr);
+			break;
+
 		case Type::STRING:
 		case Type::STRING_NAME:
 		case Type::NODE_PATH:
-		{
-			String s = operator String();
-			obj = s.py_str();
-			break;
-		}
-		case Type::BOOL:
-		{
-			bool b = operator bool();
-			obj = b ? Py_True : Py_False;
-			Py_INCREF(obj);
-			break;
-		}
-		case Type::INT:
-		{
-			int64_t i = operator int64_t();
-			obj = PyLong_FromSsize_t(i);
+			obj = variant_string_to_pyobject(*this);
 			ERR_FAIL_NULL_V(obj, nullptr);
 			break;
-		}
-		case Type::FLOAT:
-		{
-			double d = operator double();
-			obj = PyFloat_FromDouble(d);
-			ERR_FAIL_NULL_V(obj, nullptr);
-			break;
-		}
+
 		case Type::VECTOR2:
-		{
-			Vector2 vec = operator Vector2();
-			obj = PyStructSequence_New(&Vector2_Type);
+			obj = variant_vector2_to_pyobject(*this);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			PyObject *x = PyFloat_FromDouble(vec.x);
-			ERR_FAIL_NULL_V(x, nullptr);
-			PyObject *y = PyFloat_FromDouble(vec.y);
-			ERR_FAIL_NULL_V(y, nullptr);
-			PyStructSequence_SET_ITEM(obj, 0, x);
-			PyStructSequence_SET_ITEM(obj, 1, y);
 			break;
-		}
+
 		case Type::VECTOR2I:
-		{
-			Vector2i vec = operator Vector2i();
-			obj = PyStructSequence_New(&Vector2i_Type);
+			obj = variant_vector2i_to_pyobject(*this);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			PyObject *x = PyLong_FromSsize_t(vec.x);
-			ERR_FAIL_NULL_V(x, nullptr);
-			PyObject *y = PyLong_FromSsize_t(vec.y);
-			ERR_FAIL_NULL_V(y, nullptr);
-			PyStructSequence_SET_ITEM(obj, 0, x);
-			PyStructSequence_SET_ITEM(obj, 1, y);
 			break;
-		}
+
 		case Type::RECT2:
 		{
 			Rect2 rect = operator Rect2();
@@ -1335,7 +1316,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 		case Type::OBJECT:
 		{
 			Object *o = operator Object *();
-			obj = _get_object_from_owner(o->_owner, o->get_class());
+			obj = object_to_pyobject(o->_owner);
 			break;
 		}
 		case Type::DICTIONARY:
@@ -1549,12 +1530,7 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			}
 			break;
 		}
-		case Variant::Type::NIL:
-		{
-			Py_INCREF(Py_None);
-			obj = Py_None;
-			break;
-		}
+
 		default:
 			Py_INCREF(Py_None);
 			obj = Py_None;

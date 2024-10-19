@@ -5,7 +5,7 @@ cdef extern from "godot_cpp/variant/vector4.hpp" namespace "godot" nogil:
         real_t z
         real_t w
 
-        real_t[4] coords
+        real_t[4] coord
 
         Vector4()
         Vector4(const real_t, const real_t, const real_t, const real_t)

@@ -4,6 +4,7 @@ This module wraps objects inside the engine
 from binding cimport *
 from godot_cpp cimport *
 from cpython cimport PyObject
+cimport numpy
 
 
 cpdef str variant_type_to_str(VariantType vartype)
@@ -17,14 +18,14 @@ cdef dict _CLASSDB
 cdef list _registered_classes
 
 
-cdef public class Object [object GDPy_Object, type GDPy_ObjectType]:
+cdef public class Object [object GDPyObject, type GDPyObject_Type]:
     cdef void *_owner
     cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
     cdef bint is_singleton
     cdef readonly Class __godot_class__
 
 
-cdef public class Extension(Object) [object GDPy_Extension, type GDPy_ExtensionType]:
+cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Type]:
     cdef bint _needs_cleanup
 
     cpdef destroy(self)

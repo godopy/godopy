@@ -12,7 +12,9 @@ import builtins
 import traceback
 import importlib
 
+import numpy as np
 import _godot_types as gdtypes
+
 
 include "api_data.pxi"
 
