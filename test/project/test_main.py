@@ -73,6 +73,7 @@ class TestCaseMathTypes(BaseTestCase):
     def test_rect(self):
         r = types.Rect2(0, 0, 100, 200)
         self.assertIsInstance(r, types.Rect2)
+        self.assertEqual(r.dtype, np.dtype('float32'))
         self.assertIsInstance(r.position, types.Vector2)
         self.assertIsInstance(r.position.x, np.float32)
         self.assertIsInstance(r.size_, types.Size2)
@@ -92,9 +93,15 @@ class TestCaseMathTypes(BaseTestCase):
 
         r2 = types.Rect2i(0, 0, 100, 200)
         self.assertIsInstance(r2, types.Rect2i)
+        self.assertEqual(r2.dtype, np.dtype('int32'))
         self.assertIsInstance(r2.position, types.Vector2i)
         self.assertIsInstance(r2.position.x, np.int32)
         self.assertEqual(list(r2), [0, 0, 100, 200])
+
+        # Type casting and reshaping
+        r3 = types.asrect2(np.array([[10, 20], [100, 80]]))
+        self.assertEqual(r.dtype, np.dtype('float32'))
+        self.assertEqual(list(r3), [10, 20, 100, 80])
 
 class TestCaseArgTypes(BaseTestCase):
     def test_atomic_types(self):

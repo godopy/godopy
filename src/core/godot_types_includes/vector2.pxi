@@ -1,4 +1,32 @@
-# All (2,)-shaped types are here
+cpdef asvector2(data, dtype=None):
+    """
+    Interpret the input as Vector2
+    """
+    if dtype is None:
+        dtype = np.float32
+    if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
+        raise ValueError("Vector2 data must be a 1-dimensional container of 2 items")
+    if np.issubdtype(dtype, np.integer):
+        return Vector2i(data, dtype=dtype, copy=False, can_cast=True)
+    return Vector2(data, dtype=dtype, copy=False, can_cast=True)
+
+
+cpdef asvector2i(data, dtype=None):
+    """
+    Interpret the input as Vector2i
+    """
+    if dtype is None:
+        dtype = np.int32
+    if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
+        raise ValueError("Vector2i data must be a 1-dimensional container of 2 items")
+    if np.issubdtype(dtype, np.floating):
+        return Vector2(data, dtype=dtype, copy=False, can_cast=True)
+    return Vector2i(data, dtype=dtype, copy=False, can_cast=True)
+
+
+cdef frozenset _vector2_attrs = frozenset(['x', 'y', 'coord'])
+cdef frozenset _size2_attrs = frozenset(['width', 'height', 'x', 'y', 'coord'])
+
 
 class _Vector2Base(numpy.ndarray):
     def __getattr__(self, str name):
@@ -12,6 +40,9 @@ class _Vector2Base(numpy.ndarray):
         raise AttributeError("%r has no attribute %r" % (self, name))
 
     def __setattr__(self, str name, object value):
+        if name not in _vector2_attrs:
+            return object.__setattr__(self, name, value)
+
         if name == 'x':
             self[0] = value
         elif name == 'y':
@@ -38,6 +69,9 @@ class _Size2Base(_Vector2Base):
         raise AttributeError("%r has no attribute %r" % (self, name))
 
     def __setattr__(self, str name, object value):
+        if name not in _size2_attrs:
+            return object.__setattr__(self, name, value)
+
         if name == 'width':
             self[0] = value
         elif name == 'height':
@@ -70,7 +104,9 @@ cdef inline numpy.ndarray array_from_vector2_args(subtype, dtype, args, kwargs):
                 base = obj
             else:
                 if not can_cast:
-                    cpp.UtilityFunctions.push_warning("Unexcpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype))
+                    cpp.UtilityFunctions.push_warning(
+                        "Unexcpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
+                    )
                 base = obj.astype(dtype)
         else:
             base = np.array(args[0], dtype=dtype, copy=copy)
@@ -83,32 +119,6 @@ cdef inline numpy.ndarray array_from_vector2_args(subtype, dtype, args, kwargs):
     cdef numpy.ndarray ret = PyArraySubType_NewFromBase(subtype, base)
 
     return ret
-
-
-cpdef asvector2(data, dtype=None):
-    """
-    Interpret the input as Vector2
-    """
-    if dtype is None:
-        dtype = np.float32
-    if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
-        raise ValueError("Vector2 data must be a 1-dimensional container of 2 items")
-    if np.issubdtype(dtype, np.integer):
-        return Vector2i(data, dtype=dtype, copy=False, can_cast=True)
-    return Vector2(data, dtype=dtype, copy=False, can_cast=True)
-
-
-cpdef asvector2i(data, dtype=None):
-    """
-    Interpret the input as Vector2i
-    """
-    if dtype is None:
-        dtype = np.int32
-    if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
-        raise ValueError("Vector2i data must be a 1-dimensional container of 2 items")
-    if np.issubdtype(dtype, np.floating):
-        return Vector2(data, dtype=dtype, copy=False, can_cast=True)
-    return Vector2i(data, dtype=dtype, copy=False, can_cast=True)
 
 
 class Vector2(_Vector2Base):

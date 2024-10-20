@@ -44,6 +44,10 @@ __all__ = [
     'Vector2i',  # subtype of ndarray as array([x, y], dtype=int32), shape = (2,)
     'Size2',  # same as Vector2, but has width and height attributes
     'Size2i',  # same as Vector2i, but has width and height attributes
+
+    'asrect2',
+    'asrect2i',
+
     'Rect2',  # subtype of ndarray as array([x, y, width, height], dtype=float32), shape = (4,), slices: Vector2, Size2
     'Rect2i',  # subtype of ndarray as array([x, y, width, height], dtype=int32), shape = (4,), slices: Vector2i, Size2i
     'Vector3',  # TODO subtype of ndarray as array([x, y, z], dtype=float32), shape = (3,)
