@@ -32,9 +32,9 @@ numpy._import_array()
 __all__ = [
     'Nil',  # None
 
-    'bool',  # bool or TODO np.bool or ndarray as array(x, dtype=np.bool), shape = ()
-    'int',  # int or TODO np.int64 or np.int32 or np.int8 or ndarray as array(x, dtype=intN), shape = ()
-    'float',  # float or TODO np.float64 or np.float32 or ndarray as array(x, dtype=floatN), shape = ()
+    'bool',  # bool or np.bool or ndarray as array(x, dtype=np.bool), shape = ()
+    'int',  # int or np.int64 or np.int32 or np.int8 or ndarray as array(x, dtype=intN), shape = ()
+    'float',  # float or np.float64 or np.float32 or ndarray as array(x, dtype=floatN), shape = ()
     'String',  # str or bytes
 
     'asvector2',
@@ -94,10 +94,18 @@ __all__ = [
 ]
 
 
+ctypedef fused number_t:
+    float
+    double
+    int8_t
+    int16_t
+    int32_t
+    int64_t
+
+
 cdef bint issubscriptable(object obj):
     return isinstance(obj, (np.ndarray, tuple, list)) or \
            (hasattr(obj, '__len__') and hasattr(obj, '__getitem__'))
-
 
 
 cdef inline object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
@@ -107,15 +115,6 @@ cdef inline object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
     numpy.PyArray_SetBaseObject(arr, base)
 
     return arr
-
-
-ctypedef fused number_t:
-    float
-    double
-    int8_t
-    int16_t
-    int32_t
-    int64_t
 
 
 cdef inline object array_from_carr_view(type arrtype, number_t [:] carr_view, copy=True):
@@ -149,9 +148,17 @@ cdef inline number_t [:] carr_view_from_pyobject(object obj, number_t [:] carr_v
 
 include "godot_types_includes/atomic.pxi"
 include "godot_types_includes/vector2.pxi"
+include "godot_types_includes/rect2.pxi"
 include "godot_types_includes/vector3.pxi"
+include "godot_types_includes/transform2d.pxi"
 include "godot_types_includes/vector4.pxi"
-include "godot_types_includes/matrix.pxi"
+include "godot_types_includes/plane.pxi"
+include "godot_types_includes/quaternion.pxi"
+include "godot_types_includes/aabb.pxi"
+include "godot_types_includes/basis.pxi"
+include "godot_types_includes/transform3d.pxi"
+include "godot_types_includes/projection.pxi"
+include "godot_types_includes/color.pxi"
 include "godot_types_includes/misc.pxi"
 include "godot_types_includes/packed_1dim_array.pxi"
 include "godot_types_includes/packed_2dim_array.pxi"
