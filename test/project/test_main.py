@@ -37,7 +37,7 @@ class TestCaseEngineSingleton(BaseTestCase):
         self.assertEqual(ProjectSettings.get('application/run/main_scene'), 'res://main.tscn')
 
 
-class TestMathTypes(BaseTestCase):
+class TestCaseMathTypes(BaseTestCase):
     def test_vector2(self):
         v = types.Vector2(2.5, 5)
         self.assertEqual(v.dtype, np.dtype('float32'))
@@ -70,6 +70,32 @@ class TestMathTypes(BaseTestCase):
         self.assertIsInstance(v5, types.Vector2i)
         self.assertEqual(v5.dtype, np.dtype('int8'))
 
+    def test_rect(self):
+        r = types.Rect2(0, 0, 100, 200)
+        self.assertIsInstance(r, types.Rect2)
+        self.assertIsInstance(r.position, types.Vector2)
+        self.assertIsInstance(r.position.x, np.float32)
+        self.assertIsInstance(r.size_, types.Size2)
+        self.assertEqual(list(r), [0., 0., 100., 200.])
+
+        r.position = (2, 5)
+        self.assertEqual(list(r), [2., 5., 100., 200.])
+
+        r.position.x = 10
+        self.assertEqual(list(r), [10., 5., 100., 200.])
+
+        r.size_.height = 50
+        self.assertEqual(list(r), [10., 5., 100., 50.])
+
+        self.assertEqual(list(r.position), [10., 5.])
+        self.assertEqual(list(r.size_), [100., 50.])
+
+        r2 = types.Rect2i(0, 0, 100, 200)
+        self.assertIsInstance(r2, types.Rect2i)
+        self.assertIsInstance(r2.position, types.Vector2i)
+        self.assertIsInstance(r2.position.x, np.int32)
+        self.assertEqual(list(r2), [0, 0, 100, 200])
+
 class TestCaseArgTypes(BaseTestCase):
     def test_atomic_types(self):
         gdscript = self._main.get_node('TestCasesGDScript')
@@ -77,8 +103,6 @@ class TestCaseArgTypes(BaseTestCase):
         mb.call('test_atomic_types')
 
         r = mb.call('get_resource')
-
-        # print("%r %r %r %r" % (r.arg01, r.arg02, r.arg03, r.arg04))
 
         self.assertIsInstance(r.arg01, (bool, int))  # FIXME: force real 'bool' type?
         self.assertEqual(r.arg01, True)
@@ -99,28 +123,6 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertIsInstance(r.arg01, types.Vector2)
         self.assertIsInstance(r.arg02, types.Vector2i)
 
-        # self.assertIsInstance(r.arg03, types.Rect2)
-        # self.assertIsInstance(r.arg03.position, types.Vector2)
-        # self.assertIsInstance(r.arg03.position.x, np.float32)
-        # self.assertIsInstance(r.arg03.size, types.Size2)
-        # self.assertEqual(list(r.arg03), [0., 0., 100., 200.])
-
-        # r.args03.position = (2, 5)
-        # self.assertEqual(list(r.arg03), [2., 5., 100., 200.])
-
-        # r.args03.position.x = 10
-        # self.assertEqual(list(r.arg03), [10., 5., 100., 200.])
-
-        # r.args03.size.height = 50
-        # self.assertEqual(list(r.arg03), [10., 5., 100., 50.])
-
-        # self.assertEqual(list(r.arg03.position), [10., 5.])
-        # self.assertEqual(list(r.arg03.position), [100., 50.])
-
-        # self.assertIsInstance(r.arg04, types.Rect2i)
-        # self.assertIsInstance(r.arg04.position, types.Vector2i)
-        # self.assertIsInstance(r.arg04.position.x, np.int32)
-        # self.assertEqual(list(r.arg04), [0, 0, 100, 200])
 
 class TestCaseSceneExtension(BaseTestCase):
     def test_owner(self):

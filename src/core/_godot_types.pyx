@@ -1,8 +1,5 @@
 """
-Python representations of Godot Variant types
-
-They cannot do much yet.
-Used to hold converted Godot data and declare Godot types.
+Python versions of Godot Variant types
 """
 
 from gdextension_interface cimport *
@@ -33,15 +30,20 @@ import _godot_type_tuples as tt
 numpy._import_array()
 
 __all__ = [
-    'Nil',  # is None
+    'Nil',  # None
 
     'bool',  # bool or TODO np.bool or ndarray as array(x, dtype=np.bool), shape = ()
     'int',  # int or TODO np.int64 or np.int32 or np.int8 or ndarray as array(x, dtype=intN), shape = ()
     'float',  # float or TODO np.float64 or np.float32 or ndarray as array(x, dtype=floatN), shape = ()
     'String',  # str or bytes
 
+    'asvector2',
+    'asvector2i',
+
     'Vector2',  # subtype of ndarray as array([x, y], dtype=float32), shape = (2,)
     'Vector2i',  # subtype of ndarray as array([x, y], dtype=int32), shape = (2,)
+    'Size2',  # same as Vector2, but has width and height attributes
+    'Size2i',  # same as Vector2i, but has width and height attributes
     'Rect2',  # subtype of ndarray as array([x, y, width, height], dtype=float32), shape = (4,), slices: Vector2, Size2
     'Rect2i',  # subtype of ndarray as array([x, y, width, height], dtype=int32), shape = (4,), slices: Vector2i, Size2i
     'Vector3',  # TODO subtype of ndarray as array([x, y, z], dtype=float32), shape = (3,)
@@ -287,11 +289,16 @@ class _Vector2Base(numpy.ndarray):
         else:
             raise AttributeError("%r has no attribute %r" % (self, name))
 
-class _Size2Base(numpy.ndarray):
+
+class _Size2Base(_Vector2Base):
     def __getattr__(self, str name):
         if name == 'width':
             return self[0]
         elif name == 'height':
+            return self[1]
+        elif name == 'x':
+            return self[0]
+        elif name == 'y':
             return self[1]
         elif name == 'coord':
             return np.array(self, dtype=self.dtype, copy=False)
@@ -299,7 +306,11 @@ class _Size2Base(numpy.ndarray):
         raise AttributeError("%r has no attribute %r" % (self, name))
 
     def __setattr__(self, str name, object value):
-        if name == 'x':
+        if name == 'width':
+            self[0] = value
+        elif name == 'height':
+            self[1] = value
+        elif name == 'x':
             self[0] = value
         elif name == 'y':
             self[1] = value
@@ -312,9 +323,8 @@ class _Size2Base(numpy.ndarray):
 cdef inline numpy.ndarray array_from_vector2_args(subtype, dtype, args, kwargs):
     cdef numpy.ndarray base
 
-    # print("%r %r %r %r" % (subtype, dtype, args, kwargs))
-
     copy = kwargs.pop('copy', True)
+    can_cast = kwargs.pop('can_cast', False)
 
     if kwargs:
         raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
@@ -322,11 +332,14 @@ cdef inline numpy.ndarray array_from_vector2_args(subtype, dtype, args, kwargs):
     if args and len(args) == 2:
         base = np.array(args, dtype=dtype)
     elif args and len(args) == 1 and issubscriptable(args[0]) and len(args[0]) == 2:
-        if isinstance(args[0], numpy.ndarray) and not copy:
-            if args[0].dtype == dtype:
-                base = args[0]
+        obj = args[0]
+        if isinstance(obj, numpy.ndarray) and not copy:
+            if obj.dtype == dtype:
+                base = obj
             else:
-                base = args[0].as_type(dtype)
+                if not can_cast:
+                    cpp.UtilityFunctions.push_warning("Unexcpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype))
+                base = obj.astype(dtype)
         else:
             base = np.array(args[0], dtype=dtype, copy=copy)
     elif len(args) == 0:
@@ -349,18 +362,21 @@ cpdef asvector2(data, dtype=None):
     if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
         raise ValueError("Vector2 data must be a 1-dimensional container of 2 items")
     if np.issubdtype(dtype, np.integer):
-        return Vector2i(data, dtype=dtype, copy=False)
-    return Vector2(data, dtype=dtype, copy=False)
+        return Vector2i(data, dtype=dtype, copy=False, can_cast=True)
+    return Vector2(data, dtype=dtype, copy=False, can_cast=True)
 
 
 cpdef asvector2i(data, dtype=None):
+    """
+    Interpret the input as Vector2i
+    """
     if dtype is None:
         dtype = np.int32
     if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
         raise ValueError("Vector2i data must be a 1-dimensional container of 2 items")
     if np.issubdtype(dtype, np.floating):
-        return Vector2(data, dtype=dtype, copy=False)
-    return Vector2i(data, dtype=dtype, copy=False)
+        return Vector2(data, dtype=dtype, copy=False, can_cast=True)
+    return Vector2i(data, dtype=dtype, copy=False, can_cast=True)
 
 
 class Vector2(_Vector2Base):
@@ -391,7 +407,7 @@ class Size2i(_Size2Base):
     def __new__(subtype, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.int32)
         if not np.issubdtype(dtype, np.integer):
-            raise TypeError("%r accepts only 'intX' datatypes, got %r" % (subtype, dtype))
+            raise TypeError("%r accepts only integer datatypes, got %r" % (subtype, dtype))
         return array_from_vector2_args(subtype, dtype, args, kwargs)
 
 
@@ -436,7 +452,11 @@ cdef inline number_t [:] carr_view_from_pyobject(object obj, number_t [:] carr_v
         return carr_view
 
     if isinstance(obj, numpy.ndarray):
-        arr = obj.as_type(dtype)
+        if obj.dtype == dtype:
+            arr = obj
+        else:
+            cpp.UtilityFunctions.push_warning("Cast from %r to %r during Godot math type convertion" % (obj.dtype, dtype))
+            arr = obj.astype(dtype)
     else:
         arr = np.array(obj, dtype=dtype)
 
@@ -489,15 +509,15 @@ class _Rect2Base(numpy.ndarray):
         elif name == 'height':
             return self[3]
         elif name == 'position':
-            if self.dtype in (np.float32, np.float64, float):
-                return Vector2(self[:2], dtype=self.dtype, copy=False)
-            else:
+            if np.issubdtype(self.dtype, np.integer):
                 return Vector2i(self[:2], dtype=self.dtype, copy=False)
-        elif name == 'size':
-            if self.dtype in (np.float32, np.float64, float):
-                return Size2(self[2:], dtype=self.dtype, copy=False)
             else:
+                return Vector2(self[:2], dtype=self.dtype, copy=False)
+        elif name == 'size_':
+            if np.issubdtype(self.dtype, np.integer):
                 return Size2i(self[2:], dtype=self.dtype, copy=False)
+            else:
+                return Size2(self[2:], dtype=self.dtype, copy=False)
         elif name == 'coord':
             return np.array(self, dtype=self.dtype, copy=False)
 
@@ -514,7 +534,7 @@ class _Rect2Base(numpy.ndarray):
             self[3] = value
         elif name == 'position':
             self[:2] = value
-        elif name == 'size':
+        elif name == 'size_':
             self[2:] = value
         elif name == 'coord':
             self[:] = value
@@ -524,20 +544,21 @@ class _Rect2Base(numpy.ndarray):
 
 cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
     cdef numpy.ndarray base
-    cdef object position, size
 
-    copy = kwargs.pop('copy', False)
+    copy = kwargs.pop('copy', True)
 
     if len(args) == 4:
         base = np.array(args, dtype=dtype, copy=copy)
     elif len(args) == 1:
+        obj = args[0]
         if isinstance(args[0], numpy.ndarray) and not copy:
-            if args[0].dtype == dtype:
-                base = args[0]
+            if obj.dtype == dtype:
+                base = obj
             else:
-                base = args[0].as_type(dtype)
+                cpp.UtilityFunctions.push_warning("Cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype))
+                base = obj.astype(dtype)
         else:
-            base = np.array(args[0], dtype=dtype, copy=copy)
+            base = np.array(obj, dtype=dtype, copy=copy)
     else:
         size = args.pop() if len(args) > 1 else kwargs.pop('size', None)
         position = args.pop() if len(args) > 0 else kwargs.pop('position', None)
@@ -548,9 +569,9 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
             raise TypeError("Invalid keyword argument %r" % list(kwargs.keys).pop())
 
         if not issubscriptable(position) or len(position) != 2:
-            raise TypeError("Invalid 'position' argument %r" % position)
+            raise ValueError("Invalid 'position' argument %r" % position)
         elif not issubscriptable(size) or len(size) != 2:
-            raise TypeError("Invalid 'size' argument %r" % position)
+            raise ValueError("Invalid 'size' argument %r" % position)
         base = np.array([*position, *size], dtype=dtype, copy=copy)
 
     print("Rect2 base: %r" % base)
@@ -560,14 +581,14 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
     return ret
 
 
-class Rect2(numpy.ndarray):
+class Rect2(_Rect2Base):
     def __new__(subtype, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.float32)
         if dtype not in (np.float32, np.float64, float):
             raise TypeError("%r accepts only 'float32' or 'float64' datatypes" % subtype)
         return array_from_rect2_args(subtype, dtype, args, kwargs)
 
-class Rect2i(numpy.ndarray):
+class Rect2i(_Rect2Base):
     def __new__(subtype, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.int32)
         if dtype not in (np.int8, np.int16, np.int32, np.int64, np.int128, int):
