@@ -118,14 +118,16 @@ bool = bool
 
 
 cdef public object bool_to_pyobject(GDExtensionBool p_bool):
-    return p_bool
+    return p_bool != 0
 
 
 cdef public object variant_bool_to_pyobject(const cpp.Variant &v):
     cdef bint ret = v.to_type[bint]()
 
-    return ret
+    return ret != 0
 
+
+# TODO: Keep type checks only in debug builds
 
 cdef public void bool_from_pyobject(object p_obj, GDExtensionBool *r_ret) noexcept:
     if not PyBool_Check(p_obj):
@@ -338,34 +340,57 @@ cdef inline numpy.ndarray array_from_vector2_args(subtype, dtype, args, kwargs):
     return ret
 
 
+cpdef asvector2(data, dtype=None):
+    """
+    Interpret the input as Vector2
+    """
+    if dtype is None:
+        dtype = np.float32
+    if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
+        raise ValueError("Vector2 data must be a 1-dimensional container of 2 items")
+    if np.issubdtype(dtype, np.integer):
+        return Vector2i(data, dtype=dtype, copy=False)
+    return Vector2(data, dtype=dtype, copy=False)
+
+
+cpdef asvector2i(data, dtype=None):
+    if dtype is None:
+        dtype = np.int32
+    if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
+        raise ValueError("Vector2i data must be a 1-dimensional container of 2 items")
+    if np.issubdtype(dtype, np.floating):
+        return Vector2(data, dtype=dtype, copy=False)
+    return Vector2i(data, dtype=dtype, copy=False)
+
+
 class Vector2(_Vector2Base):
     def __new__(subtype, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.float32)
-        if dtype not in (np.float32, np.float64, float):
-            raise TypeError("%r accepts only 'float32' or 'float64' datatypes" % subtype)
+        if not np.issubdtype(dtype, np.floating):
+            raise TypeError("%r accepts only floating datatypes" % subtype)
         return array_from_vector2_args(subtype, dtype, args, kwargs)
 
 
 class Size2(_Size2Base):
     def __new__(subtype, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.float32)
-        if dtype not in (np.float32, np.float64, float):
-            raise TypeError("%r accepts only 'float32' or 'float64' datatypes" % subtype)
+        if not np.issubdtype(dtype, np.floating):
+            raise TypeError("%r accepts only floating datatypes" % subtype)
         return array_from_vector2_args(subtype, dtype, args, kwargs)
 
 
 class Vector2i(_Vector2Base):
     def __new__(subtype, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.int32)
-        if dtype not in (np.int8, np.int16, np.int32, np.int64, np.int128, int):
-            raise TypeError("%r accepts only 'intX' datatypes, got %r" % (subtype, dtype))
+        if not np.issubdtype(dtype, np.integer):
+            raise TypeError("%r accepts only integer datatypes, got %r" % (subtype, dtype))
         return array_from_vector2_args(subtype, dtype, args, kwargs)
 
 
 class Size2i(_Size2Base):
     def __new__(subtype, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.int32)
-        if dtype not in (np.int8, np.int16, np.int32, np.int64, np.int128, int):
+        if not np.issubdtype(dtype, np.integer):
             raise TypeError("%r accepts only 'intX' datatypes, got %r" % (subtype, dtype))
         return array_from_vector2_args(subtype, dtype, args, kwargs)
 

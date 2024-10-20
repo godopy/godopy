@@ -9,6 +9,9 @@ __all__ = [
     'float',
     'String',
 
+    'asvector2',
+    'asvector2i',
+
     'Vector2',
     'Vector2i',
     'Rect2',
