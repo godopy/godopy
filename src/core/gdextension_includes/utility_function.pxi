@@ -1,4 +1,4 @@
-cdef class UtilityFunction(GodotCppCallableBase):
+cdef class UtilityFunction(CallableBase):
     def __init__(self, str function_name):
         self.__name__ = function_name
 

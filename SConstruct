@@ -159,7 +159,7 @@ def _generated_cython_sources(env):
 def cython_sources(env):
     generated = _generated_cython_sources(env)
 
-    # required:
+    # always required:
     # 'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
     # 'io.py', 'abc.py', 'types.py',
     # 'encodings/latin_1.py',
@@ -167,14 +167,14 @@ def cython_sources(env):
     sources = [
         env.Cython('src/core/gdextension.pyx'),
         env.Cython('src/core/entry_point.pyx'),
-        env.Cython('src/core/_godot_types.pyx'),
+        env.Cython('src/core/godot_types.pyx'),
     ]
 
     depends = [
         generated,
         *Glob('src/core/*.pxi'),
         *Glob('src/core/*.pxd'),
-        *Glob('src/godot_cpp/defs/*.pxi'),
+        *Glob('src/godot_cpp/includes/*.pxi'),
         *Glob('gdextension/*.pxd'),
         *Glob('gen/gdextension_interface/*.pxi'),
     ]

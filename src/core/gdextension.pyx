@@ -13,7 +13,7 @@ import traceback
 import importlib
 
 import numpy as np
-import _godot_types as gdtypes
+import godot_types as gdtypes
 
 
 include "api_data.pxi"
@@ -27,20 +27,20 @@ cdef dict _global_utility_function_info = pickle.loads(_global_utility_function_
 cdef set _global_core_classes = pickle.loads(_global_api_types__pickles['core'])
 cdef set _global_editor_classes = pickle.loads(_global_api_types__pickles['editor'])
 
-include "typeconv.pxi"
+include "gdextension_includes/typeconv.pxi"
 
-include "class.pxi"
-include "object.pxi"
-include "callable.pxi"
-include "method_bind.pxi"
-include "utility_function.pxi"
+include "gdextension_includes/class.pxi"
+include "gdextension_includes/object.pxi"
+include "gdextension_includes/callable_base.pxi"
+include "gdextension_includes/method_bind.pxi"
+include "gdextension_includes/utility_function.pxi"
 
-include "extension_virtual_method.pxi"
-include "extension_method.pxi"
-include "extension_class.pxi"
-include "extension_callbacks.pxi"
-include "extension_class_registrator.pxi"
-include "extension.pxi"
+include "gdextension_includes/extension_virtual_method.pxi"
+include "gdextension_includes/extension_method.pxi"
+include "gdextension_includes/extension_class.pxi"
+include "gdextension_includes/extension_callbacks.pxi"
+include "gdextension_includes/extension_class_registrator.pxi"
+include "gdextension_includes/extension.pxi"
 
 
 cpdef input(str prompt=None):

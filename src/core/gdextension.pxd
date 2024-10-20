@@ -105,7 +105,7 @@ cdef class ExtensionClass(Class):
     cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
 
 
-cdef class GodotCppCallableBase:
+cdef class CallableBase:
     cdef str __name__
     cdef tuple type_info
 
@@ -113,7 +113,7 @@ cdef class GodotCppCallableBase:
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
 
 
-cdef class MethodBind(GodotCppCallableBase):
+cdef class MethodBind(CallableBase):
     cdef void *_owner
     cdef GDExtensionMethodBindPtr _godot_method_bind
     cdef Object __owner__
@@ -121,7 +121,7 @@ cdef class MethodBind(GodotCppCallableBase):
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
 
 
-cdef class UtilityFunction(GodotCppCallableBase):
+cdef class UtilityFunction(CallableBase):
     cdef GDExtensionPtrUtilityFunction _godot_utility_function
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil

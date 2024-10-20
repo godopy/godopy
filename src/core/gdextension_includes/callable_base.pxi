@@ -1,4 +1,9 @@
-cdef class GodotCppCallableBase:
+cdef class CallableBase:
+    """
+    Base class for MethodBind and UtilityFunction.
+
+    Implements GDExtension's 'ptrcall' logic
+    """
     def __init__(self):
         raise NotImplementedError("Base class, cannot instantiate")
 
