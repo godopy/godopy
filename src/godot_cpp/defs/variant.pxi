@@ -13,17 +13,17 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
     cdef cppclass Vector4i
     cdef cppclass Plane
     cdef cppclass Quaternion
-    cdef cppclass _AABB
+    cdef cppclass _AABB "godot::AABB"
     cdef cppclass Basis
     cdef cppclass Transform3D
     cdef cppclass Projection
     cdef cppclass Color
     cdef cppclass StringName
     cdef cppclass NodePath
-    cdef cppclass _RID
-    cdef cppclass _Object
-    cdef cppclass _Callable
-    cdef cppclass _Signal
+    cdef cppclass _RID "godot::RID"
+    cdef cppclass GodotCppObject "godot::Object"
+    cdef cppclass GodotCppCallable "godot::Callable"
+    cdef cppclass GodotCppSignal "godot::Signal"
     cdef cppclass Dictionary
     cdef cppclass Array
     cdef cppclass PackedByteArray
@@ -71,9 +71,9 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
         Variant(const NodePath &)
         Variant(const _RID &)
         Variant(void *)
-        Variant(const _Object &)
-        Variant(const _Callable &)
-        Variant(const _Signal &)
+        Variant(const GodotCppObject &)
+        Variant(const GodotCppCallable &)
+        Variant(const GodotCppSignal &)
         Variant(const Dictionary &)
         Variant(const Array &)
         Variant(const PackedByteArray &)

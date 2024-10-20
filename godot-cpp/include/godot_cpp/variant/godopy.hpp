@@ -46,30 +46,33 @@ extern PyTypeObject GDPyObject_Type;
 
 // Type conversion functions
 extern PyObject *object_to_pyobject(void *);
+extern PyObject *variant_object_to_pyobject(godot::Variant const &);
+extern void object_from_pyobject(PyObject *, void **);
+extern void variant_object_from_pyobject(PyObject *, godot::Variant *);
 
 extern PyObject *bool_to_pyobject(GDExtensionBool);
 extern PyObject *variant_bool_to_pyobject(godot::Variant const &);
-extern GDExtensionBool bool_from_pyobject(PyObject *);
-extern godot::Variant variant_bool_from_pyobject(PyObject *);
+extern void bool_from_pyobject(PyObject *, GDExtensionBool *);
+extern void *variant_bool_from_pyobject(PyObject *, godot::Variant *);
 extern PyObject *int_to_pyobject(int64_t);
 extern PyObject *variant_int_to_pyobject(godot::Variant const &);
-extern int64_t int_from_pyobject(PyObject *);
-extern godot::Variant variant_int_from_pyobject(PyObject *);
+extern void int_from_pyobject(PyObject *, int64_t *);
+extern void variant_int_from_pyobject(PyObject *, godot::Variant *);
 extern PyObject *float_to_pyobject(double);
 extern PyObject *variant_float_to_pyobject(godot::Variant const &);
-extern double float_from_pyobject(PyObject *);
-extern godot::Variant variant_float_from_pyobject(PyObject *);
+extern void float_from_pyobject(PyObject *, double *);
+extern void variant_float_from_pyobject(PyObject *, godot::Variant *);
 extern PyObject *string_to_pyobject(godot::String const &);
 extern PyObject *variant_string_to_pyobject(godot::Variant const &);
-extern godot::String string_from_pyobject(PyObject *);
-extern godot::Variant variant_string_from_pyobject(PyObject *);
+extern void string_from_pyobject(PyObject *, godot::String *);
+extern void variant_string_from_pyobject(PyObject *, godot::Variant *);
 extern PyObject *vector2_to_pyobject(godot::Vector2 &);
 extern PyObject *vector2i_to_pyobject(godot::Vector2i &);
 extern PyObject *variant_vector2_to_pyobject(godot::Variant const &);
 extern PyObject *variant_vector2i_to_pyobject(godot::Variant const &);
-extern godot::Vector2 vector2_from_pyobject(PyObject *);
-extern godot::Vector2i vector2i_from_pyobject(PyObject *);
-extern godot::Variant variant_vector2_from_pyobject(PyObject *);
-extern godot::Variant variant_vector2i_from_pyobject(PyObject *);
+extern void vector2_from_pyobject(PyObject *, godot::Vector2 *);
+extern void vector2i_from_pyobject(PyObject *, godot::Vector2i *);
+extern void variant_vector2_from_pyobject(PyObject *, godot::Variant *);
+extern void variant_vector2i_from_pyobject(PyObject *, godot::Variant *);
 
 #endif

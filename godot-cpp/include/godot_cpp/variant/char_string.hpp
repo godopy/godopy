@@ -95,6 +95,7 @@ public:
 
 	_FORCE_INLINE_ T get(int64_t p_index) const { return _cowdata.get(p_index); }
 	_FORCE_INLINE_ void set(int64_t p_index, const T &p_elem) { _cowdata.set(p_index, p_elem); }
+	_FORCE_INLINE_ void set_zero(int64_t p_index) { _cowdata.set(p_index, '\0'); }
 	_FORCE_INLINE_ const T &operator[](int64_t p_index) const {
 		if (unlikely(p_index == _cowdata.size())) {
 			return _null;

@@ -266,30 +266,16 @@ Variant::Variant(const PyObject *v_const) {
 		internal::gdextension_interface_variant_new_nil(_native_ptr());
 
 	} else if (PyBool_Check(v)) {
-		GDExtensionBool encoded;
-		if (v == Py_True) {
-			PtrToArg<bool>::encode(true, &encoded);
-		} else {
-			PtrToArg<bool>::encode(false, &encoded);
-		}
-
-		from_type_constructor[BOOL](_native_ptr(), &encoded);
+		variant_bool_from_pyobject(v, reinterpret_cast<Variant *>(_native_ptr()));
 
 	} else if (PyLong_Check(v)) {
-		GDExtensionInt encoded;
-		PtrToArg<int64_t>::encode(PyLong_AsSize_t(v), &encoded);
-
-		from_type_constructor[INT](_native_ptr(), &encoded);
+		variant_int_from_pyobject(v, reinterpret_cast<Variant *>(_native_ptr()));
 
 	} else if (PyFloat_Check(v)) {
-		double encoded;
-		PtrToArg<double>::encode(PyFloat_AsDouble(v), &encoded);
-
-		from_type_constructor[FLOAT](_native_ptr(), &encoded);
+		variant_float_from_pyobject(v, reinterpret_cast<Variant *>(_native_ptr()));
 
 	} else if (PyUnicode_Check(v) || PyBytes_Check(v)) {
-		String s = String(v);
-		from_type_constructor[STRING](_native_ptr(), s._native_ptr());
+		variant_string_from_pyobject(v, reinterpret_cast<Variant *>(_native_ptr()));
 
 	} /* else if (PyArray_Check(v)) {
 	
@@ -1314,11 +1300,9 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			break;
 		}
 		case Type::OBJECT:
-		{
-			Object *o = operator Object *();
-			obj = object_to_pyobject(o->_owner);
+			obj = variant_object_to_pyobject(*this);
 			break;
-		}
+
 		case Type::DICTIONARY:
 		{
 			const Dictionary dict = operator Dictionary();

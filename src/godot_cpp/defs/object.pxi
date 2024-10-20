@@ -1,5 +1,10 @@
 cdef extern from "godot_cpp/classes/object.hpp" namespace "godot" nogil:
-    cppclass _Object "godot::Object":
+    cdef cppclass GodotCppObject "godot::Object":
         void *_owner
 
-        _Object()
+        GodotCppObject()
+        GodotCppObject(void *)
+
+    cdef GodotCppObject *get_object_instance_binding "godot::internal::get_object_instance_binding" (void *)
+
+ctypedef GodotCppObject * GodotCppObjectPtr

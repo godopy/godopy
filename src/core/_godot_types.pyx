@@ -6,8 +6,14 @@ Used to hold converted Godot data and declare Godot types.
 """
 
 from gdextension_interface cimport *
+from binding cimport *
 from libc.stdint cimport int8_t, int16_t, int32_t, int64_t
-from cpython cimport PyObject, ref
+from libc.stddef cimport wchar_t
+from cpython cimport (
+    PyObject, ref, PyUnicode_AsWideCharString, PyUnicode_FromWideChar,
+    PyBool_Check, PyLong_Check, PyFloat_Check, PyUnicode_Check, PyBytes_Check,
+    PyObject_IsTrue
+)
 cimport godot_cpp as cpp
 
 cdef extern from *:
@@ -17,6 +23,7 @@ cdef extern from *:
     pass
 
 cimport numpy
+from numpy cimport PyArray_New, PyArray_Check, PyArray_TYPE, NPY_ARRAY_C_CONTIGUOUS, NPY_ARRAY_WRITEABLE
 
 
 import numpy as np
@@ -89,9 +96,8 @@ cdef bint issubscriptable(object obj):
 
 
 cdef inline object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
-    cdef numpy.ndarray arr = numpy.PyArray_New(subtype, base.ndim, base.shape, numpy.PyArray_TYPE(base), NULL,
-                                               base.data, 0, numpy.NPY_ARRAY_C_CONTIGUOUS | numpy.NPY_ARRAY_WRITEABLE,
-                                               None)
+    cdef numpy.ndarray arr = PyArray_New(subtype, base.ndim, base.shape, PyArray_TYPE(base), NULL,
+                                         base.data, 0, NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_WRITEABLE, None)
     ref.Py_INCREF(base)
     numpy.PyArray_SetBaseObject(arr, base)
 
@@ -109,80 +115,156 @@ ctypedef fused number_t:
 
 Nil = None
 bool = bool
-int = int
-float = float
-String = str
 
 
 cdef public object bool_to_pyobject(GDExtensionBool p_bool):
     return p_bool
 
+
 cdef public object variant_bool_to_pyobject(const cpp.Variant &v):
     cdef bint ret = v.to_type[bint]()
+
     return ret
 
-cdef public GDExtensionBool bool_from_pyobject(object p_obj):
-    cdef object ret = bool(p_obj)
-    return ret
 
-cdef public cpp.Variant variant_bool_from_pyobject(object p_obj):
-    cdef object _ret = bool(p_obj)
-    cdef bint ret = _ret
-    return cpp.Variant(ret)
+cdef public void bool_from_pyobject(object p_obj, GDExtensionBool *r_ret) noexcept:
+    if not PyBool_Check(p_obj):
+        cpp.UtilityFunctions.push_error("'bool' is required, got %r" % type(p_obj))
+        r_ret[0] = False
+    else:
+        r_ret[0] = <GDExtensionBool>PyObject_IsTrue(p_obj)
+
+
+cdef public void *variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef bint ret = False
+    if not PyBool_Check(p_obj):
+        cpp.UtilityFunctions.push_error("'bool' is required, got %r" % type(p_obj))
+    else:
+        ret = <GDExtensionBool>PyObject_IsTrue(p_obj)
+
+    r_ret[0] = cpp.Variant(ret)
+
+
+int = int
 
 
 cdef public object int_to_pyobject(int64_t p_int):
     return p_int
 
+
 cdef public object variant_int_to_pyobject(const cpp.Variant &v):
     cdef int64_t ret = v.to_type[int64_t]()
+
     return ret
 
-cdef public int64_t int_from_pyobject(object p_obj):
-    cdef object ret = int(p_obj)
-    return int(ret)
 
-cdef public cpp.Variant variant_int_from_pyobject(object p_obj):
-    cdef int64_t ret = int(p_obj)
-    return cpp.Variant(ret)
+cdef public void int_from_pyobject(object p_obj, int64_t *r_ret) noexcept:
+    if not PyLong_Check(p_obj):
+        cpp.UtilityFunctions.push_error("'int' is required, got %r" % type(p_obj))
+        r_ret[0] = 0
+    else:
+        r_ret[0] = <int64_t>p_obj
+
+
+cdef public void variant_int_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef int64_t ret = 0
+
+    if not PyLong_Check(p_obj):
+        cpp.UtilityFunctions.push_error("'int' is required, got %r" % type(p_obj))
+    else:
+        ret = <int64_t>p_obj
+
+    r_ret[0] = cpp.Variant(ret)
+
+
+float = float
 
 
 cdef public object float_to_pyobject(double p_float):
     return p_float
 
+
 cdef public object variant_float_to_pyobject(const cpp.Variant &v):
     cdef double ret = v.to_type[double]()
+
     return ret
 
-cdef public double float_from_pyobject(object p_obj):
-    cdef object ret = float(p_obj)
-    return ret
 
-cdef public cpp.Variant variant_float_from_pyobject(object p_obj):
-    cdef object _ret = float(p_obj)
-    cdef double ret = _ret
-    return cpp.Variant(ret)
+cdef public void float_from_pyobject(object p_obj, double *r_ret) noexcept:
+    if not PyFloat_Check(p_obj):
+        cpp.UtilityFunctions.push_error("'float' is required, got %r" % p_obj)
+        r_ret[0] = 0.0
+    else:
+        r_ret[0] = <double>p_obj
+
+
+cdef public void variant_float_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef double ret = 0.0
+
+    if not PyFloat_Check(p_obj):
+        cpp.UtilityFunctions.push_error("'float' is required, got %r" % p_obj)
+    else:
+        ret = <double>p_obj
+
+    r_ret[0] = cpp.Variant(ret)
+
+
+String = str
 
 
 cdef public object string_to_pyobject(const cpp.String &p_string):
-    return p_string.py_str()
+    cdef cpp.CharWideString wstr
+    cdef int64_t len = gdextension_interface_string_to_wide_chars(p_string._native_ptr(), NULL, 0)
+    wstr.resize(len + 1)
+    gdextension_interface_string_to_wide_chars(p_string._native_ptr(), wstr.ptrw(), len)
+    wstr.set_zero(len)
+
+    return PyUnicode_FromWideChar(wstr.get_data(), len)
+
 
 cdef public object variant_string_to_pyobject(const cpp.Variant &v):
     cdef cpp.String ret = v.to_type[cpp.String]()
-    return ret.py_str()
+    cdef cpp.CharWideString wstr
+    cdef int64_t len = gdextension_interface_string_to_wide_chars(ret._native_ptr(), NULL, 0)
+    wstr.resize(len + 1)
+    gdextension_interface_string_to_wide_chars(ret._native_ptr(), wstr.ptrw(), len)
+    wstr.set_zero(len)
 
-cdef public cpp.String string_from_pyobject(object p_obj):
-    cdef object ret = p_obj.decode('utf-8') if isinstance(p_obj, bytes) else str(p_obj)
-    return cpp.String(<const PyObject *>p_obj)
+    return PyUnicode_FromWideChar(wstr.get_data(), len)
 
-cdef public cpp.Variant variant_string_from_pyobject(object p_obj):
-    cdef object _ret = p_obj.decode('utf-8') if isinstance(p_obj, bytes) else str(p_obj)
-    cdef cpp.String ret = cpp.String(<const PyObject *>_ret)
-    return cpp.Variant(ret)
+
+cdef public void string_from_pyobject(object p_obj, cpp.String *r_ret) noexcept:
+    cdef const wchar_t *wstr
+    cdef const char *cstr
+
+    if PyUnicode_Check(p_obj):
+        wstr = PyUnicode_AsWideCharString(p_obj, NULL)
+        gdextension_interface_string_new_with_wide_chars(r_ret, wstr)
+    elif PyBytes_Check(p_obj):
+        cstr = <bytes>p_obj
+        gdextension_interface_string_new_with_utf8_chars(r_ret, cstr)
+    else:
+        cpp.UtilityFunctions.push_error("Could not convert %r to C++ String" % p_obj)
+        r_ret[0] = cpp.String()
+
+
+cdef public void variant_string_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef const wchar_t * wstr
+    cdef const char * cstr
+
+    if PyUnicode_Check(p_obj):
+        wstr = PyUnicode_AsWideCharString(p_obj, NULL)
+        r_ret[0] = cpp.Variant(wstr)
+    elif PyBytes_Check(p_obj):
+        cstr = <bytes>p_obj
+        r_ret[0] = cpp.Variant(cstr)
+    else:
+        cpp.UtilityFunctions.push_error("Could not convert %r to C++ String" % p_obj)
+        cstr = ""
+        r_ret[0] = cpp.Variant(cstr)
 
 
 class _Vector2Base(numpy.ndarray):
-    # __array_priority__ = 10.0
     def __getattr__(self, str name):
         if name == 'x':
             return self[0]
@@ -334,41 +416,41 @@ cdef inline number_t [:] carr_view_from_pyobject(object obj, number_t [:] carr_v
         arr = np.array(obj, dtype=dtype)
 
     cdef number_t [:] pyarr_view = arr
-    carr_view = pyarr_view
+    carr_view[:] = pyarr_view
 
     return carr_view
 
 
-cdef public cpp.Vector2 vector2_from_pyobject(object obj):
+cdef public void vector2_from_pyobject(object obj, cpp.Vector2 *r_ret) noexcept:
     cdef cpp.Vector2 vec
     cdef float [:] carr_view = vec.coord
     carr_view = carr_view_from_pyobject[float](obj, carr_view, np.float32)
 
-    return vec
+    r_ret[0] = vec
 
 
-cdef public cpp.Vector2i vector2i_from_pyobject(object obj):
+cdef public void vector2i_from_pyobject(object obj, cpp.Vector2i *r_ret) noexcept:
     cdef cpp.Vector2i vec
     cdef int32_t [:] carr_view = vec.coord
     carr_view = carr_view_from_pyobject[int32_t](obj, carr_view, np.int32)
 
-    return vec
+    r_ret[0] = vec
 
 
-cdef public cpp.Variant variant_vector2_from_pyobject(object obj):
+cdef public void variant_vector2_from_pyobject(object obj, cpp.Variant *r_ret) noexcept:
     cdef cpp.Vector2 vec
     cdef float [:] carr_view = vec.coord
     carr_view = carr_view_from_pyobject[float](obj, carr_view, np.float32)
 
-    return cpp.Variant(vec)
+    r_ret[0] = cpp.Variant(vec)
 
 
-cdef public cpp.Variant variant_vector2i_from_pyobject(object obj):
+cdef public void variant_vector2i_from_pyobject(object obj, cpp.Variant *r_ret) noexcept:
     cdef cpp.Vector2i vec
     cdef int32_t [:] carr_view = vec.coord
     carr_view = carr_view_from_pyobject[int32_t](obj, carr_view, np.int32)
 
-    return cpp.Variant(vec)
+    r_ret[0] = cpp.Variant(vec)
 
 
 class _Rect2Base(numpy.ndarray):

@@ -1,14 +1,15 @@
 cdef dict _OBJECTDB = {}
 
 
-cdef public object object_to_pyobject(void *godot_object):
-    if godot_object == NULL:
+cdef public object object_to_pyobject(void *p_godot_object):
+    if p_godot_object == NULL:
         return None
 
-    cdef Object obj = _OBJECTDB.get(<uint64_t>godot_object, None)
+    cdef uint64_t obj_id = <uint64_t>p_godot_object
+    cdef Object obj = _OBJECTDB.get(obj_id, None)
 
-    if obj is None and godot_object != NULL:
-        obj = Object('Object', from_ptr=<uint64_t>godot_object)
+    if obj is None and p_godot_object != NULL:
+        obj = Object('Object', from_ptr=obj_id)
         get_type = MethodBind(obj, 'get_type')
 
         obj.cast_to(get_type())
@@ -16,26 +17,30 @@ cdef public object object_to_pyobject(void *godot_object):
     return obj
 
 
-# cdef public object variant_object_to_pyobject(Variant &v):
-#     cdef _Object _godot_object = v.to_type[_Object]()
+cdef public object variant_object_to_pyobject(const Variant &v):
+    cdef GodotCppObject *o = v.to_type[GodotCppObjectPtr]()
 
-#     return object_to_pyobject(_godot_object._owner)
-
-
-cdef public void *object_from_pyobject(object obj):
-    if isinstance(obj, Object):
-        return (<Object>obj)._owner
-
-    return object_from_other_pyobject(obj)
+    return object_to_pyobject(o._owner)
 
 
-cdef public Variant variant_object_from_pyobject(object obj):
-    return Variant(object_from_pyobject(obj))
+cdef public void object_from_pyobject(object p_obj, void **r_ret) noexcept:
+    if isinstance(p_obj, Object):
+        r_ret[0] = (<Object>p_obj)._owner
+    else:
+        object_from_other_pyobject(p_obj, r_ret)
 
 
-cdef void *object_from_other_pyobject(object obj):
+cdef public void variant_object_from_pyobject(object p_obj, Variant *r_ret) noexcept:
+    cdef void *godot_object
+    object_from_pyobject(p_obj, &godot_object)
+
+    cdef GodotCppObject *o = get_object_instance_binding(godot_object)
+    r_ret[0] = Variant(o)
+
+
+cdef void object_from_other_pyobject(object obj, void **r_ret) noexcept nogil:
     cdef PythonObject *gd_obj = PythonRuntime.get_singleton().python_object_from_pyobject(obj)
-    return gd_obj._owner
+    r_ret[0] = gd_obj._owner
 
 
 cdef class Object:

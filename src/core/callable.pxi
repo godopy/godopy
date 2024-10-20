@@ -1,4 +1,4 @@
-cdef class _CallableBase:
+cdef class GodotCppCallableBase:
     def __init__(self):
         raise NotImplementedError("Base class, cannot instantiate")
 

@@ -4,6 +4,13 @@ This module wraps objects inside the engine
 from binding cimport *
 from godot_cpp cimport *
 from cpython cimport PyObject
+
+cdef extern from *:
+    """
+#define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION
+    """
+    pass
+
 cimport numpy
 
 
@@ -98,7 +105,7 @@ cdef class ExtensionClass(Class):
     cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
 
 
-cdef class _CallableBase:
+cdef class GodotCppCallableBase:
     cdef str __name__
     cdef tuple type_info
 
@@ -106,7 +113,7 @@ cdef class _CallableBase:
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
 
 
-cdef class MethodBind(_CallableBase):
+cdef class MethodBind(GodotCppCallableBase):
     cdef void *_owner
     cdef GDExtensionMethodBindPtr _godot_method_bind
     cdef Object __owner__
@@ -114,7 +121,7 @@ cdef class MethodBind(_CallableBase):
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
 
 
-cdef class UtilityFunction(_CallableBase):
+cdef class UtilityFunction(GodotCppCallableBase):
     cdef GDExtensionPtrUtilityFunction _godot_utility_function
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil

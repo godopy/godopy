@@ -1,4 +1,4 @@
-cdef class MethodBind(_CallableBase):
+cdef class MethodBind(GodotCppCallableBase):
     def __init__(self, Object wrapper, str method_name):
         self._owner = wrapper._owner
         self.__name__ = method_name
