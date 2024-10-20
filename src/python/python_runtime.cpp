@@ -157,12 +157,7 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 	if (PyErr_Occurred()) {
 		PyObject *exc = PyErr_GetRaisedException();
 		ERR_FAIL_NULL_V(exc, module);
-		// PyObject *_traceback = PyException_GetTraceback(exc);
-		// ERR_FAIL_NULL_V(_traceback, module);
-		PyObject *str_exc = PyObject_Str(exc);
-		String traceback = String(str_exc);
-		ERR_PRINT("Python error occured: " + traceback);
-		Py_DECREF(str_exc);
+		print_traceback(exc);
         Py_DECREF(exc);
 	}
 
@@ -187,13 +182,8 @@ void PythonRuntime::init_module(const String &p_name) {
 	if (PyErr_Occurred()) {
 		PyObject *exc = PyErr_GetRaisedException();
 		ERR_FAIL_NULL(exc);
-		// PyObject *_traceback = PyException_GetTraceback(exc);
-		// ERR_FAIL_NULL_V(_traceback, module);
-		PyObject *str_exc = PyObject_Str(exc);
-		String traceback = String(str_exc);
-		ERR_PRINT("Python error occured: " + traceback);
-		Py_DECREF(str_exc);
-		Py_DECREF(exc);
+		print_traceback(exc);
+        Py_DECREF(exc);
 	}
 
 	ERR_FAIL_NULL(m);

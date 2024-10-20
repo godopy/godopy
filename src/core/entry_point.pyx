@@ -1,11 +1,12 @@
 from binding cimport *
-from godot_cpp cimport Variant, UtilityFunctions, OS, Engine, ProjectSettings
+from godot_cpp cimport Variant, String, UtilityFunctions, OS, Engine, ProjectSettings
 from gdextension cimport (
     ExtensionClass,
     _registered_classes,
     _NODEDB,
     _OBJECTDB,
     _METHODDB,
+    _BUILTIN_METHODDB,
     _CLASSDB
 )
 
@@ -53,6 +54,18 @@ cdef object initialize_func = None
 cdef object deinitialize_func = None
 cdef bint is_first_level = True
 cdef int first_level = 0
+
+
+cdef public int print_traceback(object exc) except -1:
+    f = io.StringIO()
+    traceback.print_exception(exc, file=f)
+    exc_text = f.getvalue()
+    UtilityFunctions.print_rich(
+        "\n[color=red]ERROR: '_python_initialize_level' raised an exception:[/color]"
+        "\n[color=orange]%s[/color]\n" % exc_text
+    )
+    return 0
+
 
 try:
     from godot import register_types as godot_register_types
@@ -104,7 +117,8 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
 
 
 cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
-    global initialize_func, deinitialize_func, is_first_level, first_level
+    global initialize_func, deinitialize_func, is_first_level, first_level, \
+           godot_register_types, godopy_register_types
 
     UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
 
@@ -168,6 +182,7 @@ cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *
         _NODEDB = {}
         _OBJECTDB = {}
         _METHODDB = {}
+        _BUILTIN_METHODDB = {}
         _CLASSDB = {}
 
         for cls in _registered_classes:

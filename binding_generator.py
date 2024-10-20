@@ -120,7 +120,7 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
             for method in class_api['methods']:
                 method_name = method['name']
                 type_info = []
-                return_type = method.get('return_value', {}).get('type', 'Nil')
+                return_type = method.get('return_type', 'Nil')
                 type_info.append(return_type)
                 method_info = {}
                 for key in ('is_vararg', 'is_static', 'hash'):
@@ -196,7 +196,8 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
         return_type = method.get('return_value', {}).get('type', 'Nil')
         type_info.append(return_type)
         method_info = {
-            'hash': method['hash']
+            'hash': method['hash'],
+            'is_vararg': method['is_vararg']
         }
         arguments = []
         if "arguments" in method:

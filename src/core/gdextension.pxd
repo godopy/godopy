@@ -21,6 +21,7 @@ cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
 cdef dict _NODEDB
 cdef dict _OBJECTDB
 cdef dict _METHODDB
+cdef dict _BUILTIN_METHODDB
 cdef dict _CLASSDB
 cdef list _registered_classes
 
@@ -108,9 +109,13 @@ cdef class ExtensionClass(Class):
 cdef class CallableBase:
     cdef str __name__
     cdef tuple type_info
+    cdef bint is_vararg
 
-    cpdef object _call_internal(self, tuple args)
+    cdef object _call_internal(self, tuple args)
+    cdef object _call_internal_vararg(self, tuple args)
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+    cdef void _call(self, const GDExtensionConstVariantPtr *p_args, size_t size,
+                    GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept nogil
 
 
 cdef class MethodBind(CallableBase):
@@ -119,9 +124,22 @@ cdef class MethodBind(CallableBase):
     cdef Object __owner__
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+    cdef void _call(self, const GDExtensionConstVariantPtr *p_args, size_t size,
+                    GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept nogil
 
 
 cdef class UtilityFunction(CallableBase):
     cdef GDExtensionPtrUtilityFunction _godot_utility_function
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+
+
+cdef class BuiltinMethod(CallableBase):
+    cdef void *_base
+    cdef GDExtensionPtrBuiltInMethod _godot_builtin_method
+    cdef object __owner__
+
+    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+
+    @staticmethod
+    cdef BuiltinMethod new_with_baseptr(object owner, object method_name, void *_base)

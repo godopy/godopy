@@ -42,7 +42,6 @@ class _Rect2Base(numpy.ndarray):
             if np.issubdtype(self.dtype, np.integer):
                 return Vector2i(self[:2], dtype=self.dtype, copy=False)
             else:
-                cpp.UtilityFunctions.print("Returning %r as position" % (self[0]))
                 return Vector2(self[:2], dtype=self.dtype, copy=False)
         elif name == 'size_':
             if np.issubdtype(self.dtype, np.integer):

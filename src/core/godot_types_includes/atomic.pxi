@@ -81,7 +81,7 @@ cdef public object variant_float_to_pyobject(const cpp.Variant &v):
 
 cdef public void float_from_pyobject(object p_obj, double *r_ret) noexcept:
     if not PyFloat_Check(p_obj):
-        cpp.UtilityFunctions.push_error("'float' is required, got %r" % p_obj)
+        cpp.UtilityFunctions.push_error("'float' is required, got %r" % type(p_obj))
         r_ret[0] = 0.0
     else:
         r_ret[0] = <double>p_obj
@@ -91,14 +91,40 @@ cdef public void variant_float_from_pyobject(object p_obj, cpp.Variant *r_ret) n
     cdef double ret = 0.0
 
     if not PyFloat_Check(p_obj):
-        cpp.UtilityFunctions.push_error("'float' is required, got %r" % p_obj)
+        cpp.UtilityFunctions.push_error("'float' is required, got %r" % type(p_obj))
     else:
         ret = <double>p_obj
 
     r_ret[0] = cpp.Variant(ret)
 
 
-String = str
+cdef class String(str):
+    def to_camel_case(self):
+        cdef cpp.String base = cpp.String(<const PyObject *>self)
+        cdef BuiltinMethod bm = BuiltinMethod.new_with_baseptr(self, 'to_camel_case', base._native_ptr())
+
+        return bm()
+
+    def to_pascal_case(self):
+        cdef cpp.String base = cpp.String(<const PyObject *>self)
+        cdef BuiltinMethod bm = BuiltinMethod.new_with_baseptr(self, 'to_pascal_case', base._native_ptr())
+
+        return bm()
+
+    def to_snake_case(self):
+        cdef cpp.String base = cpp.String(<const PyObject *>self)
+        cdef BuiltinMethod bm = BuiltinMethod.new_with_baseptr(self, 'to_snake_case', base._native_ptr())
+
+        return bm()
+
+    to_upper = str.upper
+    to_lower = str.lower
+
+    def is_empty(self):
+        return not self
+
+    def path_join(self, filename):
+        return String('/'.join((self, filename)))  # FIXME: use os.sep?
 
 
 cdef public object string_to_pyobject(const cpp.String &p_string):
@@ -108,7 +134,7 @@ cdef public object string_to_pyobject(const cpp.String &p_string):
     gdextension_interface_string_to_wide_chars(p_string._native_ptr(), wstr.ptrw(), len)
     wstr.set_zero(len)
 
-    return PyUnicode_FromWideChar(wstr.get_data(), len)
+    return String(PyUnicode_FromWideChar(wstr.get_data(), len))
 
 
 cdef public object variant_string_to_pyobject(const cpp.Variant &v):
@@ -119,7 +145,7 @@ cdef public object variant_string_to_pyobject(const cpp.Variant &v):
     gdextension_interface_string_to_wide_chars(ret._native_ptr(), wstr.ptrw(), len)
     wstr.set_zero(len)
 
-    return PyUnicode_FromWideChar(wstr.get_data(), len)
+    return String(PyUnicode_FromWideChar(wstr.get_data(), len))
 
 
 cdef public void string_from_pyobject(object p_obj, cpp.String *r_ret) noexcept:

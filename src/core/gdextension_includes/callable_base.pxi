@@ -2,20 +2,31 @@ cdef class CallableBase:
     """
     Base class for MethodBind and UtilityFunction.
 
-    Implements GDExtension's 'ptrcall' logic
+    Implements GDExtension's 'ptrcall' and 'call' logic
     """
     def __init__(self):
         raise NotImplementedError("Base class, cannot instantiate")
 
 
     def __call__(self, *args):
-        return self._call_internal(args)
+        if self.is_vararg:
+            return self._call_internal_vararg(args)
+        else:
+            return self._call_internal(args)
 
 
-    cpdef object _call_internal(self, tuple args):
+    cdef object _call_internal(self, tuple args):
         cdef Variant arg
-        cdef size_t i = 0
-        cdef size_t size = len(args)
+        cdef size_t i = 0, size = len(args)
+
+        if (size != len(self.type_info) - 1):
+            msg = (
+                '%s %s: wrong number of arguments: %d, %d expected. Arg types: %r. Return type: %r'
+                    % (self.__class__.__name__, self.__name__,  size, len(self.type_info) - 1,
+                       self.type_info[1:], self.type_info[0])
+            )
+            UtilityFunctions.printerr(msg)
+            raise TypeError(msg)
 
         cdef GDExtensionUninitializedTypePtr *p_args = <GDExtensionUninitializedTypePtr *> \
             gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
@@ -167,6 +178,35 @@ cdef class CallableBase:
         return arg.pythonize()
 
 
-    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil:
+    cdef object _call_internal_vararg(self, tuple args):
+        cdef Variant ret
+        cdef GDExtensionCallError err
+
+        err.error = GDEXTENSION_CALL_OK
+
+        cdef size_t i = 0, size = len(args)
+
+        cdef Variant *_args = <Variant *>gdextension_interface_mem_alloc(size * cython.sizeof(Variant))
+
+        for i in range(size):
+            _args[i] = Variant(<const PyObject *>args[i])
+
+        self._call(<const GDExtensionConstVariantPtr *>&_args, size, &ret, &err)
+
+        gdextension_interface_mem_free(_args)
+
+        if err.error != GDEXTENSION_CALL_OK:
+            raise RuntimeError(ret.pythonize())
+
+        return ret.pythonize()
+
+
+    cdef void _call(self, const GDExtensionConstVariantPtr *p_args, size_t size,
+                    GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept nogil:
+        with gil:
+            raise NotImplementedError("Base Callable Type: don't know how to call...")
+
+    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args,
+                        size_t p_numargs) noexcept nogil:
         with gil:
             raise NotImplementedError("Base Callable Type: don't know how to ptrcall...")

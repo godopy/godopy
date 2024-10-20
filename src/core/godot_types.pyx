@@ -13,6 +13,8 @@ from cpython cimport (
 )
 cimport godot_cpp as cpp
 
+from gdextension cimport BuiltinMethod
+
 cdef extern from *:
     """
 #define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION

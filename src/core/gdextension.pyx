@@ -34,6 +34,7 @@ include "gdextension_includes/object.pxi"
 include "gdextension_includes/callable_base.pxi"
 include "gdextension_includes/method_bind.pxi"
 include "gdextension_includes/utility_function.pxi"
+include "gdextension_includes/builtin_method.pxi"
 
 include "gdextension_includes/extension_virtual_method.pxi"
 include "gdextension_includes/extension_method.pxi"

@@ -4,9 +4,10 @@ cdef class UtilityFunction(CallableBase):
 
         info = _global_utility_function_info.get(function_name, None)
         if info is None:
-            raise NameError('Utility function %s not found' % function_name)
-        # builtins.print(function_name, info)
+            raise NameError('Utility function %r not found' % function_name)
+
         self.type_info = info['type_info']
+        self.is_vararg = False
         cdef StringName name = StringName(function_name)
         cdef uint64_t _hash = info['hash']
 
@@ -20,7 +21,7 @@ cdef class UtilityFunction(CallableBase):
     def __repr__(self):
         class_name = '%s[%s]' % (self.__class__.__name__, self.__name__)
         return "<%s.%s at 0x%016X[0x%016X]>" % (self.__class__.__module__, class_name, <uint64_t><PyObject *>self,
-                                         <uint64_t><PyObject *>self._godot_utility_function)
+                                                <uint64_t><PyObject *>self._godot_utility_function)
 
 
     cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil:

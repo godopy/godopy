@@ -37,6 +37,26 @@ class TestCaseEngineSingleton(BaseTestCase):
         self.assertEqual(ProjectSettings.get('application/run/main_scene'), 'res://main.tscn')
 
 
+class TestCaseAtomicTypes(BaseTestCase):
+    def test_string(self):
+        s = types.String('GodoPy')
+        self.assertIsInstance(s, str)
+        self.assertIsInstance(s, types.String)
+
+        self.assertEqual(s, 'GodoPy')
+
+        s2 = s.to_snake_case()
+        self.assertEqual(s2, 'godo_py')
+
+        self.assertEqual(s2.to_camel_case(), 'godoPy')
+        self.assertEqual(s2.to_pascal_case(), 'GodoPy')
+        self.assertEqual(s2.capitalize(), 'Godo_py')  # native Python str's method
+        self.assertEqual(s2.upper(), s2.to_upper())
+        self.assertEqual(s2.lower(), s2.to_lower())
+        self.assertEqual(s2.is_empty(), False)
+        self.assertEqual(types.String().is_empty(), True)
+        self.assertEqual(s.path_join('tests').path_join('string'), 'GodoPy/tests/string')
+
 class TestCaseMathTypes(BaseTestCase):
     def test_vector2(self):
         v = types.Vector2(2.5, 5)
@@ -106,10 +126,10 @@ class TestCaseMathTypes(BaseTestCase):
 class TestCaseArgTypes(BaseTestCase):
     def test_atomic_types(self):
         gdscript = self._main.get_node('TestCasesGDScript')
-        mb = gde.MethodBind(gdscript, 'call')
-        mb.call('test_atomic_types')
+        gdscript_call = gde.MethodBind(gdscript, 'call')
+        gdscript_call('test_atomic_types')
 
-        r = mb.call('get_resource')
+        r = gdscript_call('get_resource')
 
         self.assertIsInstance(r.arg01, (bool, int))  # FIXME: force real 'bool' type?
         self.assertEqual(r.arg01, True)
@@ -122,10 +142,10 @@ class TestCaseArgTypes(BaseTestCase):
 
     def test_math_types_1(self):
         gdscript = self._main.get_node('TestCasesGDScript')
-        mb = gde.MethodBind(gdscript, 'call')
-        mb.call('test_math_types_1')
+        gdscript_call = gde.MethodBind(gdscript, 'call')
+        gdscript_call('test_math_types_1')
 
-        r = mb.call('get_resource')
+        r = gdscript_call('get_resource')
 
         self.assertIsInstance(r.arg01, types.Vector2)
         self.assertIsInstance(r.arg02, types.Vector2i)
