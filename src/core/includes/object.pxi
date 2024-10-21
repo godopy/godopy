@@ -83,6 +83,7 @@ cdef class Object:
         self.__godot_class__ = godot_class if isinstance(godot_class, Class) else Class.get_class(godot_class)
 
         if hasattr(self.__class__, '__godot_class__'):
+            # TODO: gdextension should never import godot, refactor
             from godot import classdb
             self.__class__ = getattr(classdb, self.__godot_class__.__name__)
 
@@ -133,6 +134,11 @@ cdef class Object:
     def ref_set_object(self):
         if self._ref_owner != NULL:
             gdextension_interface_ref_set_object(self._owner, self._ref_owner)
+
+
+# TODO: Implement 'special' *Engine* object that has customized
+#       'register_singleton' and 'register_script_language' methods
+#       that would set 'is_singleton' to true.
 
 
 class Callable(Object):

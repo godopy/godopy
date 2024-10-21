@@ -179,6 +179,7 @@ cdef class ExtensionClass(Class):
             UtilityFunctions.push_error("ExtensionClass object pointer is uninitialized")
             return NULL
 
+        # TODO: gdextension should never import godot, refactor
         from godot.core import _class_from_godot_class
 
         cdef ExtensionClass self = <ExtensionClass>p_self

@@ -67,6 +67,10 @@ cdef public int print_traceback(object exc) except -1:
     return 0
 
 
+# TODO: Make importing of default packages customizable
+#       'entry_point' should not depend on 'godot' or 'godopy'
+#       and should work with any packages defined in some config
+
 try:
     from godot import register_types as godot_register_types
 except ImportError as exc:
