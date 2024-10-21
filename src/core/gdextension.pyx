@@ -1,6 +1,6 @@
 cimport cython
 from cpython cimport (
-    ref, pystate, PyLong_Check, PyLong_AsLong,
+    ref, pystate, PyLong_Check, PyLong_AsSsize_t,
     PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM
 )
 from libcpp.vector cimport vector
@@ -9,7 +9,7 @@ from cython.operator cimport dereference as deref
 from python_runtime cimport *
 cimport godot_types as type_funcs
 
-import gc
+import sys
 import types
 import pickle
 import builtins

@@ -5,6 +5,9 @@ cdef dict special_method_to_enum = {
 }
 
 
+cdef dict _bound_method_cache = {}
+
+
 cdef class Extension(Object):
     def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=False, bint from_callback=False):
         if not isinstance(base_class, Class):
@@ -127,12 +130,20 @@ cdef class Extension(Object):
         cdef SpecialMethod _special_func
 
         if PyLong_Check(func):
-            _special_func = <SpecialMethod>PyLong_AsLong(func)
+            _special_func = <SpecialMethod>PyLong_AsSsize_t(func)
             with nogil:
                 Extension._call_special_virtual(_special_func)
             return
 
-        cdef Extension self = <object>p_self
-        cdef BoundExtensionMethod method = BoundExtensionMethod(self, func, func_and_info[1]) 
+        cdef Extension self
+        cdef BoundExtensionMethod method
+
+        cdef bytes key = b'%08X%08X' % (<uint64_t><PyObject *>p_self, <uint64_t><PyObject *>func)
+        if key in _bound_method_cache:
+            self, method = _bound_method_cache[key]
+        else:
+            self = <object>p_self
+            method = BoundExtensionMethod(self, func, func_and_info[1])
+            _bound_method_cache[key] = self, method
 
         _make_python_ptrcall(method, r_ret, p_args, method.get_argument_count())

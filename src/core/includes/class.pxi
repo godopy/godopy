@@ -72,6 +72,8 @@ cdef class Class:
             raise ValueError("String is required, got %r" % type(name))
 
         if name not in _CLASSDB:
+            name = str(name)
+            sys.intern(name)
             cls = Class.__new__(Class, name)
             _CLASSDB[name] = cls
             cls.__name__ = name
