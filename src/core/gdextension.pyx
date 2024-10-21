@@ -27,25 +27,25 @@ cdef dict _global_utility_function_info = pickle.loads(_global_utility_function_
 cdef set _global_core_classes = pickle.loads(_global_api_types__pickles['core'])
 cdef set _global_editor_classes = pickle.loads(_global_api_types__pickles['editor'])
 
-include "gdextension_includes/typeconv.pxi"
+include "includes/typeconv.pxi"
 
-include "gdextension_includes/class.pxi"
-include "gdextension_includes/object.pxi"
+include "includes/class.pxi"
+include "includes/object.pxi"
 
-include "gdextension_includes/engine_calls.pxi"
-include "gdextension_includes/method_bind.pxi"
-include "gdextension_includes/utility_function.pxi"
-include "gdextension_includes/builtin_method.pxi"
+include "includes/engine_calls.pxi"
+include "includes/method_bind.pxi"
+include "includes/utility_function.pxi"
+include "includes/builtin_method.pxi"
 
-include "gdextension_includes/python_calls.pxi"
-include "gdextension_includes/extension_method_base.pxi"
-include "gdextension_includes/extension_virtual_method.pxi"
-include "gdextension_includes/extension_method.pxi"
+include "includes/python_calls.pxi"
+include "includes/extension_method_base.pxi"
+include "includes/extension_virtual_method.pxi"
+include "includes/extension_method.pxi"
 
-include "gdextension_includes/extension_class.pxi"
-include "gdextension_includes/extension_callbacks.pxi"
-include "gdextension_includes/extension_class_registrator.pxi"
-include "gdextension_includes/extension.pxi"
+include "includes/extension_class.pxi"
+include "includes/extension_callbacks.pxi"
+include "includes/extension_class_registrator.pxi"
+include "includes/extension.pxi"
 
 
 cpdef input(str prompt=None):

@@ -91,6 +91,7 @@ def setup_builders(env):
         '-Isrc/gdextension_interface',
         '-Igen/gdextension_interface',
         '-Isrc/core',
+        '-Isrc/types',
         '-Isrc/godot_cpp',
         '-Igdextension',
         '-o',
@@ -167,13 +168,16 @@ def cython_sources(env):
     sources = [
         env.Cython('src/core/gdextension.pyx'),
         env.Cython('src/core/entry_point.pyx'),
-        env.Cython('src/core/godot_types.pyx'),
+        env.Cython('src/types/godot_types.pyx'),
     ]
 
     depends = [
         generated,
         *Glob('src/core/*.pxd'),
-        *Glob('src/core/*_includes/*.pxi'),
+        *Glob('src/types/*.pxd'),
+        *Glob('src/core/includes/*.pxi'),
+        *Glob('src/types/includes/*.pxi'),
+        *Glob('src/godot_cpp/*.pxd'),
         *Glob('src/godot_cpp/includes/*.pxi'),
         *Glob('gdextension/*.pxd'),
         *Glob('gen/gdextension_interface/*.pxi'),
