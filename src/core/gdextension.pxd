@@ -26,37 +26,6 @@ cdef dict _CLASSDB
 cdef list _registered_classes
 
 
-cdef public class Object [object GDPyObject, type GDPyObject_Type]:
-    cdef void *_owner
-    cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
-    cdef bint is_singleton
-    cdef readonly Class __godot_class__
-
-
-cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Type]:
-    cdef bint _needs_cleanup
-
-    cpdef destroy(self)
-
-    @staticmethod
-    cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil
-
-    @staticmethod
-    cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil
-
-    @staticmethod
-    cdef void _call_special_virtual(SpecialMethod placeholder) noexcept nogil
-
-    @staticmethod
-    cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
-                                     void *p_func, const GDExtensionConstTypePtr *p_args,
-                                     GDExtensionTypePtr r_ret) noexcept nogil
-
-    @staticmethod
-    cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
-                                      GDExtensionTypePtr r_ret) noexcept with gil
-
-
 cdef class Class:
     cdef readonly dict __method_info__
     cdef readonly str __name__
@@ -67,6 +36,47 @@ cdef class Class:
 
     @staticmethod
     cdef Class get_class(str name)
+
+
+cdef public class Object [object GDPyObject, type GDPyObject_Type]:
+    cdef void *_owner
+    cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
+    cdef bint is_singleton
+    cdef readonly Class __godot_class__
+
+
+cdef class EngineCallableBase:
+    cdef readonly str __name__
+    cdef readonly tuple type_info
+
+
+cdef class MethodBind(EngineCallableBase):
+    cdef readonly bint is_vararg
+
+    cdef Object __self__
+    cdef void *_base
+    cdef GDExtensionMethodBindPtr _godot_method_bind
+
+    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+    cdef void _varcall(self, const GDExtensionConstVariantPtr *p_args, size_t size,
+                       GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept nogil
+
+
+cdef class UtilityFunction(EngineCallableBase):
+    cdef GDExtensionPtrUtilityFunction _godot_utility_function
+
+    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+
+
+cdef class BuiltinMethod(EngineCallableBase):
+    cdef object __self__
+    cdef void *_base
+    cdef GDExtensionPtrBuiltInMethod _godot_builtin_method
+
+    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+
+    @staticmethod
+    cdef BuiltinMethod new_with_baseptr(object owner, object method_name, void *_base)
 
 
 cdef enum SpecialMethod:
@@ -106,40 +116,91 @@ cdef class ExtensionClass(Class):
     cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
 
 
-cdef class CallableBase:
-    cdef str __name__
-    cdef tuple type_info
-    cdef bint is_vararg
 
-    cdef object _call_internal(self, tuple args)
-    cdef object _call_internal_vararg(self, tuple args)
-    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
-    cdef void _call(self, const GDExtensionConstVariantPtr *p_args, size_t size,
-                    GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept nogil
+cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Type]:
+    cdef bint _needs_cleanup
 
-
-cdef class MethodBind(CallableBase):
-    cdef void *_owner
-    cdef GDExtensionMethodBindPtr _godot_method_bind
-    cdef Object __owner__
-
-    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
-    cdef void _call(self, const GDExtensionConstVariantPtr *p_args, size_t size,
-                    GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept nogil
-
-
-cdef class UtilityFunction(CallableBase):
-    cdef GDExtensionPtrUtilityFunction _godot_utility_function
-
-    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
-
-
-cdef class BuiltinMethod(CallableBase):
-    cdef void *_base
-    cdef GDExtensionPtrBuiltInMethod _godot_builtin_method
-    cdef object __owner__
-
-    cdef void _ptr_call(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+    cpdef destroy(self)
 
     @staticmethod
-    cdef BuiltinMethod new_with_baseptr(object owner, object method_name, void *_base)
+    cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil
+
+    @staticmethod
+    cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil
+
+    @staticmethod
+    cdef void _call_special_virtual(SpecialMethod placeholder) noexcept nogil
+
+    @staticmethod
+    cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
+                                     void *p_func, const GDExtensionConstTypePtr *p_args,
+                                     GDExtensionTypePtr r_ret) noexcept nogil
+
+    @staticmethod
+    cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
+                                      GDExtensionTypePtr r_ret) noexcept with gil
+
+
+cdef class PropertyInfo:
+    cdef public VariantType type
+    cdef public str name
+    cdef public str class_name
+    cdef public uint32_t hint
+    cdef public str hint_string
+    cdef public uint32_t usage
+
+
+cdef class _ExtensionMethodBase:
+    cdef readonly str __name__
+    cdef readonly object __func__
+    cdef readonly bint is_registered
+    cdef readonly tuple type_info
+
+    cdef list get_default_arguments(self)
+    cdef PropertyInfo get_argument_info(self, int pos)
+    cdef PropertyInfo get_return_info(self)
+    cdef list get_argument_info_list(self)
+    cdef int get_return_metadata(self)
+    cdef list get_argument_metadata_list(self)
+    cdef GDExtensionBool has_return(self)
+    cdef uint32_t get_hint_flags(self)
+    cdef uint32_t get_argument_count(self)
+    cdef uint32_t get_default_argument_count(self)
+
+
+cdef class ExtensionVirtualMethod(_ExtensionMethodBase):
+    cdef int register(self, ExtensionClass cls) except -1
+
+
+cdef class ExtensionMethod(_ExtensionMethodBase):
+    cdef int register(self, ExtensionClass cls) except -1
+
+    @staticmethod
+    cdef void call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
+                   const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
+                   GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil
+
+    @staticmethod
+    cdef void _call(void *p_method, GDExtensionClassInstancePtr p_self,
+                    const GDExtensionConstVariantPtr *p_args, size_t p_argument_count,
+                    GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept with gil
+
+    @staticmethod
+    cdef void ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
+                      const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept nogil
+
+    @staticmethod
+    cdef void _ptrcall(void *p_method, GDExtensionClassInstancePtr p_self,
+                       const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept with gil
+
+
+cdef class PythonCallableBase:
+    cdef readonly str __name__
+    cdef readonly object __func__
+    cdef readonly tuple type_info
+
+
+cdef class BoundExtensionMethod(PythonCallableBase):
+    cdef readonly Extension __self__
+
+    cdef size_t get_argument_count(self) except -2

@@ -73,12 +73,12 @@ cdef class ExtensionClassRegistrator:
 
 
     cdef int register_method(self, func: types.FunctionType) except -1:
-        cdef ExtensionMethod method = ExtensionMethod(self.registree, func)
+        cdef ExtensionMethod method = ExtensionMethod(func)
 
-        return method.register()
+        return method.register(self.registree)
 
 
     cdef int register_virtual_method(self, func: types.FunctionType) except -1:
-        cdef ExtensionVirtualMethod method = ExtensionVirtualMethod(self.registree, func)
+        cdef ExtensionVirtualMethod method = ExtensionVirtualMethod(func)
 
-        return method.register()
+        return method.register(self.registree)

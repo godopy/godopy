@@ -345,7 +345,7 @@ def install_godopy_python_packages(env):
 
 ###############################################################################
 
-if not 'VIRTUAL_ENV' in os.environ and not os.path.exists('./venv'):
+if not 'VIRTUAL_ENV' in os.environ:
     raise Exception("No virtual environment detected. "
                     "Please create and/or activate one "
                     "and install all requirements from 'requirements.txt'")

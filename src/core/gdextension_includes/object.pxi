@@ -100,7 +100,6 @@ cdef class Object:
                     _OBJECTDB[self.owner_id()] = self
             self.is_singleton = True
 
-
     def __repr__(self):
         class_name = self.__class__.__name__
         if self.__class__ is Object or class_name == 'Extension':

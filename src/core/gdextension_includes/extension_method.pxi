@@ -1,73 +1,83 @@
-cdef class PyStringName:
-    cdef str pyname
-    cdef StringName name 
+cdef class BoundExtensionMethod(PythonCallableBase):
+    def __init__(self, Extension instance, object method, tuple type_info=None):
+        self.__name__ = method.__name__
 
-    def __cinit__(self, str name):
-        self.pyname = name
-        self.name = StringName(name)
+        if isinstance(method, ExtensionMethod):
+            assert method.is_registered, "attempt to bind unregistered extension method"
+            self.__func__ = method.__func__
+            self.type_info = method.type_info
+
+        elif callable(method):
+            self.__func__ = method
+            if type_info is None:
+                raise TypeError("'type_info' argument is required for python functions")
+            self.type_info = type_info
+
+        else:
+            raise ValueError("Python callable is required")
+
+        self.__self__ = instance
 
 
-    cdef void *ptr(self):
-        return self.name._native_ptr()
+    def __call__(self, *args, **kwargs):
+        return self.__func__(self.__self__, *args, **kwargs)
 
 
-cdef class ExtensionMethod(ExtensionVirtualMethod):
+    def __str__(self):
+        return self.__name__
+
+
+    def __repr__(self):
+        return "<%s %s.%s of %r>" % (self.__class__.__name__, self.__self__.__class__.__name__,
+                                     self.__name__, self.__self__)
+
+
+    cdef size_t get_argument_count(self) except -2:
+        if self.__func__ is None:
+            return -1
+
+        # Don't count self
+        return self.__func__.__code__.co_argcount - 1
+
+
+cdef class ExtensionMethod(_ExtensionMethodBase):
     @staticmethod
     cdef void call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
-                        const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
-                        GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil:
-        cdef Variant ret
-
-        ret = ExtensionMethod._call(p_method_userdata, p_instance, p_args, p_argument_count, r_error)
-        gdextension_interface_variant_new_copy(r_return, ret._native_ptr())
+                   const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
+                   GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil:
+        ExtensionMethod._call(p_method_userdata, p_instance, <const void **>p_args, p_argument_count,
+                              <void *>r_return, r_error)
 
 
     @staticmethod
-    cdef Variant _call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
-                            const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
-                            GDExtensionCallError *r_error) noexcept with gil:
-        cdef ExtensionMethod self = <object>p_method_userdata
-        cdef Object instance = <object>p_instance
-        cdef int i
-        cdef list args = []
-        cdef Variant arg
-        for i in range(p_argument_count):
-            arg = deref(<Variant *>p_args[i])
-            args.append(arg.pythonize())
-        # print("Extension method call %s%r" % (self.method, args))
-        cdef object ret = self.method(instance, *args)
-        if r_error:
-            r_error[0].error = GDEXTENSION_CALL_OK
-        return <Variant>ret
+    cdef void _call(void *p_method, GDExtensionClassInstancePtr p_self, const void **p_args, size_t p_count,
+                    void *r_ret, GDExtensionCallError *r_error) noexcept with gil:
+        cdef ExtensionMethod func = <object>p_method
+        cdef Object instance = <object>p_self
+        cdef BoundExtensionMethod method = BoundExtensionMethod(instance, func)
+
+        # UtilityFunctions.print("Make python varcall %r %r" % (func, method))
+        _make_python_varcall[BoundExtensionMethod](method, p_args, p_count, r_ret, r_error)
 
 
     @staticmethod
     cdef void ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
                       const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept nogil:
-        ExtensionMethod._ptrcall(p_method_userdata, p_instance, p_args, r_return)
+        ExtensionMethod._ptrcall(p_method_userdata, p_instance, <const void **>p_args, <void *>r_return)
 
 
     @staticmethod
-    cdef void _ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
-                       const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept with gil:
-        # TODO: Support any arg/return type, not just str/PythonObject
-        cdef ExtensionMethod self = <object>p_method_userdata
-        cdef Object wrapper = <object>p_instance
-        cdef size_t i = 0
-        cdef list args = []
-        cdef String arg
+    cdef void _ptrcall(void *p_method, GDExtensionClassInstancePtr p_self, const void **p_args,
+                       void *r_ret) noexcept with gil:
+        cdef ExtensionMethod func = <object>p_method
+        cdef Object instance = <object>p_self
+        cdef BoundExtensionMethod method = BoundExtensionMethod(instance, func)
 
-        for i in range(self.get_argument_count() - 1):
-            arg = deref(<String *>p_args[i])
-            args.append(arg.py_str())
-
-        cdef object ret = self.method(wrapper, *args)
-
-        cdef PythonObject *gd_ret = PythonRuntime.get_singleton().python_object_from_pyobject(ret)
-        (<void **>r_return)[0] = gd_ret._owner
+        # UtilityFunctions.print("Make python ptrcall %r %r" % (func, method))
+        _make_python_ptrcall[BoundExtensionMethod](method, r_ret, p_args, method.get_argument_count())
 
 
-    cdef int register(self) except -1:
+    cdef int register(self, ExtensionClass cls) except -1:
         cdef GDExtensionClassMethodInfo mi
 
         if self.get_argument_count() < 1:
@@ -101,7 +111,7 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         for i in range(len(_def_args)):
             defarg = <Variant>_def_args[i]
             def_args[i] = <GDExtensionVariantPtr>&defarg
-        
+
         cdef GDExtensionPropertyInfo *arguments_info = <GDExtensionPropertyInfo *> \
             gdextension_interface_mem_alloc(argsize * cython.sizeof(GDExtensionPropertyInfo))
 
@@ -128,12 +138,9 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         cdef str method_name = self.__name__
         cdef StringName _method_name = StringName(method_name)
 
-        # cdef tuple type_info = tuple([
-        #     variant_type_to_str(<VariantType>return_value_info.type),
-        #     *variant_type_to_str(<VariantType>arginfo.type) for arginfo in _arguments_info
-        # ])
-
-        # self.owner_class.__method_info__[method_name] = {'type_info': type_info, 'hash': None}
+        type_info = [variant_type_to_str(<VariantType>return_value_info.type)]
+        type_info += [variant_type_to_str(<VariantType>arginfo.type) for arginfo in _arguments_info]
+        self.type_info = tuple(type_info)
 
         mi.name = _method_name._native_ptr()
         mi.method_userdata = <void *><PyObject *>self
@@ -150,9 +157,9 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
         mi.default_arguments = def_args
 
         ref.Py_INCREF(self)
-        self.owner_class._used_refs.append(self)
+        cls._used_refs.append(self)
 
-        cdef str class_name = self.owner_class.__name__
+        cdef str class_name = cls.__name__
         cdef StringName _class_name = StringName(class_name)
 
         with nogil:
@@ -162,4 +169,4 @@ cdef class ExtensionMethod(ExtensionVirtualMethod):
             gdextension_interface_mem_free(arguments_info)
             gdextension_interface_mem_free(arguments_metadata)
 
-        return 0
+            self.is_registered = True

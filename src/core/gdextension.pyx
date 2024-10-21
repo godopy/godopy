@@ -1,5 +1,5 @@
 cimport cython
-from cpython cimport ref, pystate
+from cpython cimport ref, pystate, PyLong_Check, PyLong_AsLong
 from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
 from cython.operator cimport dereference as deref
@@ -31,13 +31,17 @@ include "gdextension_includes/typeconv.pxi"
 
 include "gdextension_includes/class.pxi"
 include "gdextension_includes/object.pxi"
-include "gdextension_includes/callable_base.pxi"
+
+include "gdextension_includes/engine_calls.pxi"
 include "gdextension_includes/method_bind.pxi"
 include "gdextension_includes/utility_function.pxi"
 include "gdextension_includes/builtin_method.pxi"
 
+include "gdextension_includes/python_calls.pxi"
+include "gdextension_includes/extension_method_base.pxi"
 include "gdextension_includes/extension_virtual_method.pxi"
 include "gdextension_includes/extension_method.pxi"
+
 include "gdextension_includes/extension_class.pxi"
 include "gdextension_includes/extension_callbacks.pxi"
 include "gdextension_includes/extension_class_registrator.pxi"

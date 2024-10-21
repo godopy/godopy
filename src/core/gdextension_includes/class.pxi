@@ -23,6 +23,9 @@ cdef class Class:
     def __call__(self):
         return Object(self)
 
+    def __str__(self):
+        return self.__name__
+
     def __repr__(self):
         class_name = '%s[%s]' % (self.__class__.__name__, self.__name__)
         return "<%s.%s at 0x%016X>" % (self.__class__.__module__, class_name, <uint64_t><PyObject *>self)
