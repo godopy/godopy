@@ -9,7 +9,7 @@ cdef dict _bound_method_cache = {}
 
 
 cdef class Extension(Object):
-    def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=False, bint from_callback=False):
+    def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=True, bint from_callback=False):
         if not isinstance(base_class, Class):
             raise TypeError("godot.Class instance is required for 'ext_class', got %r" % type(base_class))
 

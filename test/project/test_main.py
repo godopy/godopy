@@ -159,7 +159,15 @@ class TestCaseSceneExtension(BaseTestCase):
     def test_class(self):
         example = self._main.get_node('Example')
         self.assertEqual(example.__godot_class__.__name__, 'Example')
-        self.assertEqual(example.__class__.__godot_class__.__get__(example), example.__godot_class__)
+        self.assertEqual(example.__class__.__godot_class__, example.__godot_class__)
+
+        with self.assertRaises(TypeError) as ctx:
+            example.__class__(kwarg=1)
+        
+        self.assertTrue("unexpected keyword argument 'kwarg'" in str(ctx.exception))
+
+        with self.assertRaises(TypeError) as ctx:
+            example.__class__(_notify=False)
 
 
 class TestStream:

@@ -26,6 +26,8 @@ def virtual_method(func):
     return func
 
 
+_ext_class_cache = {}
+
 class GodotClassBase(type):
     """Metaclass for all Godot engine and extension classes"""
 
@@ -35,7 +37,13 @@ class GodotClassBase(type):
         godot_cls = attrs.pop('__godot_class__', None)
         if godot_cls is not None:
             # Engine class
+            module = attrs.pop('__module__', 'godot.classdb')
+
+            if module == 'godot.classdb' and gde._has_singleton(name):
+                module = 'godot.singletons'
+
             new_attrs = {
+                '__module__': module,
                 '_is_extension': False,
                 '__godot_class__': godot_cls
             }
@@ -91,7 +99,10 @@ class GodotClassBase(type):
             else:
                 new_attrs[attr] = value
 
-        return super_new(cls, name, bases, new_attrs, **kwargs)
+        new_cls = super_new(cls, name, bases, new_attrs, **kwargs)
+        _ext_class_cache[godot_cls] = new_cls
+
+        return new_cls
 
     def __getattr__(cls, name):
         return getattr(cls.__godot_class__, name)
@@ -115,10 +126,29 @@ class Extension(gde.Extension):
         ))
 
 
+# semi-public, not in __all__, for internal use
+def _class_from_godot_class(godot_cls):
+    return _ext_class_cache[godot_cls]
+
 class Class(Extension, metaclass=GodotClassBase):
-    def __init__(self):
-        godot_cls = self.__class__.__godot_class__
-        super().__init__(godot_cls, godot_cls.__inherits__)
+    def __init__(self, **kwargs):
+        has_kwargs = list(kwargs.keys())
+
+        godot_cls = kwargs.pop('__godot_class__', self.__class__.__godot_class__)
+        _notify = kwargs.pop('_notify', True)
+        _from_callback = kwargs.pop('_from_callback', False)
+        _internal_check = kwargs.pop('_internal_check', '')
+
+        # kwargs are for internal use only, add some protection
+        msg = "%s.__init__() got an unexpected keyword argument %r"
+        if has_kwargs and _internal_check != hex(id(godot_cls)):
+            raise TypeError(msg % (self.__godot_class__, has_kwargs.pop()))
+
+        if kwargs:
+            raise TypeError(msg % (self.__godot_class__, list(kwargs.keys()).pop()))
+
+        super().__init__(godot_cls, godot_cls.__inherits__, _notify, _from_callback)
+
 
 class EngineObject(gde.Object):
     def __getattr__(self, name):
@@ -137,6 +167,6 @@ class EngineObject(gde.Object):
 
 
 class EngineClass(EngineObject, metaclass=GodotClassBase):
-    def __init__(self):
+    def __init__(self, from_ptr=0):
         godot_cls = self.__class__.__godot_class__
-        super().__init__(godot_cls)
+        super().__init__(godot_cls, from_ptr=from_ptr)

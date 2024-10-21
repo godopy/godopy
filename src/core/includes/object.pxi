@@ -9,10 +9,11 @@ cdef public object object_to_pyobject(void *p_godot_object):
     cdef Object obj = _OBJECTDB.get(obj_id, None)
 
     if obj is None and p_godot_object != NULL:
-        obj = Object('Object', from_ptr=obj_id)
-        get_type = MethodBind(obj, 'get_class')
+        from godot import classdb
+        cls = classdb.Object
 
-        obj.cast_to(get_type())
+        obj = cls(from_ptr=obj_id)
+        obj.cast_to(obj.get_class())
 
     return obj
 

@@ -179,16 +179,21 @@ cdef class ExtensionClass(Class):
             UtilityFunctions.push_error("ExtensionClass object pointer is uninitialized")
             return NULL
 
-        from godot import Extension as PyExtension
+        from godot.core import _class_from_godot_class
 
         cdef ExtensionClass self = <ExtensionClass>p_self
-        cdef Extension instance = PyExtension(self, self.__inherits__, p_notify_postinitialize, True)
+        cls = _class_from_godot_class(self)
+
+        cdef Extension instance = cls(__godot_class__=self, _notify=p_notify_postinitialize, _from_callback=True,
+                                      _internal_check=hex(<uint64_t>p_self))
 
         if self.__name__ in _NODEDB:
             UtilityFunctions.push_warning(
-                "%s instance already saved to _NODEDB: %r, but another instance %r was requested, skipping"
+                "%s instance already saved to _NODEDB: %r, but another instance %r was requested, rewriting"
                 % (self.__name__, _NODEDB[self.__name__], instance)
             )
+
+            _NODEDB[self.__name__] = instance
         else:
             # print('Saved %r instance %r' % (self, instance))
 
