@@ -27,5 +27,5 @@ cdef class UtilityFunction(EngineCallableBase):
                                                 <uint64_t><PyObject *>self._godot_utility_function)
 
 
-    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil:
-        self._godot_utility_function(r_ret, p_args, p_numargs)
+    cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil:
+        self._godot_utility_function(r_ret, <const GDExtensionConstTypePtr *>p_args, p_numargs)

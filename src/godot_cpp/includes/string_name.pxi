@@ -3,7 +3,7 @@ from cpython cimport PyObject
 cdef extern from "godot_cpp/variant/string_name.hpp" namespace "godot" nogil:
     cdef cppclass String
 
-    cppclass StringName:
+    cdef cppclass StringName:
         StringName()
         StringName(const char *)
         StringName(const char *, bint)

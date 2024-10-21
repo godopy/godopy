@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/quaternion.hpp" namespace "godot" nogil:
-    cppclass Quaternion:
+    cdef cppclass Quaternion:
         real_t x
         real_t y
         real_t z

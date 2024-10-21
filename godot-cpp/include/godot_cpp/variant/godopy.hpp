@@ -50,9 +50,9 @@ extern PyObject *variant_object_to_pyobject(godot::Variant const &);
 extern void object_from_pyobject(PyObject *, void **);
 extern void variant_object_from_pyobject(PyObject *, godot::Variant *);
 
-extern PyObject *bool_to_pyobject(GDExtensionBool);
+extern PyObject *bool_to_pyobject(bool);
 extern PyObject *variant_bool_to_pyobject(godot::Variant const &);
-extern void bool_from_pyobject(PyObject *, GDExtensionBool *);
+extern void bool_from_pyobject(PyObject *, bool *);
 extern void *variant_bool_from_pyobject(PyObject *, godot::Variant *);
 extern PyObject *int_to_pyobject(int64_t);
 extern PyObject *variant_int_to_pyobject(godot::Variant const &);

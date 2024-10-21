@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/utility_functions.hpp" namespace "godot" nogil:
-    cppclass UtilityFunctions:
+    cdef cppclass UtilityFunctions:
         @staticmethod
         void print(str)
 

@@ -60,13 +60,17 @@ cdef class Class:
 
 
     @staticmethod
-    def _get_class(str name):
+    def _get_class(name):
         return Class.get_class(name)
 
 
     @staticmethod
-    cdef Class get_class(str name):
+    cdef Class get_class(object name):
         cdef Class cls
+
+        if not isinstance(name, str):
+            raise ValueError("String is required, got %r" % type(name))
+
         if name not in _CLASSDB:
             cls = Class.__new__(Class, name)
             _CLASSDB[name] = cls

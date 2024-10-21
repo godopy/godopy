@@ -4,7 +4,7 @@ Nil = None
 bool = bool
 
 
-cdef public object bool_to_pyobject(GDExtensionBool p_bool):
+cdef public object bool_to_pyobject(bint p_bool):
     return p_bool != 0
 
 
@@ -16,7 +16,7 @@ cdef public object variant_bool_to_pyobject(const cpp.Variant &v):
 
 # TODO: Keep type checks only in debug builds
 
-cdef public void bool_from_pyobject(object p_obj, GDExtensionBool *r_ret) noexcept:
+cdef public void bool_from_pyobject(object p_obj, bint *r_ret) noexcept:
     if not PyBool_Check(p_obj):
         cpp.UtilityFunctions.push_error("'bool' is required, got %r" % type(p_obj))
         r_ret[0] = False

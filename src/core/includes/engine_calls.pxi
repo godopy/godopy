@@ -4,9 +4,8 @@ ctypedef fused gdcallable_ft:
     BuiltinMethod
 
 
-ctypedef void (*_ptrcall_func)(gdcallable_ft, GDExtensionTypePtr, GDExtensionConstTypePtr *, size_t) noexcept nogil
-ctypedef void (*_varcall_func)(gdcallable_ft, const GDExtensionConstVariantPtr *, size_t,
-                               GDExtensionUninitializedVariantPtr, GDExtensionCallError *) noexcept nogil
+ctypedef void (*_ptrcall_func)(gdcallable_ft, void *, const void **, size_t) noexcept nogil
+ctypedef void (*_varcall_func)(gdcallable_ft, const Variant **, size_t, Variant *, GDExtensionCallError *) noexcept nogil
 
 
 cdef class EngineCallableBase:
@@ -28,14 +27,14 @@ cdef inline object _make_engine_varcall(gdcallable_ft method, _varcall_func varc
 
     cdef size_t i = 0, size = len(args)
 
-    cdef Variant *_args = <Variant *>gdextension_interface_mem_alloc(size * cython.sizeof(Variant))
+    cdef Variant *vargs = <Variant *>gdextension_interface_mem_alloc(size * cython.sizeof(Variant))
 
     for i in range(size):
-        _args[i] = Variant(<const PyObject *>args[i])
+        vargs[i] = Variant(<const PyObject *>args[i])
 
-    varcall(method, <const GDExtensionConstVariantPtr *>&_args, size, &ret, &err)
+    varcall(method, <const Variant **>&vargs, size, &ret, &err)
 
-    gdextension_interface_mem_free(_args)
+    gdextension_interface_mem_free(vargs)
 
     if err.error != GDEXTENSION_CALL_OK:
         raise RuntimeError(ret.pythonize())
@@ -48,8 +47,9 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
     Implements GDExtension's 'ptrcall' logic when calling Engine methods from Python
     """
     cdef tuple type_info = method.type_info
-    cdef Variant arg
     cdef size_t i = 0, size = len(args)
+
+    # UtilityFunctions.print("Variant: %d, String: %d" % (cython.sizeof(Variant), cython.sizeof(String)))
 
     if (size != len(method.type_info) - 1):
         msg = (
@@ -60,8 +60,11 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
         UtilityFunctions.printerr(msg)
         raise TypeError(msg)
 
-    cdef GDExtensionUninitializedTypePtr *p_args = <GDExtensionUninitializedTypePtr *> \
+    cdef GDExtensionUninitializedTypePtr *ptr_args = <GDExtensionUninitializedTypePtr *> \
         gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
+
+    if ptr_args == NULL:
+        raise MemoryError("Not enough memory")
 
     cdef str return_type = 'Nil'
     cdef str arg_type = 'Nil'
@@ -70,7 +73,7 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
 
     cdef int arg_typecode = 0
 
-    cdef GDExtensionBool bool_arg
+    cdef bint bool_arg
     cdef int64_t int_arg
     cdef double float_arg
     cdef String string_arg
@@ -84,19 +87,15 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
 
     cdef PackedStringArray packed_string_array_arg
 
-    cdef Object object_arg
-    cdef Extension ext_arg
-    cdef void *void_ptr_arg
-
-    cdef double x, y, z, w
-    cdef int32_t xi, yi, zi, wi
-
+    # cdef Object object_arg
+    # cdef Extension ext_arg
+    cdef void *ptr_arg
+    cdef Variant vaiant_arg
     cdef object pyarg
 
     # Optimized get_node for Python nodes
     if method.__name__ == 'get_node' and size == 1 and args[0] in _NODEDB:
         pyarg = _NODEDB[args[0]]
-        # print("'get_node' shortcut for %r" % pyarg)
         return pyarg
 
     # TODO: Optimize
@@ -105,56 +104,54 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
         pyarg = args[i]
 
         if arg_type == 'bool':
-            bool_arg = arg.booleanize()
-            p_args[i] = &bool_arg
+            type_funcs.bool_from_pyobject(pyarg, &bool_arg)
+            ptr_args[i] = &bool_arg
         elif arg_type == 'int' or arg_type == 'RID' or arg_type.startswith('enum:'):
-            int_arg = pyarg
-            p_args[i] = &int_arg
+            type_funcs.int_from_pyobject(pyarg, &int_arg)
+            ptr_args[i] = &int_arg
         elif arg_type == 'float':
-            float_arg = pyarg
-            p_args[i] = &float_arg
+            type_funcs.float_from_pyobject(pyarg, &float_arg)
+            ptr_args[i] = &float_arg
         elif arg_type == 'String':
-            string_arg = <String>pyarg
-            p_args[i] = &string_arg
+            type_funcs.string_from_pyobject(pyarg, &string_arg)
+            ptr_args[i] = &string_arg
         elif arg_type == 'Vector2':
-            x, y = pyarg
-            vector2_arg = Vector2(x, y)
-            p_args[i] = &vector2_arg
+            type_funcs.vector2_from_pyobject(pyarg, &vector2_arg)
+            ptr_args[i] = &vector2_arg
         elif arg_type == 'Vector2i':
-            xi, yi = pyarg
-            vector2i_arg = Vector2i(xi, yi)
-            p_args[i] = &vector2i_arg
+            type_funcs.vector2i_from_pyobject(pyarg, &vector2i_arg)
+            ptr_args[i] = &vector2i_arg
         elif arg_type == 'Rect2':
             position, size = pyarg
             x, y = position
             z, w = size
             rect2_arg = Rect2(x, y, z, w)
-            p_args[i] = &rect2_arg
+            ptr_args[i] = &rect2_arg
         elif arg_type == 'Rect2i':
             position, size = pyarg
             xi, yi = position
             zi, wi = size
             rect2i_arg = Rect2i(xi, yi, zi, wi)
-            p_args[i] = &rect2_arg
+            ptr_args[i] = &rect2_arg
         elif arg_type == 'StringName':
             stringname_arg = <StringName>pyarg
-            p_args[i] = &stringname_arg
+            ptr_args[i] = &stringname_arg
         elif arg_type == 'NodePath':
             nodepath_arg = <NodePath>pyarg
-            p_args[i] = &nodepath_arg
+            ptr_args[i] = &nodepath_arg
         elif arg_type == 'Variant':
-            arg = Variant(<const PyObject *>pyarg)
-            p_args[i] = &arg
-        elif arg_type in _global_inheritance_info and isinstance(pyarg, Object):
-            object_arg = <Object>pyarg
-            p_args[i] = &object_arg._owner
+            variant_arg = Variant(<const PyObject *>pyarg)
+            ptr_args[i] = &variant_arg
+        elif arg_type in _global_inheritance_info:
+            object_from_pyobject(pyarg, &ptr_arg)
+            ptr_args[i] = &ptr_arg
 
         else:
             unknown_argtype_error = True
             break
 
     if unknown_argtype_error:
-        gdextension_interface_mem_free(p_args)
+        gdextension_interface_mem_free(ptr_args)
         UtilityFunctions.printerr(
             "Don't know how to convert %r types, passed arg was: %r" % (arg_type, pyarg)
         )
@@ -162,42 +159,41 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
 
     return_type = method.type_info[0]
 
+    cdef bint return_variant = False
     if return_type == 'Nil':
-        ptrcall(method, NULL, <GDExtensionConstTypePtr *>p_args, size)
+        ptrcall(method, NULL, <const void **>ptr_args, size)
     elif return_type == 'Variant':
-        ptrcall(method, &arg, <GDExtensionConstTypePtr *>p_args, size)
-    elif return_type == 'String':
-        ptrcall(method, &string_arg, <GDExtensionConstTypePtr *>p_args, size)
-        arg = <Variant>string_arg
-    elif return_type == 'float':
-        ptrcall(method, &float_arg, <GDExtensionConstTypePtr *>p_args, size)
-        arg = <Variant>float_arg
-    elif return_type == 'int' or return_type == 'RID' or return_type[6:] in _global_enum_info:
-        ptrcall(method, &int_arg, <GDExtensionConstTypePtr *>p_args, size)
-        arg = <Variant>int_arg
+        ptrcall(method, &variant_arg, <const void **>ptr_args, size)
+        return_variant = True
     elif return_type == 'bool':
-        ptrcall(method, &bool_arg, <GDExtensionConstTypePtr *>p_args, size)
-        arg = <Variant>bool_arg
+        ptrcall(method, &bool_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.bool_to_pyobject(bool_arg)
+    elif return_type == 'int' or return_type == 'RID' or return_type[6:] in _global_enum_info:
+        ptrcall(method, &int_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.int_to_pyobject(int_arg)
+    elif return_type == 'float':
+        ptrcall(method, &float_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.float_to_pyobject(float_arg)
+    elif return_type == 'String':
+        ptrcall(method, &string_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.string_to_pyobject(string_arg)
     elif return_type == 'Vector2':
-        ptrcall(method, &vector2_arg, <GDExtensionConstTypePtr *>p_args, size)
-        arg = <Variant>vector2_arg
+        ptrcall(method, &vector2_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.vector2_to_pyobject(vector2_arg)
+    elif return_type == 'Vector2i':
+        ptrcall(method, &vector2i_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.vector2i_to_pyobject(vector2i_arg)
     elif return_type == 'PackedStringArray':
-        ptrcall(method, &packed_string_array_arg, <GDExtensionConstTypePtr *>p_args, size)
-        arg = <Variant>packed_string_array_arg
+        ptrcall(method, &packed_string_array_arg, <const void **>ptr_args, size)
+        variant_arg = Variant(packed_string_array_arg)
+        return_variant = True
     elif return_type in _global_inheritance_info:
-        # print("Calling from %r with %r, receiving %s" % (gdcallable, args, return_type))
-        ptrcall(method, &void_ptr_arg, <GDExtensionConstTypePtr *>p_args, size)
-        object_arg = _OBJECTDB.get(<uint64_t>void_ptr_arg, None)
-        # print("Process %s return value %r" % (return_type, object_arg))
-        if object_arg is None and void_ptr_arg != NULL:
-            object_arg = Object(return_type, from_ptr=<uint64_t>void_ptr_arg)
-            # print("Created %s return value from pointer %X: %r" % (return_type, <uint64_t>void_ptr_arg, object_arg))
-        gdextension_interface_mem_free(p_args)
-        return object_arg
+        ptrcall(method, &ptr_arg, <const void **>ptr_args, size)
+        pyarg = object_to_pyobject(ptr_arg)
     else:
         unknown_type_error = True
 
-    gdextension_interface_mem_free(p_args)
+    gdextension_interface_mem_free(ptr_args)
 
     if unknown_type_error:
         UtilityFunctions.printerr("Don't know how to return %r types. Returning None." % return_type)
@@ -206,5 +202,7 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
 
     if return_type == 'Nil':
         return None
+    elif return_variant:
+        return variant_arg.pythonize()
 
-    return arg.pythonize()
+    return pyarg

@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/packed_string_array.hpp" namespace "godot" nogil:
-    cppclass PackedStringArray:
+    cdef cppclass PackedStringArray:
         PackedStringArray()
         PackedStringArray(object)
 

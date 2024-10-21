@@ -1,35 +1,16 @@
 """
 Python versions of Godot Variant types
 """
-
-from gdextension_interface cimport *
-from binding cimport *
-from libc.stdint cimport int8_t, int16_t, int32_t, int64_t
-from libc.stddef cimport wchar_t
 from cpython cimport (
     PyObject, ref, PyUnicode_AsWideCharString, PyUnicode_FromWideChar,
     PyBool_Check, PyLong_Check, PyFloat_Check, PyUnicode_Check, PyBytes_Check,
     PyObject_IsTrue
 )
-cimport godot_cpp as cpp
-
 from gdextension cimport BuiltinMethod
-
-cdef extern from *:
-    """
-#define NPY_NO_DEPRECATED_API NPY_2_0_API_VERSION
-    """
-    pass
-
-cimport numpy
 from numpy cimport PyArray_New, PyArray_Check, PyArray_TYPE, NPY_ARRAY_C_CONTIGUOUS, NPY_ARRAY_WRITEABLE
-
 
 import numpy as np
 import _godot_type_tuples as tt
-
-
-numpy._import_array()
 
 __all__ = [
     'Nil',  # None

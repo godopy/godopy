@@ -56,5 +56,5 @@ cdef class BuiltinMethod(EngineCallableBase):
                                                 <uint64_t><PyObject *>self._godot_builtin_method)
 
 
-    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil:
-        self._godot_builtin_method(self._base, p_args, r_ret, p_numargs)
+    cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil:
+        self._godot_builtin_method(self._base, <GDExtensionConstTypePtr *>p_args, r_ret, p_numargs)

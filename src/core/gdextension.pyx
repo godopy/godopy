@@ -1,9 +1,13 @@
 cimport cython
-from cpython cimport ref, pystate, PyLong_Check, PyLong_AsLong
+from cpython cimport (
+    ref, pystate, PyLong_Check, PyLong_AsLong,
+    PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM
+)
 from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
 from cython.operator cimport dereference as deref
 from python_runtime cimport *
+cimport godot_types as type_funcs
 
 import gc
 import types
@@ -14,7 +18,6 @@ import importlib
 
 import numpy as np
 import godot_types as gdtypes
-
 
 include "api_data.pxi"
 

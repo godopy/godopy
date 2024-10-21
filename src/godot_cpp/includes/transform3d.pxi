@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/transform3d.hpp" namespace "godot" nogil:
-    cppclass Transform3D:
+    cdef cppclass Transform3D:
         Basis basis
         Vector3 origin
 

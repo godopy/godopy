@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/classes/engine.hpp" namespace "godot" nogil:
-    cppclass Engine:
+    cdef cppclass Engine:
         @staticmethod
         Engine *get_singleton()
 

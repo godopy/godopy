@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/vector4.hpp" namespace "godot" nogil:
-    cppclass Vector4:
+    cdef cppclass Vector4:
         real_t x
         real_t y
         real_t z

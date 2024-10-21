@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/vector2i.hpp" namespace "godot" nogil:
-    cppclass Vector2i:
+    cdef cppclass Vector2i:
         int32_t x
         int32_t y
 

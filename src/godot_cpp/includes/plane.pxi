@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/plane.hpp" namespace "godot" nogil:
-    cppclass Plane:
+    cdef cppclass Plane:
         Vector3 normal
         real_t d
 

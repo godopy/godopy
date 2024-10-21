@@ -20,7 +20,7 @@ cdef extern from "godot_cpp/variant/char_string.hpp" namespace "godot" nogil:
 
 
 cdef extern from "godot_cpp/variant/string.hpp" namespace "godot" nogil:
-    cppclass String:
+    cdef cppclass String:
         String()
         String(const char *)
         String(const wchar_t *)

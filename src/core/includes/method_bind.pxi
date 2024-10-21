@@ -34,13 +34,14 @@ cdef class MethodBind(EngineCallableBase):
                                                 <uint64_t><PyObject *>self._godot_method_bind)
 
 
-    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args,
-                       size_t p_numargs) noexcept nogil:
+    cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil:
         with nogil:
-            gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._base, p_args, r_ret)
+            gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._base,
+                                                             p_args, r_ret)
 
 
-    cdef void _varcall(self, const GDExtensionConstVariantPtr *p_args, size_t size,
-                       GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept nogil:
+    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
+                       GDExtensionCallError *r_error) noexcept nogil:
         with nogil:
-            gdextension_interface_object_method_bind_call(self._godot_method_bind, self._base, p_args, size, r_ret, r_error)
+            gdextension_interface_object_method_bind_call(self._godot_method_bind, self._base,
+                                                          <const GDExtensionConstVariantPtr *>p_args, size, r_ret, r_error)

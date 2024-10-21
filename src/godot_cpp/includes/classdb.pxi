@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/classes/class_db_singleton.hpp" namespace "godot" nogil:
-    cppclass ClassDB "godot::ClassDBSingleton":
+    cdef cppclass ClassDB "godot::ClassDBSingleton":
         @staticmethod
         ClassDB *get_singleton()
 

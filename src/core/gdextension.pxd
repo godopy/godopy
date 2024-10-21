@@ -35,7 +35,7 @@ cdef class Class:
     cpdef object get_method_info(self, method_name)
 
     @staticmethod
-    cdef Class get_class(str name)
+    cdef Class get_class(object name)
 
 
 cdef public class Object [object GDPyObject, type GDPyObject_Type]:
@@ -57,15 +57,15 @@ cdef class MethodBind(EngineCallableBase):
     cdef void *_base
     cdef GDExtensionMethodBindPtr _godot_method_bind
 
-    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
-    cdef void _varcall(self, const GDExtensionConstVariantPtr *p_args, size_t size,
-                       GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept nogil
+    cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil
+    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
+                       GDExtensionCallError *r_error) noexcept nogil
 
 
 cdef class UtilityFunction(EngineCallableBase):
     cdef GDExtensionPtrUtilityFunction _godot_utility_function
 
-    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+    cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil
 
 
 cdef class BuiltinMethod(EngineCallableBase):
@@ -73,7 +73,7 @@ cdef class BuiltinMethod(EngineCallableBase):
     cdef void *_base
     cdef GDExtensionPtrBuiltInMethod _godot_builtin_method
 
-    cdef void _ptrcall(self, GDExtensionTypePtr r_ret, GDExtensionConstTypePtr *p_args, size_t p_numargs) noexcept nogil
+    cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil
 
     @staticmethod
     cdef BuiltinMethod new_with_baseptr(object owner, object method_name, void *_base)
@@ -138,7 +138,7 @@ cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Ty
 
     @staticmethod
     cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
-                                      GDExtensionTypePtr r_ret) noexcept with gil
+                                      void *r_ret) noexcept with gil
 
 
 cdef class PropertyInfo:
@@ -181,17 +181,15 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
                    GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil
 
     @staticmethod
-    cdef void _call(void *p_method, GDExtensionClassInstancePtr p_self,
-                    const GDExtensionConstVariantPtr *p_args, size_t p_argument_count,
-                    GDExtensionUninitializedVariantPtr r_ret, GDExtensionCallError *r_error) noexcept with gil
+    cdef void _call(void *p_method, void *p_self, const Variant **p_args, size_t p_argcount,
+                    Variant *r_ret, GDExtensionCallError *r_error) noexcept with gil
 
     @staticmethod
     cdef void ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
                       const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept nogil
 
     @staticmethod
-    cdef void _ptrcall(void *p_method, GDExtensionClassInstancePtr p_self,
-                       const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept with gil
+    cdef void _ptrcall(void *p_method, void *p_self, const void **p_args, void *r_return) noexcept with gil
 
 
 cdef class PythonCallableBase:

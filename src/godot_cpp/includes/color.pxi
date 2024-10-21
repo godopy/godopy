@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/color.hpp" namespace "godot" nogil:
-    cppclass Color:
+    cdef cppclass Color:
         real_t r
         real_t g
         real_t b

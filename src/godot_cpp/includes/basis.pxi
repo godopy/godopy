@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/basis.hpp" namespace "godot" nogil:
-    cppclass Basis:
+    cdef cppclass Basis:
         Vector3[3] rows
 
         Basis()

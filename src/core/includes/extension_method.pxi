@@ -45,13 +45,13 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
     cdef void call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
                    const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
                    GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil:
-        ExtensionMethod._call(p_method_userdata, p_instance, <const void **>p_args, p_argument_count,
-                              <void *>r_return, r_error)
+        ExtensionMethod._call(p_method_userdata, p_instance, <const Variant **>p_args, p_argument_count,
+                              <Variant *>r_return, r_error)
 
 
     @staticmethod
-    cdef void _call(void *p_method, GDExtensionClassInstancePtr p_self, const void **p_args, size_t p_count,
-                    void *r_ret, GDExtensionCallError *r_error) noexcept with gil:
+    cdef void _call(void *p_method, void *p_self, const Variant **p_args, size_t p_count,
+                    Variant *r_ret, GDExtensionCallError *r_error) noexcept with gil:
         cdef ExtensionMethod func = <object>p_method
         cdef Object instance = <object>p_self
         cdef BoundExtensionMethod method = BoundExtensionMethod(instance, func)

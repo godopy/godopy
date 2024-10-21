@@ -1,5 +1,5 @@
 cdef extern from "godot_cpp/variant/rect2i.hpp" namespace "godot" nogil:
-    cppclass Rect2i:
+    cdef cppclass Rect2i:
         Vector2i position
         Vector2i size
 
