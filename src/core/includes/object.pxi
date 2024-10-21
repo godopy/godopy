@@ -82,6 +82,10 @@ cdef class Object:
 
         self.__godot_class__ = godot_class if isinstance(godot_class, Class) else Class.get_class(godot_class)
 
+        if hasattr(self.__class__, '__godot_class__'):
+            from godot import classdb
+            self.__class__ = getattr(classdb, self.__godot_class__.__name__)
+
         cdef str class_name = self.__godot_class__.__name__
         cdef void *prev_owner
 
