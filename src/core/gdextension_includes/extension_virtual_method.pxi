@@ -65,9 +65,9 @@ cdef class ExtensionVirtualMethod(_ExtensionMethodBase):
         self.type_info = tuple(type_info)
 
         mi.name = _method_name._native_ptr()
-        mi.method_flags = self.get_hint_flags()
+        mi.method_flags = GDEXTENSION_METHOD_FLAG_VIRTUAL
         mi.return_value = return_value_info
-        mi.return_value_metadata = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
+        mi.return_value_metadata = <GDExtensionClassMethodArgumentMetadata>self.get_return_metadata()
         mi.argument_count = argsize
         mi.arguments = arguments_info
         mi.arguments_metadata = <GDExtensionClassMethodArgumentMetadata *>arguments_metadata

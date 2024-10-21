@@ -160,12 +160,12 @@ cdef class _ExtensionMethodBase:
     cdef PropertyInfo get_argument_info(self, int pos)
     cdef PropertyInfo get_return_info(self)
     cdef list get_argument_info_list(self)
-    cdef int get_return_metadata(self)
+    cdef int get_return_metadata(self) except -1
+    cdef int metadata_from_type(self, VariantType t) except -1 nogil
     cdef list get_argument_metadata_list(self)
-    cdef GDExtensionBool has_return(self)
-    cdef uint32_t get_hint_flags(self)
-    cdef uint32_t get_argument_count(self)
-    cdef uint32_t get_default_argument_count(self)
+    cdef GDExtensionBool has_return(self) except -1
+    cdef uint32_t get_argument_count(self) except -1
+    cdef uint32_t get_default_argument_count(self) except -1
 
 
 cdef class ExtensionVirtualMethod(_ExtensionMethodBase):

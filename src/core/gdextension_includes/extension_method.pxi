@@ -146,10 +146,10 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
         mi.method_userdata = <void *><PyObject *>self
         mi.call_func = &ExtensionMethod.call
         mi.ptrcall_func = &ExtensionMethod.ptrcall
-        mi.method_flags = self.get_hint_flags()
+        mi.method_flags = GDEXTENSION_METHOD_FLAG_NORMAL
         mi.has_return_value = self.has_return()
         mi.return_value_info = &return_value_info
-        mi.return_value_metadata = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
+        mi.return_value_metadata = <GDExtensionClassMethodArgumentMetadata>self.get_return_metadata()
         mi.argument_count = argsize
         mi.arguments_info = arguments_info
         mi.arguments_metadata = <GDExtensionClassMethodArgumentMetadata *>arguments_metadata

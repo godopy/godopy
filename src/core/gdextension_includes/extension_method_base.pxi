@@ -59,11 +59,8 @@ cdef class _ExtensionMethodBase:
         cdef PropertyInfo pi = PropertyInfo(NIL)
 
         if pos >= 0:
-            try:
-                pi.name = self.__func__.__code__.co_varnames[pos]
-                pi.type = pytype_to_gdtype(self.__func__.__annotations__.get(pi.name, None))
-            except IndexError:
-                UtilityFunctions.push_error('Argname is missing in method %s, pos %d' % (self.__func__.__name__, pos))
+            pi.name = self.__func__.__code__.co_varnames[pos]
+            pi.type = pytype_to_gdtype(self.__func__.__annotations__.get(pi.name, None))
 
         return pi
 
@@ -78,28 +75,46 @@ cdef class _ExtensionMethodBase:
         return [self.get_argument_info(i) for i in range(self.get_argument_count())]
 
 
-    cdef int get_return_metadata(self):
+    cdef int get_return_metadata(self) except -1:
+        cdef VariantType t = pytype_to_gdtype(self.__func__.__annotations__.get('return', None))
+        return self.metadata_from_type(t)
+
+
+    cdef int metadata_from_type(self, VariantType t) except -1 nogil:
+        if t == INT:
+            return <int>GDEXTENSION_METHOD_ARGUMENT_METADATA_INT_IS_INT64
+        elif t == FLOAT:
+            return <int>GDEXTENSION_METHOD_ARGUMENT_METADATA_REAL_IS_DOUBLE
+
         return <int>GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
 
 
     cdef list get_argument_metadata_list(self):
         cdef size_t i
-        return [<int>GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE for i in range(self.get_argument_count())]
+        cdef list metadata_list = []
+        cdef int metadata
+        cdef VariantType t
+        for i in range(self.get_argument_count()):
+            metadata = <int>GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
+            if i > 0:
+                name = self.__func__.__code__.co_varnames[i]
+                t = pytype_to_gdtype(self.__func__.__annotations__.get(name, None))
+                metadata = self.metadata_from_type(t)
+            metadata_list.append(metadata)
+
+        return metadata_list
 
 
-    cdef GDExtensionBool has_return(self):
+    cdef GDExtensionBool has_return(self) except -1:
         return <GDExtensionBool>bool(self.__func__.__annotations__.get('return'))
 
 
-    cdef uint32_t get_hint_flags(self):
-        return 0
-
-
-    cdef uint32_t get_argument_count(self):
+    cdef uint32_t get_argument_count(self) except -1:
+        # includes self
         return <uint32_t>self.__func__.__code__.co_argcount
 
 
-    cdef uint32_t get_default_argument_count(self):
+    cdef uint32_t get_default_argument_count(self) except -1:
         if self.__func__.__defaults__ is None:
             return 0
         return <uint32_t>len(self.__func__.__defaults__)
