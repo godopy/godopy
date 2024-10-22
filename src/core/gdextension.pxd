@@ -17,6 +17,11 @@ cimport numpy
 cpdef str variant_type_to_str(VariantType vartype)
 cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
 
+cdef public object object_to_pyobject(void *p_godot_object)
+cdef public object variant_object_to_pyobject(const Variant &v)
+cdef public void object_from_pyobject(object p_obj, void **r_ret) noexcept
+cdef public void variant_object_from_pyobject(object p_obj, Variant *r_ret) noexcept
+
 
 cdef dict _NODEDB
 cdef dict _OBJECTDB

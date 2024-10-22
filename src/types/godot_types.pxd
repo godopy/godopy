@@ -68,7 +68,7 @@ cdef inline void carr_view_from_pyobject(object obj, number_t [:] carr_view, dty
 cdef public object bool_to_pyobject(uint8_t p_bool)
 cdef public object variant_bool_to_pyobject(const cpp.Variant &v)
 cdef public void bool_from_pyobject(object p_obj, uint8_t *r_ret) noexcept
-cdef public void *variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
+cdef public void variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 cdef public object int_to_pyobject(int64_t p_int)
 cdef public object variant_int_to_pyobject(const cpp.Variant &v)
 cdef public void int_from_pyobject(object p_obj, int64_t *r_ret) noexcept

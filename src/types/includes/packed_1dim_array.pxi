@@ -2,6 +2,10 @@
 
 PackedByteArray = bytearray
 
+# class PackedByteArray(numpy.ndarray):
+#     pass
+
+
 class PackedStringArray(tuple):
     pass
 

@@ -1,5 +1,11 @@
 Nil = None
 
+cdef public void variant_nil_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    if p_obj is not None:
+        cpp.UtilityFunctions.push_error("'None' is required, got %r" % type(p_obj))
+
+    gdextension_interface_variant_new_nil(r_ret)
+
 
 bool = bool
 
@@ -24,7 +30,7 @@ cdef public void bool_from_pyobject(object p_obj, uint8_t *r_ret) noexcept:
         r_ret[0] = <uint8_t>PyObject_IsTrue(p_obj)
 
 
-cdef public void *variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+cdef public void variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
     cdef bint ret = False
     if not PyBool_Check(p_obj):
         cpp.UtilityFunctions.push_error("'bool' is required, got %r" % type(p_obj))
