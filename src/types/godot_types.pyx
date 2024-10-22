@@ -2,7 +2,9 @@
 Python versions of Godot Variant types
 """
 from cpython cimport (
-    PyObject, ref, PyUnicode_AsWideCharString, PyUnicode_FromWideChar,
+    PyObject, ref,
+    PyUnicode_AsWideCharString, PyUnicode_FromWideChar,
+    PyBytes_AsString,
     PyBool_Check, PyLong_Check, PyFloat_Check, PyUnicode_Check, PyBytes_Check,
     PyObject_IsTrue
 )
@@ -81,16 +83,7 @@ __all__ = [
 ]
 
 
-ctypedef fused number_t:
-    float
-    double
-    int8_t
-    int16_t
-    int32_t
-    int64_t
-
-
-cdef bint issubscriptable(object obj):
+cdef bint issubscriptable(object obj) noexcept:
     return isinstance(obj, (np.ndarray, tuple, list)) or \
            (hasattr(obj, '__len__') and hasattr(obj, '__getitem__'))
 
@@ -102,35 +95,6 @@ cdef inline object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
     numpy.PyArray_SetBaseObject(arr, base)
 
     return arr
-
-
-cdef inline object array_from_carr_view(type arrtype, number_t [:] carr_view, copy=True):
-    cdef numpy.ndarray pyarr = arrtype(carr_view, copy=copy)
-
-    return pyarr
-
-
-cdef inline number_t [:] carr_view_from_pyobject(object obj, number_t [:] carr_view, dtype):
-    cdef numpy.ndarray arr
-
-    if not issubscriptable(obj) or not len(obj) == 2:
-        cpp.UtilityFunctions.push_error("Cannot convert %r to godot-cpp %s" % (obj, obj.__class__.__name__))
-
-        return carr_view
-
-    if isinstance(obj, numpy.ndarray):
-        if obj.dtype == dtype:
-            arr = obj
-        else:
-            cpp.UtilityFunctions.push_warning("Cast from %r to %r during Godot math type convertion" % (obj.dtype, dtype))
-            arr = obj.astype(dtype)
-    else:
-        arr = np.array(obj, dtype=dtype)
-
-    cdef number_t [:] pyarr_view = arr
-    carr_view[:] = pyarr_view
-
-    return carr_view
 
 
 include "includes/atomic.pxi"

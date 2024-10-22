@@ -37,22 +37,20 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
 
     cdef cppclass Variant:
         Variant()
-        Variant(bint)
-        Variant(GDExtensionBool)
-        Variant(signed int)
-        Variant(unsigned int)
-        Variant(signed short)
-        Variant(unsigned short)
-        Variant(signed char)
-        Variant(unsigned char)
+        Variant(bint, bint as_bool)
         Variant(int8_t)
         Variant(int16_t)
         Variant(int32_t)
         Variant(int64_t)
+        Variant(uint8_t)
+        Variant(uint16_t)
+        Variant(uint32_t)
         Variant(uint64_t)
         Variant(float)
         Variant(double)
         Variant(const String &)
+        Variant(const char *)
+        Variant(const wchar_t *)
         Variant(const Vector2 &)
         Variant(const Vector2i &)
         Variant(const Rect2 &)
@@ -70,8 +68,7 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
         Variant(const StringName &)
         Variant(const NodePath &)
         Variant(const _RID &)
-        Variant(void *)
-        Variant(const GodotCppObject &)
+        Variant(const GodotCppObject *)
         Variant(const GodotCppCallable &)
         Variant(const GodotCppSignal &)
         Variant(const Dictionary &)
@@ -92,7 +89,7 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
 
         void *_native_ptr()
         object pythonize() const
-        GDExtensionBool booleanize() const
+        uint8_t booleanize() const
         String stringify() const
 
         enum Type:

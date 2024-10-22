@@ -50,9 +50,9 @@ extern PyObject *variant_object_to_pyobject(godot::Variant const &);
 extern void object_from_pyobject(PyObject *, void **);
 extern void variant_object_from_pyobject(PyObject *, godot::Variant *);
 
-extern PyObject *bool_to_pyobject(bool);
+extern PyObject *bool_to_pyobject(uint8_t);
 extern PyObject *variant_bool_to_pyobject(godot::Variant const &);
-extern void bool_from_pyobject(PyObject *, bool *);
+extern void bool_from_pyobject(PyObject *, uint8_t *);
 extern void *variant_bool_from_pyobject(PyObject *, godot::Variant *);
 extern PyObject *int_to_pyobject(int64_t);
 extern PyObject *variant_int_to_pyobject(godot::Variant const &);
@@ -74,5 +74,13 @@ extern void vector2_from_pyobject(PyObject *, godot::Vector2 *);
 extern void vector2i_from_pyobject(PyObject *, godot::Vector2i *);
 extern void variant_vector2_from_pyobject(PyObject *, godot::Variant *);
 extern void variant_vector2i_from_pyobject(PyObject *, godot::Variant *);
+extern PyObject *rect2_to_pyobject(godot::Rect2 &);
+extern PyObject *rect2i_to_pyobject(godot::Rect2i &);
+extern PyObject *variant_rect2_to_pyobject(godot::Variant const &);
+extern PyObject *variant_rect2i_to_pyobject(godot::Variant const &);
+extern void rect2_from_pyobject(PyObject *, godot::Rect2 *);
+extern void rect2i_from_pyobject(PyObject *, godot::Rect2i *);
+extern void variant_rect2_from_pyobject(PyObject *, godot::Variant *);
+extern void variant_rect2i_from_pyobject(PyObject *, godot::Variant *);
 
 #endif

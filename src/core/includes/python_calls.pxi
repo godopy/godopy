@@ -56,7 +56,7 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
 
     cdef object args = PyTuple_New(p_count)
 
-    cdef bint bool_arg
+    cdef uint8_t bool_arg
     cdef int64_t int_arg
     cdef double float_arg
     cdef String string_arg
@@ -101,6 +101,14 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
             pyarg = type_funcs.vector2i_to_pyobject(deref(<Vector2i *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
+        elif arg_type == 'Rect2':
+            pyarg = type_funcs.rect2_to_pyobject(deref(<Rect2 *>p_args[i]))
+            ref.Py_INCREF(pyarg)
+            PyTuple_SET_ITEM(args, i, pyarg)
+        elif arg_type == 'Rect2i':
+            pyarg = type_funcs.rect2i_to_pyobject(deref(<Rect2i *>p_args[i]))
+            ref.Py_INCREF(pyarg)
+            PyTuple_SET_ITEM(args, i, pyarg)
         elif arg_type == 'StringName':
             stringname_arg = deref(<StringName *>p_args[i])
             pyarg = stringname_arg.py_str()
@@ -139,6 +147,12 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
     elif return_type == 'Vector2i':
         type_funcs.vector2i_from_pyobject(result, &vector2i_arg)
         (<Vector2 *>r_ret)[0] = vector2_arg
+    elif return_type == 'Rect2':
+        type_funcs.rect2_from_pyobject(result, &rect2_arg)
+        (<Rect2 *>r_ret)[0] = rect2_arg
+    elif return_type == 'Rect2i':
+        type_funcs.rect2i_from_pyobject(result, &rect2i_arg)
+        (<Rect2i *>r_ret)[0] = rect2i_arg
     elif return_type == 'StringName':
         stringname_arg = <StringName>result
         (<StringName *>r_ret)[0] = stringname_arg

@@ -94,6 +94,18 @@ Variant::Variant(bool v) {
 	from_type_constructor[BOOL](_native_ptr(), &encoded);
 }
 
+Variant::Variant(int v, bool as_bool) {
+	if (as_bool) {
+		GDExtensionBool encoded;
+		PtrToArg<bool>::encode(static_cast<bool>(v), &encoded);
+		from_type_constructor[BOOL](_native_ptr(), &encoded);
+	} else {
+		GDExtensionInt encoded;
+		PtrToArg<int64_t>::encode(static_cast<int64_t>(v), &encoded);
+		from_type_constructor[INT](_native_ptr(), &encoded);
+	}
+}
+
 Variant::Variant(int64_t v) {
 	GDExtensionInt encoded;
 	PtrToArg<int64_t>::encode(v, &encoded);
@@ -856,55 +868,15 @@ PyObject *Variant::pythonize(const Dictionary &type_hints) const {
 			break;
 
 		case Type::RECT2:
-		{
-			Rect2 rect = operator Rect2();
-			obj = PyStructSequence_New(&Rect2_Type);
+			obj = variant_rect2_to_pyobject(*this);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			PyObject *position = PyStructSequence_New(&Vector2_Type);
-			ERR_FAIL_NULL_V(position, nullptr);
-			PyObject *size = PyStructSequence_New(&Size2_Type);
-			ERR_FAIL_NULL_V(size, nullptr);
-			PyObject *x = PyFloat_FromDouble(rect.position.x);
-			ERR_FAIL_NULL_V(x, nullptr);
-			PyObject *y = PyFloat_FromDouble(rect.position.y);
-			ERR_FAIL_NULL_V(y, nullptr);
-			PyObject *width = PyFloat_FromDouble(rect.size.width);
-			ERR_FAIL_NULL_V(width, nullptr);
-			PyObject *height = PyFloat_FromDouble(rect.size.height);
-			ERR_FAIL_NULL_V(height, nullptr);
-			PyStructSequence_SET_ITEM(position, 0, x);
-			PyStructSequence_SET_ITEM(position, 1, y);
-			PyStructSequence_SET_ITEM(size, 0, width);
-			PyStructSequence_SET_ITEM(size, 1, height);
-			PyStructSequence_SET_ITEM(obj, 0, position);
-			PyStructSequence_SET_ITEM(obj, 1, size);
 			break;
-		}
+
 		case Type::RECT2I:
-		{
-			Rect2i rect = operator Rect2i();
-			obj = PyStructSequence_New(&Rect2i_Type);
+			obj = variant_rect2i_to_pyobject(*this);
 			ERR_FAIL_NULL_V(obj, nullptr);
-			PyObject *position = PyStructSequence_New(&Vector2i_Type);
-			ERR_FAIL_NULL_V(position, nullptr);
-			PyObject *size = PyStructSequence_New(&Size2_Type);
-			ERR_FAIL_NULL_V(size, nullptr);
-			PyObject *x = PyLong_FromSsize_t(rect.position.x);
-			ERR_FAIL_NULL_V(x, nullptr);
-			PyObject *y = PyLong_FromSsize_t(rect.position.y);
-			ERR_FAIL_NULL_V(y, nullptr);
-			PyObject *width = PyLong_FromSsize_t(rect.size.width);
-			ERR_FAIL_NULL_V(width, nullptr);
-			PyObject *height = PyLong_FromSsize_t(rect.size.height);
-			ERR_FAIL_NULL_V(height, nullptr);
-			PyStructSequence_SET_ITEM(position, 0, x);
-			PyStructSequence_SET_ITEM(position, 1, y);
-			PyStructSequence_SET_ITEM(size, 0, width);
-			PyStructSequence_SET_ITEM(size, 1, height);
-			PyStructSequence_SET_ITEM(obj, 0, position);
-			PyStructSequence_SET_ITEM(obj, 1, size);
 			break;
-		}
+
 		case Type::VECTOR3:
 		{
 			Vector3 vec = operator Vector3();

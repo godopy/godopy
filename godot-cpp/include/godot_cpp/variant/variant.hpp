@@ -155,6 +155,7 @@ public:
 	Variant(const Variant &other);
 	Variant(Variant &&other);
 	Variant(bool v);
+	Variant(int v, bool as_bool);
 	Variant(int64_t v);
 	Variant(int32_t v) :
 			Variant(static_cast<int64_t>(v)) {}

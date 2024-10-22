@@ -4,24 +4,24 @@ Nil = None
 bool = bool
 
 
-cdef public object bool_to_pyobject(bint p_bool):
+cdef public object bool_to_pyobject(uint8_t p_bool):
     return p_bool != 0
 
 
 cdef public object variant_bool_to_pyobject(const cpp.Variant &v):
-    cdef bint ret = v.to_type[bint]()
+    cdef uint8_t ret = v.to_type[bint]()
 
     return ret != 0
 
 
 # TODO: Keep type checks only in debug builds
 
-cdef public void bool_from_pyobject(object p_obj, bint *r_ret) noexcept:
+cdef public void bool_from_pyobject(object p_obj, uint8_t *r_ret) noexcept:
     if not PyBool_Check(p_obj):
         cpp.UtilityFunctions.push_error("'bool' is required, got %r" % type(p_obj))
-        r_ret[0] = False
+        r_ret[0] = <uint8_t>False
     else:
-        r_ret[0] = <GDExtensionBool>PyObject_IsTrue(p_obj)
+        r_ret[0] = <uint8_t>PyObject_IsTrue(p_obj)
 
 
 cdef public void *variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
@@ -29,9 +29,9 @@ cdef public void *variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) n
     if not PyBool_Check(p_obj):
         cpp.UtilityFunctions.push_error("'bool' is required, got %r" % type(p_obj))
     else:
-        ret = <GDExtensionBool>PyObject_IsTrue(p_obj)
+        ret = PyObject_IsTrue(p_obj)
 
-    r_ret[0] = cpp.Variant(ret)
+    r_ret[0] = cpp.Variant(ret, True)
 
 
 int = int
@@ -156,7 +156,7 @@ cdef public void string_from_pyobject(object p_obj, cpp.String *r_ret) noexcept:
         wstr = PyUnicode_AsWideCharString(p_obj, NULL)
         gdextension_interface_string_new_with_wide_chars(r_ret, wstr)
     elif PyBytes_Check(p_obj):
-        cstr = <bytes>p_obj
+        cstr = PyBytes_AsString(p_obj)
         gdextension_interface_string_new_with_utf8_chars(r_ret, cstr)
     else:
         cpp.UtilityFunctions.push_error("Could not convert %r to C++ String" % p_obj)

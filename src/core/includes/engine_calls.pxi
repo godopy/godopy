@@ -73,7 +73,7 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
 
     cdef int arg_typecode = 0
 
-    cdef bint bool_arg
+    cdef uint8_t bool_arg
     cdef int64_t int_arg
     cdef double float_arg
     cdef String string_arg
@@ -122,17 +122,11 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
             type_funcs.vector2i_from_pyobject(pyarg, &vector2i_arg)
             ptr_args[i] = &vector2i_arg
         elif arg_type == 'Rect2':
-            position, size = pyarg
-            x, y = position
-            z, w = size
-            rect2_arg = Rect2(x, y, z, w)
+            type_funcs.rect2_from_pyobject(pyarg, &rect2_arg)
             ptr_args[i] = &rect2_arg
         elif arg_type == 'Rect2i':
-            position, size = pyarg
-            xi, yi = position
-            zi, wi = size
-            rect2i_arg = Rect2i(xi, yi, zi, wi)
-            ptr_args[i] = &rect2_arg
+            type_funcs.rect2i_from_pyobject(pyarg, &rect2i_arg)
+            ptr_args[i] = &rect2i_arg
         elif arg_type == 'StringName':
             stringname_arg = <StringName>pyarg
             ptr_args[i] = &stringname_arg
@@ -183,6 +177,12 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
     elif return_type == 'Vector2i':
         ptrcall(method, &vector2i_arg, <const void **>ptr_args, size)
         pyarg = type_funcs.vector2i_to_pyobject(vector2i_arg)
+    elif return_type == 'Rect2':
+        ptrcall(method, &rect2_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.rect2_to_pyobject(rect2_arg)
+    elif return_type == 'Rect2i':
+        ptrcall(method, &rect2i_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.rect2i_to_pyobject(rect2i_arg)
     elif return_type == 'PackedStringArray':
         ptrcall(method, &packed_string_array_arg, <const void **>ptr_args, size)
         variant_arg = Variant(packed_string_array_arg)

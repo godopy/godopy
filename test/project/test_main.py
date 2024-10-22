@@ -126,12 +126,11 @@ class TestCaseMathTypes(BaseTestCase):
 class TestCaseArgTypes(BaseTestCase):
     def test_atomic_types(self):
         gdscript = self._main.get_node('TestCasesGDScript')
-        gdscript_call = gde.MethodBind(gdscript, 'call')
-        gdscript_call('test_atomic_types')
+        gdscript.call('test_atomic_types')
 
-        r = gdscript_call('get_resource')
+        r = gdscript.call('get_resource')
 
-        self.assertIsInstance(r.arg01, (bool, int))  # FIXME: force real 'bool' type?
+        self.assertIsInstance(r.arg01, bool)
         self.assertEqual(r.arg01, True)
         self.assertIsInstance(r.arg02, int)
         self.assertEqual(r.arg02, 42)
@@ -142,13 +141,22 @@ class TestCaseArgTypes(BaseTestCase):
 
     def test_math_types_1(self):
         gdscript = self._main.get_node('TestCasesGDScript')
-        gdscript_call = gde.MethodBind(gdscript, 'call')
-        gdscript_call('test_math_types_1')
+        gdscript.call('test_math_types_1')
 
-        r = gdscript_call('get_resource')
+        r = gdscript.call('get_resource')
 
         self.assertIsInstance(r.arg01, types.Vector2)
+        self.assertEqual(r.arg01.dtype, np.dtype('float32'))
+        self.assertEqual(list(r.arg01), [2.5, 5.])
         self.assertIsInstance(r.arg02, types.Vector2i)
+        self.assertEqual(r.arg02.dtype, np.dtype('int32'))
+        self.assertEqual(list(r.arg02), [5, 10])
+        self.assertIsInstance(r.arg03, types.Rect2)
+        self.assertEqual(r.arg03.dtype, np.dtype('float32'))
+        self.assertEqual(list(r.arg03), [0., 0., 100., 200.])
+        self.assertIsInstance(r.arg04, types.Rect2i)
+        self.assertEqual(r.arg04.dtype, np.dtype('int32'))
+        self.assertEqual(list(r.arg03), [0, 0, 100, 200])
 
 
 class TestCaseSceneExtension(BaseTestCase):
