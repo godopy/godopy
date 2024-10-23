@@ -43,13 +43,14 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
     """
     Implements GDExtension's 'ptrcall' logic when calling Python methods from the Engine
     """
-    cdef tuple type_info = method.type_info
+    cdef int8_t *type_info = method._type_info_opt
     cdef size_t i = 0
 
-    if p_count != (len(type_info) - 1):
+    if p_count != (len(method.type_info) - 1):
         msg = (
             '%s %s: wrong number of arguments: %d, %d expected. Arg types: %r. Return type: %r'
-                % (method.__class__.__name__, method.__name__, p_count, len(type_info) - 1, type_info[1:], type_info[0])
+                % (method.__class__.__name__, method.__name__, p_count,
+                len(method.type_info) - 1, method.type_info[1:], method.type_info[0])
         )
         UtilityFunctions.printerr(msg)
         raise TypeError(msg)
@@ -77,132 +78,137 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
     cdef object pyarg
     cdef Variant variant_arg
 
-    cdef str arg_type
+    cdef int8_t arg_type
     for i in range(p_count):
         arg_type = type_info[i + 1]
-        if arg_type == 'bool':
-            pyarg = type_funcs.bool_to_pyobject(deref(<bint *>p_args[i]))
+
+        # NOTE: Cython compiles this to C switch/case
+        if arg_type == BOOL:
+            pyarg = type_funcs.bool_to_pyobject(deref(<uint8_t *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'int' or arg_type[6:] in _global_enum_info:
+        elif arg_type == INT:
             pyarg = type_funcs.int_to_pyobject(deref(<int64_t *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'float':
+        elif arg_type == FLOAT:
             pyarg = type_funcs.float_to_pyobject(deref(<double *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'String':
+        elif arg_type == STRING:
             pyarg = type_funcs.string_to_pyobject(deref(<String *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'Vector2':
+        elif arg_type == VECTOR2:
             pyarg = type_funcs.vector2_to_pyobject(deref(<Vector2 *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'Vector2i':
+        elif arg_type == VECTOR2I:
             pyarg = type_funcs.vector2i_to_pyobject(deref(<Vector2i *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'Rect2':
+        elif arg_type == RECT2:
             pyarg = type_funcs.rect2_to_pyobject(deref(<Rect2 *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'Rect2i':
+        elif arg_type == RECT2I:
             pyarg = type_funcs.rect2i_to_pyobject(deref(<Rect2i *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'StringName':
+        elif arg_type == STRING_NAME:
             pyarg = type_funcs.string_name_to_pyobject(deref(<StringName *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'NodePath':
+        elif arg_type == NODE_PATH:
             pyarg = type_funcs.node_path_to_pyobject(deref(<NodePath *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'RID':
+        elif arg_type == RID:
             pyarg = type_funcs.rid_to_pyobject(deref(<_RID *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type in _global_inheritance_info:  # Object
+        elif arg_type == OBJECT:
             pyarg = object_to_pyobject(deref(<void **>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'Dictionary':
+        elif arg_type == DICTIONARY:
             pyarg = type_funcs.dictionary_to_pyobject(deref(<Dictionary *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'Array':
+        elif arg_type == ARRAY:
             pyarg = type_funcs.array_to_pyobject(deref(<Array *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'PackedStringArray':
+        elif arg_type == PACKED_STRING_ARRAY:
             pyarg = type_funcs.packed_string_array_to_pyobject(deref(<PackedStringArray *>p_args[i]))
+            ref.Py_INCREF(pyarg)
+            PyTuple_SET_ITEM(args, i, pyarg)
+        elif arg_type == VARIANT_MAX:
+            pyarg = type_funcs.variant_to_pyobject(deref(<Variant *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
         else:
             UtilityFunctions.push_error(
-                "NOT IMPLEMENTED: Can't convert %r arguments in virtual functions yet" % arg_type
+                "NOT IMPLEMENTED: Can't convert %r arguments in Python ptrcalls" % arg_type
             )
             ref.Py_INCREF(None)
             PyTuple_SET_ITEM(args, i, None)
 
     cdef object result = method(*args)
 
-    cdef str return_type = type_info[0]
+    cdef int return_type = type_info[0]
 
-    if return_type == 'bool':
+    # NOTE: Cython compiles this to C switch/case
+    if return_type == BOOL:
         type_funcs.bool_from_pyobject(result, &bool_arg)
         (<bint *>r_ret)[0] = bool_arg
-    elif return_type == 'int' or return_type == 'RID' or return_type.startswith('enum:'):
+    elif return_type == INT:
         type_funcs.int_from_pyobject(result, &int_arg)
         (<int64_t *>r_ret)[0] = int_arg
-    elif return_type == 'float':
+    elif return_type == FLOAT:
         type_funcs.float_from_pyobject(result, &float_arg)
         (<double *>r_ret)[0] = float_arg
-    elif return_type == 'String':
+    elif return_type == STRING:
         type_funcs.string_from_pyobject(result, &string_arg)
         (<String *>r_ret)[0] = string_arg
-    elif return_type == 'Vector2':
+    elif return_type == VECTOR2:
         type_funcs.vector2_from_pyobject(result, &vector2_arg)
         (<Vector2 *>r_ret)[0] = vector2_arg
-    elif return_type == 'Vector2i':
+    elif return_type == VECTOR2I:
         type_funcs.vector2i_from_pyobject(result, &vector2i_arg)
         (<Vector2 *>r_ret)[0] = vector2_arg
-    elif return_type == 'Rect2':
+    elif return_type == RECT2:
         type_funcs.rect2_from_pyobject(result, &rect2_arg)
         (<Rect2 *>r_ret)[0] = rect2_arg
-    elif return_type == 'Rect2i':
+    elif return_type == RECT2I:
         type_funcs.rect2i_from_pyobject(result, &rect2i_arg)
         (<Rect2i *>r_ret)[0] = rect2i_arg
-    elif return_type == 'StringName':
+    elif return_type == STRING_NAME:
         type_funcs.string_name_from_pyobject(result, &stringname_arg)
         (<StringName *>r_ret)[0] = stringname_arg
-    elif return_type == 'NodePath':
+    elif return_type == NODE_PATH:
         type_funcs.node_path_from_pyobject(result, &nodepath_arg)
         (<NodePath *>r_ret)[0] = nodepath_arg
-    elif return_type == 'RID':
+    elif return_type == RID:
         type_funcs.rid_from_pyobject(result, &rid_arg)
         (<_RID *>r_ret)[0] = rid_arg
-    elif return_type in _global_inheritance_info:  # Object
+    elif return_type == OBJECT:
         object_from_pyobject(result, &ptr_arg)
         (<void **>r_ret)[0] = ptr_arg
-    elif return_type == 'Dictionary':
+    elif return_type == DICTIONARY:
         type_funcs.dictionary_from_pyobject(result, &dictionary_arg)
         (<Dictionary *>r_ret)[0] = dictionary_arg
-    elif return_type == 'Array' or return_type.startswith('typedarray:'):
+    elif return_type == ARRAY:
         type_funcs.array_from_pyobject(result, &array_arg)
         (<Array *>r_ret)[0] = array_arg
-    
-    elif return_type == 'PackedStringArray':
+    elif return_type == PACKED_STRING_ARRAY:
         type_funcs.packed_string_array_from_pyobject(result, &packedstringarray_arg)
         (<PackedStringArray *>r_ret)[0] = packedstringarray_arg
-    elif return_type == 'Variant':
+    elif return_type == VARIANT_MAX:
         variant_arg = Variant(<const PyObject *>result)
         (<Variant *>r_ret)[0] = variant_arg
-
-    elif return_type != 'Nil':
-        if return_type in _global_inheritance_info:
+    elif return_type != NIL:
+        if return_type == OBJECT:
             UtilityFunctions.push_error(
                 "NOT IMPLEMENTED: Can't convert %r from %r in %r" % (return_type, result, method)
             )
@@ -210,6 +216,6 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
         else:
             UtilityFunctions.push_error(
                 "NOT IMPLEMENTED: "
-                ("Can't convert %r return types in virtual functions yet. Result was: %r in function %r"
+                ("Can't convert %r return types Python ptr calls. Result was: %r in function %r"
                     % (return_type, result, method))
             )

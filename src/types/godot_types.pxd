@@ -1,6 +1,6 @@
 from gdextension_interface cimport *
 from binding cimport *
-from libc.stdint cimport int8_t, int16_t, int32_t, int64_t
+from libc.stdint cimport *
 from libc.stddef cimport wchar_t
 cimport cpython
 cimport godot_cpp as cpp

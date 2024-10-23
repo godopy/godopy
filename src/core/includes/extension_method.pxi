@@ -17,6 +17,7 @@ cdef class BoundExtensionMethod(PythonCallableBase):
             raise ValueError("Python callable is required")
 
         self.__self__ = instance
+        make_optimized_type_info(self.type_info, self._type_info_opt)
 
 
     def __call__(self, *args, **kwargs):

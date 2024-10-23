@@ -7,6 +7,7 @@ cdef class UtilityFunction(EngineCallableBase):
             raise NameError('Utility function %r not found' % function_name)
 
         self.type_info = info['type_info']
+        make_optimized_type_info(self.type_info, self._type_info_opt)
         cdef StringName name = StringName(function_name)
         cdef uint64_t _hash = info['hash']
 

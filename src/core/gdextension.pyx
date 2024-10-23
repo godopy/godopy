@@ -7,7 +7,7 @@ from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
 from cython.operator cimport dereference as deref
 from python_runtime cimport *
-from godot_types cimport StringName as PyStringName
+from godot_types cimport StringName as PyStringName, variant_to_pyobject_func_t, variant_from_pyobject_func_t
 cimport godot_types as type_funcs
 
 import sys

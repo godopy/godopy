@@ -10,6 +10,7 @@ cdef class MethodBind(EngineCallableBase):
                                  % (method_name, instance.__godot_class__.__name__))
         
         self.type_info = info['type_info']
+        make_optimized_type_info(self.type_info, self._type_info_opt)
         self.is_vararg = info['is_vararg']
         cdef uint64_t _hash = info['hash']
         cdef StringName class_name = StringName(instance.__godot_class__.__name__)

@@ -3,6 +3,7 @@ This module wraps objects inside the engine
 """
 from binding cimport *
 from godot_cpp cimport *
+from libc.stdint cimport int8_t
 from cpython cimport PyObject
 
 cdef extern from *:
@@ -62,6 +63,7 @@ cdef class Signal(Object):
 cdef class EngineCallableBase:
     cdef readonly str __name__
     cdef readonly tuple type_info
+    cdef int8_t[16] _type_info_opt
 
 
 cdef class MethodBind(EngineCallableBase):
@@ -210,6 +212,7 @@ cdef class PythonCallableBase:
     cdef readonly str __name__
     cdef readonly object __func__
     cdef readonly tuple type_info
+    cdef int8_t[16] _type_info_opt
 
 
 cdef class BoundExtensionMethod(PythonCallableBase):

@@ -94,6 +94,8 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
     enum_data = {}
     struct_data = {}
 
+    max_types = 0
+
     for singleton in singletons:
          singleton_data.add(singleton['name'])
 
@@ -104,12 +106,20 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
         for value in enum['values']:
             enum_data[enum['name']].append((value['name'], value['value']))
 
+    all_enums = set()
+
     enum_data_pickled = pickle.dumps(enum_data)
+
+    all_enums |= set(enum_data.keys())
 
     for struct in structs:
         struct_data[struct['name']] = struct['format']
 
     struct_data_pickled = pickle.dumps(struct_data)
+
+    longest_method_info = None
+
+    all_argtypes = set()
 
     for class_api in builtin_classes:
         class_name = class_api['name']
@@ -122,6 +132,7 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                 type_info = []
                 return_type = method.get('return_type', 'Nil')
                 type_info.append(return_type)
+                all_argtypes.add(return_type)
                 method_info = {}
                 for key in ('is_vararg', 'is_static', 'hash'):
                     method_info[key] = method[key]
@@ -131,11 +142,14 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                         arg_name = argument['name']
                         arg_type = argument['type']
                         type_info.append(arg_type)
+                        all_argtypes.add(arg_type)
                         arguments.append((arg_name, arg_type))
                 method_info['arguments'] = arguments
                 method_info['type_info'] = tuple(type_info)
+                if len(type_info) > max_types:
+                    max_types = len(type_info)
+                    longest_method_info = method_name, method_info
                 builtin_class_method_data[class_name][method_name] = method_info
-
             builtin_class_method_data_pickled[class_name] = pickle.dumps(builtin_class_method_data[class_name])
 
     for class_api in classes:
@@ -162,6 +176,7 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                 class_enum_data[class_name][enum_name] = enum_info
             
             class_enum_data_pickled[class_name] = pickle.dumps(class_enum_data[class_name])
+            all_enums |= set(class_enum_data[class_name].keys())
 
         if "methods" in class_api:
             class_method_data[class_name] = {}
@@ -172,6 +187,7 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                 type_info = []
                 return_type = method.get('return_value', {}).get('type', 'Nil')
                 type_info.append(return_type)
+                all_argtypes.add(return_type)
                 method_info = {
                     'hash': hash
                 }
@@ -183,9 +199,13 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                         arg_name = argument['name']
                         arg_type = argument['type']
                         type_info.append(arg_type)
+                        all_argtypes.add(arg_type)
                         arguments.append((arg_name, arg_type))
                 method_info['arguments'] = arguments
                 method_info['type_info'] = tuple(type_info)
+                if len(type_info) > max_types:
+                    max_types = len(type_info)
+                    longest_method_info = method_name, method_info
                 class_method_data[class_name][method_name] = method_info
         
             class_method_data_pickled[class_name] = pickle.dumps(class_method_data[class_name])
@@ -194,6 +214,7 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
         method_name = method['name']
         type_info = []
         return_type = method.get('return_value', {}).get('type', 'Nil')
+        all_argtypes.add(return_type)
         type_info.append(return_type)
         method_info = {
             'hash': method['hash'],
@@ -205,10 +226,17 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                 arg_name = argument['name']
                 arg_type = argument['type']
                 type_info.append(arg_type)
+                all_argtypes.add(arg_type)
                 arguments.append({ arg_name: arg_type })
         method_info['arguments'] = arguments
         method_info['type_info'] = tuple(type_info)
+        if len(type_info) > max_types:
+            max_types = len(type_info)
+            longest_method_info = method_name, method_info
         utilfunc_data[method_name] = method_info
+
+    # print("Maximum number of arguments (return value included): %d" % max_types)
+    # print("Longest method: %s (%s)" % longest_method_info)
 
     utilfunc_data_pickled = pickle.dumps(utilfunc_data)
     inheritance_data_pickled = pickle.dumps(inheritance_data)
@@ -216,7 +244,47 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
     for (key, value) in api_type_data.items():
         api_type_data_pickled[key] = pickle.dumps(value)
 
+    real_argtypes = set()
+    array_types = set()
+    struct_types = set()
+    pointers = set()
+    struct_pointers = set()
+    for argtype in all_argtypes:
+        if argtype.startswith('const'):
+            argtype = argtype[6:]
+        if argtype.startswith('enum') or argtype in all_enums:
+            real_argtypes.add('enum')
+        elif argtype.startswith('bitfield'):
+            real_argtypes.add('bitfield')
+        elif argtype in inheritance_data:
+            real_argtypes.add('Object')
+        elif argtype.startswith('typedarray'):
+            real_argtypes.add('TypedArray')
+            arrtype = argtype.split('::')[1]
+            if arrtype in inheritance_data:
+                arrtype = 'Object'
+            array_types.add(arrtype)
+        elif argtype in struct_data:
+            real_argtypes.add('struct')
+            struct_types.add(argtype)
+        elif argtype.endswith('*'):
+            real_argtypes.add('pointer')
+            if argtype.rstrip('*').rstrip() in struct_data:
+                struct_pointers.add(argtype)
+            else:
+                pointers.add(argtype)
+        else:
+            real_argtypes.add(argtype)
+
+    # TODO: Take care of non-builtin type arguments in virtual methods:
+    #           builtin structs (CaretInfo, Glyph, etc),
+    #           pointers to builtin structs (AudioFrame*),
+    #           int/float/void pointers
+    # print(sorted(list(real_argtypes)))
+
     result = [
+        'cdef size_t _max_size_type_info = %d\n' % max_types,
+        'cdef set _global_argument_types = \\\n%s\n' % pprint.pformat(real_argtypes, width=120),
         'cdef bytes _global_singleton_info__pickle = \\\n%s' % pprint.pformat(singleton_data_pickled, width=120),
         'cdef bytes _global_enum_info__pickle = \\\n%s' % pprint.pformat(enum_data_pickled, width=120),
         'cdef bytes _global_struct_info__pickle = \\\n%s' % pprint.pformat(struct_data_pickled, width=120),
@@ -238,6 +306,8 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
         '_global_inheritance_info = \\\n%s' % pprint.pformat(inheritance_data, width=120),
         #'_global_api_types = \\\n%s' % pprint.pformat(api_type_data, width=120),
         '_global_utility_function_info = \\\n%s' % pprint.pformat(utilfunc_data, width=120),
+
+        '_global_struct_info = \\\n%s' % pprint.pformat(struct_data, width=120),
 
         '_global_method_info = \\\n%s' % pprint.pformat(class_method_data, width=120),
         '_global_class_enum_info = \\\n%s' % pprint.pformat(class_enum_data, width=120),
