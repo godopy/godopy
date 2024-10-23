@@ -1,4 +1,4 @@
-cpdef asrect2(data, dtype=None):
+cpdef numpy.ndarray as_rect2(data, dtype=None):
     """
     Interpret the input as Rect2
     """
@@ -6,12 +6,20 @@ cpdef asrect2(data, dtype=None):
         dtype = np.float32
     if not issubscriptable(data) or not ((hasattr(data, 'size') and data.size == 4) or len(data) == 4):
         raise ValueError("Rect2 data must have 4 items")
+
+    copy = False
+    if isinstance(data, numpy.ndarray):
+        if data.dtype != dtype:
+            copy = True
+    else:
+        copy = True
+
     if np.issubdtype(dtype, np.integer):
-        return Rect2i(data, dtype=dtype, copy=False, can_cast=True)
-    return Rect2(data, dtype=dtype, copy=False, can_cast=True)
+        return Rect2i(data, dtype=dtype, copy=copy, can_cast=True)
+    return Rect2(data, dtype=dtype, copy=copy, can_cast=True)
 
 
-cpdef asrect2i(data, dtype=None):
+cpdef numpy.ndarray as_rect2i(data, dtype=None):
     """
     Interpret the input as Rect2i
     """
@@ -19,9 +27,17 @@ cpdef asrect2i(data, dtype=None):
         dtype = np.int32
     if not issubscriptable(data) or not ((hasattr(data, 'size') and data.size == 4) or len(data) == 4):
         raise ValueError("Rect2i data must have 4 items")
+
+    copy = False
+    if isinstance(data, numpy.ndarray):
+        if data.dtype != dtype:
+            copy = True
+    else:
+        copy = True
+
     if np.issubdtype(dtype, np.floating):
-        return Rect2(data, dtype=dtype, copy=False, can_cast=True)
-    return Rect2i(data, dtype=dtype, copy=False, can_cast=True)
+        return Rect2(data, dtype=dtype, copy=copy, can_cast=True)
+    return Rect2i(data, dtype=dtype, copy=copy, can_cast=True)
 
 
 cdef frozenset _rect2_attrs = frozenset([

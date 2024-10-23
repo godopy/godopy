@@ -26,6 +26,8 @@ cdef extern from "godot_cpp/variant/string.hpp" namespace "godot" nogil:
         String(const wchar_t *)
         String(str)
         String(bytes)
+        String(const StringName &)
+        String(const NodePath &)
         String(const PyObject *)
         bint operator==(const String&)
         bint operator==(const char *)

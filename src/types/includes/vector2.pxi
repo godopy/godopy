@@ -1,4 +1,4 @@
-cpdef asvector2(data, dtype=None):
+cpdef numpy.ndarray as_vector2(data, dtype=None):
     """
     Interpret the input as Vector2
     """
@@ -6,12 +6,20 @@ cpdef asvector2(data, dtype=None):
         dtype = np.float32
     if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
         raise ValueError("Vector2 data must be a 1-dimensional container of 2 items")
+
+    copy = False
+    if isinstance(data, numpy.ndarray):
+        if data.dtype != dtype:
+            copy = True
+    else:
+        copy = True
+
     if np.issubdtype(dtype, np.integer):
-        return Vector2i(data, dtype=dtype, copy=False, can_cast=True)
-    return Vector2(data, dtype=dtype, copy=False, can_cast=True)
+        return Vector2i(data, dtype=dtype, copy=copy, can_cast=True)
+    return Vector2(data, dtype=dtype, copy=copy, can_cast=True)
 
 
-cpdef asvector2i(data, dtype=None):
+cpdef numpy.ndarray as_vector2i(data, dtype=None):
     """
     Interpret the input as Vector2i
     """
@@ -19,9 +27,17 @@ cpdef asvector2i(data, dtype=None):
         dtype = np.int32
     if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
         raise ValueError("Vector2i data must be a 1-dimensional container of 2 items")
+
+    copy = False
+    if isinstance(data, numpy.ndarray):
+        if data.dtype != dtype:
+            copy = True
+    else:
+        copy = True
+
     if np.issubdtype(dtype, np.floating):
-        return Vector2(data, dtype=dtype, copy=False, can_cast=True)
-    return Vector2i(data, dtype=dtype, copy=False, can_cast=True)
+        return Vector2(data, dtype=dtype, copy=copy, can_cast=True)
+    return Vector2i(data, dtype=dtype, copy=copy, can_cast=True)
 
 
 cdef frozenset _vector2_attrs = frozenset(['x', 'y', 'coord'])

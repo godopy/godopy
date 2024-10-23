@@ -141,9 +141,9 @@ cdef class Object:
 #       that would set 'is_singleton' to true.
 
 
-class Callable(Object):
+cdef class Callable(Object):
     pass
 
 
-class Signal(Object):
+cdef class Signal(Object):
     pass

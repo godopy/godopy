@@ -336,7 +336,7 @@ public:
 	uint32_t hash() const;
 	uint32_t recursive_hash(int recursion_count) const;
 	bool hash_compare(const Variant &variant) const;
-	PyObject *pythonize(const Dictionary &type_hints=Dictionary()) const;
+	PyObject *pythonize() const;
 	bool booleanize() const;
 	String stringify() const;
 	Variant duplicate(bool deep = false) const;

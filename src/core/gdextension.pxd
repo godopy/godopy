@@ -17,6 +17,7 @@ cimport numpy
 cpdef str variant_type_to_str(VariantType vartype)
 cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
 
+
 cdef public object object_to_pyobject(void *p_godot_object)
 cdef public object variant_object_to_pyobject(const Variant &v)
 cdef public void object_from_pyobject(object p_obj, void **r_ret) noexcept
@@ -48,6 +49,14 @@ cdef public class Object [object GDPyObject, type GDPyObject_Type]:
     cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
     cdef bint is_singleton
     cdef readonly Class __godot_class__
+
+
+cdef class Callable(Object):
+    pass
+
+
+cdef class Signal(Object):
+    pass
 
 
 cdef class EngineCallableBase:

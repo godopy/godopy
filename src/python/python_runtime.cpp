@@ -6,10 +6,12 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
-PyMODINIT_FUNC PyInit_gdextension(void);
+
+PyMODINIT_FUNC PyInit_default_gdextension_config(void);
 PyMODINIT_FUNC PyInit_entry_point(void);
-PyMODINIT_FUNC PyInit__godot_type_tuples(void);
 PyMODINIT_FUNC PyInit_godot_types(void);
+PyMODINIT_FUNC PyInit_gdextension(void);
+
 
 using namespace godot;
 
@@ -98,10 +100,10 @@ void PythonRuntime::initialize() {
 	PyStatus status;
 	PyConfig config;
 
-	PyImport_AppendInittab("gdextension", PyInit_gdextension);
+	PyImport_AppendInittab("default_gdextension_config", PyInit_default_gdextension_config);
 	PyImport_AppendInittab("entry_point", PyInit_entry_point);
-	PyImport_AppendInittab("_godot_type_tuples", PyInit__godot_type_tuples);
 	PyImport_AppendInittab("godot_types", PyInit_godot_types);
+	PyImport_AppendInittab("gdextension", PyInit_gdextension);
 
 	PyConfig_InitIsolatedConfig(&config);
 

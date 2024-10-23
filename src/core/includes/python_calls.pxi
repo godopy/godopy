@@ -66,11 +66,14 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
     cdef Rect2i rect2i_arg
 
     cdef StringName stringname_arg
+    cdef NodePath nodepath_arg
+    cdef _RID rid_arg
+    cdef void *ptr_arg
     cdef Dictionary dictionary_arg
     cdef Array array_arg
-    cdef PackedStringArray packstringarray_arg
 
-    cdef void *ptr_arg
+    cdef PackedStringArray packedstringarray_arg
+
     cdef object pyarg
     cdef Variant variant_arg
 
@@ -81,7 +84,7 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
             pyarg = type_funcs.bool_to_pyobject(deref(<bint *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type == 'int' or arg_type == 'RID' or arg_type[6:] in _global_enum_info:
+        elif arg_type == 'int' or arg_type[6:] in _global_enum_info:
             pyarg = type_funcs.int_to_pyobject(deref(<int64_t *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
@@ -110,12 +113,31 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
         elif arg_type == 'StringName':
-            stringname_arg = deref(<StringName *>p_args[i])
-            pyarg = stringname_arg.py_str()
+            pyarg = type_funcs.string_name_to_pyobject(deref(<StringName *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
-        elif arg_type in _global_inheritance_info:
+        elif arg_type == 'NodePath':
+            pyarg = type_funcs.node_path_to_pyobject(deref(<NodePath *>p_args[i]))
+            ref.Py_INCREF(pyarg)
+            PyTuple_SET_ITEM(args, i, pyarg)
+        elif arg_type == 'RID':
+            pyarg = type_funcs.rid_to_pyobject(deref(<_RID *>p_args[i]))
+            ref.Py_INCREF(pyarg)
+            PyTuple_SET_ITEM(args, i, pyarg)
+        elif arg_type in _global_inheritance_info:  # Object
             pyarg = object_to_pyobject(deref(<void **>p_args[i]))
+            ref.Py_INCREF(pyarg)
+            PyTuple_SET_ITEM(args, i, pyarg)
+        elif arg_type == 'Dictionary':
+            pyarg = type_funcs.dictionary_to_pyobject(deref(<Dictionary *>p_args[i]))
+            ref.Py_INCREF(pyarg)
+            PyTuple_SET_ITEM(args, i, pyarg)
+        elif arg_type == 'Array':
+            pyarg = type_funcs.array_to_pyobject(deref(<Array *>p_args[i]))
+            ref.Py_INCREF(pyarg)
+            PyTuple_SET_ITEM(args, i, pyarg)
+        elif arg_type == 'PackedStringArray':
+            pyarg = type_funcs.packed_string_array_to_pyobject(deref(<PackedStringArray *>p_args[i]))
             ref.Py_INCREF(pyarg)
             PyTuple_SET_ITEM(args, i, pyarg)
         else:
@@ -154,25 +176,30 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
         type_funcs.rect2i_from_pyobject(result, &rect2i_arg)
         (<Rect2i *>r_ret)[0] = rect2i_arg
     elif return_type == 'StringName':
-        stringname_arg = <StringName>result
+        type_funcs.string_name_from_pyobject(result, &stringname_arg)
         (<StringName *>r_ret)[0] = stringname_arg
-    elif return_type == 'Array' or return_type.startswith('typedarray:'):
-        variant_arg = Variant(<const PyObject *>result)
-        array_arg = <Array>variant_arg
-        (<Array *>r_ret)[0] = array_arg
+    elif return_type == 'NodePath':
+        type_funcs.node_path_from_pyobject(result, &nodepath_arg)
+        (<NodePath *>r_ret)[0] = nodepath_arg
+    elif return_type == 'RID':
+        type_funcs.rid_from_pyobject(result, &rid_arg)
+        (<_RID *>r_ret)[0] = rid_arg
+    elif return_type in _global_inheritance_info:  # Object
+        object_from_pyobject(result, &ptr_arg)
+        (<void **>r_ret)[0] = ptr_arg
     elif return_type == 'Dictionary':
-        variant_arg = Variant(<const PyObject *>result)
-        dictionary_arg = <Dictionary>variant_arg
+        type_funcs.dictionary_from_pyobject(result, &dictionary_arg)
         (<Dictionary *>r_ret)[0] = dictionary_arg
+    elif return_type == 'Array' or return_type.startswith('typedarray:'):
+        type_funcs.array_from_pyobject(result, &array_arg)
+        (<Array *>r_ret)[0] = array_arg
+    
     elif return_type == 'PackedStringArray':
-        packstringarray_arg = PackedStringArray(result)
-        (<PackedStringArray *>r_ret)[0] = packstringarray_arg
+        type_funcs.packed_string_array_from_pyobject(result, &packedstringarray_arg)
+        (<PackedStringArray *>r_ret)[0] = packedstringarray_arg
     elif return_type == 'Variant':
         variant_arg = Variant(<const PyObject *>result)
         (<Variant *>r_ret)[0] = variant_arg
-    elif return_type in _global_inheritance_info:
-        object_from_pyobject(result, &ptr_arg)
-        (<void **>r_ret)[0] = ptr_arg
 
     elif return_type != 'Nil':
         if return_type in _global_inheritance_info:

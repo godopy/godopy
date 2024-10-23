@@ -66,12 +66,8 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
     if ptr_args == NULL:
         raise MemoryError("Not enough memory")
 
-    cdef str return_type = 'Nil'
-    cdef str arg_type = 'Nil'
     cdef bint unknown_argtype_error = False
     cdef bint unknown_type_error = False
-
-    cdef int arg_typecode = 0
 
     cdef uint8_t bool_arg
     cdef int64_t int_arg
@@ -84,13 +80,14 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
 
     cdef StringName stringname_arg
     cdef NodePath nodepath_arg
+    cdef _RID rid_arg
+    cdef void *ptr_arg
+    cdef Dictionary dictionary_arg
+    cdef Array array_arg
 
     cdef PackedStringArray packed_string_array_arg
 
-    # cdef Object object_arg
-    # cdef Extension ext_arg
-    cdef void *ptr_arg
-    cdef Variant vaiant_arg
+    cdef Variant variant_arg
     cdef object pyarg
 
     # Optimized get_node for Python nodes
@@ -99,6 +96,7 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
         return pyarg
 
     # TODO: Optimize
+    cdef str arg_type
     for i in range(size):
         arg_type = type_info[i + 1]
         pyarg = args[i]
@@ -128,18 +126,29 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
             type_funcs.rect2i_from_pyobject(pyarg, &rect2i_arg)
             ptr_args[i] = &rect2i_arg
         elif arg_type == 'StringName':
-            stringname_arg = <StringName>pyarg
+            type_funcs.string_name_from_pyobject(pyarg, &stringname_arg)
             ptr_args[i] = &stringname_arg
         elif arg_type == 'NodePath':
-            nodepath_arg = <NodePath>pyarg
+            type_funcs.node_path_from_pyobject(pyarg, &nodepath_arg)
             ptr_args[i] = &nodepath_arg
-        elif arg_type == 'Variant':
-            variant_arg = Variant(<const PyObject *>pyarg)
-            ptr_args[i] = &variant_arg
-        elif arg_type in _global_inheritance_info:
+        elif arg_type == 'RID':
+            type_funcs.rid_from_pyobject(pyarg, &rid_arg)
+            ptr_args[i] = &rid_arg
+        elif arg_type in _global_inheritance_info:  # Object
             object_from_pyobject(pyarg, &ptr_arg)
             ptr_args[i] = &ptr_arg
-
+        elif arg_type == 'Dictionary':
+            type_funcs.dictionary_from_pyobject(pyarg, &dictionary_arg)
+            ptr_args[i] = &dictionary_arg
+        elif arg_type == 'Array':
+            type_funcs.array_from_pyobject(pyarg, &array_arg)
+            ptr_args[i] = &array_arg
+        elif arg_type == 'PackedStringArray':
+            type_funcs.packed_string_array_from_pyobject(pyarg, &packed_string_array_arg)
+            ptr_args[i] = &packed_string_array_arg
+        elif arg_type == 'Variant':
+            type_funcs.variant_from_pyobject(pyarg, &variant_arg)
+            ptr_args[i] = &variant_arg
         else:
             unknown_argtype_error = True
             break
@@ -151,18 +160,14 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
         )
         raise NotImplementedError("Don't know how to convert %r types" % arg_type)
 
-    return_type = method.type_info[0]
+    cdef str return_type = method.type_info[0]
 
-    cdef bint return_variant = False
     if return_type == 'Nil':
         ptrcall(method, NULL, <const void **>ptr_args, size)
-    elif return_type == 'Variant':
-        ptrcall(method, &variant_arg, <const void **>ptr_args, size)
-        return_variant = True
     elif return_type == 'bool':
         ptrcall(method, &bool_arg, <const void **>ptr_args, size)
         pyarg = type_funcs.bool_to_pyobject(bool_arg)
-    elif return_type == 'int' or return_type == 'RID' or return_type[6:] in _global_enum_info:
+    elif return_type == 'int' or return_type[6:] in _global_enum_info:
         ptrcall(method, &int_arg, <const void **>ptr_args, size)
         pyarg = type_funcs.int_to_pyobject(int_arg)
     elif return_type == 'float':
@@ -183,13 +188,30 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
     elif return_type == 'Rect2i':
         ptrcall(method, &rect2i_arg, <const void **>ptr_args, size)
         pyarg = type_funcs.rect2i_to_pyobject(rect2i_arg)
-    elif return_type == 'PackedStringArray':
-        ptrcall(method, &packed_string_array_arg, <const void **>ptr_args, size)
-        variant_arg = Variant(packed_string_array_arg)
-        return_variant = True
-    elif return_type in _global_inheritance_info:
+    elif return_type == 'StringName':
+        ptrcall(method, &stringname_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.string_name_to_pyobject(stringname_arg)
+    elif return_type == 'NodePath':
+        ptrcall(method, &nodepath_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.node_path_to_pyobject(nodepath_arg)
+    elif return_type == 'RID':
+        ptrcall(method, &rid_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.rid_to_pyobject(rid_arg)
+    elif return_type in _global_inheritance_info:  # Object
         ptrcall(method, &ptr_arg, <const void **>ptr_args, size)
         pyarg = object_to_pyobject(ptr_arg)
+    elif return_type == 'Dictionary':
+        ptrcall(method, &dictionary_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.dictionary_to_pyobject(dictionary_arg)
+    elif return_type == 'Array':
+        ptrcall(method, &array_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.array_to_pyobject(array_arg) 
+    elif return_type == 'PackedStringArray':
+        ptrcall(method, &packed_string_array_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.packed_string_array_to_pyobject(packed_string_array_arg)
+    elif return_type == 'Variant':
+        ptrcall(method, &variant_arg, <const void **>ptr_args, size)
+        pyarg = type_funcs.variant_to_pyobject(variant_arg)
     else:
         unknown_type_error = True
 
@@ -202,7 +224,5 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
 
     if return_type == 'Nil':
         return None
-    elif return_variant:
-        return variant_arg.pythonize()
 
     return pyarg

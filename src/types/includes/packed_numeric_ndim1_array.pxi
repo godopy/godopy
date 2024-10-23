@@ -1,12 +1,4 @@
-# All (n,)-shaped types are here
-
-PackedByteArray = bytearray
-
-# class PackedByteArray(numpy.ndarray):
-#     pass
-
-
-class PackedStringArray(tuple):
+class PackedByteArray(numpy.ndarray):
     pass
 
 

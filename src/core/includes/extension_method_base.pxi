@@ -12,18 +12,6 @@ cdef class PropertyInfo:
         return '<PropertyInfo %s%s:%s>' % (cls_name, self.name, variant_type_to_str(self.type))
 
 
-cdef class PyStringName:
-    cdef str pyname
-    cdef StringName name
-
-    def __cinit__(self, str name):
-        self.pyname = name
-        self.name = StringName(name)
-
-    cdef void *ptr(self):
-        return self.name._native_ptr()
-
-
 cdef class _ExtensionMethodBase:
     def __cinit__(self, *args):
         self.is_registered = False
@@ -60,14 +48,14 @@ cdef class _ExtensionMethodBase:
 
         if pos >= 0:
             pi.name = self.__func__.__code__.co_varnames[pos]
-            pi.type = pytype_to_gdtype(self.__func__.__annotations__.get(pi.name, None))
+            pi.type = type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get(pi.name, None))
 
         return pi
 
 
     cdef PropertyInfo get_return_info(self):
         return PropertyInfo(
-            pytype_to_gdtype(self.__func__.__annotations__.get('return', None)),
+            type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get('return', None)),
         )
 
 
@@ -76,7 +64,7 @@ cdef class _ExtensionMethodBase:
 
 
     cdef int get_return_metadata(self) except -1:
-        cdef VariantType t = pytype_to_gdtype(self.__func__.__annotations__.get('return', None))
+        cdef VariantType t = type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get('return', None))
         return self.metadata_from_type(t)
 
 
@@ -98,7 +86,7 @@ cdef class _ExtensionMethodBase:
             metadata = <int>GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
             if i > 0:
                 name = self.__func__.__code__.co_varnames[i]
-                t = pytype_to_gdtype(self.__func__.__annotations__.get(name, None))
+                t = type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get(name, None))
                 metadata = self.metadata_from_type(t)
             metadata_list.append(metadata)
 

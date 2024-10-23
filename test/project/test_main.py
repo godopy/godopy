@@ -77,16 +77,16 @@ class TestCaseMathTypes(BaseTestCase):
         self.assertIsInstance(v2.x, np.int32)
         self.assertEqual(list(v2), [5, 10])
 
-        v3 = types.asvector2(v2)
+        v3 = types.as_vector2(v2)
         self.assertIsInstance(v3, types.Vector2)
         self.assertEqual(v3.dtype, np.dtype('float32'))
         self.assertEqual(list(v3), [5., 10.])
 
-        v4 = types.asvector2(v3, dtype=np.float64)
+        v4 = types.as_vector2(v3, dtype=np.float64)
         self.assertIsInstance(v4, types.Vector2)
         self.assertEqual(v4.dtype, np.dtype('float64'))
 
-        v5 = types.asvector2i(v4, dtype=np.int8)
+        v5 = types.as_vector2i(v4, dtype=np.int8)
         self.assertIsInstance(v5, types.Vector2i)
         self.assertEqual(v5.dtype, np.dtype('int8'))
 
@@ -119,7 +119,7 @@ class TestCaseMathTypes(BaseTestCase):
         self.assertEqual(list(r2), [0, 0, 100, 200])
 
         # Type casting and reshaping
-        r3 = types.asrect2(np.array([[10, 20], [100, 80]]))
+        r3 = types.as_rect2(np.array([[10, 20], [100, 80]]))
         self.assertEqual(r.dtype, np.dtype('float32'))
         self.assertEqual(list(r3), [10, 20, 100, 80])
 
@@ -130,11 +130,11 @@ class TestCaseArgTypes(BaseTestCase):
 
         r = gdscript.call('get_resource')
 
-        self.assertIsInstance(r.arg01, bool)
+        self.assertIsInstance(r.arg01, (bool, np.bool_))
         self.assertEqual(r.arg01, True)
-        self.assertIsInstance(r.arg02, int)
+        self.assertIsInstance(r.arg02, np.integer)
         self.assertEqual(r.arg02, 42)
-        self.assertIsInstance(r.arg03, float)
+        self.assertIsInstance(r.arg03, np.floating)
         self.assertEqual(r.arg03, math.tau)
         self.assertIsInstance(r.arg04, str)
         self.assertEqual(r.arg04, 'GodoPy')
