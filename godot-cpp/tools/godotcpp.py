@@ -1,6 +1,8 @@
 import os
-import platform
 import sys
+import platform
+
+import numpy
 
 from SCons.Action import Action
 from SCons.Builder import Builder
@@ -547,6 +549,7 @@ def _godot_cpp(env):
     # Includes
     env.AppendUnique(CPPPATH=[env.Dir(d) for d in ["../src", extension_dir, "include", "gen/include"]])
     env.AppendUnique(CPPPATH=[env.Dir(os.path.join("..", "python", "Include"))])
+    env.AppendUnique(CPPPATH=[env.Dir(numpy.get_include())])
     if env['platform'] == 'windows':
         env.AppendUnique(CPPPATH=[env.Dir(os.path.join("..", "python", "PC"))])
 

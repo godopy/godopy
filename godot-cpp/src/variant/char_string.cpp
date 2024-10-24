@@ -175,7 +175,7 @@ String::String(const char32_t *from) {
 }
 
 String::String(const PyObject *from) {
-	// PyGILState_STATE gil_state = PyGILState_Ensure();
+	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
 	if (PyUnicode_Check(from)) {
 		Py_ssize_t size;
 		const wchar_t *contents = PyUnicode_AsWideCharString((PyObject *)from, &size);
@@ -184,10 +184,9 @@ String::String(const PyObject *from) {
 		const char *contents = PyBytes_AsString((PyObject *)from);
 		internal::gdextension_interface_string_new_with_utf8_chars(_native_ptr(), contents);
 	} else {
-		// TODO: print error or warning
+		ERR_PRINT("Could not construct a String from PyObject *");
 		internal::gdextension_interface_string_new_with_latin1_chars(_native_ptr(), "");
 	}
-	// PyGILState_Release(gil_state);
 }
 
 String::operator PyObject *() const {

@@ -6,6 +6,8 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+extern int print_traceback(PyObject *);
+
 using namespace godot;
 
 class PythonObject : public RefCounted {

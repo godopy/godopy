@@ -46,14 +46,17 @@ def deinitialize(level):
     global python_runtime_singleton, python_language, loader, saver
 
     if level == gd.MODULE_INITIALIZATION_LEVEL_SCENE:
-        gds.ResourceSaver.remove_resource_format_saver(saver)
-        gds.ResourceLoader.remove_resource_format_loader(loader)
         saver.unreference()
-        saver.destroy()
-        saver = None
+        gds.ResourceSaver.remove_resource_format_saver(saver)
+        if saver is not None:
+            saver.destroy()
+            saver = None
+
         loader.unreference()
-        loader.destroy()
-        loader = None
+        gds.ResourceLoader.remove_resource_format_loader(loader)
+        if loader is not None:
+            loader.destroy()
+            loader = None
 
         gds.Engine.unregister_script_language(python_language)
         python_language.destroy()

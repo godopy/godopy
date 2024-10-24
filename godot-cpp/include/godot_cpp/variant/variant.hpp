@@ -155,6 +155,7 @@ public:
 	Variant(const Variant &other);
 	Variant(Variant &&other);
 	Variant(bool v);
+	Variant(int v, bool as_bool);
 	Variant(int64_t v);
 	Variant(int32_t v) :
 			Variant(static_cast<int64_t>(v)) {}
@@ -223,7 +224,7 @@ public:
 	// Cython cannot work with operator <Type> methods, but can work with templates
 	template<typename T>
 	_FORCE_INLINE_ T to_type() const {
-		operator T();
+		return operator T();
 	}
 
 	operator PyObject *() const;
@@ -335,7 +336,7 @@ public:
 	uint32_t hash() const;
 	uint32_t recursive_hash(int recursion_count) const;
 	bool hash_compare(const Variant &variant) const;
-	PyObject *pythonize(const Dictionary &type_hints=Dictionary()) const;
+	PyObject *pythonize() const;
 	bool booleanize() const;
 	String stringify() const;
 	Variant duplicate(bool deep = false) const;

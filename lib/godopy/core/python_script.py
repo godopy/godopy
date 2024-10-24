@@ -427,7 +427,8 @@ class ResourceFormatSaverPythonScript(gd.Class, inherits=classdb.ResourceFormatS
 
     def _recognize(self, res):
         print("'_recognize' call", res)
-        return res._is_valid()
+
+        return False
 
     def _save(self, res, path, flags) -> gd.Error:
         print("'_save' call", res, path, flags)
