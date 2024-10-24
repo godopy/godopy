@@ -77,8 +77,12 @@ __all__ = [
     'as_plane',
     'Plane',  # TODO: subtype of ndarray as array([x, y, z, d], dtype=float32), shape = (4,)
               # slices: Vector3, float
+
+    'as_quaternion',
     'Quaternion',  # TODO subtype of ndarray([x, y, z, w], dtype=float32), shape = (4,)
                    # or _godot_type_tuples.Quaternion()
+
+    'as_aabb',
     'AABB',  # TODO: subtype of ndarray as array([[x, y, z],
              #                                    [x, y, z]], dtype=float32), shape = (2, 3)
     'Basis',  # TODO subtype of ndarray as array([[xx, xy, xz],
@@ -244,13 +248,13 @@ cdef variant_to_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_to_pyobject_funcs 
     variant_vector2i_to_pyobject,
     variant_rect2_to_pyobject,
     variant_rect2i_to_pyobject,
-    NULL,  # vector3
-    NULL,  # vector3i
-    NULL,  # transform2d
-    NULL,  # vector4
-    NULL,  # vector4i
-    NULL,  # plane
-    NULL,  # quaternion
+    variant_vector3_to_pyobject,
+    variant_vector3i_to_pyobject,
+    variant_transform2d_to_pyobject,
+    variant_vector4_to_pyobject,
+    variant_vector4i_to_pyobject,
+    variant_plane_to_pyobject,
+    variant_quaternion_to_pyobject,
     NULL,  # aabb
     NULL,  # basis
     NULL,  # transform3d
@@ -264,11 +268,11 @@ cdef variant_to_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_to_pyobject_funcs 
     NULL,  # signal
     variant_dictionary_to_pyobject,
     variant_array_to_pyobject,
-    NULL,  # packed_byte_array
-    NULL,  # packed_int32_array
-    NULL,  # int64
-    NULL,  # float32
-    NULL,  # float64
+    variant_packed_byte_array_to_pyobject,
+    variant_packed_int32_array_to_pyobject,
+    variant_packed_int64_array_to_pyobject,
+    variant_packed_float32_array_to_pyobject,
+    variant_packed_float64_array_to_pyobject,
     variant_packed_string_array_to_pyobject,
     NULL,  # vector2
     NULL,  # vector3
@@ -287,13 +291,13 @@ cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_fu
     variant_vector2i_from_pyobject,
     variant_rect2_from_pyobject,
     variant_rect2i_from_pyobject,
-    NULL,  # vector3
-    NULL,  # vector3i
-    NULL,  # transform2d
-    NULL,  # vector4
-    NULL,  # vector4i
-    NULL,  # plane
-    NULL,  # quaternion
+    variant_vector3_from_pyobject,
+    variant_vector3i_from_pyobject,
+    variant_transform2d_from_pyobject,
+    variant_vector4_from_pyobject,
+    variant_vector4i_from_pyobject,
+    variant_plane_from_pyobject,
+    variant_quaternion_from_pyobject,
     NULL,  # aabb
     NULL,  # basis
     NULL,  # transform3d
@@ -307,11 +311,11 @@ cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_fu
     NULL,  # signal
     variant_dictionary_from_pyobject,
     variant_array_from_pyobject,
-    NULL,  # packed_byte_array
-    NULL,  # packed_int32_array
-    NULL,  # int64
-    NULL,  # float32
-    NULL,  # float64
+    variant_packed_byte_array_from_pyobject,
+    variant_packed_int32_array_from_pyobject,
+    variant_packed_int64_array_from_pyobject,
+    variant_packed_float32_array_from_pyobject,
+    variant_packed_float64_array_from_pyobject,
     variant_packed_string_array_from_pyobject,
     NULL,  # vector2
     NULL,  # vector3

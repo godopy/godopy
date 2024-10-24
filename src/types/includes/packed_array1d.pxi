@@ -409,6 +409,47 @@ cdef public object variant_packed_string_array_to_pyobject(const cpp.Variant &v)
     return packed_string_array_to_pyobject(arr)
 
 
+cdef public void packed_byte_array_from_pyobject(object p_obj, cpp.PackedByteArray *r_ret) noexcept:
+    if not isinstance(p_obj, PackedByteArray) or not p_obj.dtype == np.uint8:
+        p_obj = as_packed_byte_array(p_obj, dtype=np.uint8)
+
+    # cdef _PackedByteArrayData base = <object>numpy.PyArray_BASE(<numpy.ndarray>p_obj)
+    cdef _PackedByteArrayData base = p_obj.base
+    r_ret[0] = base._cpparr
+
+
+cdef public void packed_int32_array_from_pyobject(object p_obj, cpp.PackedInt32Array *r_ret) noexcept:
+    if not isinstance(p_obj, PackedInt32Array) or not p_obj.dtype == np.int32:
+        p_obj = as_packed_int32_array(p_obj, dtype=np.int32)
+
+    cdef _PackedInt32ArrayData base = p_obj.base
+    r_ret[0] = base._cpparr
+
+
+cdef public void packed_int64_array_from_pyobject(object p_obj, cpp.PackedInt64Array *r_ret) noexcept:
+    if not isinstance(p_obj, PackedInt64Array) or not p_obj.dtype == np.int64:
+        p_obj = as_packed_int32_array(p_obj, dtype=np.int64)
+
+    cdef _PackedInt64ArrayData base = p_obj.base
+    r_ret[0] = base._cpparr
+
+
+cdef public void packed_float32_array_from_pyobject(object p_obj, cpp.PackedFloat32Array *r_ret) noexcept:
+    if not isinstance(p_obj, PackedFloat32Array) or not p_obj.dtype == np.float32:
+        p_obj = as_packed_float32_array(p_obj, dtype=np.float32)
+
+    cdef _PackedFloat32ArrayData base = p_obj.base
+    r_ret[0] = base._cpparr
+
+
+cdef public void packed_float64_array_from_pyobject(object p_obj, cpp.PackedFloat64Array *r_ret) noexcept:
+    if not isinstance(p_obj, PackedFloat64Array) or not p_obj.dtype == np.float64:
+        p_obj = as_packed_float64_array(p_obj, dtype=np.float64)
+
+    cdef _PackedFloat64ArrayData base = p_obj.base
+    r_ret[0] = base._cpparr
+
+
 cdef public void packed_string_array_from_pyobject(object p_obj, cpp.PackedStringArray *r_ret) noexcept:
     cdef cpp.PackedStringArray arr = cpp.PackedStringArray()
     cdef int64_t size, i
@@ -425,6 +466,41 @@ cdef public void packed_string_array_from_pyobject(object p_obj, cpp.PackedStrin
         cpp.UtilityFunctions.push_error("Could not convert %r to C++ PackedStringArray" % p_obj)
 
     r_ret[0] = arr
+
+
+cdef public void variant_packed_byte_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef cpp.PackedByteArray arr
+    packed_byte_array_from_pyobject(p_obj, &arr)
+
+    r_ret[0] = cpp.Variant(arr)
+
+
+cdef public void variant_packed_int32_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef cpp.PackedInt32Array arr
+    packed_int32_array_from_pyobject(p_obj, &arr)
+
+    r_ret[0] = cpp.Variant(arr)
+
+
+cdef public void variant_packed_int64_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef cpp.PackedInt64Array arr
+    packed_int64_array_from_pyobject(p_obj, &arr)
+
+    r_ret[0] = cpp.Variant(arr)
+
+
+cdef public void variant_packed_float32_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef cpp.PackedFloat32Array arr
+    packed_float32_array_from_pyobject(p_obj, &arr)
+
+    r_ret[0] = cpp.Variant(arr)
+
+
+cdef public void variant_packed_float64_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef cpp.PackedFloat64Array arr
+    packed_float64_array_from_pyobject(p_obj, &arr)
+
+    r_ret[0] = cpp.Variant(arr)
 
 
 cdef public void variant_packed_string_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:

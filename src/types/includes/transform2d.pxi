@@ -88,3 +88,40 @@ class Transform2D(numpy.ndarray):
             self[:] = value
         else:
             raise AttributeError("%r has no attribute %r" % (self, name))
+
+
+cdef public object transform2d_to_pyobject(const cpp.Transform2D &t):
+    cdef float [:, :] t_view = <float [:3, :2]><float *>t.columns
+    cdef numpy.ndarray pyarr = Transform2D(t_view, dtype=np.float32, copy=True)
+
+    return pyarr
+
+
+cdef public object variant_transform2d_to_pyobject(const cpp.Variant &v):
+    cdef cpp.Transform2D t = v.to_type[cpp.Transform2D]()
+    cdef float [:, :] t_view = <float [:3, :2]><float *>t.columns
+    cdef numpy.ndarray pyarr = Transform2D(t_view, dtype=np.float32, copy=True)
+
+    return pyarr
+
+
+cdef public void transform2d_from_pyobject(object p_obj, cpp.Transform2D *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or not p_obj.shape == (3, 2) or not p_obj.dtype == np.float32:
+        p_obj = as_transform2d(p_obj, dtype=np.float32)
+
+    cdef cpp.Transform2D t
+    cdef float [:, :] carr_view = <float [:3, :2]><float *>t.columns
+    carr_view_from_pyobject[float [:, :]](p_obj, carr_view, np.float32, 2)
+
+    r_ret[0] = t
+
+
+cdef public void variant_transform2d_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or not p_obj.shape == (3, 2) or not p_obj.dtype == np.float32:
+        p_obj = as_transform2d(p_obj, dtype=np.float32)
+
+    cdef cpp.Transform2D t
+    cdef float [:, :] carr_view = <float [:3, :2]><float *>t.columns
+    carr_view_from_pyobject[float [:, :]](p_obj, carr_view, np.float32, 2)
+
+    r_ret[0] = cpp.Variant(t)

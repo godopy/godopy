@@ -150,7 +150,7 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
         _check_vector2_data(position, arg_name='position')
         _check_vector2_data(size, arg_name='size')
 
-        base = np.array([position, size], dtype=dtype, copy=copy)
+        base = np.array([*position, *size], dtype=dtype, copy=copy)
 
     if kwargs:
         raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
@@ -175,18 +175,18 @@ class Rect2i(_Rect2Base):
         return array_from_rect2_args(subtype, dtype, args, kwargs)
 
 
-cdef public object rect2_to_pyobject(cpp.Rect2 &rect):
-    cdef float [:] position_view = rect.position.coord
-    cdef float [:] size_view = rect.size.coord
+cdef public object rect2_to_pyobject(cpp.Rect2 &p_rect):
+    cdef float [:] position_view = p_rect.position.coord
+    cdef float [:] size_view = p_rect.size.coord
 
     cdef numpy.ndarray pyarr = Rect2([position_view, size_view], dtype=np.float32, copy=True)
 
     return pyarr
 
 
-cdef public object rect2i_to_pyobject(cpp.Rect2i &rect):
-    cdef int32_t [:] position_view = rect.position.coord
-    cdef int32_t [:] size_view = rect.size.coord
+cdef public object rect2i_to_pyobject(cpp.Rect2i &p_rect):
+    cdef int32_t [:] position_view = p_rect.position.coord
+    cdef int32_t [:] size_view = p_rect.size.coord
 
     cdef numpy.ndarray pyarr = Rect2i([position_view, size_view], dtype=np.int32, copy=True)
 
@@ -195,6 +195,7 @@ cdef public object rect2i_to_pyobject(cpp.Rect2i &rect):
 
 cdef public object variant_rect2_to_pyobject(const cpp.Variant &v):
     cdef cpp.Rect2 rect = v.to_type[cpp.Rect2]()
+
     cdef float [:] position_view = rect.position.coord
     cdef float [:] size_view = rect.size.coord
 
@@ -213,46 +214,57 @@ cdef public object variant_rect2i_to_pyobject(const cpp.Variant &v):
     return pyarr
 
 
-cdef public void rect2_from_pyobject(object obj, cpp.Rect2 *r_ret) noexcept:
+cdef public void rect2_from_pyobject(object p_obj, cpp.Rect2 *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (4,) or p_obj.dtype != np.float32:
+        p_obj = as_rect2(p_obj, dtype=np.float32)
+
     cdef cpp.Rect2 rect
     cdef float [:] position_view = rect.position.coord
     cdef float [:] size_view = rect.size.coord
 
-    carr_view_from_pyobject[float [:]](obj, position_view, np.float32, 4, 0, 2)
-    carr_view_from_pyobject[float [:]](obj, size_view, np.float32, 4, 2)
+    carr_view_from_pyobject[float [:]](p_obj, position_view, np.float32, 4, 0, 2)
+    carr_view_from_pyobject[float [:]](p_obj, size_view, np.float32, 4, 2)
 
     r_ret[0] = rect
 
 
-cdef public void rect2i_from_pyobject(object obj, cpp.Rect2i *r_ret) noexcept:
+cdef public void rect2i_from_pyobject(object p_obj, cpp.Rect2i *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (4,) or p_obj.dtype != np.int32:
+        p_obj = as_rect2i(p_obj, dtype=np.int32)
+
     cdef cpp.Rect2i rect
     cdef int32_t [:] position_view = rect.position.coord
     cdef int32_t [:] size_view = rect.size.coord
 
-    carr_view_from_pyobject[int32_t [:]](obj, position_view, np.float32, 4, 0, 3)
-    carr_view_from_pyobject[int32_t [:]](obj, size_view, np.float32, 4, 2)
+    carr_view_from_pyobject[int32_t [:]](p_obj, position_view, np.float32, 4, 0, 3)
+    carr_view_from_pyobject[int32_t [:]](p_obj, size_view, np.float32, 4, 2)
 
     r_ret[0] = rect
 
 
-cdef public void variant_rect2_from_pyobject(object obj, cpp.Variant *r_ret) noexcept:
+cdef public void variant_rect2_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (4,) or p_obj.dtype != np.float32:
+        p_obj = as_rect2(p_obj, dtype=np.float32)
+
     cdef cpp.Rect2 rect
     cdef float [:] position_view = rect.position.coord
     cdef float [:] size_view = rect.size.coord
 
-    carr_view_from_pyobject[float [:]](obj, position_view, np.float32, 4, 0, 2)
-    carr_view_from_pyobject[float [:]](obj, size_view, np.float32, 4, 2)
+    carr_view_from_pyobject[float [:]](p_obj, position_view, np.float32, 4, 0, 2)
+    carr_view_from_pyobject[float [:]](p_obj, size_view, np.float32, 4, 2)
 
     r_ret[0] = cpp.Variant(rect)
 
 
-cdef public void variant_rect2i_from_pyobject(object obj, cpp.Variant *r_ret) noexcept:
+cdef public void variant_rect2i_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (4,) or p_obj.dtype != np.int32:
+        p_obj = as_rect2i(p_obj, dtype=np.int32)
+
     cdef cpp.Rect2i rect
     cdef int32_t [:] position_view = rect.position.coord
     cdef int32_t [:] size_view = rect.size.coord
 
-    cdef int _
-    carr_view_from_pyobject[int32_t [:]](obj, position_view, np.float32, 4, 0, 3)
-    carr_view_from_pyobject[int32_t [:]](obj, size_view, np.float32, 4, 2)
+    carr_view_from_pyobject[int32_t [:]](p_obj, position_view, np.int32, 4, 0, 3)
+    carr_view_from_pyobject[int32_t [:]](p_obj, size_view, np.int32, 4, 2)
 
     r_ret[0] = cpp.Variant(rect)

@@ -72,7 +72,7 @@ class Plane(numpy.ndarray):
 
             _check_vector3_data(normal, arg_name='normal')
             _check_numeric_scalar(d, arg_name='d')
-            base = np.array([*position, *size], dtype=dtype, copy=copy)
+            base = np.array([*normal, d], dtype=dtype, copy=copy)
 
         if kwargs:
             raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
@@ -116,3 +116,42 @@ class Plane(numpy.ndarray):
 
         if self.shape != (4,):
             self.shape = (4,)
+
+
+cdef public object plane_to_pyobject(cpp.Plane &plane):
+    cdef numpy.ndarray pyarr = Plane([*list(plane.normal.coord), plane.d], dtype=np.float32, copy=True)
+
+    return pyarr
+
+
+cdef public object variant_plane_to_pyobject(const cpp.Variant &v):
+    cdef cpp.Plane plane = v.to_type[cpp.Plane]()
+    cdef numpy.ndarray pyarr = Plane([*list(plane.normal.coord), plane.d], dtype=np.float32, copy=True)
+
+    return pyarr
+
+
+cdef public void plane_from_pyobject(object p_obj, cpp.Plane *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or not p_obj.shape == (4,) or not p_obj.dtype == np.float32:
+        p_obj = as_plane(p_obj, dtype=np.float32)
+
+    cdef cpp.Plane plane
+    cdef float [:] normal_view = plane.normal.coord
+
+    carr_view_from_pyobject[float [:]](p_obj[:3], normal_view, np.float32, 2)
+    plane.d = p_obj[4]
+
+    r_ret[0] = plane
+
+
+cdef public void variant_plane_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or not p_obj.shape == (4,) or not p_obj.dtype == np.float32:
+        p_obj = as_plane(p_obj, dtype=np.float32)
+
+    cdef cpp.Plane plane
+    cdef float [:] normal_view = plane.normal.coord
+
+    carr_view_from_pyobject[float [:]](p_obj[:3], normal_view, np.float32, 2)
+    plane.d = p_obj[4]
+
+    r_ret[0] = cpp.Variant(plane)

@@ -163,33 +163,45 @@ cdef public object variant_vector3i_to_pyobject(const cpp.Variant &v):
     return pyarr
 
 
-cdef public void vector3_from_pyobject(object obj, cpp.Vector3 *r_ret) noexcept:
+cdef public void vector3_from_pyobject(object p_obj, cpp.Vector3 *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (3,) or p_obj.dtype != np.float32:
+        p_obj = as_vector3(p_obj, dtype=np.float32)
+
     cdef cpp.Vector3 vec
     cdef float [:] carr_view = vec.coord
-    carr_view_from_pyobject[float [:]](obj, carr_view, np.float32, 2)
+    carr_view_from_pyobject[float [:]](p_obj, carr_view, np.float32, 2)
 
     r_ret[0] = vec
 
 
-cdef public void vector3i_from_pyobject(object obj, cpp.Vector3i *r_ret) noexcept:
+cdef public void vector3i_from_pyobject(object p_obj, cpp.Vector3i *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (3,) or p_obj.dtype != np.int32:
+        p_obj = as_vector3i(p_obj, dtype=np.int32)
+
     cdef cpp.Vector3i vec
     cdef int32_t [:] carr_view = vec.coord
-    carr_view_from_pyobject[int32_t [:]](obj, carr_view, np.int32, 2)
+    carr_view_from_pyobject[int32_t [:]](p_obj, carr_view, np.int32, 2)
 
     r_ret[0] = vec
 
 
-cdef public void variant_vector3_from_pyobject(object obj, cpp.Variant *r_ret) noexcept:
+cdef public void variant_vector3_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (3,) or p_obj.dtype != np.float32:
+        p_obj = as_vector3(p_obj, dtype=np.float32)
+
     cdef cpp.Vector3 vec
     cdef float [:] carr_view = vec.coord
-    carr_view_from_pyobject[float [:]](obj, carr_view, np.float32, 2)
+    carr_view_from_pyobject[float [:]](p_obj, carr_view, np.float32, 2)
 
     r_ret[0] = cpp.Variant(vec)
 
 
-cdef public void variant_vector3i_from_pyobject(object obj, cpp.Variant *r_ret) noexcept:
+cdef public void variant_vector3i_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (3,) or p_obj.dtype != np.int32:
+        p_obj = as_vector3i(p_obj, dtype=np.int32)
+
     cdef cpp.Vector3i vec
     cdef int32_t [:] carr_view = vec.coord
-    carr_view_from_pyobject[int32_t [:]](obj, carr_view, np.int32, 2)
+    carr_view_from_pyobject[int32_t [:]](p_obj, carr_view, np.int32, 2)
 
     r_ret[0] = cpp.Variant(vec)
