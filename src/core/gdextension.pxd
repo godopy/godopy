@@ -1,6 +1,10 @@
 """\
-This module wraps objects inside the engine
+This module provides a reasonably low-level Python implementation
+of the GDExtension API
 """
+
+# TODO: Refactor to resemble GDExtension API structure closer
+
 from binding cimport *
 from godot_cpp cimport *
 from libc.stdint cimport int8_t
@@ -34,6 +38,24 @@ cdef list _registered_classes
 
 
 cdef class Class:
+    """
+    Defines all Godot Engine's classes.
+
+    NOTE: Although instances of `gdextension.Class` and its subclasses implement
+    class functionality, they are still *objects* on the Python level.
+
+    Only on the higher level (`godot` module) they would be wrapped as real Python
+    classes.
+
+    Works as a singleton, can't be instantiated directly: use `Class.get_class`
+    in Cython or `Class._get_class` in Python to create/get instances
+    `gdextension.Class`.
+
+    Doesn't implement any GDExtension API calls by itself.
+
+    Captures method, property (TODO) and signal (TODO) information,
+    processes class inheritance chains.
+    """
     cdef readonly dict __method_info__
     cdef readonly str __name__
     cdef readonly Class __inherits__
@@ -46,6 +68,17 @@ cdef class Class:
 
 
 cdef public class Object [object GDPyObject, type GDPyObject_Type]:
+    """
+    Defines all Godot Engine's objects.
+
+    Implements following GDExtension API calls:
+        in `Object.__init__`:
+            `global_get_singleton` (for singleton objects)
+            `classdb_construct_object` (for all others)
+
+    Captures method, property (TODO) and signal (TODO) information,
+    processes class inheritance chains.
+    """
     cdef void *_owner
     cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
     cdef bint is_singleton
@@ -102,6 +135,19 @@ cdef enum SpecialMethod:
 
 
 cdef class ExtensionClass(Class):
+    """
+    Defines all custom classes which extend the Godot Engine.
+    Inherits `gdextendion.Class`
+
+    Implements instance management callbacks in the ClassCreationInfo4 structure:
+        `creation_info4.create_instance_func = &ExtensionClass.create_instance`
+        `creation_info4.free_instance_func = &ExtensionClass.free_instance`
+        `creation_info4.recreate_instance_func = &ExtensionClass.recreate_instance`
+
+    Stores information about all new methods and class registration state.
+
+    Implements all class registration calls and delegates them to `gdextension.ClassRegistrator`
+    """
     cdef readonly bint is_registered
     cdef readonly dict method_bindings
     cdef readonly dict python_method_bindings
@@ -132,8 +178,37 @@ cdef class ExtensionClass(Class):
     cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
 
 
+cdef class ExtensionClassRegistrator:
+    """
+    Registers `ExtensionClass` objects.
+
+    Implements following GDExtension API calls:
+        in `ExtensionClassRegistrator.__cinit__`:
+            `classdb_register_extension_class4`
+    """
+    cdef str __name__
+    cdef ExtensionClass registree
+    cdef Class inherits
+
+    cdef int register_method(self, func: types.FunctionType) except -1
+    cdef int register_virtual_method(self, func: types.FunctionType) except -1
+
 
 cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Type]:
+    """
+    Defines all instances of `gdextension.Class`.
+
+    Implements following GDExtension API calls:
+        in `Extension.__init__`
+            `classdb_construct_object` (of base class)
+            `object_set_instance`
+        in `Extension.__del__` and `Extension.destroy`
+            `object_destroy`
+
+    Implements virtual call callbacks in the ClassCreationInfo4 structure:
+        `creation_info4.get_virtual_call_data_func = &Extension.get_virtual_call_data`
+        `creation_info4.call_virtual_with_data_func = &Extension.call_virtual_with_data`
+    """
     cdef bint _needs_cleanup
 
     cpdef destroy(self)
@@ -189,6 +264,15 @@ cdef class ExtensionVirtualMethod(_ExtensionMethodBase):
 
 
 cdef class ExtensionMethod(_ExtensionMethodBase):
+    """"
+    Defines all custom methods of `gdextension.Extension` objects.
+
+    Implements following GDExtension API calls:
+        in `ExtensionMethod.register`
+            `classdb_register_extension_class_method`
+
+    Implements `call`/`ptrcall` callbacks in the `ClassMethodInfo` structure.
+    """
     cdef int register(self, ExtensionClass cls) except -1
 
     @staticmethod

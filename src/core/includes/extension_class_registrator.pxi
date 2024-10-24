@@ -1,9 +1,5 @@
 
 cdef class ExtensionClassRegistrator:
-    cdef str __name__
-    cdef ExtensionClass registree
-    cdef Class inherits
-
     def __cinit__(self, ExtensionClass registree, Class inherits, **kwargs):
         self.__name__ = registree.__name__
         self.registree = registree
