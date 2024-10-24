@@ -277,7 +277,7 @@ cdef public void variant_dictionary_from_pyobject(object p_obj, cpp.Variant *r_r
     r_ret[0] = cpp.Variant(ret)
 
 
-cpdef numpy.ndarray as_array(data, dtype=None, itemshape=None, copy=None):
+def as_array(data, dtype=None, itemshape=None, copy=None):
     """
     Interpret the input as Array
     """
@@ -348,20 +348,20 @@ class Array(numpy.ndarray):
 
 
 cdef tuple _vartype_to_dtype_itemshape = (
-    (None, ()),
-    (np.bool_, ()),
-    (np.int64, ()),
+    None,
+    (np.bool_,   ()),
+    (np.int64,   ()),
     (np.float64, ()),
     (np.dtypes.StringDType, ()),
     (np.float64, (2,)), # vector2
-    (np.int64, (2,)),
+    (np.int64,   (2,)),
     (np.float64, (4,)), # rect2
-    (np.int64, (4,)),
+    (np.int64,   (4,)),
     (np.float64, (3,)), # vector3
-    (np.int64, (3,)),
+    (np.int64,   (3,)),
     (np.float64, (3, 2)), # transform2d
     (np.float64, (4,)), # vector4
-    (np.int64, (4,)),
+    (np.int64,   (4,)),
     (np.float64, (4,)), # plane
     (np.float64, (4,)), # quaternion
     (np.float64, (2, 3)), # aabb
@@ -369,12 +369,16 @@ cdef tuple _vartype_to_dtype_itemshape = (
     (np.float64, (4, 3)), # transform3d
     (np.float64, (4, 4)), # projection
     (np.float64, (4,)), # color
-    (np.dtypes.StringDType, ()), # stringname
+    (np.object_, ()), # stringname, must hold C++ string names
     (np.dtypes.StringDType, ()), # nodepath
-    (np.uint64, ()), # rid
     # All others are (np.object_, ()),
 )
 
+
+# NOTE: By default untyped Godot's Array conversions are to the ordinary
+#       Python list. Typed Array conversions are always to `Array`.
+
+# TODO: Convert typed numpy arrays to typed Godot arrays
 
 cdef public object array_to_pyobject(const cpp.Array &p_arr):
     cdef int64_t size = p_arr.size(), i = 0
@@ -395,12 +399,14 @@ cdef public object array_to_pyobject(const cpp.Array &p_arr):
 
     if ret.is_typed():
         vartype = ret.get_typed_builtin()
-        if vartype < len(_vartype_to_dtype_itemshape):
+        if vartype > 0 and vartype < len(_vartype_to_dtype_itemshape):
             dtype, itemshape = _vartype_to_dtype_itemshape[vartype]
             cpp.UtilityFunctions.print("Detected %s typedarray %r" % (variant_type_to_str(<cpp.VariantType>vartype), dtype))
 
-    # TODO: Try not to copy if possible
-    return as_array(ret, dtype=dtype, itemshape=itemshape, copy=True)
+        # Array data has to be copied because it contains Variants that must be converted for Python
+        return as_array(ret, dtype=dtype, itemshape=itemshape, copy=True)
+
+    return ret
 
 
 cdef public object variant_array_to_pyobject(const cpp.Variant &v):
@@ -414,6 +420,8 @@ cdef public void array_from_pyobject(object p_obj, cpp.Array *r_ret) noexcept:
     cdef cpp.Array ret
     cdef cpp.Variant item
     cdef object pyitem
+
+    # TODO: Typed arrays to typed arrays
 
     if PySequence_Check(p_obj):
         size = PySequence_Size(p_obj)

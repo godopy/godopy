@@ -1,11 +1,13 @@
-cpdef numpy.ndarray as_vector2(data, dtype=None):
-    """
-    Interpret the input as Vector2
-    """
-    if dtype is None:
-        dtype = np.float32
+def _check_vector2_data(data, arg_name=None):
     if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
-        raise ValueError("Vector2 data must be a 1-dimensional container of 2 items")
+        argument = 'argument %r' % arg_name if arg_name else 'data'
+        raise ValueError("Vector2(i) %s must be a 1-dimensional container of 2 items" % argument)
+    map(_check_numeric_scalar, data)
+
+
+def _as_any_vector2(type_name, data, dtype, default_dtype):
+    if dtype is None:
+        dtype = default_dtype
 
     copy = False
     if isinstance(data, numpy.ndarray):
@@ -16,32 +18,36 @@ cpdef numpy.ndarray as_vector2(data, dtype=None):
 
     if np.issubdtype(dtype, np.integer):
         return Vector2i(data, dtype=dtype, copy=copy, can_cast=True)
+    elif not np.issubdtype(dtype, np.floating):
+        raise ValueError("%s data must be numeric" % type_name)
+
     return Vector2(data, dtype=dtype, copy=copy, can_cast=True)
 
 
-cpdef numpy.ndarray as_vector2i(data, dtype=None):
+def as_vector2(data, dtype=None):
     """
-    Interpret the input as Vector2i
+    Interpret the input as Vector2.
+
+    If 'dtype' argument is passed interpret the result as Vector2 if dtype
+    is floating or Vector2i if dtype is integer. Non-numeric dtypes will
+    raise a ValueError.
     """
-    if dtype is None:
-        dtype = np.int32
-    if not issubscriptable(data) or (hasattr(data, 'shape') and data.shape != (2,)) or len(data) != 2:
-        raise ValueError("Vector2i data must be a 1-dimensional container of 2 items")
-
-    copy = False
-    if isinstance(data, numpy.ndarray):
-        if data.dtype != dtype:
-            copy = True
-    else:
-        copy = True
-
-    if np.issubdtype(dtype, np.floating):
-        return Vector2(data, dtype=dtype, copy=copy, can_cast=True)
-    return Vector2i(data, dtype=dtype, copy=copy, can_cast=True)
+    return _as_any_vector2('Vector2', data, dtype, np.float32)
 
 
-cdef frozenset _vector2_attrs = frozenset(['x', 'y', 'coord'])
-cdef frozenset _size2_attrs = frozenset(['width', 'height', 'x', 'y', 'coord'])
+def as_vector2i(data, dtype=None):
+    """
+    Interpret the input as Vector2i.
+
+    If 'dtype' argument is passed interpret the result as Vector2 if dtype
+    is floating or Vector2i if dtype is integer. Non-numeric dtypes will
+    raise a ValueError.
+    """
+    return _as_any_vector2('Vector2', data, dtype, np.int32)
+
+
+cdef object _vector2_attrs = frozenset(['x', 'y', 'coord', 'components'])
+cdef object _size2_attrs = frozenset(['width', 'height', 'x', 'y', 'coord', 'components'])
 
 
 class _Vector2Base(numpy.ndarray):
@@ -50,7 +56,7 @@ class _Vector2Base(numpy.ndarray):
             return self[0]
         elif name == 'y':
             return self[1]
-        elif name == 'coord':
+        elif name == 'coord' or name == 'components':
             return np.array(self, dtype=self.dtype, copy=False)
 
         raise AttributeError("%r has no attribute %r" % (self, name))
@@ -68,18 +74,19 @@ class _Vector2Base(numpy.ndarray):
         else:
             raise AttributeError("%r has no attribute %r" % (self, name))
 
+    def __array_finalize__(self, obj):
+        shape = self.shape
+        if shape != (2,):
+            self.shape = (2,)
+
 
 class _Size2Base(_Vector2Base):
     def __getattr__(self, str name):
-        if name == 'width':
+        if name == 'width' or name == 'x':
             return self[0]
-        elif name == 'height':
+        elif name == 'height' or name == 'y':
             return self[1]
-        elif name == 'x':
-            return self[0]
-        elif name == 'y':
-            return self[1]
-        elif name == 'coord':
+        elif name == 'coord' or name == 'components':
             return np.array(self, dtype=self.dtype, copy=False)
 
         raise AttributeError("%r has no attribute %r" % (self, name))
@@ -88,15 +95,11 @@ class _Size2Base(_Vector2Base):
         if name not in _size2_attrs:
             return object.__setattr__(self, name, value)
 
-        if name == 'width':
+        if name == 'width' or name == 'x':
             self[0] = value
-        elif name == 'height':
+        elif name == 'height' or name == 'y':
             self[1] = value
-        elif name == 'x':
-            self[0] = value
-        elif name == 'y':
-            self[1] = value
-        elif name == 'coord':
+        elif name == 'coord' or name == 'components':
             self[:] = value
         else:
             raise AttributeError("%r has no attribute %r" % (self, name))
@@ -112,9 +115,11 @@ cdef inline numpy.ndarray array_from_vector2_args(subtype, dtype, args, kwargs):
         raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
 
     if args and len(args) == 2:
+        map(_check_numeric_scalar, args)
         base = np.array(args, dtype=dtype)
     elif args and len(args) == 1 and issubscriptable(args[0]) and len(args[0]) == 2:
         obj = args[0]
+        _check_vector2_data(obj)
         if isinstance(obj, numpy.ndarray) and not copy:
             if obj.dtype == dtype:
                 base = obj
@@ -127,14 +132,11 @@ cdef inline numpy.ndarray array_from_vector2_args(subtype, dtype, args, kwargs):
         else:
             base = np.array(args[0], dtype=dtype, copy=copy)
     elif len(args) == 0:
-        base = np.array((0., 0.), dtype=dtype)
+        base = np.array([0, 0], dtype=dtype)
     else:
         raise TypeError("%r constructor accepts only one ('coordinates'), two ('x', 'y') or no arguments" % subtype)
 
-    # print("Vector2 base: %r" % base)
-    cdef numpy.ndarray ret = PyArraySubType_NewFromBase(subtype, base)
-
-    return ret
+    return PyArraySubType_NewFromBase(subtype, base)
 
 
 class Vector2(_Vector2Base):
@@ -203,7 +205,7 @@ cdef public object variant_vector2i_to_pyobject(const cpp.Variant &v):
 cdef public void vector2_from_pyobject(object obj, cpp.Vector2 *r_ret) noexcept:
     cdef cpp.Vector2 vec
     cdef float [:] carr_view = vec.coord
-    carr_view_from_pyobject[float](obj, carr_view, np.float32, 2)
+    carr_view_from_pyobject[float [:]](obj, carr_view, np.float32, 2)
 
     r_ret[0] = vec
 
@@ -211,7 +213,7 @@ cdef public void vector2_from_pyobject(object obj, cpp.Vector2 *r_ret) noexcept:
 cdef public void vector2i_from_pyobject(object obj, cpp.Vector2i *r_ret) noexcept:
     cdef cpp.Vector2i vec
     cdef int32_t [:] carr_view = vec.coord
-    carr_view_from_pyobject[int32_t](obj, carr_view, np.int32, 2)
+    carr_view_from_pyobject[int32_t [:]](obj, carr_view, np.int32, 2)
 
     r_ret[0] = vec
 
@@ -219,7 +221,7 @@ cdef public void vector2i_from_pyobject(object obj, cpp.Vector2i *r_ret) noexcep
 cdef public void variant_vector2_from_pyobject(object obj, cpp.Variant *r_ret) noexcept:
     cdef cpp.Vector2 vec
     cdef float [:] carr_view = vec.coord
-    carr_view_from_pyobject[float](obj, carr_view, np.float32, 2)
+    carr_view_from_pyobject[float [:]](obj, carr_view, np.float32, 2)
 
     r_ret[0] = cpp.Variant(vec)
 
@@ -227,6 +229,6 @@ cdef public void variant_vector2_from_pyobject(object obj, cpp.Variant *r_ret) n
 cdef public void variant_vector2i_from_pyobject(object obj, cpp.Variant *r_ret) noexcept:
     cdef cpp.Vector2i vec
     cdef int32_t [:] carr_view = vec.coord
-    carr_view_from_pyobject[int32_t](obj, carr_view, np.int32, 2)
+    carr_view_from_pyobject[int32_t [:]](obj, carr_view, np.int32, 2)
 
     r_ret[0] = cpp.Variant(vec)

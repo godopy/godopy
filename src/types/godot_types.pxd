@@ -28,6 +28,33 @@ ctypedef fused number_t:
     int16_t
     int32_t
     int64_t
+    uint8_t
+    uint16_t
+    uint32_t
+    uint64_t
+
+
+ctypedef fused memory_view_t:
+    float  [:]
+    float  [:, :]
+    double [:]
+    double [:, :]
+    int8_t  [:]
+    int8_t  [:, :]
+    int16_t [:]
+    int16_t [:, :]
+    int32_t [:]
+    int32_t [:, :]
+    int64_t [:]
+    int64_t [:, :]
+    uint8_t  [:]
+    uint8_t  [:, :]
+    uint16_t [:]
+    uint16_t [:, :]
+    uint32_t [:]
+    uint32_t [:, :]
+    uint64_t [:]
+    uint64_t [:, :]
 
 
 cdef inline bint issubscriptable(object p_obj):
@@ -39,7 +66,7 @@ cdef inline bint isstring_dtype(object dtype):
            or np.issubdtype(dtype, np.dtypes.BytesDType)
 
 
-cdef inline void carr_view_from_pyobject(object obj, number_t [:] carr_view, dtype, size_t size,
+cdef inline void carr_view_from_pyobject(object obj, memory_view_t carr_view, dtype, size_t size,
                                          int slice_from=0, int slice_to=-1, bint can_cast=False):
     cdef numpy.ndarray arr
 
@@ -64,7 +91,7 @@ cdef inline void carr_view_from_pyobject(object obj, number_t [:] carr_view, dty
     else:
         arr = np.array(obj, dtype=dtype)
 
-    cdef number_t [:] pyarr_view = arr
+    cdef memory_view_t pyarr_view = arr
 
     if slice_from != 0 and slice_to != -1:
         carr_view[:] = pyarr_view[slice_from:slice_to]
@@ -92,14 +119,11 @@ cdef public void float_from_pyobject(object p_obj, double *r_ret) noexcept
 cdef public void variant_float_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 
 cdef class String(str): pass
-cpdef String as_string(object other)
 cdef public object string_to_pyobject(const cpp.String &p_string)
 cdef public object variant_string_to_pyobject(const cpp.Variant &v)
 cdef public void string_from_pyobject(object p_obj, cpp.String *r_ret) noexcept
 cdef public void variant_string_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 
-cpdef numpy.ndarray as_vector2(data, dtype=*)
-cpdef numpy.ndarray as_vector2i(data, dtype=*)
 cdef public object vector2_to_pyobject(cpp.Vector2 &vec)
 cdef public object vector2i_to_pyobject(cpp.Vector2i &vec)
 cdef public object variant_vector2_to_pyobject(const cpp.Variant &v)
@@ -109,8 +133,6 @@ cdef public void vector2i_from_pyobject(object obj, cpp.Vector2i *r_ret) noexcep
 cdef public void variant_vector2_from_pyobject(object obj, cpp.Variant *r_ret) noexcept
 cdef public void variant_vector2i_from_pyobject(object obj, cpp.Variant *r_ret) noexcept
 
-cpdef numpy.ndarray as_rect2(data, dtype=*)
-cpdef numpy.ndarray as_rect2i(data, dtype=*)
 cdef public object rect2_to_pyobject(cpp.Rect2 &rect)
 cdef public object rect2i_to_pyobject(cpp.Rect2i &rect)
 cdef public object variant_rect2_to_pyobject(const cpp.Variant &v)
@@ -126,7 +148,6 @@ cdef class StringName(str):
     cdef cpp.StringName _base
     cdef void *ptr(self)
 
-cpdef StringName as_string_name(object other)
 cdef public object string_name_to_pyobject(const cpp.StringName &p_val)
 cdef public object variant_string_name_to_pyobject(const cpp.Variant &v)
 cdef public void string_name_from_pyobject(object p_obj, cpp.StringName *r_ret) noexcept
@@ -155,13 +176,11 @@ cdef public object variant_dictionary_to_pyobject(const cpp.Variant &v)
 cdef public void dictionary_from_pyobject(object p_obj, cpp.Dictionary *r_ret) noexcept
 cdef public void variant_dictionary_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 
-cpdef numpy.ndarray as_array(data, dtype=*, itemshape=*, copy=*)
 cdef public object array_to_pyobject(const cpp.Array &p_arr)
 cdef public object variant_array_to_pyobject(const cpp.Variant &v)
 cdef public void array_from_pyobject(object p_obj, cpp.Array *r_ret) noexcept
 cdef public void variant_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 
-cpdef numpy.ndarray as_packed_string_array(data, dtype=*)
 cdef public object packed_string_array_to_pyobject(const cpp.PackedStringArray &p_arr)
 cdef public object variant_packed_string_array_to_pyobject(const cpp.Variant &v)
 cdef public void packed_string_array_from_pyobject(object p_obj, cpp.PackedStringArray *r_ret) noexcept

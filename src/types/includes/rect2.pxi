@@ -1,13 +1,21 @@
-cpdef numpy.ndarray as_rect2(data, dtype=None):
-    """
-    Interpret the input as Rect2
-    """
+def _check_rect2_data(data):
+    if not issubscriptable(data):
+        raise ValueError("Rect2(i) data must be subscriptable")
+    if len(data) == 4:
+        map(_check_numeric_scalar, data)
+    elif len(data) == 2:
+        _check_vector2_data(data[0], arg_name='position')
+        _check_vector2_data(data[1], arg_name='size')
+    else:
+        raise ValueError("Rect2(i) data must have 2 or 4 items")
+
+
+def _as_any_rect2(type_name, data, dtype, default_dtype):
     if dtype is None:
-        dtype = np.float32
-    if not issubscriptable(data) or not ((hasattr(data, 'size') and data.size == 4) or len(data) == 4):
-        raise ValueError("Rect2 data must have 4 items")
+        dtype = default_dtype
 
     copy = False
+
     if isinstance(data, numpy.ndarray):
         if data.dtype != dtype:
             copy = True
@@ -16,28 +24,32 @@ cpdef numpy.ndarray as_rect2(data, dtype=None):
 
     if np.issubdtype(dtype, np.integer):
         return Rect2i(data, dtype=dtype, copy=copy, can_cast=True)
+    elif not np.issubdtype(dtype, np.floating):
+        raise ValueError("%s data must be numeric" % type_name)
+
     return Rect2(data, dtype=dtype, copy=copy, can_cast=True)
 
 
-cpdef numpy.ndarray as_rect2i(data, dtype=None):
+def as_rect2(data, dtype=None):
     """
-    Interpret the input as Rect2i
+    Interpret the input as Rect2.
+
+    If 'dtype' argument is passed interpret the result as Rect2 if dtype
+    is floating or Rect2i if dtype is integer. Non-numeric dtypes will
+    raise a ValueError.
     """
-    if dtype is None:
-        dtype = np.int32
-    if not issubscriptable(data) or not ((hasattr(data, 'size') and data.size == 4) or len(data) == 4):
-        raise ValueError("Rect2i data must have 4 items")
+    return _as_any_rect2('Rect2', data, dtype, np.float32)
 
-    copy = False
-    if isinstance(data, numpy.ndarray):
-        if data.dtype != dtype:
-            copy = True
-    else:
-        copy = True
 
-    if np.issubdtype(dtype, np.floating):
-        return Rect2(data, dtype=dtype, copy=copy, can_cast=True)
-    return Rect2i(data, dtype=dtype, copy=copy, can_cast=True)
+def as_rect2i(data, dtype=None):
+    """
+    Interpret the input as Rect2i.
+
+    If 'dtype' argument is passed interpret the result as Rect2 if dtype
+    is floating or Rect2i if dtype is integer. Non-numeric dtypes will
+    raise a ValueError.
+    """
+    return _as_any_rect2('Rect2i', data, dtype, np.int32)
 
 
 cdef frozenset _rect2_attrs = frozenset([
@@ -91,8 +103,10 @@ class _Rect2Base(numpy.ndarray):
             raise AttributeError("%s has no attribute %r" % (self, name))
 
     def __array_finalize__(self, obj):
-        ndim = self.ndim
-        if ndim != 1:
+        if isinstance(obj, _Rect2Base):
+            return
+
+        if self.shape != (4,):
             self.shape = (4,)
 
 
@@ -103,9 +117,15 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
     can_cast = kwargs.pop('can_cast', False)
 
     if len(args) == 4:
+        map(_check_numeric_scalar, args)
+        base = np.array(args, dtype=dtype, copy=copy)
+    elif len(args) == 2:
+        _check_vector2_data(args[0], arg_name='position')
+        _check_vector2_data(args[1], arg_name='size')
         base = np.array(args, dtype=dtype, copy=copy)
     elif len(args) == 1:
         obj = args[0]
+        _check_rect2_data(obj)
         if isinstance(args[0], numpy.ndarray) and not copy:
             if obj.dtype == dtype:
                 base = obj
@@ -117,25 +137,25 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
                 base = obj.astype(dtype)
         else:
             base = np.array(obj, dtype=dtype, copy=copy)
+    elif len(args) == 0:
+        base = np.array([0, 0, 0, 0], dtype=dtype, copy=copy)
     else:
-        size = args.pop() if len(args) > 1 else kwargs.pop('size', None)
-        position = args.pop() if len(args) > 0 else kwargs.pop('position', None)
+        position = kwargs.pop('position', None)
+        size = kwargs.pop('size', None) or kwargs.pop('size_', None)
 
-        if args:
+        if position is not None and size is None:
+            # No valid keyword arguments, therefore something wrong with positional args
             raise TypeError("Invalid positional argument %r" % args[0])
 
-        if not issubscriptable(position) or len(position) != 2:
-            raise ValueError("Invalid 'position' argument %r" % position)
-        elif not issubscriptable(size) or len(size) != 2:
-            raise ValueError("Invalid 'size' argument %r" % position)
-        base = np.array([*position, *size], dtype=dtype, copy=copy)
+        _check_vector2_data(position, arg_name='position')
+        _check_vector2_data(size, arg_name='size')
+
+        base = np.array([position, size], dtype=dtype, copy=copy)
 
     if kwargs:
         raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
 
-    cdef numpy.ndarray ret = PyArraySubType_NewFromBase(subtype, base)
-
-    return ret
+    return PyArraySubType_NewFromBase(subtype, base)
 
 
 class Rect2(_Rect2Base):
@@ -143,6 +163,7 @@ class Rect2(_Rect2Base):
         dtype = kwargs.pop('dtype', np.float32)
         if not np.issubdtype(dtype, np.floating):
             raise TypeError("%r accepts only floating datatypes" % subtype)
+
         return array_from_rect2_args(subtype, dtype, args, kwargs)
 
 class Rect2i(_Rect2Base):
@@ -150,6 +171,7 @@ class Rect2i(_Rect2Base):
         dtype = kwargs.pop('dtype', np.int32)
         if not np.issubdtype(dtype, np.integer):
             raise TypeError("%r accepts only integer datatypes, got %r" % (subtype, dtype))
+
         return array_from_rect2_args(subtype, dtype, args, kwargs)
 
 
@@ -196,8 +218,8 @@ cdef public void rect2_from_pyobject(object obj, cpp.Rect2 *r_ret) noexcept:
     cdef float [:] position_view = rect.position.coord
     cdef float [:] size_view = rect.size.coord
 
-    carr_view_from_pyobject[float](obj, position_view, np.float32, 4, 0, 2)
-    carr_view_from_pyobject[float](obj, size_view, np.float32, 4, 2)
+    carr_view_from_pyobject[float [:]](obj, position_view, np.float32, 4, 0, 2)
+    carr_view_from_pyobject[float [:]](obj, size_view, np.float32, 4, 2)
 
     r_ret[0] = rect
 
@@ -207,8 +229,8 @@ cdef public void rect2i_from_pyobject(object obj, cpp.Rect2i *r_ret) noexcept:
     cdef int32_t [:] position_view = rect.position.coord
     cdef int32_t [:] size_view = rect.size.coord
 
-    carr_view_from_pyobject[int32_t](obj, position_view, np.float32, 4, 0, 3)
-    carr_view_from_pyobject[int32_t](obj, size_view, np.float32, 4, 2)
+    carr_view_from_pyobject[int32_t [:]](obj, position_view, np.float32, 4, 0, 3)
+    carr_view_from_pyobject[int32_t [:]](obj, size_view, np.float32, 4, 2)
 
     r_ret[0] = rect
 
@@ -218,8 +240,8 @@ cdef public void variant_rect2_from_pyobject(object obj, cpp.Variant *r_ret) noe
     cdef float [:] position_view = rect.position.coord
     cdef float [:] size_view = rect.size.coord
 
-    carr_view_from_pyobject[float](obj, position_view, np.float32, 4, 0, 2)
-    carr_view_from_pyobject[float](obj, size_view, np.float32, 4, 2)
+    carr_view_from_pyobject[float [:]](obj, position_view, np.float32, 4, 0, 2)
+    carr_view_from_pyobject[float [:]](obj, size_view, np.float32, 4, 2)
 
     r_ret[0] = cpp.Variant(rect)
 
@@ -230,7 +252,7 @@ cdef public void variant_rect2i_from_pyobject(object obj, cpp.Variant *r_ret) no
     cdef int32_t [:] size_view = rect.size.coord
 
     cdef int _
-    carr_view_from_pyobject[int32_t](obj, position_view, np.float32, 4, 0, 3)
-    carr_view_from_pyobject[int32_t](obj, size_view, np.float32, 4, 2)
+    carr_view_from_pyobject[int32_t [:]](obj, position_view, np.float32, 4, 0, 3)
+    carr_view_from_pyobject[int32_t [:]](obj, size_view, np.float32, 4, 2)
 
     r_ret[0] = cpp.Variant(rect)

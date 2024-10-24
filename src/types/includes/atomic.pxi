@@ -14,15 +14,18 @@ cdef public void variant_nil_from_pyobject(object p_obj, cpp.Variant *r_ret) noe
 
 bool = np.bool_
 
+# NOTE: By default all conversions are to the ordinary Python bool
+#       `numpy.bool_` can be used explicitly and would be converted to
+#       Godot's `bool`s if required
 
 cdef public object bool_to_pyobject(uint8_t p_bool):
-    return np.bool_(p_bool != 0)
+    return p_bool != 0
 
 
 cdef public object variant_bool_to_pyobject(const cpp.Variant &v):
     cdef uint8_t ret = v.to_type[bint]()
 
-    return np.bool_(ret != 0)
+    return ret != 0
 
 
 # TODO: Keep type checks only in debug builds
@@ -109,6 +112,13 @@ cdef public void variant_float_from_pyobject(object p_obj, cpp.Variant *r_ret) n
     r_ret[0] = cpp.Variant(ret)
 
 
+def as_string(object other):
+    """
+    Interpret the input as String
+    """
+    return String(other)
+
+
 cdef class String(str):
     def to_camel_case(self):
         cdef cpp.String base = cpp.String(<const PyObject *>self)
@@ -140,11 +150,7 @@ cdef class String(str):
     # TODO: All documented methods
 
 
-cpdef String as_string(object other):
-    return String(other)
-
-
-# By default conversions are to the ordinary Python str
+# NOTE: By default conversions are to the ordinary Python str
 
 cdef public object string_to_pyobject(const cpp.String &p_string):
     cdef cpp.CharWideString wstr

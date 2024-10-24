@@ -14,6 +14,7 @@ from cpython cimport (
     PyList_New, PyList_SET_ITEM, PyList_GET_ITEM
 )
 from cpython.bytearray cimport PyByteArray_Check
+from cython.view cimport array as cvarray
 from gdextension cimport (
     BuiltinMethod,
     Object, Callable, Signal,
@@ -21,7 +22,12 @@ from gdextension cimport (
     object_from_pyobject, variant_object_from_pyobject,
     variant_type_to_str, str_to_variant_type
 )
-from numpy cimport PyArray_New, PyArray_Check, PyArray_TYPE, NPY_ARRAY_C_CONTIGUOUS, NPY_ARRAY_WRITEABLE
+from numpy cimport (
+    PyArray_New, PyArray_Check, PyArray_TYPE,
+    npy_intp,
+    NPY_BYTE, NPY_INT16, NPY_INT32, NPY_INT64, NPY_FLOAT32, NPY_FLOAT64,
+    NPY_ARRAY_C_CONTIGUOUS, NPY_ARRAY_WRITEABLE,
+)
 
 import sys
 import pathlib
@@ -52,13 +58,23 @@ __all__ = [
 
     'Rect2',  # subtype of ndarray as array([x, y, width, height], dtype=float32), shape = (4,), slices: Vector2, Size2
     'Rect2i',  # subtype of ndarray as array([x, y, width, height], dtype=int32), shape = (4,), slices: Vector2i, Size2i
+
+    'as_vector3',
+    'as_vector3i',
     'Vector3',  # TODO subtype of ndarray as array([x, y, z], dtype=float32), shape = (3,)
     'Vector3i',  # TODO subtype of ndarray as array([x, y, z], dtype=int32), shape = (3,)
+
+    'as_transform2d',
     'Transform2D',  # TODO subtype of ndarray as array([[xx, xy],
                     #                                   [yx, yy],
                     #                                   [zx, zy]], dtype=float32), shape = (3, 2)
+
+    'as_vector4',
+    'as_vector4i',
     'Vector4',  # TODO subtype of ndarray as array([x, y, z, w], dtype=float32), shape = (4,)
     'Vector4i',  # TODO subtype of ndarray as array([x, y, z, w], dtype=int32), shape = (4,)
+
+    'as_plane',
     'Plane',  # TODO: subtype of ndarray as array([x, y, z, d], dtype=float32), shape = (4,)
               # slices: Vector3, float
     'Quaternion',  # TODO subtype of ndarray([x, y, z, w], dtype=float32), shape = (4,)
@@ -87,16 +103,21 @@ __all__ = [
     'Dictionary',  # dict
 
     'as_array',
-    'Array',  # subtype of ndarray as array([...], dtype=np.object_), shape = (N,) or list
+    'Array',  # list or subtype of ndarray as array([...], dtype=np.object_), shape = (N,)
 
+    'as_packed_byte_array',
+    'as_packed_int32_array',
+    'as_packed_int64_array',
+    'as_packed_float32_array',
+    'as_packed_float64_array',
+    'as_packed_string_array',
     'PackedByteArray',  # is bytearray or TODO subtype of ndarray as array([...], dtype=np.int8)
     'PackedInt32Array',  # TODO subtype of ndarray as array([...], dtype=np.int32), shape = (N,)
     'PackedInt64Array',  # TODO subtype of ndarray as array([...], dtype=np.int64), shape = (N,)
     'PackedFloat32Array',  # TODO subtype of ndarray as array([...], dtype=np.float32), shape = (N,)
     'PackedFloat64Array',  # TODO subtype of ndarray as array([...], dtype=np.float64), shape = (N,)
-
-    'as_packed_string_array',
     'PackedStringArray',  # TODO subtype of ndarray as array([...], dtype=StringDType())
+
     'PackedVector2Array',  # TODO subtype of ndarray as array([[x, y], ...], dtype=np.float32), shape = (N, 2)
     'PackedVector3Array',  # TODO subtype of ndarray as array([[x, y, z], ...], dtype=np.float32), shape = (N, 3)
     'PackedColorArray',  # TODO subtype of ndarray as array([[r, g, b, a], ...], dtype=np.float32), shape = (N, 4)
@@ -105,12 +126,28 @@ __all__ = [
 
 
 cdef object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
-    cdef numpy.ndarray arr = PyArray_New(subtype, base.ndim, base.shape, PyArray_TYPE(base), NULL,
-                                         base.data, 0, NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_WRITEABLE, None)
+    cdef numpy.ndarray arr = PyArray_New(subtype, base.ndim, base.shape, PyArray_TYPE(base), NULL, base.data, 0,
+                                         NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_WRITEABLE, base)
     ref.Py_INCREF(base)
     numpy.PyArray_SetBaseObject(arr, base)
 
     return arr
+
+cdef object PyArraySubType_NewFromDataAndBase(type subtype, cvarray cvarr, int nd, const npy_intp *dims,
+                                              int type_num, object base):
+    cdef int flags = NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_WRITEABLE
+    cdef numpy.ndarray arr = PyArray_New(subtype, nd, dims, type_num, NULL, cvarr.data, 0, flags, base)
+
+    ref.Py_INCREF(base)
+    numpy.PyArray_SetBaseObject(arr, base)
+
+    return arr
+
+
+def _check_numeric_scalar(scalar, arg_name=None):
+    if not isinstance(scalar, (np.number, int, float, np.bool_)):
+        argument = 'argument %r' % arg_name if arg_name else 'scalar'
+        raise ValueError("Invalid %s %r in data" % (arg_name, scalar))
 
 
 include "includes/atomic.pxi"
@@ -127,9 +164,8 @@ include "includes/transform3d.pxi"
 include "includes/projection.pxi"
 include "includes/color.pxi"
 include "includes/misc.pxi"
-include "includes/packed_string_array.pxi"
-include "includes/packed_numeric_ndim1_array.pxi"
-include "includes/packed_numeric_ndim2_array.pxi"
+include "includes/packed_array1d.pxi"
+include "includes/packed_array2d.pxi"
 
 
 cdef type NoneType = type(None)

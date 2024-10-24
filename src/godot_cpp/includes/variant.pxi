@@ -55,6 +55,8 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
         Variant(const Vector2i &)
         Variant(const Rect2 &)
         Variant(const Rect2i &)
+        Variant(const Vector3 &)
+        Variant(const Vector3i &)
         Variant(const Transform2D &)
         Variant(const Vector4 &)
         Variant(const Vector4i &)

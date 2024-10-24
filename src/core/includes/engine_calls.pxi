@@ -30,7 +30,7 @@ cdef inline object _make_engine_varcall(gdcallable_ft method, _varcall_func varc
     cdef Variant *vargs = <Variant *>gdextension_interface_mem_alloc(size * cython.sizeof(Variant))
 
     for i in range(size):
-        vargs[i] = Variant(<const PyObject *>args[i])
+        type_funcs.variant_from_pyobject(args[i], &vargs[i])
 
     varcall(method, <const Variant **>&vargs, size, &ret, &err)
 
