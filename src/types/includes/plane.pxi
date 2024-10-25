@@ -137,9 +137,9 @@ cdef public void plane_from_pyobject(object p_obj, cpp.Plane *r_ret) noexcept:
 
     cdef cpp.Plane plane
     cdef float [:] normal_view = plane.normal.coord
-
-    carr_view_from_pyobject[float [:]](p_obj[:3], normal_view, np.float32, 2)
-    plane.d = p_obj[4]
+    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
+    normal_view[:] = pyarr_view[:3]
+    plane.d = pyarr_view[4]
 
     r_ret[0] = plane
 
@@ -150,8 +150,8 @@ cdef public void variant_plane_from_pyobject(object p_obj, cpp.Variant *r_ret) n
 
     cdef cpp.Plane plane
     cdef float [:] normal_view = plane.normal.coord
-
-    carr_view_from_pyobject[float [:]](p_obj[:3], normal_view, np.float32, 2)
-    plane.d = p_obj[4]
+    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
+    normal_view[:] = pyarr_view[:3]
+    plane.d = pyarr_view[4]
 
     r_ret[0] = cpp.Variant(plane)

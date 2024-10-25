@@ -9,7 +9,7 @@ def _check_transform2d_data(data):
         raise ValueError("Transform2D data must have 3 or 6 items")
 
 
-def as_transform2d(data, dtype=0):
+def as_transform2d(data, dtype=None):
     if dtype is None:
         dtype = np.float32
 
@@ -23,7 +23,7 @@ def as_transform2d(data, dtype=0):
     return Transform2D(data, dtype=dtype, copy=copy, can_cast=True)
 
 
-cdef object _transform2d_attrs = frozenset(['columns'])
+cdef object _transform2d_attrs = frozenset(['columns', 'rows'])
 
 
 class Transform2D(numpy.ndarray):
@@ -77,6 +77,8 @@ class Transform2D(numpy.ndarray):
     def __getattr__(self, str name):
         if name == 'columns':
             return np.array(self, dtype=self.dtype, copy=False)
+        elif name == 'rows':
+            return np.array(self.transpose(), dtype=self.dtype, copy=False)
 
         raise AttributeError("%r has no attribute %r" % (self, name))
 
@@ -86,6 +88,9 @@ class Transform2D(numpy.ndarray):
 
         if name == 'columns':
             self[:] = value
+        elif name == 'rows':
+            arr = value if hasattr(value, 'transpose') else np.array(value)
+            self[:] = arr.transpose()
         else:
             raise AttributeError("%r has no attribute %r" % (self, name))
 
@@ -111,7 +116,8 @@ cdef public void transform2d_from_pyobject(object p_obj, cpp.Transform2D *r_ret)
 
     cdef cpp.Transform2D t
     cdef float [:, :] carr_view = <float [:3, :2]><float *>t.columns
-    carr_view_from_pyobject[float [:, :]](p_obj, carr_view, np.float32, 2)
+    cdef float [:, :] pyarr_view = <numpy.ndarray>p_obj
+    carr_view[...] = pyarr_view
 
     r_ret[0] = t
 
@@ -122,6 +128,7 @@ cdef public void variant_transform2d_from_pyobject(object p_obj, cpp.Variant *r_
 
     cdef cpp.Transform2D t
     cdef float [:, :] carr_view = <float [:3, :2]><float *>t.columns
-    carr_view_from_pyobject[float [:, :]](p_obj, carr_view, np.float32, 2)
+    cdef float [:, :] pyarr_view = <numpy.ndarray>p_obj
+    carr_view[...] = pyarr_view
 
     r_ret[0] = cpp.Variant(t)

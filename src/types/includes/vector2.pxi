@@ -208,7 +208,8 @@ cdef public void vector2_from_pyobject(object p_obj, cpp.Vector2 *r_ret) noexcep
 
     cdef cpp.Vector2 vec
     cdef float [:] carr_view = vec.coord
-    carr_view_from_pyobject[float [:]](p_obj, carr_view, np.float32, 2)
+    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
+    carr_view[:] = pyarr_view
 
     r_ret[0] = vec
 
@@ -219,7 +220,8 @@ cdef public void vector2i_from_pyobject(object p_obj, cpp.Vector2i *r_ret) noexc
 
     cdef cpp.Vector2i vec
     cdef int32_t [:] carr_view = vec.coord
-    carr_view_from_pyobject[int32_t [:]](p_obj, carr_view, np.int32, 2)
+    cdef int32_t [:] pyarr_view = <numpy.ndarray>p_obj
+    carr_view[:] = pyarr_view
 
     r_ret[0] = vec
 
@@ -230,7 +232,8 @@ cdef public void variant_vector2_from_pyobject(object p_obj, cpp.Variant *r_ret)
 
     cdef cpp.Vector2 vec
     cdef float [:] carr_view = vec.coord
-    carr_view_from_pyobject[float [:]](p_obj, carr_view, np.float32, 2)
+    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
+    carr_view[:] = pyarr_view
 
     r_ret[0] = cpp.Variant(vec)
 
@@ -241,6 +244,7 @@ cdef public void variant_vector2i_from_pyobject(object p_obj, cpp.Variant *r_ret
 
     cdef cpp.Vector2i vec
     cdef int32_t [:] carr_view = vec.coord
-    carr_view_from_pyobject[int32_t [:]](p_obj, carr_view, np.int32, 2)
+    cdef int32_t [:] pyarr_view = <numpy.ndarray>p_obj
+    carr_view[:] = pyarr_view
 
     r_ret[0] = cpp.Variant(vec)

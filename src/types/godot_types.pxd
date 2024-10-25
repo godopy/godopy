@@ -66,45 +66,6 @@ cdef inline bint isstring_dtype(object dtype):
            or np.issubdtype(dtype, np.dtypes.BytesDType)
 
 
-cdef inline void carr_view_from_pyobject(object obj, memory_view_t carr_view, dtype, size_t size,
-                                         int slice_from=0, int slice_to=-1, bint can_cast=False):
-    cdef numpy.ndarray arr
-
-    if not issubscriptable(obj):
-        msg = "Cannot convert %r to C++ object, %s objects are unsubscriptable"
-        cpp.UtilityFunctions.push_error(msg % (obj, type(obj)))
-        return
-
-    elif len(obj) != size:
-        msg = "Cannot convert %r to C++ object, expected an object of length %d"
-        cpp.UtilityFunctions.push_error(msg % (obj, size))
-        return
-
-    if isinstance(obj, numpy.ndarray):
-        if obj.dtype == dtype:
-            arr = obj
-        else:
-            if not can_cast:
-                msg = "Cast from %r to %r during Godot math type convertion"
-                cpp.UtilityFunctions.push_warning(msg % (obj.dtype, dtype))
-            arr = obj.astype(dtype)
-    else:
-        arr = np.array(obj, dtype=dtype)
-
-    cdef memory_view_t pyarr_view = arr
-
-    if slice_from != 0 and slice_to != -1:
-        carr_view[:] = pyarr_view[slice_from:slice_to]
-    if slice_from != 0:
-        carr_view[:] = pyarr_view[slice_from:]
-    elif slice_to != -1:
-        carr_view[:] = pyarr_view[:slice_to]
-    else:
-        carr_view[:] = pyarr_view
-
-    return
-
-
 cdef public object variant_nil_to_pyobject(const cpp.Variant &v)
 cdef public void variant_nil_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 

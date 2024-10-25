@@ -221,9 +221,9 @@ cdef public void rect2_from_pyobject(object p_obj, cpp.Rect2 *r_ret) noexcept:
     cdef cpp.Rect2 rect
     cdef float [:] position_view = rect.position.coord
     cdef float [:] size_view = rect.size.coord
-
-    carr_view_from_pyobject[float [:]](p_obj, position_view, np.float32, 4, 0, 2)
-    carr_view_from_pyobject[float [:]](p_obj, size_view, np.float32, 4, 2)
+    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
+    position_view[:] = pyarr_view[:2]
+    size_view[:] = pyarr_view[2:]
 
     r_ret[0] = rect
 
@@ -235,9 +235,9 @@ cdef public void rect2i_from_pyobject(object p_obj, cpp.Rect2i *r_ret) noexcept:
     cdef cpp.Rect2i rect
     cdef int32_t [:] position_view = rect.position.coord
     cdef int32_t [:] size_view = rect.size.coord
-
-    carr_view_from_pyobject[int32_t [:]](p_obj, position_view, np.float32, 4, 0, 3)
-    carr_view_from_pyobject[int32_t [:]](p_obj, size_view, np.float32, 4, 2)
+    cdef int32_t [:] pyarr_view = <numpy.ndarray>p_obj
+    position_view[:] = pyarr_view[:2]
+    size_view[:] = pyarr_view[2:]
 
     r_ret[0] = rect
 
@@ -249,9 +249,9 @@ cdef public void variant_rect2_from_pyobject(object p_obj, cpp.Variant *r_ret) n
     cdef cpp.Rect2 rect
     cdef float [:] position_view = rect.position.coord
     cdef float [:] size_view = rect.size.coord
-
-    carr_view_from_pyobject[float [:]](p_obj, position_view, np.float32, 4, 0, 2)
-    carr_view_from_pyobject[float [:]](p_obj, size_view, np.float32, 4, 2)
+    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
+    position_view[:] = pyarr_view[:2]
+    size_view[:] = pyarr_view[2:]
 
     r_ret[0] = cpp.Variant(rect)
 
@@ -263,8 +263,8 @@ cdef public void variant_rect2i_from_pyobject(object p_obj, cpp.Variant *r_ret) 
     cdef cpp.Rect2i rect
     cdef int32_t [:] position_view = rect.position.coord
     cdef int32_t [:] size_view = rect.size.coord
-
-    carr_view_from_pyobject[int32_t [:]](p_obj, position_view, np.int32, 4, 0, 3)
-    carr_view_from_pyobject[int32_t [:]](p_obj, size_view, np.int32, 4, 2)
+    cdef int32_t [:] pyarr_view = <numpy.ndarray>p_obj
+    position_view[:] = pyarr_view[:2]
+    size_view[:] = pyarr_view[2:]
 
     r_ret[0] = cpp.Variant(rect)

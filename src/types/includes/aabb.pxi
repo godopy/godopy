@@ -7,7 +7,7 @@ def _check_aabb_data(data):
         _check_vector3_data(data[0], arg_name='position')
         _check_vector3_data(data[1], arg_name='size')
     else:
-        raise ValueError("AABB data must have 3 or 6 items")
+        raise ValueError("AABB data must have 2 or 6 items")
 
 
 def as_aabb(data, dtype=0):
@@ -25,7 +25,7 @@ def as_aabb(data, dtype=0):
 
 
 cdef frozenset _aabb_attrs = frozenset([
-    'x', 'y', 'z', 'sx', 'sy', 'sz', 'position', 'size_', 'coord'
+    'x', 'y', 'z', 'sx', 'sy', 'sz', 'position', 'size_'
 ])
 
 
@@ -62,7 +62,7 @@ class AABB(numpy.ndarray):
             else:
                 base = np.array(obj, dtype=dtype, copy=copy)
         elif len(args) == 0:
-            base = np.array([0, 0, 0, 0, 0, 0], dtype=dtype, copy=copy)
+            base = np.array([[0, 0, 0], [0, 0, 0]], dtype=dtype, copy=copy)
         else:
             position = kwargs.pop('position', None)
             size = kwargs.pop('size', None) or kwargs.pop('size_', None)
@@ -74,7 +74,7 @@ class AABB(numpy.ndarray):
             _check_vector3_data(position, arg_name='position')
             _check_vector3_data(size, arg_name='size')
 
-            base = np.array([*position, *size], dtype=dtype, copy=copy)
+            base = np.array([position, size], dtype=dtype, copy=copy)
 
         if kwargs:
             raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
@@ -83,54 +83,50 @@ class AABB(numpy.ndarray):
 
     def __getattr__(self, str name):
         if name == 'x':
-            return self[0]
+            return self[0][0]
         elif name == 'y':
-            return self[1]
+            return self[0][1]
         elif name == 'z':
-            return self[2]
+            return self[0][2]
         elif name == 'sx':
-            return self[3]
+            return self[1][0]
         elif name == 'sy':
-            return self[4]
+            return self[1][1]
         elif name == 'sz':
-            return self[5]
+            return self[1][2]
         elif name == 'position':
             if np.issubdtype(self.dtype, np.integer):
-                return Vector3i(self[:3], dtype=self.dtype, copy=False)
+                return Vector3i(self[0], dtype=self.dtype, copy=False)
             else:
-                return Vector3(self[:3], dtype=self.dtype, copy=False)
+                return Vector3(self[0], dtype=self.dtype, copy=False)
         elif name == 'size_':
             if np.issubdtype(self.dtype, np.integer):
-                return Vector3i(self[3:], dtype=self.dtype, copy=False)
+                return Vector3i(self[1], dtype=self.dtype, copy=False)
             else:
-                return Vector3(self[3:], dtype=self.dtype, copy=False)
-        elif name == 'coord':
-            return np.array(self, dtype=self.dtype, copy=False)
-
-        raise AttributeError("%s has no attribute %r" % (self, name))
+                return Vector3(self[1], dtype=self.dtype, copy=False)
+        else:
+            raise AttributeError("%s has no attribute %r" % (self, name))
 
     def __setattr__(self, str name, object value):
         if name not in _rect2_attrs:
             return object.__setattr__(self, name, value)
 
         if name == 'x':
-            self[0] = value
+            self[0][0] = value
         elif name == 'y':
-            self[1] = value
+            self[0][1] = value
         elif name == 'z':
-            self[2] = value
+            self[0][2] = value
         elif name == 'sx':
-            self[3] = value
+            self[1][0] = value
         elif name == 'sy':
-            self[4] = value
+            self[1][1] = value
         elif name == 'sz':
-            self[5] = value
+            self[1][2] = value
         elif name == 'position':
-            self[:3] = value
+            self[0] = value
         elif name == 'size_':
-            self[3:] = value
-        elif name == 'coord':
-            self[:] = value
+            self[1] = value
         else:
             raise AttributeError("%s has no attribute %r" % (self, name))
 
@@ -138,8 +134,8 @@ class AABB(numpy.ndarray):
         if isinstance(obj, AABB):
             return
 
-        if self.shape != (6,):
-            self.shape = (6,)
+        if self.shape != (2, 3):
+            self.shape = (2, 3)
 
 
 cdef public object aabb_to_pyobject(cpp._AABB &p_aabb):
@@ -163,28 +159,29 @@ cdef public object variant_aabb_to_pyobject(const cpp.Variant &v):
 
 
 cdef public void aabb_from_pyobject(object p_obj, cpp._AABB *r_ret) noexcept:
-    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (6,) or p_obj.dtype != np.float32:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (2, 3) or p_obj.dtype != np.float32:
         p_obj = as_aabb(p_obj, dtype=np.float32)
 
     cdef cpp._AABB aabb
     cdef float [:] position_view = aabb.position.coord
     cdef float [:] size_view = aabb.size.coord
 
-    carr_view_from_pyobject[float [:]](p_obj, position_view, np.float32, 4, 0, 2)
-    carr_view_from_pyobject[float [:]](p_obj, size_view, np.float32, 4, 2)
+    cdef float [:, :] pyarr_view = <numpy.ndarray>p_obj
+    position_view[:] = pyarr_view[0]
+    size_view[:] = pyarr_view[1]
 
     r_ret[0] = aabb
 
 
 cdef public void variant_aabb_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
-    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (6,) or p_obj.dtype != np.float32:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (2, 3) or p_obj.dtype != np.float32:
         p_obj = as_aabb(p_obj, dtype=np.float32)
 
     cdef cpp._AABB aabb
     cdef float [:] position_view = aabb.position.coord
     cdef float [:] size_view = aabb.size.coord
-
-    carr_view_from_pyobject[float [:]](p_obj, position_view, np.float32, 4, 0, 2)
-    carr_view_from_pyobject[float [:]](p_obj, size_view, np.float32, 4, 2)
+    cdef float [:, :] pyarr_view = <numpy.ndarray>p_obj
+    position_view[:] = pyarr_view[0]
+    size_view[:] = pyarr_view[1]
 
     r_ret[0] = cpp.Variant(aabb)

@@ -115,7 +115,8 @@ cdef public void quaternion_from_pyobject(object p_obj, cpp.Quaternion *r_ret) n
 
     cdef cpp.Quaternion q
     cdef float [:] carr_view = q.components
-    carr_view_from_pyobject[float [:]](p_obj, carr_view, np.float32, 2)
+    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
+    carr_view[:] = pyarr_view
 
     r_ret[0] = q
 
@@ -126,6 +127,7 @@ cdef public void variant_quaternion_from_pyobject(object p_obj, cpp.Variant *r_r
 
     cdef cpp.Quaternion q
     cdef float [:] carr_view = q.components
-    carr_view_from_pyobject[float [:]](p_obj, carr_view, np.float32, 2)
+    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
+    carr_view[:] = pyarr_view
 
     r_ret[0] = cpp.Variant(q)
