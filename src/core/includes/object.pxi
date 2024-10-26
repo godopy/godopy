@@ -139,11 +139,3 @@ cdef class Object:
 # TODO: Implement 'special' *Engine* object that has customized
 #       'register_singleton' and 'register_script_language' methods
 #       that would set 'is_singleton' to true.
-
-
-cdef class Callable(Object):
-    pass
-
-
-cdef class Signal(Object):
-    pass

@@ -94,8 +94,8 @@ class Quaternion(numpy.ndarray):
             self.shape = (4,)
 
 
-cdef public object quaternion_to_pyobject(cpp.Quaternion &q):
-    cdef float [:] q_view = q.components
+cdef public object quaternion_to_pyobject(const cpp.Quaternion &q):
+    cdef const float [:] q_view = <float[:4]><float *>q.components
     cdef numpy.ndarray pyarr = Quaternion(q_view, dtype=np.float32, copy=True)
 
     return pyarr

@@ -1,4 +1,4 @@
-cpdef StringName as_string_name(object other):
+def as_string_name(other):
     return StringName(other)
 
 
@@ -74,6 +74,10 @@ cdef public void variant_string_name_from_pyobject(object p_obj, cpp.Variant *r_
     r_ret[0] = cpp.Variant(ret)
 
 
+def as_node_path(other):
+    return NodePath(other)
+
+
 class NodePath(pathlib.PurePosixPath):
     def is_empty(self):
         return not self.parts
@@ -137,7 +141,7 @@ cdef class RID:
     @staticmethod
     cdef RID from_cpp_rid(const cpp._RID &p_val):
         
-        cdef RID self = RID()
+        cdef RID self = RID.__new__(RID)
         self._base = p_val
 
         return self
@@ -147,6 +151,8 @@ cdef class RID:
             self._base = cpp._RID((<RID>arg)._base)
         elif arg is not None:
             raise ValueError("Only 'RID' or no arguments are allowed, got %r" % type(arg))
+        else:
+            self._base = cpp._RID()
 
     def get_id(self):
         return int(self)
@@ -176,7 +182,112 @@ cdef public void rid_from_pyobject(object p_obj, cpp._RID *r_ret) noexcept:
 
 cdef public void variant_rid_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
     cdef cpp._RID ret
-    rid_from_pyobject(p_obj, &ret)
+
+    if isinstance(p_obj, RID):
+        ret = (<RID>p_obj)._base
+    else:
+        cpp.UtilityFunctions.push_error("'RID' is required, got %r" % type(p_obj))
+        ret = cpp._RID()
+
+    r_ret[0] = cpp.Variant(ret)
+
+
+cdef class Callable:
+    @staticmethod
+    cdef Callable from_cpp(const cpp.GodotCppCallable &p_val):
+        cdef Callable self = Callable.__new__(Callable)
+        self._base = p_val
+
+        return self
+
+    # TODO: Custom Callables
+
+    def __init__(self, object arg=None):
+        if isinstance(arg, Callable):
+            self._base = cpp.GodotCppCallable((<Callable>arg)._base)
+        elif arg is not None:
+            raise ValueError("Invalid positional argument 1, a 'Callable' is required, got %r" % type(arg))
+        else:
+            self._base = cpp.GodotCppCallable()
+
+
+cdef public object callable_to_pyobject(const cpp.GodotCppCallable &c):
+    return Callable.from_cpp(c)
+
+
+cdef public object variant_callable_to_pyobject(const cpp.Variant &v):
+    cdef cpp.GodotCppCallable c = v.to_type[cpp.GodotCppCallable]()
+
+    return Callable.from_cpp(c)
+
+
+cdef public void callable_from_pyobject(object p_obj, cpp.GodotCppCallable *r_ret) noexcept:
+    if isinstance(p_obj, Callable):
+        r_ret[0] = (<Callable>p_obj)._base
+    else:
+        cpp.UtilityFunctions.push_error("'Callable' is required, got %r" % type(p_obj))
+
+        r_ret[0] = cpp.GodotCppCallable()
+
+
+cdef public void variant_callable_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef cpp.GodotCppCallable ret
+
+    if isinstance(p_obj, Callable):
+        ret = (<Callable>p_obj)._base
+    else:
+        cpp.UtilityFunctions.push_error("'Callable' is required, got %r" % type(p_obj))
+        ret = cpp.GodotCppCallable()
+
+    r_ret[0] = cpp.Variant(ret)
+
+
+cdef class Signal:
+    @staticmethod
+    cdef Signal from_cpp(const cpp.GodotCppSignal &p_val):
+        cdef Signal self = Signal.__new__(Signal)
+        self._base = p_val
+
+        return self
+
+    # TODO: Custom Signals
+
+    def __init__(self, object arg=None):
+        if isinstance(arg, Signal):
+            self._base = cpp.GodotCppSignal((<Signal>arg)._base)
+        elif arg is not None:
+            raise ValueError("Invalid positional argument 1, a 'Signal' is required, got %r" % type(arg))
+        else:
+            self._base = cpp.GodotCppSignal()
+
+
+cdef public object signal_to_pyobject(const cpp.GodotCppSignal &s):
+    return Signal.from_cpp(s)
+
+
+cdef public object variant_signal_to_pyobject(const cpp.Variant &v):
+    cdef cpp.GodotCppSignal s = v.to_type[cpp.GodotCppSignal]()
+
+    return Signal.from_cpp(s)
+
+
+cdef public void signal_from_pyobject(object p_obj, cpp.GodotCppSignal *r_ret) noexcept:
+    if isinstance(p_obj, Signal):
+        r_ret[0] = (<Signal>p_obj)._base
+    else:
+        cpp.UtilityFunctions.push_error("'Signal' is required, got %r" % type(p_obj))
+
+        r_ret[0] = cpp.GodotCppSignal()
+
+
+cdef public void variant_signal_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef cpp.GodotCppSignal ret
+
+    if isinstance(p_obj, Signal):
+        ret = (<Signal>p_obj)._base
+    else:
+        cpp.UtilityFunctions.push_error("'Signal' is required, got %r" % type(p_obj))
+        ret = cpp.GodotCppSignal()
 
     r_ret[0] = cpp.Variant(ret)
 

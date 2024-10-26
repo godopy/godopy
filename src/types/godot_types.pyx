@@ -1,5 +1,27 @@
 """
-Python versions of Godot Variant types
+Python versions of Godot Variant types.
+
+Default types:
+    Nil -> None
+    bool -> bool
+    int -> int
+    float -> float
+    String -> str
+    StringName -> godot_types.StringName, subclass of str, wraps C++ StringName
+    NodePath -> godot_types.NodePath, subclass of pathlib.PurePosixPath
+    RID -> godot_types.RID, custom class, wraps C++ RID
+    Callable -> godot_types.Callable, custom class, wraps C++ Callable
+    Signal -> godot_types.Signal, custom class, wraps C++ Signal
+    Dictionary -> dict
+    Array -> list
+    TypedArray -> godot_types.Array, subclass of numpy.ndarray
+    PackedStringArray -> list
+    <AnyOtherType> -> godot_types.<AnyOtherType>, subclass of numpy.ndarray
+
+Extended types:
+    String -> godot_types.String, subclass of str
+    Array -> godot_types.Array
+    PackedStringArray -> godot_types.PackedStringArray, subclass of numpy.dnarray
 """
 from cpython cimport (
     PyObject, ref,
@@ -13,11 +35,11 @@ from cpython cimport (
     PyObject_IsTrue,
     PyList_New, PyList_SET_ITEM, PyList_GET_ITEM
 )
+from libcpp.cast cimport *
 from cpython.bytearray cimport PyByteArray_Check
 from cython.view cimport array as cvarray
 from gdextension cimport (
-    BuiltinMethod,
-    Object, Callable, Signal,
+    BuiltinMethod, Object,
     object_to_pyobject, variant_object_to_pyobject,
     object_from_pyobject, variant_object_from_pyobject,
     variant_type_to_str, str_to_variant_type
@@ -36,78 +58,80 @@ import numpy as np
 
 
 __all__ = [
-    'Nil',  # None
+    'Nil',
 
-    'bool',  # bool or np.bool or ndarray as array(x, dtype=np.bool), shape = ()
-    'int',  # int or np.int64 or np.int32 or np.int8 or ndarray as array(x, dtype=intN), shape = ()
-    'float',  # float or np.float64 or np.float32 or ndarray as array(x, dtype=floatN), shape = ()
+    'bool',
+    'int',
+    'float',
 
     "as_string",
-    'String',  # subclass of str or str or bytes
+    'String',
 
     'as_vector2',
     'as_vector2i',
 
-    'Vector2',  # subtype of ndarray as array([x, y], dtype=float32), shape = (2,)
-    'Vector2i',  # subtype of ndarray as array([x, y], dtype=int32), shape = (2,)
-    'Size2',  # same as Vector2, but has width and height attributes
-    'Size2i',  # same as Vector2i, but has width and height attributes
+    'Vector2',
+    'Vector2i',
+    'Size2',
+    'Size2i',
 
     'as_rect2',
     'as_rect2i',
 
-    'Rect2',  # subtype of ndarray as array([x, y, width, height], dtype=float32), shape = (4,), slices: Vector2, Size2
-    'Rect2i',  # subtype of ndarray as array([x, y, width, height], dtype=int32), shape = (4,), slices: Vector2i, Size2i
+    'Rect2',
+    'Rect2i',
 
     'as_vector3',
     'as_vector3i',
-    'Vector3',  # TODO subtype of ndarray as array([x, y, z], dtype=float32), shape = (3,)
-    'Vector3i',  # TODO subtype of ndarray as array([x, y, z], dtype=int32), shape = (3,)
+    'Vector3',
+    'Vector3i',
 
     'as_transform2d',
-    'Transform2D',  # TODO subtype of ndarray as array([[xx, xy],
-                    #                                   [yx, yy],
-                    #                                   [zx, zy]], dtype=float32), shape = (3, 2)
+    'Transform2D',
 
     'as_vector4',
     'as_vector4i',
-    'Vector4',  # TODO subtype of ndarray as array([x, y, z, w], dtype=float32), shape = (4,)
-    'Vector4i',  # TODO subtype of ndarray as array([x, y, z, w], dtype=int32), shape = (4,)
+    'Vector4',
+    'Vector4i',
 
     'as_plane',
-    'Plane',  # TODO: subtype of ndarray as array([x, y, z, d], dtype=float32), shape = (4,)
-              # slices: Vector3, float
+    'Plane',
 
     'as_quaternion',
-    'Quaternion',  # TODO subtype of ndarray([x, y, z, w], dtype=float32), shape = (4,)
-                   # or _godot_type_tuples.Quaternion()
+    'Quaternion',
 
     'as_aabb',
-    'AABB',  # TODO: subtype of ndarray as array([[x, y, z],
-             #                                    [x, y, z]], dtype=float32), shape = (2, 3)
-    'Basis',  # TODO subtype of ndarray as array([[xx, xy, xz],
-              #                                   [yx, yy, yz],
-              #                                   [zx, zy, zz]], dtype=float32), shape = (3, 3)
-    'Transform3D',  # TODO subtype of ndarray as array([[xx, xy, xz],
-                    #                                   [yx, yy, yz],
-                    #                                   [zx, zy, zz]
-                    #                                   [ox, oy, oz]], dtype=float32), shape = (4, 3)
-                    # slices: Basis, Vector3
-    'Projection',  # TODO subtype of ndarray as array([[xx, xy, xz, xw],
-                   #                                   [yx, yy, yz, yw],
-                   #                                   [zx, zy, zz, zw],
-                   #                                   [wx, wy, wx, ww]], dtype=float32), shape = (4, 4)
-    'Color',    # TODO subtype of ndarray as array([x, y, z, w], dtype=float32), shape = (4,)
-    'StringName',  # sublcass of str, cpp.StringName wrapper
-    'NodePath',  # sublcass of pathlib.PurePosixPath
-    'RID',  # cpp._RID wrapper
+    'AABB',
 
-    # Object, Callable, Signal are in gdextension module
+    'as_basis',
+    'Basis',
 
-    'Dictionary',  # dict
+    'as_transform2d',
+    'Transform3D',
+
+    'as_projection',
+    'Projection',
+
+    'as_color',
+    'Color',
+
+    'as_string_name',
+    'StringName',
+
+    'as_node_path',
+    'NodePath',
+
+    'RID',
+
+    # Object is in gdextension module
+
+    'Callable',
+    'Signal',
+
+    'Dictionary',
 
     'as_array',
-    'Array',  # list or subtype of ndarray as array([...], dtype=np.object_), shape = (N,)
+    'Array',
 
     'as_packed_byte_array',
     'as_packed_int32_array',
@@ -115,17 +139,20 @@ __all__ = [
     'as_packed_float32_array',
     'as_packed_float64_array',
     'as_packed_string_array',
-    'PackedByteArray',  # is bytearray or TODO subtype of ndarray as array([...], dtype=np.int8)
-    'PackedInt32Array',  # TODO subtype of ndarray as array([...], dtype=np.int32), shape = (N,)
-    'PackedInt64Array',  # TODO subtype of ndarray as array([...], dtype=np.int64), shape = (N,)
-    'PackedFloat32Array',  # TODO subtype of ndarray as array([...], dtype=np.float32), shape = (N,)
-    'PackedFloat64Array',  # TODO subtype of ndarray as array([...], dtype=np.float64), shape = (N,)
-    'PackedStringArray',  # TODO subtype of ndarray as array([...], dtype=StringDType())
-
-    'PackedVector2Array',  # TODO subtype of ndarray as array([[x, y], ...], dtype=np.float32), shape = (N, 2)
-    'PackedVector3Array',  # TODO subtype of ndarray as array([[x, y, z], ...], dtype=np.float32), shape = (N, 3)
-    'PackedColorArray',  # TODO subtype of ndarray as array([[r, g, b, a], ...], dtype=np.float32), shape = (N, 4)
-    'PackedVector4Array'  # TODO subtype of ndarray as array([[x, y, z, w], ...], dtype=np.float32), shape = (N, 4)
+    'as_packed_vector2_array',
+    'as_packed_vector3_array',
+    'as_packed_color_array',
+    'as_packed_vector4_array',
+    'PackedByteArray',
+    'PackedInt32Array',
+    'PackedInt64Array',
+    'PackedFloat32Array',
+    'PackedFloat64Array',
+    'PackedStringArray',
+    'PackedVector2Array',
+    'PackedVector3Array',
+    'PackedColorArray',
+    'PackedVector4Array'
 ]
 
 
@@ -137,10 +164,25 @@ cdef object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
 
     return arr
 
-cdef object PyArraySubType_NewFromDataAndBase(type subtype, cvarray cvarr, int nd, const npy_intp *dims,
-                                              int type_num, object base):
-    cdef int flags = NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_WRITEABLE
-    cdef numpy.ndarray arr = PyArray_New(subtype, nd, dims, type_num, NULL, cvarr.data, 0, flags, base)
+
+cdef class _PackedArrayWrapper:
+    cdef cvarray arr
+    cdef npy_intp size
+    cdef npy_intp[2] shape
+    cdef bint ro
+    cdef npy_intp ndim
+    cdef int type_num
+
+    def __cinit__(self):
+        self.ro = False
+
+    def __init__(self):
+        raise TypeError("Cannot init %r" % self.__class__)
+
+
+cdef object PyArraySubType_NewFromWrapperBase(type subtype, _PackedArrayWrapper base):
+    cdef numpy.ndarray arr = PyArray_New(subtype, base.ndim, base.shape, base.type_num, NULL, base.arr.data, 0,
+                                         NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_WRITEABLE, base)
 
     ref.Py_INCREF(base)
     numpy.PyArray_SetBaseObject(arr, base)
@@ -168,8 +210,7 @@ include "includes/transform3d.pxi"
 include "includes/projection.pxi"
 include "includes/color.pxi"
 include "includes/misc.pxi"
-include "includes/packed_array1d.pxi"
-include "includes/packed_array2d.pxi"
+include "includes/packed_arrays.pxi"
 
 
 cdef type NoneType = type(None)
@@ -255,17 +296,17 @@ cdef variant_to_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_to_pyobject_funcs 
     variant_vector4i_to_pyobject,
     variant_plane_to_pyobject,
     variant_quaternion_to_pyobject,
-    NULL,  # aabb
-    NULL,  # basis
-    NULL,  # transform3d
-    NULL,  # projection
-    NULL,  # color
+    variant_aabb_to_pyobject,
+    variant_basis_to_pyobject,
+    variant_transform3d_to_pyobject,
+    variant_projection_to_pyobject,
+    variant_color_to_pyobject,
     variant_string_name_to_pyobject,
     variant_node_path_to_pyobject,
     variant_rid_to_pyobject,
     variant_object_to_pyobject,
-    NULL,  # callable
-    NULL,  # signal
+    variant_callable_to_pyobject,
+    variant_signal_to_pyobject,
     variant_dictionary_to_pyobject,
     variant_array_to_pyobject,
     variant_packed_byte_array_to_pyobject,
@@ -274,11 +315,55 @@ cdef variant_to_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_to_pyobject_funcs 
     variant_packed_float32_array_to_pyobject,
     variant_packed_float64_array_to_pyobject,
     variant_packed_string_array_to_pyobject,
-    NULL,  # vector2
-    NULL,  # vector3
-    NULL,  # color
-    NULL  # vector4
+    variant_packed_vector2_array_to_pyobject,
+    variant_packed_vector3_array_to_pyobject,
+    variant_packed_color_array_to_pyobject,
+    variant_packed_vector4_array_to_pyobject,
 ]
+
+
+cdef typeptr_to_pyobject_func_t[<int>cpp.VARIANT_MAX] typeptr_to_pyobject_funcs = [
+    typeptr_nil_to_pyobject,
+    typeptr_bool_to_pyobject,
+    typeptr_int_to_pyobject,
+    typeptr_float_to_pyobject,
+    typeptr_string_to_pyobject,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+]
+
 
 
 cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_funcs = [
@@ -298,17 +383,17 @@ cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_fu
     variant_vector4i_from_pyobject,
     variant_plane_from_pyobject,
     variant_quaternion_from_pyobject,
-    NULL,  # aabb
-    NULL,  # basis
-    NULL,  # transform3d
-    NULL,  # projection
-    NULL,  # color
+    variant_aabb_from_pyobject,
+    variant_basis_from_pyobject,
+    variant_transform3d_from_pyobject,
+    variant_projection_from_pyobject,
+    variant_color_from_pyobject,
     variant_string_name_from_pyobject,
     variant_node_path_from_pyobject,
     variant_rid_from_pyobject,
     variant_object_from_pyobject,
-    NULL,  # callable
-    NULL,  # signal
+    variant_callable_from_pyobject,
+    variant_signal_from_pyobject,
     variant_dictionary_from_pyobject,
     variant_array_from_pyobject,
     variant_packed_byte_array_from_pyobject,
@@ -317,10 +402,53 @@ cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_fu
     variant_packed_float32_array_from_pyobject,
     variant_packed_float64_array_from_pyobject,
     variant_packed_string_array_from_pyobject,
-    NULL,  # vector2
-    NULL,  # vector3
-    NULL,  # color
-    NULL  # vector4
+    variant_packed_vector2_array_from_pyobject,
+    variant_packed_vector3_array_from_pyobject,
+    variant_packed_color_array_from_pyobject,
+    variant_packed_vector4_array_from_pyobject,
+]
+
+
+cdef typeptr_from_pyobject_func_t[<int>cpp.VARIANT_MAX] typeptr_from_pyobject_funcs = [
+    typeptr_nil_from_pyobject,
+    typeptr_bool_from_pyobject,
+    typeptr_int_from_pyobject,
+    typeptr_float_from_pyobject,
+    typeptr_string_from_pyobject,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
 ]
 
 
@@ -422,11 +550,7 @@ cdef public object variant_to_pyobject(const cpp.Variant &v):
     cdef int vartype = <int>v.get_type()
     cdef variant_to_pyobject_func_t func = variant_to_pyobject_funcs[vartype]
 
-    if func != NULL:
-        return func(v)
-    else:
-        msg = "NOT IMPLEMENTED: convertion of %r types to Python objects, interpret as Nil/None"
-        cpp.UtilityFunctions.push_error(msg % variant_type_to_str(<cpp.VariantType>vartype))
+    return func(v)
 
 
 cdef public void variant_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
@@ -434,12 +558,7 @@ cdef public void variant_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcep
     cdef variant_from_pyobject_func_t func
     cdef str msg
 
-    assert vartype >= 0 and vartype < <int>cpp.VARIANT_MAX
+    assert vartype >= 0 and vartype < <int>cpp.VARIANT_MAX, "incorrect vartype %d" % vartype
 
     func = variant_from_pyobject_funcs[vartype]
-    if func != NULL:
-        func(p_obj, r_ret)
-    else:
-        msg = "NOT IMPLEMENTED: convertion of %r types from Python objects, interpret as None/Nil"
-        cpp.UtilityFunctions.push_error(msg % variant_type_to_str(<cpp.VariantType>vartype))
-        variant_nil_from_pyobject(None, r_ret)
+    func(p_obj, r_ret)

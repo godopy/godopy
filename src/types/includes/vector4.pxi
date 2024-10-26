@@ -136,32 +136,32 @@ class Vector4i(_Vector4Base):
         return array_from_vector4_args(subtype, dtype, args, kwargs)
 
 
-cdef public object vector4_to_pyobject(cpp.Vector4 &vec):
-    cdef float [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector4(vec_view, dtype=np.float32, copy=True)
+cdef public object vector4_to_pyobject(const cpp.Vector4 &vec):
+    cdef const float [:] vec_view = <float[:4]><float *>vec.coord
+    cdef numpy.ndarray pyarr = as_vector4(vec_view, dtype=np.float32)
 
     return pyarr
 
 
-cdef public object vector4i_to_pyobject(cpp.Vector4i &vec):
-    cdef int32_t [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector4i(vec_view, dtype=np.int32, copy=True)
+cdef public object vector4i_to_pyobject(const cpp.Vector4i &vec):
+    cdef const int32_t [:] vec_view = <int32_t[:4]><int32_t *>vec.coord
+    cdef numpy.ndarray pyarr = as_vector4i(vec_view, dtype=np.int32)
 
     return pyarr
 
 
 cdef public object variant_vector4_to_pyobject(const cpp.Variant &v):
     cdef cpp.Vector4 vec = v.to_type[cpp.Vector4]()
-    cdef float [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector4(vec_view, dtype=np.float32, copy=True)
+    cdef const float [:] vec_view = vec.coord
+    cdef numpy.ndarray pyarr = as_vector4(vec_view, dtype=np.float32)
 
     return pyarr
 
 
 cdef public object variant_vector4i_to_pyobject(const cpp.Variant &v):
     cdef cpp.Vector4i vec = v.to_type[cpp.Vector4i]()
-    cdef int32_t [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector4i(vec_view, dtype=np.int32, copy=True)
+    cdef const int32_t [:] vec_view = vec.coord
+    cdef numpy.ndarray pyarr = as_vector4i(vec_view, dtype=np.int32)
 
     return pyarr
 

@@ -132,9 +132,9 @@ class TestCaseArgTypes(BaseTestCase):
 
         self.assertIsInstance(r.arg01, (bool, np.bool_))
         self.assertEqual(r.arg01, True)
-        self.assertIsInstance(r.arg02, np.integer)
+        self.assertIsInstance(r.arg02, (int, np.integer))
         self.assertEqual(r.arg02, 42)
-        self.assertIsInstance(r.arg03, np.floating)
+        self.assertIsInstance(r.arg03, (float, np.floating))
         self.assertEqual(r.arg03, math.tau)
         self.assertIsInstance(r.arg04, str)
         self.assertEqual(r.arg04, 'GodoPy')

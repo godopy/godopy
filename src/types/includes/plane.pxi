@@ -118,8 +118,11 @@ class Plane(numpy.ndarray):
             self.shape = (4,)
 
 
-cdef public object plane_to_pyobject(cpp.Plane &plane):
-    cdef numpy.ndarray pyarr = Plane([*list(plane.normal.coord), plane.d], dtype=np.float32, copy=True)
+cdef public object plane_to_pyobject(const cpp.Plane &plane):
+    cdef numpy.ndarray pyarr = Plane([
+        *list(<float[:3]><float *>plane.normal.coord),
+        plane.d
+    ], dtype=np.float32, copy=True)
 
     return pyarr
 

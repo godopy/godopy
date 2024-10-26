@@ -111,7 +111,7 @@ cdef public object variant_basis_to_pyobject(const cpp.Variant &v):
 
 
 cdef public void basis_from_pyobject(object p_obj, cpp.Basis *r_ret) noexcept:
-    if not isinstance(p_obj, numpy.ndarray) or not p_obj.shape == (3, 3) or not p_obj.dtype == np.float32:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (3, 3) or p_obj.dtype != np.float32:
         p_obj = as_basis(p_obj, dtype=np.float32)
 
     cdef cpp.Basis b
@@ -123,7 +123,7 @@ cdef public void basis_from_pyobject(object p_obj, cpp.Basis *r_ret) noexcept:
 
 
 cdef public void variant_basis_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
-    if not isinstance(p_obj, numpy.ndarray) or not p_obj.shape == (3, 3) or not p_obj.dtype == np.float32:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (3, 3) or p_obj.dtype != np.float32:
         p_obj = as_basis(p_obj, dtype=np.float32)
 
     cdef cpp.Basis b

@@ -138,9 +138,9 @@ class AABB(numpy.ndarray):
             self.shape = (2, 3)
 
 
-cdef public object aabb_to_pyobject(cpp._AABB &p_aabb):
-    cdef float [:] position_view = p_aabb.position.coord
-    cdef float [:] size_view = p_aabb.size.coord
+cdef public object aabb_to_pyobject(const cpp._AABB &p_aabb):
+    cdef const float [:] position_view = <float[:3]><float *>p_aabb.position.coord
+    cdef const float [:] size_view = <float[:3]><float *>p_aabb.size.coord
 
     cdef numpy.ndarray pyarr = AABB([position_view, size_view], dtype=np.float32, copy=True)
 
@@ -150,8 +150,8 @@ cdef public object aabb_to_pyobject(cpp._AABB &p_aabb):
 cdef public object variant_aabb_to_pyobject(const cpp.Variant &v):
     cdef cpp._AABB aabb = v.to_type[cpp._AABB]()
 
-    cdef float [:] position_view = aabb.position.coord
-    cdef float [:] size_view = aabb.size.coord
+    cdef const float [:] position_view = aabb.position.coord
+    cdef const float [:] size_view = aabb.size.coord
 
     cdef numpy.ndarray pyarr = AABB([position_view, size_view], dtype=np.float32, copy=True)
 

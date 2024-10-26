@@ -172,32 +172,32 @@ class Size2i(_Size2Base):
 
 
 
-cdef public object vector2_to_pyobject(cpp.Vector2 &vec):
-    cdef float [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector2(vec_view, dtype=np.float32, copy=True)
+cdef public object vector2_to_pyobject(const cpp.Vector2 &vec):
+    cdef const float [:] vec_view = <float[:2]><float *>vec.coord
+    cdef numpy.ndarray pyarr = as_vector2(vec_view, dtype=np.float32, copy=True)
 
     return pyarr
 
 
-cdef public object vector2i_to_pyobject(cpp.Vector2i &vec):
-    cdef int32_t [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector2i(vec_view, dtype=np.int32, copy=True)
+cdef public object vector2i_to_pyobject(const cpp.Vector2i &vec):
+    cdef const int32_t [:] vec_view = <int32_t[:2]><int32_t *>vec.coord
+    cdef numpy.ndarray pyarr = as_vector2i(vec_view, dtype=np.int32)
 
     return pyarr
 
 
 cdef public object variant_vector2_to_pyobject(const cpp.Variant &v):
     cdef cpp.Vector2 vec = v.to_type[cpp.Vector2]()
-    cdef float [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector2(vec_view, dtype=np.float32, copy=True)
+    cdef const float [:] vec_view = vec.coord
+    cdef numpy.ndarray pyarr = as_vector2(vec_view, dtype=np.float32)
 
     return pyarr
 
 
 cdef public object variant_vector2i_to_pyobject(const cpp.Variant &v):
     cdef cpp.Vector2i vec = v.to_type[cpp.Vector2i]()
-    cdef int32_t [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector2i(vec_view, dtype=np.int32, copy=True)
+    cdef const int32_t [:] vec_view = vec.coord
+    cdef numpy.ndarray pyarr = as_vector2i(vec_view, dtype=np.int32)
 
     return pyarr
 

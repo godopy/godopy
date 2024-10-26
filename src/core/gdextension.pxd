@@ -37,6 +37,52 @@ cdef dict _CLASSDB
 cdef list _registered_classes
 
 
+cdef enum ArgType:
+    ARGTYPE_NIL
+    ARGTYPE_BOOL
+    ARGTYPE_INT
+    ARGTYPE_FLOAT
+    ARGTYPE_STRING
+    ARGTYPE_VECTOR2
+    ARGTYPE_VECTOR2I
+    ARGTYPE_RECT2
+    ARGTYPE_RECT2I
+    ARGTYPE_VECTOR3
+    ARGTYPE_VECTOR3I
+    ARGTYPE_TRANSFORM2D
+    ARGTYPE_VECTOR4
+    ARGTYPE_VECTOR4I
+    ARGTYPE_PLANE
+    ARGTYPE_QUATERNION
+    ARGTYPE_AABB
+    ARGTYPE_BASIS
+    ARGTYPE_TRANSFORM3D
+    ARGTYPE_PROJECTION
+    ARGTYPE_COLOR
+    ARGTYPE_STRING_NAME
+    ARGTYPE_NODE_PATH
+    ARGTYPE_RID
+    ARGTYPE_OBJECT
+    ARGTYPE_CALLABLE
+    ARGTYPE_SIGNAL
+    ARGTYPE_DICTIONARY
+    ARGTYPE_ARRAY
+    ARGTYPE_PACKED_BYTE_ARRAY
+    ARGTYPE_PACKED_INT32_ARRAY
+    ARGTYPE_PACKED_INT64_ARRAY
+    ARGTYPE_PACKED_FLOAT32_ARRAY
+    ARGTYPE_PACKED_FLOAT64_ARRAY
+    ARGTYPE_PACKED_STRING_ARRAY
+    ARGTYPE_PACKED_VECTOR2_ARRAY
+    ARGTYPE_PACKED_VECTOR3_ARRAY
+    ARGTYPE_PACKED_COLOR_ARRAY
+    ARGTYPE_PACKED_VECTOR4_ARRAY
+
+    ARGTYPE_VARIANT
+
+    ARGTYPE_MAX
+
+
 cdef class Class:
     """
     Defines all Godot Engine's classes.
@@ -83,14 +129,6 @@ cdef public class Object [object GDPyObject, type GDPyObject_Type]:
     cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
     cdef bint is_singleton
     cdef readonly Class __godot_class__
-
-
-cdef class Callable(Object):
-    pass
-
-
-cdef class Signal(Object):
-    pass
 
 
 cdef class EngineCallableBase:

@@ -133,32 +133,32 @@ class Vector3i(_Vector3Base):
         return array_from_vector3_args(subtype, dtype, args, kwargs)
 
 
-cdef public object vector3_to_pyobject(cpp.Vector3 &vec):
-    cdef float [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector3(vec_view, dtype=np.float32, copy=True)
+cdef public object vector3_to_pyobject(const cpp.Vector3 &vec):
+    cdef const float [:] vec_view = <float[:3]><float *>vec.coord
+    cdef numpy.ndarray pyarr = as_vector3(vec_view, dtype=np.float32)
 
     return pyarr
 
 
-cdef public object vector3i_to_pyobject(cpp.Vector3i &vec):
-    cdef int32_t [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector3i(vec_view, dtype=np.int32, copy=True)
+cdef public object vector3i_to_pyobject(const cpp.Vector3i &vec):
+    cdef const int32_t [:] vec_view = <int32_t[:3]><int32_t *>vec.coord
+    cdef numpy.ndarray pyarr = as_vector3i(vec_view, dtype=np.int32)
 
     return pyarr
 
 
 cdef public object variant_vector3_to_pyobject(const cpp.Variant &v):
     cdef cpp.Vector3 vec = v.to_type[cpp.Vector3]()
-    cdef float [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector3(vec_view, dtype=np.float32, copy=True)
+    cdef const float [:] vec_view = vec.coord
+    cdef numpy.ndarray pyarr = as_vector3(vec_view, dtype=np.float32)
 
     return pyarr
 
 
 cdef public object variant_vector3i_to_pyobject(const cpp.Variant &v):
     cdef cpp.Vector3i vec = v.to_type[cpp.Vector3i]()
-    cdef int32_t [:] vec_view = vec.coord
-    cdef numpy.ndarray pyarr = Vector3i(vec_view, dtype=np.int32, copy=True)
+    cdef const int32_t [:] vec_view = vec.coord
+    cdef numpy.ndarray pyarr = as_vector3i(vec_view, dtype=np.int32)
 
     return pyarr
 

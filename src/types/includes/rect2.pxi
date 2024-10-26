@@ -175,20 +175,26 @@ class Rect2i(_Rect2Base):
         return array_from_rect2_args(subtype, dtype, args, kwargs)
 
 
-cdef public object rect2_to_pyobject(cpp.Rect2 &p_rect):
-    cdef float [:] position_view = p_rect.position.coord
-    cdef float [:] size_view = p_rect.size.coord
+cdef public object rect2_to_pyobject(const cpp.Rect2 &p_rect):
+    cdef const float [:] position_view = <float[:2]><float *>(p_rect.position.coord)
+    cdef const float [:] size_view = <float[:2]><float *>p_rect.size.coord
 
-    cdef numpy.ndarray pyarr = Rect2([position_view, size_view], dtype=np.float32, copy=True)
+    cdef numpy.ndarray pyarr = Rect2(dtype=np.float32)
+    cdef float [:] pyarr_view = pyarr
+    pyarr_view[:2] = position_view
+    pyarr_view[2:] = size_view
 
     return pyarr
 
 
-cdef public object rect2i_to_pyobject(cpp.Rect2i &p_rect):
-    cdef int32_t [:] position_view = p_rect.position.coord
-    cdef int32_t [:] size_view = p_rect.size.coord
+cdef public object rect2i_to_pyobject(const cpp.Rect2i &p_rect):
+    cdef const int32_t [:] position_view = <int32_t[:2]><int32_t *>p_rect.position.coord
+    cdef const int32_t [:] size_view = <int32_t[:2]><int32_t *>p_rect.size.coord
 
-    cdef numpy.ndarray pyarr = Rect2i([position_view, size_view], dtype=np.int32, copy=True)
+    cdef numpy.ndarray pyarr = Rect2i(dtype=np.int32)
+    cdef int32_t [:] pyarr_view = pyarr
+    pyarr_view[:2] = position_view
+    pyarr_view[2:] = size_view
 
     return pyarr
 
@@ -196,20 +202,26 @@ cdef public object rect2i_to_pyobject(cpp.Rect2i &p_rect):
 cdef public object variant_rect2_to_pyobject(const cpp.Variant &v):
     cdef cpp.Rect2 rect = v.to_type[cpp.Rect2]()
 
-    cdef float [:] position_view = rect.position.coord
-    cdef float [:] size_view = rect.size.coord
+    cdef const float [:] position_view = rect.position.coord
+    cdef const float [:] size_view = rect.size.coord
 
-    cdef numpy.ndarray pyarr = Rect2([position_view, size_view], dtype=np.float32, copy=True)
+    cdef numpy.ndarray pyarr = Rect2(dtype=np.float32)
+    cdef float [:] pyarr_view = pyarr
+    pyarr_view[:2] = position_view
+    pyarr_view[2:] = size_view
 
     return pyarr
 
 
 cdef public object variant_rect2i_to_pyobject(const cpp.Variant &v):
     cdef cpp.Rect2i rect = v.to_type[cpp.Rect2i]()
-    cdef int32_t [:] position_view = rect.position.coord
-    cdef int32_t [:] size_view = rect.size.coord
+    cdef const int32_t [:] position_view = rect.position.coord
+    cdef const int32_t [:] size_view = rect.size.coord
 
-    cdef numpy.ndarray pyarr = Rect2i([position_view, size_view], dtype=np.int32, copy=True)
+    cdef numpy.ndarray pyarr = Rect2i(dtype=np.int32)
+    cdef int32_t [:] pyarr_view = pyarr
+    pyarr_view[:2] = position_view
+    pyarr_view[2:] = size_view
 
     return pyarr
 
