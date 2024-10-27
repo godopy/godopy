@@ -24,7 +24,7 @@ def as_plane(data, dtype=None):
     else:
         copy = True
 
-    return Plane(data, dtype=dtype, copy=copy, can_cast=True)
+    return Plane(data, dtype=dtype, copy=copy)
 
 
 cdef object _plane_attrs = frozenset(['normal', 'd', 'x', 'y', 'z'])
@@ -34,7 +34,6 @@ class Plane(numpy.ndarray):
     def __new__(subtype, *args, **kwargs):
         dtype = kwargs.pop('dtype', np.float32)
         copy = kwargs.pop('copy', True)
-        can_cast = kwargs.pop('can_cast', False)
 
         if not np.issubdtype(dtype, np.number):
             raise TypeError("%r accepts only numeric datatypes, got %r" % (subtype, dtype))
@@ -53,10 +52,9 @@ class Plane(numpy.ndarray):
                 if obj.dtype == dtype:
                     base = obj
                 else:
-                    if not can_cast:
-                        cpp.UtilityFunctions.push_warning(
-                            "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
-                        )
+                    cpp.UtilityFunctions.push_warning(
+                        "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
+                    )
                     base = obj.astype(dtype)
             else:
                 base = np.array(obj, dtype=dtype, copy=copy)
@@ -67,15 +65,14 @@ class Plane(numpy.ndarray):
             d = kwargs.pop('d', None)
 
             if normal is not None and d is None:
-                # No valid keyword arguments, therefore something wrong with positional args
-                raise TypeError("Invalid positional argument %r" % args[0])
+                raise TypeError(error_message_from_args(subtype, args, kwargs))
 
             _check_vector3_data(normal, arg_name='normal')
             _check_numeric_scalar(d, arg_name='d')
             base = np.array([*normal, d], dtype=dtype, copy=copy)
 
         if kwargs:
-            raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         return PyArraySubType_NewFromBase(subtype, base)
 
@@ -140,21 +137,23 @@ cdef public void plane_from_pyobject(object p_obj, cpp.Plane *r_ret) noexcept:
 
     cdef cpp.Plane plane
     cdef float [:] normal_view = plane.normal.coord
-    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
-    normal_view[:] = pyarr_view[:3]
-    plane.d = pyarr_view[4]
+    cdef float [:] pynormal_view = (<numpy.ndarray>p_obj)[:3]
+
+    normal_view[:] = pynormal_view
+    plane.d = (<numpy.ndarray>p_obj)[3]
 
     r_ret[0] = plane
 
 
 cdef public void variant_plane_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
-    if not isinstance(p_obj, numpy.ndarray) or not p_obj.shape == (4,) or not p_obj.dtype == np.float32:
+    if not isinstance(p_obj, numpy.ndarray) or p_obj.shape != (4,) or p_obj.dtype != np.float32:
         p_obj = as_plane(p_obj, dtype=np.float32)
 
     cdef cpp.Plane plane
     cdef float [:] normal_view = plane.normal.coord
-    cdef float [:] pyarr_view = <numpy.ndarray>p_obj
-    normal_view[:] = pyarr_view[:3]
-    plane.d = pyarr_view[4]
+    cdef float [:] pynormal_view = (<numpy.ndarray>p_obj)[:3]
+
+    normal_view[:] = pynormal_view
+    plane.d = (<numpy.ndarray>p_obj)[3]
 
     r_ret[0] = cpp.Variant(plane)

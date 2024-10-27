@@ -9,7 +9,7 @@ from gdextension cimport (
     _BUILTIN_METHODDB,
     _CLASSDB
 )
-
+from default_gdextension_config cimport print_traceback
 
 import io
 import os
@@ -75,21 +75,28 @@ cdef int first_level = 0
 
 cdef public int python_initialize_level(ModuleInitializationLevel p_level) noexcept nogil:
     with gil:
-        _python_initialize_level(p_level)
+        try:
+            _python_initialize_level(p_level)
+        except Exception as exc:
+            print_traceback(exc)
 
     return 0
 
 
 cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noexcept nogil:
     with gil:
-        _python_deinitialize_level(p_level)
+        try:
+            _python_deinitialize_level(p_level)
+        except Exception as exc:
+            print_traceback(exc)
 
     return 0
 
 
-
 cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
     global initialize_funcs, deinitialize_funcs, is_first_level, first_level, registered_packages
+
+    UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
 
     for module_name in registered_packages:
         mod_register_types = importlib.import_module('%s.register_types' % module_name)
@@ -102,13 +109,11 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
         if deinitialize_func is not None:
             deinitialize_funcs.append(deinitialize_func)
 
-    UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
-
     if is_first_level:
         redirect_python_stdio()
 
         if ProjectSettings.get_singleton().has_setting("application/run/print_header"):
-            UtilityFunctions.print("GodoPy version %s" % '0.0.0.5dev')
+            UtilityFunctions.print("GodoPy version %s" % '0.1dev')
             UtilityFunctions.print("Python version %s\n" % sys.version)
 
         venv_path = os.environ.get('VIRTUAL_ENV')

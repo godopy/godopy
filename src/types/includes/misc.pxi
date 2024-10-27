@@ -113,7 +113,10 @@ cdef public void node_path_from_pyobject(object p_obj, cpp.NodePath *r_ret) noex
     cdef bytes tmp
     cdef cpp.String s
 
-    if PyUnicode_Check(p_obj):
+    if isinstance(p_obj, pathlib.PurePosixPath):
+        wstr = PyUnicode_AsWideCharString(str(p_obj), NULL)
+        gdextension_interface_string_new_with_wide_chars(&s, wstr)
+    elif PyUnicode_Check(p_obj):
         wstr = PyUnicode_AsWideCharString(p_obj, NULL)
         gdextension_interface_string_new_with_wide_chars(&s, wstr)
     elif PyBytes_Check(p_obj):
@@ -153,6 +156,12 @@ cdef class RID:
             raise ValueError("Only 'RID' or no arguments are allowed, got %r" % type(arg))
         else:
             self._base = cpp._RID()
+
+    def __int__(self):
+        return self._base.get_id()
+
+    def __repr__(self):
+        return "%s.%s(%d)" % (self.__class__.__module__, self.__class__.__name__, self)
 
     def get_id(self):
         return int(self)
@@ -375,7 +384,7 @@ cdef public void dictionary_from_pyobject(object p_obj, cpp.Dictionary *r_ret) n
             variant_from_pyobject(pyvalue, &value)
             godot_dictionary_set_item(ret, key, value)
     else:
-        cpp.UtilityFunctions.push_error("'dict' or other mapping is required, got %r" % type(p_obj))
+        cpp.UtilityFunctions.push_error("a mapping is required, got %r" % type(p_obj))
 
     r_ret[0] = ret
 
@@ -497,6 +506,7 @@ cdef public object array_to_pyobject(const cpp.Array &p_arr):
     cdef ret = PyList_New(size)
     cdef cpp.Variant item
     cdef object pyitem
+    cdef int vartype
 
     for i in range(size):
         item = godot_array_get_item(p_arr, i)
@@ -508,8 +518,8 @@ cdef public object array_to_pyobject(const cpp.Array &p_arr):
     dtype = np.object_
     itemshape = ()
 
-    if ret.is_typed():
-        vartype = ret.get_typed_builtin()
+    if p_arr.is_typed():
+        vartype = p_arr.get_typed_builtin()
         if vartype > 0 and vartype < len(_vartype_to_dtype_itemshape):
             dtype, itemshape = _vartype_to_dtype_itemshape[vartype]
             cpp.UtilityFunctions.print("Detected %s typedarray %r" % (variant_type_to_str(<cpp.VariantType>vartype), dtype))
@@ -537,7 +547,7 @@ cdef public void array_from_pyobject(object p_obj, cpp.Array *r_ret) noexcept:
     if PySequence_Check(p_obj):
         size = PySequence_Size(p_obj)
         ret.resize(size)
-        for i in range(p_obj):
+        for i in range(size):
             pyitem = PySequence_GetItem(p_obj, i)
             variant_from_pyobject(pyitem, &item)
             godot_array_set_item(ret, i, item)

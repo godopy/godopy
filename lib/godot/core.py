@@ -5,25 +5,12 @@ import gdextension as gde
 
 
 __all__ = [
-    'method',
-    'virtual_method',
-
     'GodotClassBase',
     'Class',
     'EngineClass',
     'EngineObject',
     'Extension',
 ]
-
-
-def method(func):
-    func._gdmethod = func.__name__
-    return func
-
-
-def virtual_method(func):
-    func._gdvirtualmethod = func.__name__
-    return func
 
 
 _ext_class_cache = {}

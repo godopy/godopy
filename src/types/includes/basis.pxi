@@ -20,7 +20,7 @@ def as_basis(data, dtype=None):
     else:
         copy = True
 
-    return Basis(data, dtype=dtype, copy=copy, can_cast=True)
+    return Basis(data, dtype=dtype, copy=copy)
 
 
 cdef object _basis_attrs = frozenset(['rows', 'columns'])
@@ -32,13 +32,12 @@ class Basis(numpy.ndarray):
 
         dtype = kwargs.pop('dtype', np.float32)
         copy = kwargs.pop('copy', True)
-        can_cast = kwargs.pop('can_cast', False)
 
         if not np.issubdtype(dtype, np.number):
             raise TypeError("%r accepts only numeric datatypes, got %r" % (subtype, dtype))
 
         if kwargs:
-            raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         if len(args) == 9:
             map(_check_numeric_scalar, args)
@@ -53,17 +52,16 @@ class Basis(numpy.ndarray):
                 if obj.dtype == dtype:
                     base = obj
                 else:
-                    if not can_cast:
-                        cpp.UtilityFunctions.push_warning(
-                            "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
-                        )
+                    cpp.UtilityFunctions.push_warning(
+                        "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
+                    )
                     base = obj.astype(dtype)
             else:
                 base = np.array(obj, dtype=dtype, copy=copy)
         elif len(args) == 0:
             base = np.array([[0, 0, 0], [0, 0, 0], [0, 0, 0]], dtype=dtype, copy=copy)
         else:
-            raise TypeError("Invalid positional argument %r" % args[0])
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         return PyArraySubType_NewFromBase(subtype, base)
 
@@ -104,7 +102,7 @@ cdef public object basis_to_pyobject(const cpp.Basis &b):
 
 cdef public object variant_basis_to_pyobject(const cpp.Variant &v):
     cdef cpp.Basis b = v.to_type[cpp.Basis]()
-    cdef float [:, :] b_view = <float [:3, :2]><float *>b.rows
+    cdef float [:, :] b_view = <float [:3, :3]><float *>b.rows
     cdef numpy.ndarray pyarr = Basis(b_view, dtype=np.float32, copy=True)
 
     return pyarr
@@ -127,9 +125,8 @@ cdef public void variant_basis_from_pyobject(object p_obj, cpp.Variant *r_ret) n
         p_obj = as_basis(p_obj, dtype=np.float32)
 
     cdef cpp.Basis b
-    cdef float [:, :] carr_view = <float [:3, :2]><float *>b.rows
+    cdef float [:, :] carr_view = <float [:3, :3]><float *>b.rows
     cdef float [:, :] pyarr_view = <numpy.ndarray>p_obj
     carr_view[...] = pyarr_view
 
     r_ret[0] = cpp.Variant(b)
-

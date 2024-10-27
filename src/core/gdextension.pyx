@@ -1,14 +1,9 @@
 cimport cython
-from cpython cimport (
-    ref, pystate, PyLong_Check, PyLong_AsSsize_t,
-    PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM
-)
+from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
-from cython.operator cimport dereference as deref
 from python_runtime cimport *
 from godot_types cimport StringName as PyStringName, variant_to_pyobject_func_t, variant_from_pyobject_func_t
-cimport godot_types as type_funcs
 
 import sys
 import types
@@ -36,12 +31,12 @@ include "includes/typeconv.pxi"
 include "includes/class.pxi"
 include "includes/object.pxi"
 
-include "includes/engine_calls.pxi"
+include "includes/engine_callable.pxi"
 include "includes/method_bind.pxi"
 include "includes/utility_function.pxi"
 include "includes/builtin_method.pxi"
 
-include "includes/python_calls.pxi"
+include "includes/python_callable.pxi"
 include "includes/extension_method_base.pxi"
 include "includes/extension_virtual_method.pxi"
 include "includes/extension_method.pxi"

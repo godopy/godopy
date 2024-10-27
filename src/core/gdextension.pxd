@@ -5,10 +5,13 @@ of the GDExtension API
 
 # TODO: Refactor to resemble GDExtension API structure closer
 
-from binding cimport *
-from godot_cpp cimport *
 from libc.stdint cimport int8_t
-from cpython cimport PyObject
+from cpython cimport (
+    PyObject, ref, pystate, PyLong_Check, PyLong_AsSsize_t,
+    PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM
+)
+cimport cython
+from cython.operator cimport dereference as deref
 
 cdef extern from *:
     """
@@ -17,6 +20,10 @@ cdef extern from *:
     pass
 
 cimport numpy
+
+from binding cimport *
+from godot_cpp cimport *
+cimport godot_types as type_funcs
 
 
 cpdef str variant_type_to_str(VariantType vartype)
@@ -341,3 +348,7 @@ cdef class BoundExtensionMethod(PythonCallableBase):
     cdef readonly Extension __self__
 
     cdef size_t get_argument_count(self) except -2
+
+
+include "includes/engine_calls_header.pxi"
+include "includes/python_calls_header.pxi"

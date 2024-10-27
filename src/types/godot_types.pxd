@@ -243,7 +243,7 @@ cdef public void variant_packed_vector4_array_from_pyobject(object p_obj, cpp.Va
 cdef variant_to_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_to_pyobject_funcs
 cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_funcs
 
-cdef cpp.VariantType pytype_to_variant_type(type p_type) noexcept
+cdef cpp.VariantType pytype_to_variant_type(object p_type) noexcept
 cdef cpp.VariantType pyobject_to_variant_type(object p_obj) noexcept
 
 cdef public object variant_to_pyobject(const cpp.Variant &v)

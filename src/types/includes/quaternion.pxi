@@ -15,7 +15,7 @@ def as_quaternion(data, dtype=None):
     else:
         copy = True
 
-    return Quaternion(data, dtype=dtype, copy=copy, can_cast=True)
+    return Quaternion(data, dtype=dtype, copy=copy)
 
 
 cdef object _quaternion_attrs = frozenset(['x', 'y', 'z', 'w', 'components', 'coord'])
@@ -31,7 +31,7 @@ class Quaternion(numpy.ndarray):
             raise TypeError("%r accepts only numeric datatypes, got %r" % (subtype, dtype))
 
         if kwargs:
-            raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         if len(args) == 4:
             map(_check_numeric_scalar, args)
@@ -43,17 +43,16 @@ class Quaternion(numpy.ndarray):
                 if obj.dtype == dtype:
                     base = obj
                 else:
-                    if not can_cast:
-                        cpp.UtilityFunctions.push_warning(
-                            "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
-                        )
+                    cpp.UtilityFunctions.push_warning(
+                        "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
+                    )
                     base = obj.astype(dtype)
             else:
                 base = np.array(obj, dtype=dtype, copy=copy)
         elif len(args) == 0:
             base = np.array([0, 0, 0, 0], dtype=dtype, copy=copy)
         else:
-            raise TypeError("Invalid positional argument %r" % args[0])
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         return PyArraySubType_NewFromBase(subtype, base)
 

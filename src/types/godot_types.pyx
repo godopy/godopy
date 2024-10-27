@@ -47,7 +47,7 @@ from gdextension cimport (
 from numpy cimport (
     PyArray_New, PyArray_Check, PyArray_TYPE,
     npy_intp,
-    NPY_BYTE, NPY_INT16, NPY_INT32, NPY_INT64, NPY_FLOAT32, NPY_FLOAT64,
+    NPY_UINT8, NPY_INT16, NPY_INT32, NPY_INT64, NPY_FLOAT32, NPY_FLOAT64,
     NPY_ARRAY_C_CONTIGUOUS, NPY_ARRAY_WRITEABLE,
 )
 
@@ -56,6 +56,7 @@ import pathlib
 
 import numpy as np
 
+from typing import AnyStr, Dict, List, Mapping, Sequence, Tuple
 
 __all__ = [
     'Nil',
@@ -165,29 +166,13 @@ cdef object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
     return arr
 
 
-cdef class _PackedArrayWrapper:
-    cdef cvarray arr
-    cdef npy_intp size
-    cdef npy_intp[2] shape
-    cdef bint ro
-    cdef npy_intp ndim
-    cdef int type_num
+cdef object error_message_from_args(subtype, args, kwargs):
+    args = ', '.join(("<%s>" % type(arg).__name__) for arg in args)
+    if kwargs:
+        args += ", %s"  % ', '.join(("%s=<%s>" % (key, type(val).__name__)) for key, val in kwargs.items())
+    sig = "%s(%s)" % (subtype.__name__, args)
 
-    def __cinit__(self):
-        self.ro = False
-
-    def __init__(self):
-        raise TypeError("Cannot init %r" % self.__class__)
-
-
-cdef object PyArraySubType_NewFromWrapperBase(type subtype, _PackedArrayWrapper base):
-    cdef numpy.ndarray arr = PyArray_New(subtype, base.ndim, base.shape, base.type_num, NULL, base.arr.data, 0,
-                                         NPY_ARRAY_C_CONTIGUOUS | NPY_ARRAY_WRITEABLE, base)
-
-    ref.Py_INCREF(base)
-    numpy.PyArray_SetBaseObject(arr, base)
-
-    return arr
+    return "%r constructor does not recognize the signature %s" % (subtype.__name__, sig)
 
 
 def _check_numeric_scalar(scalar, arg_name=None):
@@ -235,6 +220,7 @@ cdef dict _pytype_to_vartype = {
     str: cpp.STRING,
     bytes: cpp.STRING,
     String: cpp.STRING,
+    AnyStr: cpp.STRING,
     np.str_: cpp.STRING,
     np.bytes_: cpp.STRING,
     np.void: cpp.PACKED_BYTE_ARRAY,
@@ -263,15 +249,26 @@ cdef dict _pytype_to_vartype = {
     Callable: cpp.CALLABLE,
     Signal: cpp.SIGNAL,
     dict: cpp.DICTIONARY,
+    Dict: cpp.DICTIONARY,
+    Mapping: cpp.DICTIONARY,
     list: cpp.ARRAY,
+    Array: cpp.ARRAY,
     tuple: cpp.ARRAY,
+    List: cpp.ARRAY,
+    Tuple: cpp.ARRAY,
+    Sequence: cpp.ARRAY,
     bytearray: cpp.PACKED_BYTE_ARRAY,
     PackedByteArray: cpp.PACKED_BYTE_ARRAY,
     PackedInt32Array: cpp.PACKED_INT32_ARRAY,
     PackedInt64Array: cpp.PACKED_INT64_ARRAY,
+    List[int]: cpp.PACKED_INT64_ARRAY,
     PackedFloat32Array: cpp.PACKED_FLOAT32_ARRAY,
     PackedFloat64Array: cpp.PACKED_FLOAT64_ARRAY,
+    List[float]: cpp.PACKED_FLOAT64_ARRAY,
     PackedStringArray: cpp.PACKED_STRING_ARRAY,
+    List[str]: cpp.PACKED_STRING_ARRAY,
+    Tuple[str]: cpp.PACKED_STRING_ARRAY,
+    Sequence[str]: cpp.PACKED_STRING_ARRAY,
     PackedVector2Array: cpp.PACKED_VECTOR2_ARRAY,
     PackedVector3Array: cpp.PACKED_VECTOR3_ARRAY,
     PackedColorArray: cpp.PACKED_COLOR_ARRAY,
@@ -363,7 +360,6 @@ cdef typeptr_to_pyobject_func_t[<int>cpp.VARIANT_MAX] typeptr_to_pyobject_funcs 
     NULL,
     NULL,
 ]
-
 
 
 cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_funcs = [
@@ -509,8 +505,9 @@ cdef int array_to_vartype(object arr) except -2:
     return vartype
 
 
-cdef cpp.VariantType pytype_to_variant_type(type p_type) noexcept:
-    return _pytype_to_vartype.get(p_type, <int>cpp.OBJECT )
+cdef cpp.VariantType pytype_to_variant_type(object p_type) noexcept:
+    # TODO: Add some issubclass checks
+    return _pytype_to_vartype.get(p_type, <int>cpp.OBJECT)
 
 
 cdef cpp.VariantType pyobject_to_variant_type(object p_obj) noexcept:

@@ -21,7 +21,7 @@ def as_aabb(data, dtype=0):
     else:
         copy = True
 
-    return AABB(data, dtype=dtype, copy=copy, can_cast=True)
+    return AABB(data, dtype=dtype, copy=copy)
 
 
 cdef frozenset _aabb_attrs = frozenset([
@@ -34,7 +34,6 @@ class AABB(numpy.ndarray):
         cdef numpy.ndarray base
 
         copy = kwargs.pop('copy', True)
-        can_cast = kwargs.pop('can_cast', False)
         dtype = kwargs.pop('dtype', np.float32)
 
         if not np.issubdtype(dtype, np.number):
@@ -54,10 +53,9 @@ class AABB(numpy.ndarray):
                 if obj.dtype == dtype:
                     base = obj
                 else:
-                    if not can_cast:
-                        cpp.UtilityFunctions.push_warning(
-                            "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
-                        )
+                    cpp.UtilityFunctions.push_warning(
+                        "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
+                    )
                     base = obj.astype(dtype)
             else:
                 base = np.array(obj, dtype=dtype, copy=copy)
@@ -68,8 +66,7 @@ class AABB(numpy.ndarray):
             size = kwargs.pop('size', None) or kwargs.pop('size_', None)
 
             if position is not None and size is None:
-                # No valid keyword arguments, therefore something wrong with positional args
-                raise TypeError("Invalid positional argument %r" % args[0])
+                raise TypeError(error_message_from_args(subtype, args, kwargs))
 
             _check_vector3_data(position, arg_name='position')
             _check_vector3_data(size, arg_name='size')
@@ -77,7 +74,7 @@ class AABB(numpy.ndarray):
             base = np.array([position, size], dtype=dtype, copy=copy)
 
         if kwargs:
-            raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         return PyArraySubType_NewFromBase(subtype, base)
 

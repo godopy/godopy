@@ -29,7 +29,7 @@ PythonRuntime::PythonRuntime() {
 }
 
 void PythonRuntime::pre_initialize() {
-	UtilityFunctions::print_verbose("Python: Pre-Initializing runtime...");
+	UtilityFunctions::print_verbose("[Python] Pre-Initializing runtime...");
 
 	PyPreConfig preconfig;
 	PyPreConfig_InitIsolatedConfig(&preconfig);
@@ -39,7 +39,7 @@ void PythonRuntime::pre_initialize() {
 	PyStatus status = Py_PreInitialize(&preconfig);
 
 	if (PyStatus_Exception(status)) {
-		UtilityFunctions::push_error("Python: Pre-Initialization FAILED");
+		UtilityFunctions::push_error("[Python] Pre-Initialization FAILED");
 		Py_ExitStatusException(status);
 	}
 }
@@ -67,8 +67,8 @@ int PythonRuntime::set_config_paths(PyConfig *config) {
 	String bin_dir = exec_prefix.get_base_dir();
 	String res_path = bin_dir.get_base_dir();
 
-	UtilityFunctions::print_verbose("Python library name: " + exec_path);
-	UtilityFunctions::print_verbose("Detected project folder: " + res_path);
+	UtilityFunctions::print_verbose("[Python] Python library name: " + exec_path);
+	UtilityFunctions::print_verbose("[Python] Detected project folder: " + res_path);
 
 	SET_PYCONFIG_STRING(&config->program_name, exec_path.wide_string());
 	SET_PYCONFIG_STRING(&config->base_exec_prefix, exec_prefix.wide_string());
@@ -95,7 +95,7 @@ int PythonRuntime::set_config_paths(PyConfig *config) {
 void PythonRuntime::initialize() {
 	pre_initialize();
 
-	UtilityFunctions::print_verbose("Python: Initializing runtime...");
+	UtilityFunctions::print_verbose("[Python] Initializing runtime...");
 
 	PyStatus status;
 	PyConfig config;
@@ -107,7 +107,7 @@ void PythonRuntime::initialize() {
 
 	PyConfig_InitIsolatedConfig(&config);
 
-	UtilityFunctions::print_verbose("Python: Configuring paths...");
+	UtilityFunctions::print_verbose("[Python] Configuring paths...");
 
 	if (set_config_paths(&config) != 0) {
 		goto fail;
@@ -120,7 +120,7 @@ void PythonRuntime::initialize() {
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
-	UtilityFunctions::print_verbose("Python: Initializing the interpreter...");
+	UtilityFunctions::print_verbose("[Python] Initializing the interpreter...");
 	status = Py_InitializeFromConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
@@ -138,7 +138,7 @@ void PythonRuntime::initialize() {
 
 fail:
 	PyConfig_Clear(&config);
-	UtilityFunctions::push_error("Python: Initialization FAILED.");
+	UtilityFunctions::push_error("[Python] Initialization FAILED.");
 	Py_ExitStatusException(status);
 }
 
@@ -214,7 +214,7 @@ void PythonRuntime::ensure_current_thread_state(bool setdefault) {
 
 	if (setdefault) {
 		main_thread_id = thread_id;
-		UtilityFunctions::print_verbose("Main thread id #", main_thread_id);
+		UtilityFunctions::print_verbose("[Python] Main thread id #", main_thread_id);
 		PyGILState_STATE gil_state = PyGILState_Ensure();
 		tstate = PyThreadState_Get();
 		thread_states[thread_id] = tstate;
@@ -225,7 +225,7 @@ void PythonRuntime::ensure_current_thread_state(bool setdefault) {
 		tstate = PyThreadState_New(interpreter_state);
 		thread_states[thread_id] = tstate;
 
-		UtilityFunctions::print_verbose("Set Python thread state for Godot thread #", thread_id);
+		UtilityFunctions::print_verbose("[Python] Set Python thread state for Godot thread #", thread_id);
 	}
 }
 

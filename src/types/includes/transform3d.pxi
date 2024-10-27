@@ -23,7 +23,7 @@ def as_transform3d(data, dtype=None):
     else:
         copy = True
 
-    return Transform3D(data, dtype=dtype, copy=copy, can_cast=True)
+    return Transform3D(data, dtype=dtype, copy=copy)
 
 
 cdef object _transform3d_attrs = frozenset([
@@ -37,7 +37,6 @@ class Transform3D(numpy.ndarray):
 
         dtype = kwargs.pop('dtype', np.float32)
         copy = kwargs.pop('copy', True)
-        can_cast = kwargs.pop('can_cast', False)
 
         if not np.issubdtype(dtype, np.number):
             raise TypeError("%r accepts only numeric datatypes, got %r" % (subtype, dtype))
@@ -58,10 +57,9 @@ class Transform3D(numpy.ndarray):
                 if obj.dtype == dtype:
                     base = obj
                 else:
-                    if not can_cast:
-                        cpp.UtilityFunctions.push_warning(
-                            "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
-                        )
+                    cpp.UtilityFunctions.push_warning(
+                        "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
+                    )
                     base = obj.astype(dtype)
             else:
                 base = np.array(obj, dtype=dtype, copy=copy)
@@ -72,8 +70,7 @@ class Transform3D(numpy.ndarray):
             origin = kwargs.pop('origin', None)
 
             if basis is not None and origin is None:
-                # No valid keyword arguments, therefore something wrong with positional args
-                raise TypeError("Invalid positional argument %r" % args[0])
+                raise TypeError(error_message_from_args(subtype, args, kwargs))
 
             _check_basis_data(basis)
             _check_vector3_data(origin, arg_name='origin')
@@ -84,7 +81,7 @@ class Transform3D(numpy.ndarray):
                 base = np.array([*basis, origin], dtype=dtype, copy=copy)
 
         if kwargs:
-            raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         return PyArraySubType_NewFromBase(subtype, base)
 
@@ -118,7 +115,7 @@ class Transform3D(numpy.ndarray):
 cdef public object transform3d_to_pyobject(const cpp.Transform3D &t):
     cdef float [:, :] b_view = <float [:3, :3]><float *>t.basis.rows
     cdef float [:] o_view = <float [:3]><float *>t.origin.coord
-    cdef numpy.ndarray pyarr = Transform3D(shape=(4, 3), dtype=np.float32)
+    cdef numpy.ndarray pyarr = Transform3D(dtype=np.float32)
     cdef float [:, :] pyarr_view = pyarr
     pyarr_view [:3] = b_view
     pyarr_view [3] = o_view
@@ -130,7 +127,7 @@ cdef public object variant_transform3d_to_pyobject(const cpp.Variant &v):
     cdef cpp.Transform3D t = v.to_type[cpp.Transform3D]()
     cdef float [:, :] b_view = <float [:3, :3]><float *>t.basis.rows
     cdef float [:] o_view = <float [:]>t.origin.coord
-    cdef numpy.ndarray pyarr = Transform3D(shape=(4, 3), dtype=np.float32)
+    cdef numpy.ndarray pyarr = Transform3D(dtype=np.float32)
     cdef float [:, :] pyarr_view = pyarr
     pyarr_view [:3] = b_view
     pyarr_view [3] = o_view

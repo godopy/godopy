@@ -23,11 +23,11 @@ def _as_any_rect2(type_name, data, dtype, default_dtype):
         copy = True
 
     if np.issubdtype(dtype, np.integer):
-        return Rect2i(data, dtype=dtype, copy=copy, can_cast=True)
+        return Rect2i(data, dtype=dtype, copy=copy)
     elif not np.issubdtype(dtype, np.floating):
         raise ValueError("%s data must be numeric" % type_name)
 
-    return Rect2(data, dtype=dtype, copy=copy, can_cast=True)
+    return Rect2(data, dtype=dtype, copy=copy)
 
 
 def as_rect2(data, dtype=None):
@@ -114,7 +114,6 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
     cdef numpy.ndarray base
 
     copy = kwargs.pop('copy', True)
-    can_cast = kwargs.pop('can_cast', False)
 
     if len(args) == 4:
         map(_check_numeric_scalar, args)
@@ -130,10 +129,9 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
             if obj.dtype == dtype:
                 base = obj
             else:
-                if not can_cast:
-                    cpp.UtilityFunctions.push_warning(
-                        "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
-                    )
+                cpp.UtilityFunctions.push_warning(
+                    "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
+                )
                 base = obj.astype(dtype)
         else:
             base = np.array(obj, dtype=dtype, copy=copy)
@@ -144,8 +142,7 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
         size = kwargs.pop('size', None) or kwargs.pop('size_', None)
 
         if position is not None and size is None:
-            # No valid keyword arguments, therefore something wrong with positional args
-            raise TypeError("Invalid positional argument %r" % args[0])
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         _check_vector2_data(position, arg_name='position')
         _check_vector2_data(size, arg_name='size')
@@ -153,7 +150,7 @@ cdef inline numpy.ndarray array_from_rect2_args(subtype, dtype, args, kwargs):
         base = np.array([*position, *size], dtype=dtype, copy=copy)
 
     if kwargs:
-        raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
+        raise TypeError(error_message_from_args(subtype, args, kwargs))
 
     return PyArraySubType_NewFromBase(subtype, base)
 

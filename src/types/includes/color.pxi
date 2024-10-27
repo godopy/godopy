@@ -33,7 +33,7 @@ class Color(numpy.ndarray):
             raise TypeError("%r accepts only numeric datatypes, got %r" % (subtype, dtype))
 
         if kwargs:
-            raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         cdef bint data_reused = False
 
@@ -68,7 +68,7 @@ class Color(numpy.ndarray):
         elif len(args) == 0:
             base = np.array([0., 0., 0., 0.], dtype=dtype)
         else:
-            raise TypeError("Invalid positional argument %r" % args[0])
+            raise TypeError(error_message_from_args(subtype, args, kwargs))
 
         if not copy and not data_reused:
             raise ValueError("Could not reuse %r data buffer" % subtype)

@@ -2,22 +2,8 @@ ctypedef fused pycallable_ft:
     BoundExtensionMethod
 
 
-cdef class PythonCallableBase:
-    """
-    Base class for BoundExtensionMethod and (TODO) CustomCallable.
-    """
-    def __cinit__(self, *args):
-        self.type_info = ()
-        self.__func__ = None
-        self.__name__ = ''
-
-
-    def __init__(self):
-        raise NotImplementedError("Base class, cannot instantiate")
-
-
-cdef void _make_python_varcall(pycallable_ft method, const Variant **p_args, size_t p_count, Variant *r_ret,
-                               GDExtensionCallError *r_error) noexcept:
+cdef inline void _make_python_varcall(pycallable_ft method, const Variant **p_args, size_t p_count, Variant *r_ret,
+                                      GDExtensionCallError *r_error) noexcept:
     """
     Implements GDExtension's 'call' logic when calling Python methods from the Engine
     """
@@ -39,7 +25,7 @@ cdef void _make_python_varcall(pycallable_ft method, const Variant **p_args, siz
     r_ret[0] = Variant(<const PyObject *>ret)
 
 
-cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p_args, size_t p_count) noexcept:
+cdef inline void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p_args, size_t p_count) noexcept:
     """
     Implements GDExtension's 'ptrcall' logic when calling Python methods from the Engine
     """

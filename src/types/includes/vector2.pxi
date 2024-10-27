@@ -17,11 +17,11 @@ def _as_any_vector2(type_name, data, dtype, default_dtype):
         copy = True
 
     if np.issubdtype(dtype, np.integer):
-        return Vector2i(data, dtype=dtype, copy=copy, can_cast=True)
+        return Vector2i(data, dtype=dtype, copy=copy)
     elif not np.issubdtype(dtype, np.floating):
         raise ValueError("%s data must be numeric" % type_name)
 
-    return Vector2(data, dtype=dtype, copy=copy, can_cast=True)
+    return Vector2(data, dtype=dtype, copy=copy)
 
 
 def as_vector2(data, dtype=None):
@@ -109,32 +109,30 @@ cdef inline numpy.ndarray array_from_vector2_args(subtype, dtype, args, kwargs):
     cdef numpy.ndarray base
 
     copy = kwargs.pop('copy', True)
-    can_cast = kwargs.pop('can_cast', False)
 
     if kwargs:
-        raise TypeError("Invalid keyword argument %r" % list(kwargs.keys()).pop())
+        raise TypeError(error_message_from_args(subtype, args, kwargs))
 
     if args and len(args) == 2:
         map(_check_numeric_scalar, args)
         base = np.array(args, dtype=dtype)
-    elif args and len(args) == 1 and issubscriptable(args[0]) and len(args[0]) == 2:
-        obj = args[0]
+    elif args and len(args) == 1 and issubscriptable(args[0]):
+        obj = args[0] 
         _check_vector2_data(obj)
         if isinstance(obj, numpy.ndarray) and not copy:
             if obj.dtype == dtype:
                 base = obj
             else:
-                if not can_cast:
-                    cpp.UtilityFunctions.push_warning(
-                        "Unexcpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
-                    )
+                cpp.UtilityFunctions.push_warning(
+                    "Unexpected cast from %r to %r during %r initialization" % (obj.dtype, dtype, subtype)
+                )
                 base = obj.astype(dtype)
         else:
-            base = np.array(args[0], dtype=dtype, copy=copy)
+            base = np.array(obj, dtype=dtype, copy=copy)
     elif len(args) == 0:
         base = np.array([0, 0], dtype=dtype)
     else:
-        raise TypeError("%r constructor accepts only one ('coordinates'), two ('x', 'y') or no arguments" % subtype)
+        raise TypeError(error_message_from_args(subtype, args, kwargs))
 
     return PyArraySubType_NewFromBase(subtype, base)
 

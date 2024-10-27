@@ -8,14 +8,6 @@ ctypedef void (*_ptrcall_func)(gdcallable_ft, void *, const void **, size_t) noe
 ctypedef void (*_varcall_func)(gdcallable_ft, const Variant **, size_t, Variant *, GDExtensionCallError *) noexcept nogil
 
 
-cdef class EngineCallableBase:
-    """
-    Base class for MethodBind, UtilityFunction and BuiltinMethod.
-    """
-    def __init__(self):
-        raise NotImplementedError("Base class, cannot instantiate")
-
-
 cdef inline object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tuple args):
     """
     Implements GDExtension's 'call' logic when calling Engine methods from Python
@@ -28,16 +20,22 @@ cdef inline object _make_engine_varcall(gdcallable_ft method, _varcall_func varc
     cdef size_t i = 0, size = len(args)
 
     cdef Variant *vargs = <Variant *>gdextension_interface_mem_alloc(size * cython.sizeof(Variant))
+    cdef Variant arg_value
 
     for i in range(size):
-        type_funcs.variant_from_pyobject(args[i], &vargs[i])
+        type_funcs.variant_from_pyobject(args[i], &arg_value)
+        gdextension_interface_variant_new_copy(&vargs[i], &arg_value)
 
     varcall(method, <const Variant **>&vargs, size, &ret, &err)
 
     gdextension_interface_mem_free(vargs)
 
     if err.error != GDEXTENSION_CALL_OK:
-        raise RuntimeError(ret.pythonize())
+        error_text = ret.pythonize()
+        if not error_text:
+            error_text = "Unknown error occured during Variant Engine call"
+
+        raise Exception(error_text)
 
     return ret.pythonize()
 
