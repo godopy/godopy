@@ -64,19 +64,6 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
     if ptr_args == NULL:
         raise MemoryError("Not enough memory")
 
-    cdef uint8_t bool_arg
-    cdef int64_t int_arg
-    cdef double float_arg
-    cdef String string_arg
-    cdef Vector2 vector2_arg
-    cdef Vector2i vector2i_arg
-    cdef Rect2 rect2_arg
-    cdef Rect2i rect2i_arg
-    cdef Vector3 vector3_arg
-    cdef Vector3i vector3i_arg
-    cdef Transform2D transform2d_arg
-    cdef Vector4 vector4_arg
-    cdef Vector4i vector4i_arg
     cdef Plane plane_arg
     cdef Quaternion quaternion_arg
     cdef _AABB aabb_arg
@@ -111,53 +98,58 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
         pyarg = _NODEDB[args[0]]
         return pyarg
 
+    # TODO: Calculate max arg size
+    cdef numpy.ndarray arg_values = np.array([b'\0' * 128] * (size + 1), np.void(128))
+
     cdef bint unknown_argtype_error = False
     cdef int8_t arg_type
+    cdef void *arg_value_ptr
 
     for i in range(size):
         arg_type = type_info[i + 1]
         pyarg = args[i]
+        arg_value_ptr = numpy.PyArray_GETPTR1(arg_values, i + 1)
 
         # NOTE: Cython compiles this to C switch/case
         if arg_type == ARGTYPE_BOOL:
-            type_funcs.bool_from_pyobject(pyarg, &bool_arg)
-            ptr_args[i] = &bool_arg
+            type_funcs.bool_from_pyobject(pyarg, <uint8_t *>arg_value_ptr)
+            ptr_args[i] = <uint8_t *>arg_value_ptr
         elif arg_type == ARGTYPE_INT:
-            type_funcs.int_from_pyobject(pyarg, &int_arg)
-            ptr_args[i] = &int_arg
+            type_funcs.int_from_pyobject(pyarg, <int64_t *>arg_value_ptr)
+            ptr_args[i] = <int64_t *>arg_value_ptr
         elif arg_type == ARGTYPE_FLOAT:
-            type_funcs.float_from_pyobject(pyarg, &float_arg)
-            ptr_args[i] = &float_arg
+            type_funcs.float_from_pyobject(pyarg, <double *>arg_value_ptr)
+            ptr_args[i] = <double *>arg_value_ptr
         elif arg_type == ARGTYPE_STRING:
-            type_funcs.string_from_pyobject(pyarg, &string_arg)
-            ptr_args[i] = &string_arg
+            type_funcs.string_from_pyobject(pyarg, <String *>arg_value_ptr)
+            ptr_args[i] = <String *>arg_value_ptr
         elif arg_type == ARGTYPE_VECTOR2:
-            type_funcs.vector2_from_pyobject(pyarg, &vector2_arg)
-            ptr_args[i] = &vector2_arg
+            type_funcs.vector2_from_pyobject(pyarg, <Vector2 *>arg_value_ptr)
+            ptr_args[i] = <Vector2 *>arg_value_ptr
         elif arg_type == ARGTYPE_VECTOR2I:
-            type_funcs.vector2i_from_pyobject(pyarg, &vector2i_arg)
-            ptr_args[i] = &vector2i_arg
+            type_funcs.vector2i_from_pyobject(pyarg, <Vector2i *>arg_value_ptr)
+            ptr_args[i] = <Vector2i *>arg_value_ptr
         elif arg_type == ARGTYPE_RECT2:
-            type_funcs.rect2_from_pyobject(pyarg, &rect2_arg)
-            ptr_args[i] = &rect2_arg
+            type_funcs.rect2_from_pyobject(pyarg, <Rect2 *>arg_value_ptr)
+            ptr_args[i] = <Rect2 *>arg_value_ptr
         elif arg_type == ARGTYPE_RECT2I:
-            type_funcs.rect2i_from_pyobject(pyarg, &rect2i_arg)
-            ptr_args[i] = &rect2i_arg
+            type_funcs.rect2i_from_pyobject(pyarg, <Rect2i *>arg_value_ptr)
+            ptr_args[i] = <Rect2i *>arg_value_ptr
         elif arg_type == ARGTYPE_VECTOR3:
-            type_funcs.vector3_from_pyobject(pyarg, &vector3_arg)
-            ptr_args[i] = &vector3_arg
+            type_funcs.vector3_from_pyobject(pyarg, <Vector3 *>arg_value_ptr)
+            ptr_args[i] = <Vector3 *>arg_value_ptr
         elif arg_type == ARGTYPE_VECTOR3I:
-            type_funcs.vector3i_from_pyobject(pyarg, &vector3i_arg)
-            ptr_args[i] = &vector3i_arg
+            type_funcs.vector3i_from_pyobject(pyarg, <Vector3i *>arg_value_ptr)
+            ptr_args[i] = <Vector3i *>arg_value_ptr
         elif arg_type == ARGTYPE_TRANSFORM2D:
-            type_funcs.transform2d_from_pyobject(pyarg, &transform2d_arg)
-            ptr_args[i] = &transform2d_arg
+            type_funcs.transform2d_from_pyobject(pyarg, <Transform2D *>arg_value_ptr)
+            ptr_args[i] = <Transform2D *>arg_value_ptr
         elif arg_type == ARGTYPE_VECTOR4:
-            type_funcs.vector4_from_pyobject(pyarg, &vector4_arg)
-            ptr_args[i] = &vector4_arg
+            type_funcs.vector4_from_pyobject(pyarg, <Vector4 *>arg_value_ptr)
+            ptr_args[i] = <Vector4 *>arg_value_ptr
         elif arg_type == ARGTYPE_VECTOR4I:
-            type_funcs.vector4i_from_pyobject(pyarg, &vector4i_arg)
-            ptr_args[i] = &vector4i_arg
+            type_funcs.vector4i_from_pyobject(pyarg, <Vector4i *>arg_value_ptr)
+            ptr_args[i] = <Vector4i *>arg_value_ptr
         elif arg_type == ARGTYPE_PLANE:
             type_funcs.plane_from_pyobject(pyarg, &plane_arg)
             ptr_args[i] = &plane_arg
@@ -244,49 +236,50 @@ cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrc
         raise NotImplementedError(msg)
 
     cdef int8_t return_type = type_info[0]
+    cdef void *ret_value_ptr = numpy.PyArray_GETPTR1(arg_values, 0)
 
     # NOTE: Cython compiles this to C switch/case
     if return_type == ARGTYPE_NIL:
         ptrcall(method, NULL, <const void **>ptr_args, size)
     elif return_type == ARGTYPE_BOOL:
-        ptrcall(method, &bool_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.bool_to_pyobject(bool_arg)
+        ptrcall(method, <uint8_t *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.bool_to_pyobject(deref(<uint8_t *>ret_value_ptr))
     elif return_type == ARGTYPE_INT:
-        ptrcall(method, &int_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.int_to_pyobject(int_arg)
+        ptrcall(method, <int64_t *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.int_to_pyobject(deref(<int64_t *>ret_value_ptr))
     elif return_type == ARGTYPE_FLOAT:
-        ptrcall(method, &float_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.float_to_pyobject(float_arg)
+        ptrcall(method, <double *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.float_to_pyobject(deref(<double *>ret_value_ptr))
     elif return_type == ARGTYPE_STRING:
-        ptrcall(method, &string_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.string_to_pyobject(string_arg)
+        ptrcall(method, <String *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.string_to_pyobject(deref(<String *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR2:
-        ptrcall(method, &vector2_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector2_to_pyobject(vector2_arg)
+        ptrcall(method, <Vector2 *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.vector2_to_pyobject(deref(<Vector2 *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR2I:
-        ptrcall(method, &vector2i_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector2i_to_pyobject(vector2i_arg)
+        ptrcall(method, <Vector2i *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.vector2i_to_pyobject(deref(<Vector2i *>ret_value_ptr))
     elif return_type == ARGTYPE_RECT2:
-        ptrcall(method, &rect2_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.rect2_to_pyobject(rect2_arg)
+        ptrcall(method, <Rect2 *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.rect2_to_pyobject(deref(<Rect2 *>ret_value_ptr))
     elif return_type == ARGTYPE_RECT2I:
-        ptrcall(method, &rect2i_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.rect2i_to_pyobject(rect2i_arg)
+        ptrcall(method, <Rect2i *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.rect2i_to_pyobject(deref(<Rect2i *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR3:
-        ptrcall(method, &vector3_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector3_to_pyobject(vector3_arg)
+        ptrcall(method, <Vector3 *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.vector3_to_pyobject(deref(<Vector3 *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR3I:
-        ptrcall(method, &vector3i_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector3i_to_pyobject(vector3i_arg)
+        ptrcall(method, <Vector3i *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.vector3i_to_pyobject(deref(<Vector3i *>ret_value_ptr))
     elif return_type == ARGTYPE_TRANSFORM2D:
-        ptrcall(method, &transform2d_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.transform2d_to_pyobject(transform2d_arg)
+        ptrcall(method, <Transform2D *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.transform2d_to_pyobject(deref(<Transform2D *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR4:
-        ptrcall(method, &vector4_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector4_to_pyobject(vector4_arg)
+        ptrcall(method, <Vector4 *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.vector4_to_pyobject(deref(<Vector4 *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR4I:
-        ptrcall(method, &vector4i_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector4i_to_pyobject(vector4i_arg)
+        ptrcall(method, <Vector4i *>ret_value_ptr, <const void **>ptr_args, size)
+        pyarg = type_funcs.vector4i_to_pyobject(deref(<Vector4i *>ret_value_ptr))
     elif return_type == ARGTYPE_PLANE:
         ptrcall(method, &plane_arg, <const void **>ptr_args, size)
         pyarg = type_funcs.plane_to_pyobject(plane_arg)

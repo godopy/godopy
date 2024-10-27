@@ -1,13 +1,95 @@
 import math
 import numpy as np
 
-from godot import types
+from godot import types, classdb
 
 from ._base import BaseTestCase
 
 __all__ = [
     'TestCaseArgTypes'
 ]
+
+try:
+    GDExtensionTestCase = classdb.GDExtensionTestCase
+except AttributeError:
+    GDExtensionTestCase = None
+
+
+if GDExtensionTestCase is not None:
+    __all__ += ['TestCaseArgTypesExtended']
+
+
+    class TestCaseArgTypesExtended(BaseTestCase):
+        def test_atomic_types(self):
+            t = GDExtensionTestCase()
+            t.atomic_args(True, 42, 420, math.pi, math.tau, "Godot")
+
+            self.assertIsInstance(t.get_bool(), bool)
+            self.assertEqual(t.get_bool(), True)
+            self.assertIsInstance(t.get_int32(), int)
+            self.assertEqual(t.get_int32(), 42)
+            self.assertIsInstance(t.get_int64(), int)
+            self.assertEqual(t.get_int64(), 420)
+            self.assertIsInstance(t.get_float32(), float)
+            self.assertEqual(t.get_float32(), np.float32(math.pi))
+            self.assertIsInstance(t.get_float64(), float)
+            self.assertEqual(t.get_float64(), math.tau)
+            self.assertIsInstance(t.get_string(), str)
+            self.assertEqual(t.get_string(), 'Godot')
+
+        def test_math_types(self):
+            t = GDExtensionTestCase()
+            t.math_args_1([2.5, 5.], [5, 10], [0., 1., 100., 200.], [0, 1, 100, 200],
+                          [2.5, 5., 10.], [5, 10, 20], [[1., 2.], [3., 4.], [5., 6.]],
+                          [2.5, 5., 10., 20.], [5, 10, 20, 40])
+            args = [
+                t.get_vector2(),
+                t.get_vector2i(),
+                t.get_rect2(),
+                t.get_rect2i(),
+                t.get_vector3(),
+                t.get_vector3i(),
+                t.get_transform2d(),
+                t.get_vector4(),
+                t.get_vector4i()
+            ]
+
+            self.assertIsInstance(args[0], types.Vector2)
+            self.assertEqual(args[0].dtype, np.dtype('float32'))
+            self.assertEqual(args[0].tolist(), [2.5, 5.])
+
+            self.assertIsInstance(args[1], types.Vector2i)
+            self.assertEqual(args[1].dtype, np.dtype('int32'))
+            self.assertEqual(args[1].tolist(), [5, 10])
+
+            self.assertIsInstance(args[2], types.Rect2)
+            self.assertEqual(args[2].dtype, np.dtype('float32'))
+            self.assertEqual(args[2].tolist(), [0., 1., 100., 200.])
+
+            self.assertIsInstance(args[3], types.Rect2i)
+            self.assertEqual(args[3].dtype, np.dtype('int32'))
+            self.assertEqual(args[3].tolist(), [0, 1, 100, 200])
+
+            self.assertIsInstance(args[4], types.Vector3)
+            self.assertEqual(args[4].dtype, np.dtype('float32'))
+            self.assertEqual(args[4].tolist(), [2.5, 5., 10.])
+
+            self.assertIsInstance(args[5], types.Vector3i)
+            self.assertEqual(args[5].dtype, np.dtype('int32'))
+            self.assertEqual(args[5].tolist(), [5, 10, 20])
+
+            self.assertIsInstance(args[6], types.Transform2D)
+            self.assertEqual(args[6].dtype, np.dtype('float32'))
+            self.assertEqual(args[6].tolist(), [[1., 2.], [3., 4.], [5., 6.]])
+
+            self.assertIsInstance(args[7], types.Vector4)
+            self.assertEqual(args[7].dtype, np.dtype('float32'))
+            self.assertEqual(args[7].tolist(), [2.5, 5., 10., 20.])
+
+            self.assertIsInstance(args[8], types.Vector4i)
+            self.assertEqual(args[8].dtype, np.dtype('int32'))
+            self.assertEqual(args[8].tolist(), [5, 10, 20, 40])
+
 
 class TestCaseArgTypes(BaseTestCase):
     def test_atomic_types(self):
@@ -16,11 +98,11 @@ class TestCaseArgTypes(BaseTestCase):
 
         r = gdscript.call('get_resource')
 
-        self.assertIsInstance(r.arg1, (bool, np.bool_))
+        self.assertIsInstance(r.arg1, bool)
         self.assertEqual(r.arg1, True)
-        self.assertIsInstance(r.arg2, (int, np.integer))
+        self.assertIsInstance(r.arg2, int)
         self.assertEqual(r.arg2, 42)
-        self.assertIsInstance(r.arg3, (float, np.floating))
+        self.assertIsInstance(r.arg3, float)
         self.assertEqual(r.arg3, math.tau)
         self.assertIsInstance(r.arg4, str)
         self.assertEqual(r.arg4, 'GodoPy')
@@ -32,7 +114,7 @@ class TestCaseArgTypes(BaseTestCase):
         # self.assertEqual(a, True)
 
 
-    def test_math_types_1(self):
+    def test_math_types(self):
         gdscript = self._main.get_node('TestCasesGDScript')
 
         for fn in ('test_math_types_1_out_1', 'test_math_types_1_out_2'):
@@ -76,9 +158,6 @@ class TestCaseArgTypes(BaseTestCase):
             self.assertEqual(r.arg9.dtype, np.dtype('int32'))
             self.assertEqual(r.arg9.tolist(), [5, 10, 20, 40])
 
-
-    def test_math_types_2(self):
-        gdscript = self._main.get_node('TestCasesGDScript')
         gdscript.call('test_math_types_2_out')
         r = gdscript.call('get_resource')
 

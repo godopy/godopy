@@ -3,8 +3,17 @@ import numpy as np
 from typing import Dict, List
 
 import godot as gd
-from godot import classdb
+from godot import classdb, singletons as gds
 from godot.types import *
+
+try:
+    GDExtensionTestCase = classdb.GDExtensionTestCase
+except AttributeError:
+    GDExtensionTestCase = None
+
+if GDExtensionTestCase:
+    class ExtendedExample(gd.Class, inherits=GDExtensionTestCase):
+        pass
 
 
 class Example(gd.Class, inherits=classdb.Control):

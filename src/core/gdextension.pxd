@@ -25,6 +25,8 @@ from binding cimport *
 from godot_cpp cimport *
 cimport godot_types as type_funcs
 
+import numpy as np
+
 
 cpdef str variant_type_to_str(VariantType vartype)
 cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX

@@ -172,7 +172,7 @@ class Size2i(_Size2Base):
 
 cdef public object vector2_to_pyobject(const cpp.Vector2 &vec):
     cdef const float [:] vec_view = <float[:2]><float *>vec.coord
-    cdef numpy.ndarray pyarr = as_vector2(vec_view, dtype=np.float32, copy=True)
+    cdef numpy.ndarray pyarr = as_vector2(vec_view, dtype=np.float32)
 
     return pyarr
 
