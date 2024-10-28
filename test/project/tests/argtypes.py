@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-from godot import types, classdb
+from godot import types
 
 from ._base import BaseTestCase
 
@@ -9,39 +9,89 @@ __all__ = [
     'TestCaseArgTypes'
 ]
 
-try:
-    GDExtensionTestCase = classdb.GDExtensionTestCase
-except AttributeError:
-    GDExtensionTestCase = None
+from classes import ExtendedTestObject
 
 
-if GDExtensionTestCase is not None:
+if ExtendedTestObject is not None:
     __all__ += ['TestCaseArgTypesExtended']
 
-
     class TestCaseArgTypesExtended(BaseTestCase):
-        def test_atomic_types(self):
-            t = GDExtensionTestCase()
-            t.atomic_args(True, 42, 420, math.pi, math.tau, "Godot")
+        def _assert_atomic_types(self, t: ExtendedTestObject) -> None:
+            # Cover return value conversion from builtin Engine's types to Python
+            args = [
+                t.get_bool(),
+                t.get_int32(),
+                t.get_int64(),
+                t.get_float32(),
+                t.get_float64(),
+                t.get_string()
+            ]
 
-            self.assertIsInstance(t.get_bool(), bool)
-            self.assertEqual(t.get_bool(), True)
-            self.assertIsInstance(t.get_int32(), int)
-            self.assertEqual(t.get_int32(), 42)
-            self.assertIsInstance(t.get_int64(), int)
-            self.assertEqual(t.get_int64(), 420)
-            self.assertIsInstance(t.get_float32(), float)
-            self.assertEqual(t.get_float32(), np.float32(math.pi))
-            self.assertIsInstance(t.get_float64(), float)
-            self.assertEqual(t.get_float64(), math.tau)
-            self.assertIsInstance(t.get_string(), str)
-            self.assertEqual(t.get_string(), 'Godot')
+            self.assertIsInstance(args[0], bool)
+            self.assertEqual(args[0], True)
+            self.assertIsInstance(args[1], int)
+            self.assertEqual(args[1], 42)
+            self.assertIsInstance(args[2], int)
+            self.assertEqual(args[2], 420)
+            self.assertIsInstance(args[3], float)
+            self.assertEqual(args[3], np.float32(math.pi))
+            self.assertIsInstance(args[4], float)
+            self.assertEqual(args[4], math.tau)
+            self.assertIsInstance(args[5], str)
+            self.assertEqual(args[5], 'Godot')
 
-        def test_math_types(self):
-            t = GDExtensionTestCase()
-            t.math_args_1([2.5, 5.], [5, 10], [0., 1., 100., 200.], [0, 1, 100, 200],
-                          [2.5, 5., 10.], [5, 10, 20], [[1., 2.], [3., 4.], [5., 6.]],
-                          [2.5, 5., 10., 20.], [5, 10, 20, 40])
+
+        def test_atomic_type_args_ptrcalls(self) -> None:
+            t = ExtendedTestObject()
+
+            # Make a call from Python to the Engine
+            # Cover argument conversion from Python to builtin Engine's types
+            t.atomic_args(
+                True,
+                42,
+                420,
+                math.pi,
+                math.tau,
+                "Godot"
+            )
+
+            self._assert_atomic_types(t)
+
+            # Make a virtual call from the Engine to Python
+            # Cover argument conversion from builtin Engine's types to Python
+            t.atomic_args_virtual_call()
+
+            self.assertIsInstance(t.arg1, bool)
+            self.assertEqual(t.arg1, True)
+            self.assertIsInstance(t.arg2, int)
+            self.assertEqual(t.arg2, 42)
+            self.assertIsInstance(t.arg3, int)
+            self.assertEqual(t.arg3, 420)
+            self.assertIsInstance(t.arg4, float)
+            self.assertEqual(t.arg4, np.float32(math.pi))
+            self.assertIsInstance(t.arg5, float)
+            self.assertEqual(t.arg5, math.tau)
+            self.assertIsInstance(t.arg6, str)
+            self.assertEqual(t.arg6, 'Godot')
+
+
+        def test_atomic_type_return_to_python_ptrcalls(self) -> None:
+            t = ExtendedTestObject()
+
+            # Make virtual calls from the Engine to Python
+            # Cover return value conversion from Python to builtin Engine's types
+            t.get_bool_virtual_call()
+            t.get_int32_virtual_call()
+            t.get_int64_virtual_call()
+            t.get_float32_virtual_call()
+            t.get_float64_virtual_call()
+            t.get_string_virtual_call()
+
+            self._assert_atomic_types(t)
+
+
+        def _assert_math_types_1(self, t: ExtendedTestObject) -> None:
+            # Cover return value conversion from builtin Engine's types to Python
             args = [
                 t.get_vector2(),
                 t.get_vector2i(),
@@ -91,9 +141,24 @@ if GDExtensionTestCase is not None:
             self.assertEqual(args[8].tolist(), [5, 10, 20, 40])
 
 
+        def test_math_type_args_from_python_ptrcalls(self):
+            t = ExtendedTestObject()
+
+            # Make a call from Python to the Engine
+            # Cover argument conversion from Python to builtin Engine's types
+            t.math_args_1([2.5, 5.], [5, 10], [0., 1., 100., 200.], [0, 1, 100, 200],
+                          [2.5, 5., 10.], [5, 10, 20], [[1., 2.], [3., 4.], [5., 6.]],
+                          [2.5, 5., 10., 20.], [5, 10, 20, 40])
+
+            self._assert_math_types_1(t)
+
+
 class TestCaseArgTypes(BaseTestCase):
-    def test_atomic_types(self):
+    def test_atomic_type_args_to_python_varcalls(self):
         gdscript = self._main.get_node('TestCasesGDScript')
+
+        # Makes a call from the Engine to Python
+        # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
         gdscript.call('test_atomic_types_out')
 
         r = gdscript.call('get_resource')
@@ -107,17 +172,27 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertIsInstance(r.arg4, str)
         self.assertEqual(r.arg4, 'GodoPy')
 
+
+    def test_atomic_type_args_from_python_varcalls(self):
+
+        # Makes a call from Python to the Engine
+        # Covers argument conversion from Python to Variant
         # TODO: Fix, it crashes on the Engine side: GDScriptDataType::is_type/Variant::get_type
         # gdscript.call('test_atomic_types_in_test', True)
+
+        # Covers return value conversion from Variant to Python
         # a = gdscript.get('m_bool')
         # self.assertIsInstance(a, (bool, np.bool_))
         # self.assertEqual(a, True)
+        pass
 
 
-    def test_math_types(self):
+    def test_math_type_args_to_python_varcalls(self):
         gdscript = self._main.get_node('TestCasesGDScript')
 
         for fn in ('test_math_types_1_out_1', 'test_math_types_1_out_2'):
+            # Makes a call from the Engine to Python
+            # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
             gdscript.call(fn)
 
             r = gdscript.call('get_resource')
@@ -191,9 +266,13 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(r.arg7.tolist(), [np.float32(n) for n in (0.2, 0.4, 0.5, 0.75)])
 
 
-    def test_misc_types(self):
+    def test_misc_type_args_to_python_varcalls(self):
         gdscript = self._main.get_node('TestCasesGDScript')
+
+        # Makes a call from the Engine to Python
+        # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
         gdscript.call('test_misc_types_out')
+
         r = gdscript.call('get_resource')
 
         self.assertIsInstance(r.arg1, types.StringName)
@@ -219,9 +298,13 @@ class TestCaseArgTypes(BaseTestCase):
         # TODO: Typed arrays
 
 
-    def test_packed_array_types(self):
+    def test_packed_array_type_args_to_python_varcalls(self):
         gdscript = self._main.get_node('TestCasesGDScript')
+
+        # Makes a call from the Engine to Python
+        # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
         gdscript.call('test_packed_array_types_out')
+
         r = gdscript.call('get_resource')
 
         self.assertIsInstance(r.arg1, types.PackedByteArray)

@@ -7,13 +7,158 @@ from godot import classdb, singletons as gds
 from godot.types import *
 
 try:
+    # Godot must be compile with a custom module and updated api must be dumped
+    # and used to build GodoPy for extended tests to work
     GDExtensionTestCase = classdb.GDExtensionTestCase
 except AttributeError:
     GDExtensionTestCase = None
 
 if GDExtensionTestCase:
-    class ExtendedExample(gd.Class, inherits=GDExtensionTestCase):
-        pass
+    class ExtendedTestObject(gd.Class, inherits=GDExtensionTestCase):
+        def __init__(self) -> None:
+            self.arg1 = None
+            self.arg2 = None
+            self.arg3 = None
+            self.arg4 = None
+            self.arg5 = None
+            self.arg6 = None
+            self.arg7 = None
+            self.arg8 = None
+            self.arg9 = None
+            self.argA = None
+
+        def _atomic_args(self, arg1: bool, arg2: int, arg3: int, arg4: float,
+                         arg5: float, arg6: str) -> None:
+            self.arg1 = arg1
+            self.arg2 = arg2
+            self.arg3 = arg3
+            self.arg4 = arg4
+            self.arg5 = arg5
+            self.arg6 = arg6
+
+        def _get_bool(self) -> bool:
+            return True
+
+        def _get_int32(self) -> int:
+            return np.int32(42)
+
+        def _get_int64(self) -> int:
+            return 420
+
+        def _get_float32(self) -> float:
+            return np.float32(math.pi)
+
+        def _get_float64(self) -> float:
+            return math.tau
+
+        def _get_string(self) -> str:
+            return 'Godot'
+
+        # def _get_vector2(self) -> Vector2:
+        #     return Vector2(2.5, 5)
+
+        # def _get_vector2i(self) -> Vector2i:
+        #     return Vector2i(5, 10)
+
+        # def _get_rect2(self) -> Rect2:
+        #     return Rect2(0, 1, 100, 200)
+
+        # def _get_rect2i(self) -> Rect2i:
+        #     return Rect2i(0, 1, 100, 200)
+
+        # def _get_vector3(self) -> Vector3:
+        #     return Vector3(2.5, 5, 10)
+
+        # def _get_vector3i(self) -> Vector3i:
+        #     return Vector3i(5, 10, 20)
+
+        # def _get_transform2d(self) -> Transform2D:
+        #     return Transform2D(Vector2(1, 2), Vector2(3, 4), Vector2(5, 6))
+
+        # def _get_vector4(self) -> Vector4:
+        #     return Vector4(2.5, 5, 10, 20)
+
+        # def _get_vector4i(self) -> Vector4i:
+        #     return Vector4i(5, 10, 20, 40)
+
+        # def _get_plane(self) -> Plane:
+        #     return Plane(5, 10, 20, 40)
+
+        # def _get_quaternion(self) -> Quaternion:
+        #     return Quaternion(5, 10, 20, 40)
+
+        # def _get_aabb(self) -> AABB:
+        #     return AABB(5, 10, 20, 40, 50, 60)
+
+        # def _get_basis(self) -> Basis:
+        #     return Basis(1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+        # def _get_transform3d(self) -> Transform3D:
+        #     return Transform3D(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)
+
+        # def _get_projection(self) -> Projection:
+        #     return Projection(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
+
+        # def _get_color(self) -> Color:
+        #     return Color(0.2, 0.4, 0.5, 0.75)
+
+        # def _get_string_name(self) -> StringName:
+        #     return StringName("GodoPy")
+
+        # def _get_node_path(self) -> NodePath:
+        #     return NodePath("test/resource.py")
+
+        # def _get_rid(self) -> RID:
+        #     return self.get_rid()
+
+        # def _get_object(self) -> Object:
+        #     return self
+
+        # def _get_callable(self) -> Callable:
+        #     return lambda x: x + 1
+
+        # def _get_signal(self) -> Signal:
+        #     return None  # TODO
+
+        # def _get_dictionary(self) -> Dict:
+        #     return {"hello": 1, "world": 2.0, "!": ("!!!", [4, 5])}
+
+        # def _get_array(self) -> List:
+        #     return [5, "a", 3.0, 40]
+
+        # def _get_packed_byte_array(self) -> PackedByteArray:
+        #     return as_packed_byte_array([2, 3, 4, 5, 1, 7])
+
+        # def _get_packed_int32_array(self) -> PackedInt32Array:
+        #     return as_packed_int32_array([2, 3, 4, 5, 1.7, 7])
+
+        # def _get_packed_int64_array(self) -> PackedInt64Array:
+        #     return as_packed_int64_array([2, 3, 4.2, 5, 1, 7])
+
+        # def _get_packed_float32_array(self) -> PackedFloat32Array:
+        #     return as_packed_float32_array([2, 3, 4, 5, 1.7, 7])
+
+        # def _get_packed_float64_array(self) -> PackedFloat64Array:
+        #     return as_packed_float64_array([2, 3, 4.2, 5, 1, 7])
+
+        # def _get_packed_string_array(self) -> List[str]:
+        #     return ["Hello", "World", "!"]
+
+        # def _get_packed_vector2_array(self) -> PackedVector2Array:
+        #     return as_packed_vector2_array([[2, 3], [4, 5], [1, 7]])
+
+        # def _get_packed_vector3_array(self) -> PackedVector3Array:
+        #     return as_packed_vector3_array([[2, 3, 4], [9, 5, 6], [1, 7, 8]])
+
+        # def _get_packed_color_array(self) -> PackedColorArray:
+        #     return as_packed_color_array([[.2, .3, .4], [.9, .5, .6, 0.75], [.1, .7, .8, .1]])
+
+        # def _get_packed_vector4_array(self) -> PackedVector4Array:
+        #     return as_packed_vector4_array([[2, 3, 4, 10], [9, 5, 6, 11], [1, 7, 8, 12]])
+
+
+else:
+    ExtendedTestObject = None
 
 
 class Example(gd.Class, inherits=classdb.Control):
