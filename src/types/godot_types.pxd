@@ -20,9 +20,6 @@ import numpy as np
 ctypedef object (*variant_to_pyobject_func_t)(const cpp.Variant &)
 ctypedef void (*variant_from_pyobject_func_t)(object, cpp.Variant *) noexcept
 
-ctypedef object (*typeptr_to_pyobject_func_t)(const void *)
-ctypedef void (*typeptr_from_pyobject_func_t)(object, void *) noexcept
-
 
 cdef inline bint issubscriptable(object obj):
     return numpy.PyArray_Check(obj) or cpython.PySequence_Check(obj)

@@ -8,32 +8,85 @@ var m_bool: bool
 var m_int: int
 var m_float: float
 var m_string: String
+var m_vector2: Vector2
+var m_vector2i: Vector2i
+var m_rect2: Rect2
+var m_rect2i: Rect2i
+var m_vector3: Vector3
+var m_vector3i: Vector3i
+var m_transform2d: Transform2D
+var m_vector4: Vector4
+var m_vector4i: Vector4i
+var m_plane: Plane
+var m_quaternion: Quaternion
+var m_aabb: AABB
+var m_basis: Basis
+var m_transform3d: Transform3D
+var m_projection: Projection
+var m_color: Color
+var m_string_name: StringName
+var m_node_path: NodePath
+var m_rid: RID
+var m_object: Object
+var m_callable: Callable
+var m_signal: Signal
+var m_dictionary: Dictionary
+var m_array: Array
+var m_packed_byte_array: PackedByteArray
+var m_packed_int32_array: PackedInt32Array
+var m_packed_int64_array: PackedInt64Array
+var m_packed_float32_array: PackedFloat32Array
+var m_packed_float64_array: PackedFloat64Array
+var m_packed_string_array: PackedStringArray
+var m_packed_vector2_array: PackedVector2Array
+var m_packed_vector3_array: PackedVector3Array
+var m_packed_color_array: PackedColorArray
+var m_packed_vector4_array: PackedVector4Array
+
+
+func test_callable():
+	return true
+
 
 func get_resource():
 	return res
 
-func test_atomic_types_out():
-	res.atomic_args(res.bool_ret(), res.int_ret(), res.float_ret(), res.string_ret())
+
+func get_callable():
+	return test_callable
+
+
+func get_signal():
+	return test_signal
 
 
 func test_atomic_types_in(p_bool: bool, p_int: int, p_float: float, p_string: String):
+	# print(p_bool, p_int, p_float, p_string)
 	m_bool = p_bool
 	m_int = p_int
 	m_float = p_float
 	m_string = p_string
 
 
-func test_math_types_1_out_1():
-	res.math_args_1(
-		Vector2(2.5, 5), Vector2i(5, 10),
-		Rect2(0, 1, 100, 200), Rect2i(0, 1, 100, 200),
-		Vector3(2.5, 5, 10), Vector3i(5, 10, 20),
-		Transform2D(Vector2(1, 2), Vector2(3, 4), Vector2(5, 6)),
-		Vector4(2.5, 5, 10, 20), Vector4i(5, 10, 20, 40)
-	)
+func test_atomic_types_out():
+	res.atomic_args(res.bool_ret(), res.int_ret(), res.float_ret(), res.string_ret())
 
 
-func test_math_types_1_out_2():
+func test_math_types_1_in(p_vector2: Vector2, p_vector2i: Vector2i, p_rect2: Rect2,
+						  p_rect2i: Rect2i, p_vector3: Vector3, p_vector3i: Vector3i,
+						  p_transform2d: Transform2D, p_vector4: Vector4, p_vector4i: Vector4i):
+	m_vector2 = p_vector2
+	m_vector2i = p_vector2i
+	m_rect2 = p_rect2
+	m_rect2i = p_rect2i
+	m_vector3 = p_vector3
+	m_vector3i = p_vector3i
+	m_transform2d = p_transform2d
+	m_vector4 = p_vector4
+	m_vector4i = p_vector4i
+
+
+func test_math_types_1_out():
 	res.math_args_1(
 		res.vector2_ret(), res.vector2i_ret(),
 		res.rect2_ret(), res.rect2i_ret(),
@@ -48,10 +101,6 @@ func test_math_types_2_out():
 		res.plane_ret(), res.quaternion_ret(), res.aabb_ret(), res.basis_ret(),
 		res.transform3d_ret(), res.projection_ret(), res.color_ret()
 	)
-
-
-func test_callable():
-	return true
 
 
 func test_misc_types_out():

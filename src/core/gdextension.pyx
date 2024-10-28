@@ -2,7 +2,13 @@ cimport cython
 from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
+from cpython cimport (
+    PyObject, ref, pystate, PyLong_Check, PyLong_AsSsize_t,
+    PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM
+)
+
 from python_runtime cimport *
+cimport godot_types as type_funcs
 from godot_types cimport StringName as PyStringName, variant_to_pyobject_func_t, variant_from_pyobject_func_t
 
 import sys
@@ -27,15 +33,18 @@ cdef set _global_core_classes = pickle.loads(_global_api_types__pickles['core'])
 cdef set _global_editor_classes = pickle.loads(_global_api_types__pickles['editor'])
 
 include "includes/typeconv.pxi"
+include "includes/exceptions.pxi"
 
 include "includes/class.pxi"
 include "includes/object.pxi"
 
+include "includes/engine_calls.pxi"
 include "includes/engine_callable.pxi"
 include "includes/method_bind.pxi"
 include "includes/utility_function.pxi"
 include "includes/builtin_method.pxi"
 
+include "includes/python_calls.pxi"
 include "includes/python_callable.pxi"
 include "includes/extension_method_base.pxi"
 include "includes/extension_virtual_method.pxi"

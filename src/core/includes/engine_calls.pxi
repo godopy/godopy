@@ -8,7 +8,7 @@ ctypedef void (*_ptrcall_func)(gdcallable_ft, void *, const void **, size_t) noe
 ctypedef void (*_varcall_func)(gdcallable_ft, const Variant **, size_t, Variant *, GDExtensionCallError *) noexcept nogil
 
 
-cdef inline object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tuple args):
+cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tuple args):
     """
     Implements GDExtension's 'call' logic when calling Engine methods from Python
     """
@@ -19,8 +19,11 @@ cdef inline object _make_engine_varcall(gdcallable_ft method, _varcall_func varc
 
     cdef size_t i = 0, size = len(args)
 
-    cdef Variant *vargs = <Variant *>gdextension_interface_mem_alloc(size * cython.sizeof(Variant))
+    cdef vector[Variant] vargs = vector[Variant]()
+    vargs.resize(size)
     cdef Variant **varg_ptrs = <Variant **>gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionVariantPtr))
+    if varg_ptrs == NULL:
+        raise MemoryError("Not enough memory")
 
     for i in range(size):
         type_funcs.variant_from_pyobject(args[i], &vargs[i])
@@ -29,35 +32,30 @@ cdef inline object _make_engine_varcall(gdcallable_ft method, _varcall_func varc
     varcall(method, <const Variant **>varg_ptrs, size, &ret, &err)
 
     gdextension_interface_mem_free(varg_ptrs)
-    gdextension_interface_mem_free(vargs)
 
     if err.error != GDEXTENSION_CALL_OK:
         error_text = ret.pythonize()
-        if not error_text:
-            error_text = "Error %d occured during Variant Engine call" % <int>err.error
 
-        raise Exception(error_text)
+        raise GDExtensionCallException(error_text, <int>err.error)
 
     return ret.pythonize()
 
 
-cdef inline object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tuple args):
+cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tuple args):
     """
     Implements GDExtension's 'ptrcall' logic when calling Engine methods from Python
     """
     cdef int8_t *type_info = method._type_info_opt
-    cdef size_t i = 0, size = len(args)
+    cdef size_t i = 0, size = len(args), expected_size = len(method.type_info) - 1
 
-    # UtilityFunctions.print("Variant: %d, String: %d" % (cython.sizeof(Variant), cython.sizeof(String)))
-
-    if (size != len(method.type_info) - 1):
+    if size != expected_size:
         msg = (
             '%s %s: wrong number of arguments: %d, %d expected. Arg types: %r. Return type: %r'
-                % (method.__class__.__name__, method.__name__,  size, len(method.type_info) - 1,
+                % (method.__class__.__name__, method.__name__,  size, expected_size,
                     method.type_info[1:], method.type_info[0])
         )
         UtilityFunctions.printerr(msg)
-        raise TypeError(msg)
+        raise EnginePtrCallException(msg)
 
     cdef GDExtensionUninitializedTypePtr *ptr_args = <GDExtensionUninitializedTypePtr *> \
         gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))

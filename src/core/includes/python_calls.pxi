@@ -2,7 +2,7 @@ ctypedef fused pycallable_ft:
     BoundExtensionMethod
 
 
-cdef inline void _make_python_varcall(pycallable_ft method, const Variant **p_args, size_t p_count, Variant *r_ret,
+cdef void _make_python_varcall(pycallable_ft method, const Variant **p_args, size_t p_count, Variant *r_ret,
                                       GDExtensionCallError *r_error) noexcept:
     """
     Implements GDExtension's 'call' logic when calling Python methods from the Engine
@@ -22,24 +22,24 @@ cdef inline void _make_python_varcall(pycallable_ft method, const Variant **p_ar
     if r_error:
         r_error[0].error = GDEXTENSION_CALL_OK
 
-    r_ret[0] = Variant(<const PyObject *>ret)
+    type_funcs.variant_from_pyobject(ret, r_ret)
 
 
-cdef inline void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p_args, size_t p_count) noexcept:
+cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p_args, size_t p_count) noexcept:
     """
     Implements GDExtension's 'ptrcall' logic when calling Python methods from the Engine
     """
     cdef int8_t *type_info = method._type_info_opt
-    cdef size_t i = 0
+    cdef size_t i = 0, expected_size = len(method.type_info) - 1
 
-    if p_count != (len(method.type_info) - 1):
+    if p_count != expected_size:
         msg = (
             '%s %s: wrong number of arguments: %d, %d expected. Arg types: %r. Return type: %r'
                 % (method.__class__.__name__, method.__name__, p_count,
-                len(method.type_info) - 1, method.type_info[1:], method.type_info[0])
+                expected_size, method.type_info[1:], method.type_info[0])
         )
         UtilityFunctions.printerr(msg)
-        raise TypeError(msg)
+        raise PythonPtrCallException(msg)
 
     cdef object args = PyTuple_New(p_count)
 

@@ -24,10 +24,15 @@ cdef class MethodBind(EngineCallableBase):
 
     def __call__(self, *args):
         if self.is_vararg:
+            # UtilityFunctions.print("MB varcall %s %r" % (self, args))
             return _make_engine_varcall[MethodBind](self, self._varcall, args)
         else:
+            # UtilityFunctions.print("MB ptrcall %s %r" % (self, args))
             return _make_engine_ptrcall[MethodBind](self, self._ptrcall, args)
 
+
+    def __str__(self):
+        return "%s.%s" % (self.__self__.__class__.__name__, self.__name__)
 
     def __repr__(self):
         class_name = '%s[%s.%s]' % (self.__class__.__name__, self.__self__.__class__.__name__, self.__name__)

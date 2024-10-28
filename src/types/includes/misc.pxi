@@ -304,48 +304,6 @@ cdef public void variant_signal_from_pyobject(object p_obj, cpp.Variant *r_ret) 
 Dictionary = dict
 
 
-cdef extern from *:
-    # FIXME: Normal indexing does not work
-    # : Indexing 'Array' not supported for index type 'int64_t'
-    # : Indexing 'const Dictionary &' not supported for index type 'Variant'
-    """
-    _FORCE_INLINE_ godot::Variant godot_array_get_item(const godot::Array &arr, const int64_t i) {
-        return arr[i];
-    }
-    _FORCE_INLINE_ void godot_array_set_item(godot::Array &arr, const int64_t i, const godot::Variant &value) {
-        arr[i] = value;
-    }
-
-    template <typename T>
-    _FORCE_INLINE_ godot::Variant godot_typed_array_get_item(const godot::TypedArray<T> &arr, const int64_t i) {
-        return arr[i];
-    }
-    template <typename T>
-    _FORCE_INLINE_ void godot_typed_array_set_item(godot::TypedArray<T> &arr, const int64_t i, const godot::Variant &value) {
-        arr[i] = value;
-    }
-
-    _FORCE_INLINE_ godot::Variant godot_dictionary_get_item(const godot::Dictionary &d, const godot::Variant &key) {
-        return d[key];
-    }
-    _FORCE_INLINE_ void godot_dictionary_set_item(godot::Dictionary &d, const godot::Variant &key,
-                                                  const godot::Variant &value) {
-        d[key] = value;
-    }
-    """
-    cdef cpp.Variant godot_array_get_item(const cpp.Array &, const int64_t)
-    cdef void godot_array_set_item(const cpp.Array &, const int64_t, const cpp.Variant &)
-
-    cdef cpp.Variant godot_typed_array_get_item[T](const cpp.TypedArray[T] &, const int64_t)
-    cdef void godot_typed_array_set_item[T](const cpp.TypedArray[T] &, const int64_t, const cpp.Variant &)
-
-    cdef cpp.Variant godot_typed_array_bool_get_item "godot_typed_array_get_item" (const cpp.TypedArrayBool &, const int64_t)
-    cdef void godot_typed_array_bool_set_item "godot_typed_array_set_item" (const cpp.TypedArrayBool &, const int64_t, const cpp.Variant &)
-
-    cdef cpp.Variant godot_dictionary_get_item(const cpp.Dictionary &, const cpp.Variant &)
-    cdef void godot_dictionary_set_item(const cpp.Dictionary &, const cpp.Variant &, const cpp.Variant &)
-
-
 cdef public object dictionary_to_pyobject(const cpp.Dictionary &p_val):
     cdef cpp.Array keys = p_val.keys()
     cdef int64_t size = keys.size(), i = 0
@@ -357,9 +315,9 @@ cdef public object dictionary_to_pyobject(const cpp.Dictionary &p_val):
     cdef object pyvalue
 
     for i in range(size):
-        key = godot_array_get_item(keys, i)
+        key = cpp.godot_array_get_item(keys, i)
         pykey = variant_to_pyobject(key)
-        value = godot_dictionary_get_item(p_val, key)
+        value = cpp.godot_dictionary_get_item(p_val, key)
         pyvalue = variant_to_pyobject(value)
 
         ret[pykey] = pyvalue
@@ -382,7 +340,7 @@ cdef public void dictionary_from_pyobject(object p_obj, cpp.Dictionary *r_ret) n
         for pykey, pyvalue in p_obj.items():
             variant_from_pyobject(pykey, &key)
             variant_from_pyobject(pyvalue, &value)
-            godot_dictionary_set_item(ret, key, value)
+            cpp.godot_dictionary_set_item(ret, key, value)
     else:
         cpp.UtilityFunctions.push_error("a mapping is required, got %r" % type(p_obj))
 
@@ -509,7 +467,7 @@ cdef public object array_to_pyobject(const cpp.Array &p_arr):
     cdef int vartype
 
     for i in range(size):
-        item = godot_array_get_item(p_arr, i)
+        item = cpp.godot_array_get_item(p_arr, i)
         pyitem = variant_to_pyobject(item)
 
         ref.Py_INCREF(pyitem)
@@ -550,7 +508,7 @@ cdef public void array_from_pyobject(object p_obj, cpp.Array *r_ret) noexcept:
         for i in range(size):
             pyitem = PySequence_GetItem(p_obj, i)
             variant_from_pyobject(pyitem, &item)
-            godot_array_set_item(ret, i, item)
+            cpp.godot_array_set_item(ret, i, item)
             ref.Py_DECREF(pyitem)
     else:
         cpp.UtilityFunctions.push_error("'list' or other sequence is required, got %r" % type(p_obj))

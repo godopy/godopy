@@ -1,16 +1,8 @@
 Nil = None
 
 
-cdef public object typeptr_nil_to_pyobject(const void *v):
-    return None
-
-
 cdef public object variant_nil_to_pyobject(const cpp.Variant &v):
     return None
-
-
-cdef public void typeptr_nil_from_pyobject(object p_obj, void *r_ret) noexcept:
-    gdextension_interface_variant_new_nil(r_ret)
 
 
 cdef public void variant_nil_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
@@ -24,10 +16,6 @@ bool = bool
 
 cdef public object bool_to_pyobject(const uint8_t p_bool):
     return p_bool != 0
-
-
-cdef public object typeptr_bool_to_pyobject(const void *p_bool):
-    return (<uint8_t *>p_bool)[0] != 0
 
 
 cdef public object variant_bool_to_pyobject(const cpp.Variant &v):
@@ -46,10 +34,6 @@ cdef public void bool_from_pyobject(object p_obj, uint8_t *r_ret) noexcept:
     r_ret[0] = <uint8_t>PyObject_IsTrue(p_obj)
 
 
-cdef public void typeptr_bool_from_pyobject(object p_obj, void *r_ret) noexcept:
-    (<uint8_t *>r_ret)[0] = <uint8_t>PyObject_IsTrue(p_obj)
-
-
 cdef public void variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
     cdef bint ret = False
     # if not (PyBool_Check(p_obj) or not isinstance(p_obj, np.bool_)):
@@ -57,7 +41,8 @@ cdef public void variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) no
     # else:
     ret = PyObject_IsTrue(p_obj)
 
-    r_ret[0] = cpp.Variant(ret, True)
+    cdef cpp.Variant v = cpp.Variant(ret, True)
+    gdextension_interface_variant_new_copy(r_ret, &v)
 
 
 int = int
@@ -65,10 +50,6 @@ int = int
 
 cdef public object int_to_pyobject(const int64_t p_int):
     return p_int
-
-
-cdef public object typeptr_int_to_pyobject(const void *p_int):
-    return (<int64_t *>p_int)[0]
 
 
 cdef public object variant_int_to_pyobject(const cpp.Variant &v):
@@ -86,9 +67,6 @@ cdef public void int_from_pyobject(object p_obj, int64_t *r_ret) noexcept:
     r_ret[0] = <int64_t>p_obj
 
 
-cdef public void typeptr_int_from_pyobject(object p_obj, void *r_ret) noexcept:
-    (<int64_t *>r_ret)[0] = <int64_t>p_obj
-
 
 cdef public void variant_int_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
     cdef int64_t ret = 0
@@ -98,7 +76,8 @@ cdef public void variant_int_from_pyobject(object p_obj, cpp.Variant *r_ret) noe
     # else:
     ret = <int64_t>p_obj
 
-    r_ret[0] = cpp.Variant(ret)
+    cdef cpp.Variant v = cpp.Variant(ret)
+    gdextension_interface_variant_new_copy(r_ret, &v)
 
 
 float = float
@@ -106,10 +85,6 @@ float = float
 
 cdef public object float_to_pyobject(const double p_float):
     return p_float
-
-
-cdef public object typeptr_float_to_pyobject(const void *p_float):
-    return (<double *>p_float)[0]
 
 
 cdef public object variant_float_to_pyobject(const cpp.Variant &v):
@@ -126,10 +101,6 @@ cdef public void float_from_pyobject(object p_obj, double *r_ret) noexcept:
     r_ret[0] = <double>p_obj
 
 
-cdef public void typeptr_float_from_pyobject(object p_obj, void *r_ret) noexcept:
-    (<double *>r_ret)[0] = <double>p_obj
-
-
 cdef public void variant_float_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
     cdef double ret = 0.0
 
@@ -138,7 +109,8 @@ cdef public void variant_float_from_pyobject(object p_obj, cpp.Variant *r_ret) n
     else:
         ret = <double>p_obj
 
-    r_ret[0] = cpp.Variant(ret)
+    cdef cpp.Variant v = cpp.Variant(ret)
+    gdextension_interface_variant_new_copy(r_ret, &v)
 
 
 def as_string(object other):
@@ -191,17 +163,6 @@ cdef public object string_to_pyobject(const cpp.String &p_string):
     return PyUnicode_FromWideChar(wstr.get_data(), len)
 
 
-cdef public object typeptr_string_to_pyobject(const void *p_string):
-    cdef cpp.String ret = (<cpp.String *>p_string)[0]
-    cdef cpp.CharWideString wstr
-    cdef int64_t len = gdextension_interface_string_to_wide_chars(ret._native_ptr(), NULL, 0)
-    wstr.resize(len + 1)
-    gdextension_interface_string_to_wide_chars(ret._native_ptr(), wstr.ptrw(), len)
-    wstr.set_zero(len)
-
-    return PyUnicode_FromWideChar(wstr.get_data(), len)
-
-
 cdef public object variant_string_to_pyobject(const cpp.Variant &v):
     cdef cpp.String ret = v.to_type[cpp.String]()
     cdef cpp.CharWideString wstr
@@ -233,42 +194,24 @@ cdef public void string_from_pyobject(object p_obj, cpp.String *r_ret) noexcept:
         r_ret[0] = cpp.String()
 
 
-cdef public void typeptr_string_from_pyobject(object p_obj, void *r_ret) noexcept:
-    cdef const wchar_t *wstr
-    cdef const char *cstr
-    cdef bytes tmp
-
-    if PyUnicode_Check(p_obj):
-        wstr = PyUnicode_AsWideCharString(p_obj, NULL)
-        gdextension_interface_string_new_with_wide_chars(<cpp.String *>r_ret, wstr)
-    elif PyBytes_Check(p_obj):
-        cstr = PyBytes_AsString(p_obj)
-        gdextension_interface_string_new_with_utf8_chars(<cpp.String *>r_ret, cstr)
-    elif isinstance(p_obj, np.flexible):
-        tmp = bytes(p_obj)
-        cstr = PyBytes_AsString(tmp)
-        gdextension_interface_string_new_with_utf8_chars(<cpp.String *>r_ret, cstr)
-    else:
-        cpp.UtilityFunctions.push_error("Could not convert %r to C++ String" % p_obj)
-        (<cpp.String *>r_ret)[0] = cpp.String()
-
-
 cdef public void variant_string_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
     cdef const wchar_t * wstr
     cdef const char * cstr
     cdef bytes tmp
+    cdef cpp.String s
 
     if PyUnicode_Check(p_obj):
         wstr = PyUnicode_AsWideCharString(p_obj, NULL)
-        r_ret[0] = cpp.Variant(wstr)
+        gdextension_interface_string_new_with_wide_chars(&s, wstr)
     elif PyBytes_Check(p_obj):
         cstr = PyBytes_AsString(p_obj)
-        r_ret[0] = cpp.Variant(cstr)
+        gdextension_interface_string_new_with_utf8_chars(&s, cstr)
     elif isinstance(p_obj, np.flexible):
         tmp = bytes(p_obj)
         cstr = PyBytes_AsString(tmp)
-        r_ret[0] = cpp.Variant(cstr)
+        gdextension_interface_string_new_with_utf8_chars(&s, cstr)
     else:
         cpp.UtilityFunctions.push_error("Could not convert %r to C++ String" % p_obj)
-        cstr = ""
-        r_ret[0] = cpp.Variant(cstr)
+
+    cdef cpp.Variant v = cpp.Variant(s)
+    gdextension_interface_variant_new_copy(r_ret, &v)

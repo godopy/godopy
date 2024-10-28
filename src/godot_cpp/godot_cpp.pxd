@@ -32,6 +32,47 @@ include "includes/object.pxi"
 include "includes/dictionary.pxi"
 include "includes/array.pxi"
 
+cdef extern from *:
+    # FIXME: Normal indexing does not work
+    # : Indexing 'Array' not supported for index type 'int64_t'
+    # : Indexing 'const Dictionary &' not supported for index type 'Variant'
+    """
+    _FORCE_INLINE_ godot::Variant godot_array_get_item(const godot::Array &arr, const int64_t i) {
+        return arr[i];
+    }
+    _FORCE_INLINE_ void godot_array_set_item(godot::Array &arr, const int64_t i, const godot::Variant &value) {
+        arr[i] = value;
+    }
+
+    template <typename T>
+    _FORCE_INLINE_ godot::Variant godot_typed_array_get_item(const godot::TypedArray<T> &arr, const int64_t i) {
+        return arr[i];
+    }
+    template <typename T>
+    _FORCE_INLINE_ void godot_typed_array_set_item(godot::TypedArray<T> &arr, const int64_t i, const godot::Variant &value) {
+        arr[i] = value;
+    }
+
+    _FORCE_INLINE_ godot::Variant godot_dictionary_get_item(const godot::Dictionary &d, const godot::Variant &key) {
+        return d[key];
+    }
+    _FORCE_INLINE_ void godot_dictionary_set_item(godot::Dictionary &d, const godot::Variant &key,
+                                                  const godot::Variant &value) {
+        d[key] = value;
+    }
+    """
+    cdef Variant godot_array_get_item(const Array &, const int64_t)
+    cdef void godot_array_set_item(const Array &, const int64_t, const Variant &)
+
+    cdef Variant godot_typed_array_get_item[T](const TypedArray[T] &, const int64_t)
+    cdef void godot_typed_array_set_item[T](const TypedArray[T] &, const int64_t, const Variant &)
+
+    cdef Variant godot_typed_array_bool_get_item "godot_typed_array_get_item" (const TypedArrayBool &, const int64_t)
+    cdef void godot_typed_array_bool_set_item "godot_typed_array_set_item" (const TypedArrayBool &, const int64_t, const Variant &)
+
+    cdef Variant godot_dictionary_get_item(const Dictionary &, const Variant &)
+    cdef void godot_dictionary_set_item(const Dictionary &, const Variant &, const Variant &)
+
 include "includes/packed_byte_array.pxi"
 include "includes/packed_int32_array.pxi"
 include "includes/packed_int64_array.pxi"

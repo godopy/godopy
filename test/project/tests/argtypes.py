@@ -200,48 +200,47 @@ class TestCaseArgTypes(BaseTestCase):
     def test_math_type_args_to_python_varcalls(self):
         gdscript = self._main.get_node('TestCasesGDScript')
 
-        for fn in ('test_math_types_1_out_1', 'test_math_types_1_out_2'):
-            # Makes a call from the Engine to Python
-            # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
-            gdscript.call(fn)
+        # Makes a call from the Engine to Python
+        # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
+        gdscript.call('test_math_types_1_out')
 
-            r = gdscript.call('get_resource')
+        r = gdscript.call('get_resource')
 
-            self.assertIsInstance(r.arg1, types.Vector2)
-            self.assertEqual(r.arg1.dtype, np.dtype('float32'))
-            self.assertEqual(r.arg1.tolist(), [2.5, 5.])
+        self.assertIsInstance(r.arg1, types.Vector2)
+        self.assertEqual(r.arg1.dtype, np.dtype('float32'))
+        self.assertEqual(r.arg1.tolist(), [2.5, 5.])
 
-            self.assertIsInstance(r.arg2, types.Vector2i)
-            self.assertEqual(r.arg2.dtype, np.dtype('int32'))
-            self.assertEqual(r.arg2.tolist(), [5, 10])
+        self.assertIsInstance(r.arg2, types.Vector2i)
+        self.assertEqual(r.arg2.dtype, np.dtype('int32'))
+        self.assertEqual(r.arg2.tolist(), [5, 10])
 
-            self.assertIsInstance(r.arg3, types.Rect2)
-            self.assertEqual(r.arg3.dtype, np.dtype('float32'))
-            self.assertEqual(r.arg3.tolist(), [0., 1., 100., 200.])
+        self.assertIsInstance(r.arg3, types.Rect2)
+        self.assertEqual(r.arg3.dtype, np.dtype('float32'))
+        self.assertEqual(r.arg3.tolist(), [0., 1., 100., 200.])
 
-            self.assertIsInstance(r.arg4, types.Rect2i)
-            self.assertEqual(r.arg4.dtype, np.dtype('int32'))
-            self.assertEqual(r.arg4.tolist(), [0, 1, 100, 200])
+        self.assertIsInstance(r.arg4, types.Rect2i)
+        self.assertEqual(r.arg4.dtype, np.dtype('int32'))
+        self.assertEqual(r.arg4.tolist(), [0, 1, 100, 200])
 
-            self.assertIsInstance(r.arg5, types.Vector3)
-            self.assertEqual(r.arg5.dtype, np.dtype('float32'))
-            self.assertEqual(r.arg5.tolist(), [2.5, 5., 10.])
+        self.assertIsInstance(r.arg5, types.Vector3)
+        self.assertEqual(r.arg5.dtype, np.dtype('float32'))
+        self.assertEqual(r.arg5.tolist(), [2.5, 5., 10.])
 
-            self.assertIsInstance(r.arg6, types.Vector3i)
-            self.assertEqual(r.arg6.dtype, np.dtype('int32'))
-            self.assertEqual(r.arg6.tolist(), [5, 10, 20])
+        self.assertIsInstance(r.arg6, types.Vector3i)
+        self.assertEqual(r.arg6.dtype, np.dtype('int32'))
+        self.assertEqual(r.arg6.tolist(), [5, 10, 20])
 
-            self.assertIsInstance(r.arg7, types.Transform2D)
-            self.assertEqual(r.arg7.dtype, np.dtype('float32'))
-            self.assertEqual(r.arg7.tolist(), [[1., 2.], [3., 4.], [5., 6.]])
+        self.assertIsInstance(r.arg7, types.Transform2D)
+        self.assertEqual(r.arg7.dtype, np.dtype('float32'))
+        self.assertEqual(r.arg7.tolist(), [[1., 2.], [3., 4.], [5., 6.]])
 
-            self.assertIsInstance(r.arg8, types.Vector4)
-            self.assertEqual(r.arg8.dtype, np.dtype('float32'))
-            self.assertEqual(r.arg8.tolist(), [2.5, 5., 10., 20.])
+        self.assertIsInstance(r.arg8, types.Vector4)
+        self.assertEqual(r.arg8.dtype, np.dtype('float32'))
+        self.assertEqual(r.arg8.tolist(), [2.5, 5., 10., 20.])
 
-            self.assertIsInstance(r.arg9, types.Vector4i)
-            self.assertEqual(r.arg9.dtype, np.dtype('int32'))
-            self.assertEqual(r.arg9.tolist(), [5, 10, 20, 40])
+        self.assertIsInstance(r.arg9, types.Vector4i)
+        self.assertEqual(r.arg9.dtype, np.dtype('int32'))
+        self.assertEqual(r.arg9.tolist(), [5, 10, 20, 40])
 
         gdscript.call('test_math_types_2_out')
         r = gdscript.call('get_resource')
@@ -274,6 +273,68 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(r.arg7.dtype, np.dtype('float32'))
         # Without converting to float32 numbers would differ due to the lost precision
         self.assertEqual(r.arg7.tolist(), [np.float32(n) for n in (0.2, 0.4, 0.5, 0.75)])
+
+
+    def test_math_type_args_from_python_varcalls(self):
+        gdscript = self._main.get_node('TestCasesGDScript')
+
+        # Makes a call from Python to the Engine
+        # Covers argument conversion from Python to Variant
+        gdscript.call('test_math_types_1_in',
+                      types.Vector2(2.5, 5.), types.Vector2i(5, 10),
+                      types.Rect2(0., 1., 100., 200.), types.Rect2i(0, 1, 100, 200),
+                      types.Vector3(2.5, 5., 10.), types.Vector3i(5, 10, 20),
+                      types.Transform2D([1., 2.], [3., 4.], [5., 6.]),
+                      types.Vector4(2.5, 5., 10., 20.), types.Vector4i(5, 10, 20, 40))
+
+        # Covers return value conversion from Variant to Python
+        args = [
+            gdscript.get('m_vector2'),
+            gdscript.get('m_vector2i'),
+            gdscript.get('m_rect2'),
+            gdscript.get('m_rect2i'),
+            gdscript.get('m_vector3'),
+            gdscript.get('m_vector3i'),
+            gdscript.get('m_transform2d'),
+            gdscript.get('m_vector4'),
+            gdscript.get('m_vector4i'),
+        ]
+
+        self.assertIsInstance(args[0], types.Vector2)
+        self.assertEqual(args[0].dtype, np.dtype('float32'))
+        self.assertEqual(args[0].tolist(), [2.5, 5.])
+
+        self.assertIsInstance(args[1], types.Vector2i)
+        self.assertEqual(args[1].dtype, np.dtype('int32'))
+        self.assertEqual(args[1].tolist(), [5, 10])
+
+        self.assertIsInstance(args[2], types.Rect2)
+        self.assertEqual(args[2].dtype, np.dtype('float32'))
+        self.assertEqual(args[2].tolist(), [0., 1., 100., 200.])
+
+        self.assertIsInstance(args[3], types.Rect2i)
+        self.assertEqual(args[3].dtype, np.dtype('int32'))
+        self.assertEqual(args[3].tolist(), [0, 1, 100, 200])
+
+        self.assertIsInstance(args[4], types.Vector3)
+        self.assertEqual(args[4].dtype, np.dtype('float32'))
+        self.assertEqual(args[4].tolist(), [2.5, 5., 10.])
+
+        self.assertIsInstance(args[5], types.Vector3i)
+        self.assertEqual(args[5].dtype, np.dtype('int32'))
+        self.assertEqual(args[5].tolist(), [5, 10, 20])
+
+        self.assertIsInstance(args[6], types.Transform2D)
+        self.assertEqual(args[6].dtype, np.dtype('float32'))
+        self.assertEqual(args[6].tolist(), [[1., 2.], [3., 4.], [5., 6.]])
+
+        self.assertIsInstance(args[7], types.Vector4)
+        self.assertEqual(args[7].dtype, np.dtype('float32'))
+        self.assertEqual(args[7].tolist(), [2.5, 5., 10., 20.])
+
+        self.assertIsInstance(args[8], types.Vector4i)
+        self.assertEqual(args[8].dtype, np.dtype('int32'))
+        self.assertEqual(args[8].tolist(), [5, 10, 20, 40])
 
 
     def test_misc_type_args_to_python_varcalls(self):
