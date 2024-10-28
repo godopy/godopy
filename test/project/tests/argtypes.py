@@ -174,17 +174,27 @@ class TestCaseArgTypes(BaseTestCase):
 
 
     def test_atomic_type_args_from_python_varcalls(self):
+        gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from Python to the Engine
         # Covers argument conversion from Python to Variant
-        # TODO: Fix, it crashes on the Engine side: GDScriptDataType::is_type/Variant::get_type
-        # gdscript.call('test_atomic_types_in_test', True)
+        gdscript.call('test_atomic_types_in', True, 42, math.tau, "GodoPy")
 
         # Covers return value conversion from Variant to Python
-        # a = gdscript.get('m_bool')
-        # self.assertIsInstance(a, (bool, np.bool_))
-        # self.assertEqual(a, True)
-        pass
+        args = [
+            gdscript.get('m_bool'),
+            gdscript.get('m_int'),
+            gdscript.get('m_float'),
+            gdscript.get('m_string')
+        ]
+        self.assertIsInstance(args[0], bool)
+        self.assertEqual(args[0], True)
+        self.assertIsInstance(args[1], int)
+        self.assertEqual(args[1], 42)
+        self.assertIsInstance(args[2], float)
+        self.assertEqual(args[2], math.tau)
+        self.assertIsInstance(args[3], str)
+        self.assertEqual(args[3], 'GodoPy')
 
 
     def test_math_type_args_to_python_varcalls(self):

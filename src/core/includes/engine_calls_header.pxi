@@ -20,20 +20,21 @@ cdef inline object _make_engine_varcall(gdcallable_ft method, _varcall_func varc
     cdef size_t i = 0, size = len(args)
 
     cdef Variant *vargs = <Variant *>gdextension_interface_mem_alloc(size * cython.sizeof(Variant))
-    cdef Variant arg_value
+    cdef Variant **varg_ptrs = <Variant **>gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionVariantPtr))
 
     for i in range(size):
-        type_funcs.variant_from_pyobject(args[i], &arg_value)
-        gdextension_interface_variant_new_copy(&vargs[i], &arg_value)
+        type_funcs.variant_from_pyobject(args[i], &vargs[i])
+        varg_ptrs[i] = &vargs[i]
 
-    varcall(method, <const Variant **>&vargs, size, &ret, &err)
+    varcall(method, <const Variant **>varg_ptrs, size, &ret, &err)
 
+    gdextension_interface_mem_free(varg_ptrs)
     gdextension_interface_mem_free(vargs)
 
     if err.error != GDEXTENSION_CALL_OK:
         error_text = ret.pythonize()
         if not error_text:
-            error_text = "Unknown error occured during Variant Engine call"
+            error_text = "Error %d occured during Variant Engine call" % <int>err.error
 
         raise Exception(error_text)
 

@@ -16,9 +16,6 @@ func test_atomic_types_out():
 	res.atomic_args(res.bool_ret(), res.int_ret(), res.float_ret(), res.string_ret())
 
 
-func test_atomic_types_in_test(p_bool: bool):
-	m_bool = p_bool
-
 func test_atomic_types_in(p_bool: bool, p_int: int, p_float: float, p_string: String):
 	m_bool = p_bool
 	m_int = p_int
