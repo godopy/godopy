@@ -31,6 +31,19 @@ cdef public void object_from_pyobject(object p_obj, void **r_ret) noexcept:
         object_from_other_pyobject(p_obj, r_ret)
 
 
+cdef public void cppobject_from_pyobject(object p_obj, GodotCppObject **r_ret) noexcept:
+    cdef void *godot_object
+
+    if isinstance(p_obj, Object):
+        godot_object = (<Object>p_obj)._owner
+    else:
+        object_from_other_pyobject(p_obj, &godot_object)
+
+    cdef GodotCppObject *o = get_object_instance_binding(godot_object)
+
+    r_ret[0] = o
+
+
 cdef public void variant_object_from_pyobject(object p_obj, Variant *r_ret) noexcept:
     cdef void *godot_object
     object_from_pyobject(p_obj, &godot_object)

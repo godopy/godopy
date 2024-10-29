@@ -27,6 +27,7 @@ cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
 cdef public object object_to_pyobject(void *p_godot_object)
 cdef public object variant_object_to_pyobject(const Variant &v)
 cdef public void object_from_pyobject(object p_obj, void **r_ret) noexcept
+cdef public void cppobject_from_pyobject(object p_obj, GodotCppObject **r_ret) noexcept
 cdef public void variant_object_from_pyobject(object p_obj, Variant *r_ret) noexcept
 
 
@@ -39,7 +40,7 @@ cdef list _registered_classes
 
 
 cdef enum ArgType:
-    ARGTYPE_NIL
+    ARGTYPE_NIL = NIL
     ARGTYPE_BOOL
     ARGTYPE_INT
     ARGTYPE_FLOAT
@@ -80,8 +81,26 @@ cdef enum ArgType:
     ARGTYPE_PACKED_VECTOR4_ARRAY
 
     ARGTYPE_VARIANT
+    ARGTYPE_POINTER
+
+    ARGTYPE_AUDIO_FRAME
+    ARGTYPE_CARET_INFO
+    ARGTYPE_GLYPH
+    ARGTYPE_OBJECT_ID
+
+    ARGTYPE_PHYSICS_SERVER2D_MOTION_RESULT
+    ARGTYPE_PHYSICS_SERVER2D_RAY_RESULT
+    ARGTYPE_PHYSICS_SERVER2D_SHAPE_REST_INFO
+    ARGTYPE_PHYSICS_SERVER2D_SHAPE_RESULT
+    ARGTYPE_PHYSICS_SERVER3D_MOTION_COLLISION
+    ARGTYPE_PHYSICS_SERVER3D_MOTION_RESULT
+    ARGTYPE_PHYSICS_SERVER3D_RAY_RESULT
+    ARGTYPE_PHYSICS_SERVER3D_SHAPE_REST_INFO
+    ARGTYPE_PHYSICS_SERVER3D_SHAPE_RESULT
+    ARGTYPE_SCRIPTING_LANGUAGE_PROFILING_INFO
 
     ARGTYPE_MAX
+    ARGTYPE_NO_ARGTYPE = -1
 
 
 cdef class Class:

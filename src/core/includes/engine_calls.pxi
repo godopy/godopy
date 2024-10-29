@@ -63,310 +63,280 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
     if ptr_args == NULL:
         raise MemoryError("Not enough memory")
 
-    cdef Plane plane_arg
-    cdef Quaternion quaternion_arg
-    cdef _AABB aabb_arg
-    cdef Basis basis_arg
-    cdef Transform3D transform3d_arg
-    cdef Projection projection_arg
-    cdef Color color_arg
-    cdef StringName stringname_arg
-    cdef NodePath nodepath_arg
-    cdef _RID rid_arg
-    cdef void *ptr_arg  # Object
-    cdef GodotCppCallable callable_arg
-    cdef GodotCppSignal signal_arg
-    cdef Dictionary dictionary_arg
-    cdef Array array_arg
-    cdef PackedByteArray packed_byte_array_arg
-    cdef PackedInt32Array packed_int32_array_arg
-    cdef PackedInt64Array packed_int64_array_arg
-    cdef PackedFloat32Array packed_float32_array_arg
-    cdef PackedFloat64Array packed_float64_array_arg
-    cdef PackedStringArray packed_string_array_arg
-    cdef PackedVector2Array packed_vector2_array_arg
-    cdef PackedVector3Array packed_vector3_array_arg
-    cdef PackedColorArray packed_color_array_arg
-    cdef PackedVector4Array packed_vector4_array_arg
-
-    cdef Variant variant_arg
-    cdef object pyarg
+    cdef object value
 
     # Optimized get_node for Python nodes
     if method.__name__ == 'get_node' and size == 1 and args[0] in _NODEDB:
-        pyarg = _NODEDB[args[0]]
-        return pyarg
+        value = _NODEDB[args[0]]
+        return value
 
-    # TODO: Calculate max arg size
-    cdef numpy.ndarray arg_values = np.array([b'\0' * 128] * (size + 1), np.void(128))
+    cdef size_t max_size = get_max_arg_size(type_info, size + 1)
+    cdef numpy.ndarray arg_values
 
-    cdef bint unknown_argtype_error = False
+    if max_size > 0:
+        arg_values = np.array([b'\0' * max_size] * (size + 1), dtype=np.void(max_size))
+
     cdef int8_t arg_type
     cdef void *arg_value_ptr
 
     for i in range(size):
         arg_type = type_info[i + 1]
-        pyarg = args[i]
+        value = args[i]
         arg_value_ptr = numpy.PyArray_GETPTR1(arg_values, i + 1)
 
         # NOTE: Cython compiles this to C switch/case
         if arg_type == ARGTYPE_BOOL:
-            type_funcs.bool_from_pyobject(pyarg, <uint8_t *>arg_value_ptr)
-            ptr_args[i] = <uint8_t *>arg_value_ptr
+            type_funcs.bool_from_pyobject(value, <uint8_t *>arg_value_ptr)
         elif arg_type == ARGTYPE_INT:
-            type_funcs.int_from_pyobject(pyarg, <int64_t *>arg_value_ptr)
-            ptr_args[i] = <int64_t *>arg_value_ptr
+            type_funcs.int_from_pyobject(value, <int64_t *>arg_value_ptr)
         elif arg_type == ARGTYPE_FLOAT:
-            type_funcs.float_from_pyobject(pyarg, <double *>arg_value_ptr)
-            ptr_args[i] = <double *>arg_value_ptr
+            type_funcs.float_from_pyobject(value, <double *>arg_value_ptr)
         elif arg_type == ARGTYPE_STRING:
-            type_funcs.string_from_pyobject(pyarg, <String *>arg_value_ptr)
-            ptr_args[i] = <String *>arg_value_ptr
+            type_funcs.string_from_pyobject(value, <String *>arg_value_ptr)
         elif arg_type == ARGTYPE_VECTOR2:
-            type_funcs.vector2_from_pyobject(pyarg, <Vector2 *>arg_value_ptr)
-            ptr_args[i] = <Vector2 *>arg_value_ptr
+            type_funcs.vector2_from_pyobject(value, <Vector2 *>arg_value_ptr)
         elif arg_type == ARGTYPE_VECTOR2I:
-            type_funcs.vector2i_from_pyobject(pyarg, <Vector2i *>arg_value_ptr)
-            ptr_args[i] = <Vector2i *>arg_value_ptr
+            type_funcs.vector2i_from_pyobject(value, <Vector2i *>arg_value_ptr)
         elif arg_type == ARGTYPE_RECT2:
-            type_funcs.rect2_from_pyobject(pyarg, <Rect2 *>arg_value_ptr)
-            ptr_args[i] = <Rect2 *>arg_value_ptr
+            type_funcs.rect2_from_pyobject(value, <Rect2 *>arg_value_ptr)
         elif arg_type == ARGTYPE_RECT2I:
-            type_funcs.rect2i_from_pyobject(pyarg, <Rect2i *>arg_value_ptr)
-            ptr_args[i] = <Rect2i *>arg_value_ptr
+            type_funcs.rect2i_from_pyobject(value, <Rect2i *>arg_value_ptr)
         elif arg_type == ARGTYPE_VECTOR3:
-            type_funcs.vector3_from_pyobject(pyarg, <Vector3 *>arg_value_ptr)
-            ptr_args[i] = <Vector3 *>arg_value_ptr
+            type_funcs.vector3_from_pyobject(value, <Vector3 *>arg_value_ptr)
         elif arg_type == ARGTYPE_VECTOR3I:
-            type_funcs.vector3i_from_pyobject(pyarg, <Vector3i *>arg_value_ptr)
-            ptr_args[i] = <Vector3i *>arg_value_ptr
+            type_funcs.vector3i_from_pyobject(value, <Vector3i *>arg_value_ptr)
         elif arg_type == ARGTYPE_TRANSFORM2D:
-            type_funcs.transform2d_from_pyobject(pyarg, <Transform2D *>arg_value_ptr)
-            ptr_args[i] = <Transform2D *>arg_value_ptr
+            type_funcs.transform2d_from_pyobject(value, <Transform2D *>arg_value_ptr)
         elif arg_type == ARGTYPE_VECTOR4:
-            type_funcs.vector4_from_pyobject(pyarg, <Vector4 *>arg_value_ptr)
-            ptr_args[i] = <Vector4 *>arg_value_ptr
+            type_funcs.vector4_from_pyobject(value, <Vector4 *>arg_value_ptr)
         elif arg_type == ARGTYPE_VECTOR4I:
-            type_funcs.vector4i_from_pyobject(pyarg, <Vector4i *>arg_value_ptr)
-            ptr_args[i] = <Vector4i *>arg_value_ptr
+            type_funcs.vector4i_from_pyobject(value, <Vector4i *>arg_value_ptr)
         elif arg_type == ARGTYPE_PLANE:
-            type_funcs.plane_from_pyobject(pyarg, &plane_arg)
-            ptr_args[i] = &plane_arg
+            type_funcs.plane_from_pyobject(value, <Plane *>arg_value_ptr)
         elif arg_type == ARGTYPE_QUATERNION:
-            type_funcs.quaternion_from_pyobject(pyarg, &quaternion_arg)
-            ptr_args[i] = &quaternion_arg
+            type_funcs.quaternion_from_pyobject(value, <Quaternion *>arg_value_ptr)
         elif arg_type == ARGTYPE_AABB:
-            type_funcs.aabb_from_pyobject(pyarg, &aabb_arg)
-            ptr_args[i] = &aabb_arg
+            type_funcs.aabb_from_pyobject(value, <_AABB *>arg_value_ptr)
         elif arg_type == ARGTYPE_BASIS:
-            type_funcs.basis_from_pyobject(pyarg, &basis_arg)
-            ptr_args[i] = &basis_arg
+            type_funcs.basis_from_pyobject(value, <Basis *>arg_value_ptr)
         elif arg_type == ARGTYPE_TRANSFORM3D:
-            type_funcs.transform3d_from_pyobject(pyarg, &transform3d_arg)
-            ptr_args[i] = &transform3d_arg
+            type_funcs.transform3d_from_pyobject(value, <Transform3D *>arg_value_ptr)
         elif arg_type == ARGTYPE_PROJECTION:
-            type_funcs.projection_from_pyobject(pyarg, &projection_arg)
-            ptr_args[i] = &projection_arg
+            type_funcs.projection_from_pyobject(value, <Projection *>arg_value_ptr)
         elif arg_type == ARGTYPE_COLOR:
-            type_funcs.color_from_pyobject(pyarg, &color_arg)
-            ptr_args[i] = &color_arg
+            type_funcs.color_from_pyobject(value, <Color *>arg_value_ptr)
         elif arg_type == ARGTYPE_STRING_NAME:
-            type_funcs.string_name_from_pyobject(pyarg, &stringname_arg)
-            ptr_args[i] = &stringname_arg
+            type_funcs.string_name_from_pyobject(value, <StringName *>arg_value_ptr)
         elif arg_type == ARGTYPE_NODE_PATH:
-            type_funcs.node_path_from_pyobject(pyarg, &nodepath_arg)
-            ptr_args[i] = &nodepath_arg
+            type_funcs.node_path_from_pyobject(value, <NodePath *>arg_value_ptr)
         elif arg_type == ARGTYPE_RID:
-            type_funcs.rid_from_pyobject(pyarg, &rid_arg)
-            ptr_args[i] = &rid_arg
+            type_funcs.rid_from_pyobject(value, <_RID *>arg_value_ptr)
         elif arg_type == ARGTYPE_OBJECT:
-            object_from_pyobject(pyarg, &ptr_arg)
-            ptr_args[i] = &ptr_arg
+            object_from_pyobject(value, <void **>arg_value_ptr)
         elif arg_type == ARGTYPE_CALLABLE:
-            type_funcs.callable_from_pyobject(pyarg, &callable_arg)
-            ptr_args[i] = &callable_arg
+            type_funcs.callable_from_pyobject(value, <GodotCppCallable *>arg_value_ptr)
         elif arg_type == ARGTYPE_SIGNAL:
-            type_funcs.signal_from_pyobject(pyarg, &signal_arg)
-            ptr_args[i] = &signal_arg
+            type_funcs.signal_from_pyobject(value, <GodotCppSignal *>arg_value_ptr)
         elif arg_type == ARGTYPE_DICTIONARY:
-            type_funcs.dictionary_from_pyobject(pyarg, &dictionary_arg)
-            ptr_args[i] = &dictionary_arg
+            type_funcs.dictionary_from_pyobject(value, <Dictionary *>arg_value_ptr)
         elif arg_type == ARGTYPE_ARRAY:
-            type_funcs.array_from_pyobject(pyarg, &array_arg)
-            ptr_args[i] = &array_arg
+            type_funcs.array_from_pyobject(value, <Array *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_BYTE_ARRAY:
-            type_funcs.packed_byte_array_from_pyobject(pyarg, &packed_byte_array_arg)
-            ptr_args[i] = &packed_byte_array_arg
+            type_funcs.packed_byte_array_from_pyobject(value, <PackedByteArray *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_INT32_ARRAY:
-            type_funcs.packed_int32_array_from_pyobject(pyarg, &packed_int32_array_arg)
-            ptr_args[i] = &packed_int32_array_arg
+            type_funcs.packed_int32_array_from_pyobject(value, <PackedInt32Array *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_INT64_ARRAY:
-            type_funcs.packed_int64_array_from_pyobject(pyarg, &packed_int64_array_arg)
-            ptr_args[i] = &packed_int64_array_arg
+            type_funcs.packed_int64_array_from_pyobject(value, <PackedInt64Array *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_FLOAT32_ARRAY:
-            type_funcs.packed_float32_array_from_pyobject(pyarg, &packed_float32_array_arg)
-            ptr_args[i] = &packed_float32_array_arg
+            type_funcs.packed_float32_array_from_pyobject(value, <PackedFloat32Array *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_FLOAT64_ARRAY:
-            type_funcs.packed_float64_array_from_pyobject(pyarg, &packed_float64_array_arg)
-            ptr_args[i] = &packed_float64_array_arg
+            type_funcs.packed_float64_array_from_pyobject(value, <PackedFloat64Array *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_STRING_ARRAY:
-            type_funcs.packed_string_array_from_pyobject(pyarg, &packed_string_array_arg)
-            ptr_args[i] = &packed_string_array_arg
+            type_funcs.packed_string_array_from_pyobject(value, <PackedStringArray *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_VECTOR2_ARRAY:
-            type_funcs.packed_vector2_array_from_pyobject(pyarg, &packed_vector2_array_arg)
-            ptr_args[i] = &packed_vector2_array_arg
+            type_funcs.packed_vector2_array_from_pyobject(value, <PackedVector2Array *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_VECTOR3_ARRAY:
-            type_funcs.packed_vector3_array_from_pyobject(pyarg, &packed_vector3_array_arg)
-            ptr_args[i] = &packed_vector3_array_arg
+            type_funcs.packed_vector3_array_from_pyobject(value, <PackedVector3Array *>arg_value_ptr)
         elif arg_type == ARGTYPE_PACKED_COLOR_ARRAY:
-            type_funcs.packed_color_array_from_pyobject(pyarg, &packed_color_array_arg)
-            ptr_args[i] = &packed_color_array_arg
+            type_funcs.packed_color_array_from_pyobject(value, <PackedColorArray *>arg_value_ptr)
+        elif arg_type == ARGTYPE_PACKED_VECTOR4_ARRAY:
+            type_funcs.packed_vector4_array_from_pyobject(value, <PackedVector4Array *>arg_value_ptr)
         elif arg_type == ARGTYPE_VARIANT:
-            type_funcs.variant_from_pyobject(pyarg, &variant_arg)
-            ptr_args[i] = &variant_arg
+            type_funcs.variant_from_pyobject(value, <Variant *>arg_value_ptr)
+        elif arg_type == ARGTYPE_POINTER:
+            type_funcs.pointer_from_pyobject(value, <void **>arg_value_ptr)
+        elif arg_type == ARGTYPE_AUDIO_FRAME:
+            type_funcs.audio_frame_from_pyobject(value, <AudioFrame *>arg_value_ptr)
+        elif arg_type == ARGTYPE_CARET_INFO:
+            type_funcs.caret_info_from_pyobject(value, <CaretInfo *>arg_value_ptr)
+        elif arg_type == ARGTYPE_GLYPH:
+            type_funcs.glyph_from_pyobject(value, <Glyph *>arg_value_ptr)
+        elif arg_type == ARGTYPE_OBJECT_ID:
+            type_funcs.object_id_from_pyobject(value, <ObjectID *>arg_value_ptr)
+        elif arg_type == ARGTYPE_PHYSICS_SERVER2D_MOTION_RESULT:
+            type_funcs.physics_server2d_extension_motion_result_from_pyobject(
+                value,
+                <PhysicsServer2DExtensionMotionResult *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_PHYSICS_SERVER2D_RAY_RESULT:
+            type_funcs.physics_server2d_extension_ray_result_from_pyobject(
+                value,
+                <PhysicsServer2DExtensionRayResult *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_PHYSICS_SERVER2D_SHAPE_REST_INFO:
+            type_funcs.physics_server2d_extension_shape_rest_info_from_pyobject(
+                value,
+                <PhysicsServer2DExtensionShapeRestInfo *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_PHYSICS_SERVER2D_SHAPE_RESULT:
+            type_funcs.physics_server2d_extension_shape_result_from_pyobject(
+                value,
+                <PhysicsServer2DExtensionShapeResult *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_PHYSICS_SERVER3D_MOTION_COLLISION:
+            type_funcs.physics_server3d_extension_motion_collision_from_pyobject(
+                value,
+                <PhysicsServer3DExtensionMotionCollision *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_PHYSICS_SERVER3D_MOTION_RESULT:
+            type_funcs.physics_server3d_extension_motion_result_from_pyobject(
+                value,
+                <PhysicsServer3DExtensionMotionResult *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_PHYSICS_SERVER3D_RAY_RESULT:
+            type_funcs.physics_server3d_extension_ray_result_from_pyobject(
+                value,
+                <PhysicsServer3DExtensionRayResult *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_PHYSICS_SERVER3D_SHAPE_REST_INFO:
+            type_funcs.physics_server3d_extension_shape_rest_info_from_pyobject(
+                value,
+                <PhysicsServer3DExtensionShapeRestInfo *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_PHYSICS_SERVER3D_SHAPE_RESULT:
+            type_funcs.physics_server3d_extension_shape_result_from_pyobject(
+                value,
+                <PhysicsServer3DExtensionShapeResult *>arg_value_ptr
+            )
+        elif arg_type == ARGTYPE_SCRIPTING_LANGUAGE_PROFILING_INFO:
+            type_funcs.script_language_extension_profiling_info_from_pyobject(
+                value,
+                <ScriptLanguageExtensionProfilingInfo *>arg_value_ptr
+            )
         else:
-            unknown_argtype_error = True
-            break
+            gdextension_interface_mem_free(ptr_args)
 
-    if unknown_argtype_error:
-        gdextension_interface_mem_free(ptr_args)
-        msg = "NOT IMPLEMENTED: Could not convert %r from %r in %r" % (arg_type, pyarg, method)
-        UtilityFunctions.printerr(msg)
-        raise NotImplementedError(msg)
+            msg = "Could not convert %r from %r in %r" % (method.type_info[i + 1], value, method)
+            UtilityFunctions.printerr(msg)
+
+            raise EnginePtrCallException(msg)
+
+        ptr_args[i] = arg_value_ptr
+
 
     cdef int8_t return_type = type_info[0]
-    cdef void *ret_value_ptr = numpy.PyArray_GETPTR1(arg_values, 0)
+    cdef void *ret_value_ptr
+
+    if max_size > 0:
+        ret_value_ptr = numpy.PyArray_GETPTR1(arg_values, 0)
+
+    if return_type == ARGTYPE_NIL:
+        ptrcall(method, NULL, <const void **>ptr_args, size)
+    else:
+        if max_size == 0:
+            raise EnginePtrCallException("Attempt to return a value of zero size")
+
+        ptrcall(method, ret_value_ptr, <const void **>ptr_args, size)
 
     # NOTE: Cython compiles this to C switch/case
     if return_type == ARGTYPE_NIL:
-        ptrcall(method, NULL, <const void **>ptr_args, size)
+        value = None
     elif return_type == ARGTYPE_BOOL:
-        ptrcall(method, <uint8_t *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.bool_to_pyobject(deref(<uint8_t *>ret_value_ptr))
+        value = type_funcs.bool_to_pyobject(deref(<uint8_t *>ret_value_ptr))
     elif return_type == ARGTYPE_INT:
-        ptrcall(method, <int64_t *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.int_to_pyobject(deref(<int64_t *>ret_value_ptr))
+        value = type_funcs.int_to_pyobject(deref(<int64_t *>ret_value_ptr))
     elif return_type == ARGTYPE_FLOAT:
-        ptrcall(method, <double *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.float_to_pyobject(deref(<double *>ret_value_ptr))
+        value = type_funcs.float_to_pyobject(deref(<double *>ret_value_ptr))
     elif return_type == ARGTYPE_STRING:
-        ptrcall(method, <String *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.string_to_pyobject(deref(<String *>ret_value_ptr))
+        value = type_funcs.string_to_pyobject(deref(<String *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR2:
-        ptrcall(method, <Vector2 *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector2_to_pyobject(deref(<Vector2 *>ret_value_ptr))
+        value = type_funcs.vector2_to_pyobject(deref(<Vector2 *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR2I:
-        ptrcall(method, <Vector2i *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector2i_to_pyobject(deref(<Vector2i *>ret_value_ptr))
+        value = type_funcs.vector2i_to_pyobject(deref(<Vector2i *>ret_value_ptr))
     elif return_type == ARGTYPE_RECT2:
-        ptrcall(method, <Rect2 *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.rect2_to_pyobject(deref(<Rect2 *>ret_value_ptr))
+        value = type_funcs.rect2_to_pyobject(deref(<Rect2 *>ret_value_ptr))
     elif return_type == ARGTYPE_RECT2I:
-        ptrcall(method, <Rect2i *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.rect2i_to_pyobject(deref(<Rect2i *>ret_value_ptr))
+        value = type_funcs.rect2i_to_pyobject(deref(<Rect2i *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR3:
-        ptrcall(method, <Vector3 *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector3_to_pyobject(deref(<Vector3 *>ret_value_ptr))
+        value = type_funcs.vector3_to_pyobject(deref(<Vector3 *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR3I:
-        ptrcall(method, <Vector3i *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector3i_to_pyobject(deref(<Vector3i *>ret_value_ptr))
+        value = type_funcs.vector3i_to_pyobject(deref(<Vector3i *>ret_value_ptr))
     elif return_type == ARGTYPE_TRANSFORM2D:
-        ptrcall(method, <Transform2D *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.transform2d_to_pyobject(deref(<Transform2D *>ret_value_ptr))
+        value = type_funcs.transform2d_to_pyobject(deref(<Transform2D *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR4:
-        ptrcall(method, <Vector4 *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector4_to_pyobject(deref(<Vector4 *>ret_value_ptr))
+        value = type_funcs.vector4_to_pyobject(deref(<Vector4 *>ret_value_ptr))
     elif return_type == ARGTYPE_VECTOR4I:
-        ptrcall(method, <Vector4i *>ret_value_ptr, <const void **>ptr_args, size)
-        pyarg = type_funcs.vector4i_to_pyobject(deref(<Vector4i *>ret_value_ptr))
+        value = type_funcs.vector4i_to_pyobject(deref(<Vector4i *>ret_value_ptr))
     elif return_type == ARGTYPE_PLANE:
-        ptrcall(method, &plane_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.plane_to_pyobject(plane_arg)
+        value = type_funcs.plane_to_pyobject(deref(<Plane *>ret_value_ptr))
     elif return_type == ARGTYPE_QUATERNION:
-        ptrcall(method, &quaternion_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.quaternion_to_pyobject(quaternion_arg)
+        value = type_funcs.quaternion_to_pyobject(deref(<Quaternion *>ret_value_ptr))
     elif return_type == ARGTYPE_AABB:
-        ptrcall(method, &aabb_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.aabb_to_pyobject(aabb_arg)
+        value = type_funcs.aabb_to_pyobject(deref(<_AABB *>ret_value_ptr))
     elif return_type == ARGTYPE_BASIS:
-        ptrcall(method, &basis_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.basis_to_pyobject(basis_arg)
+        value = type_funcs.basis_to_pyobject(deref(<Basis *>ret_value_ptr))
     elif return_type == ARGTYPE_TRANSFORM3D:
-        ptrcall(method, &transform3d_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.transform3d_to_pyobject(transform3d_arg)
+        value = type_funcs.transform3d_to_pyobject(deref(<Transform3D *>ret_value_ptr))
     elif return_type == ARGTYPE_PROJECTION:
-        ptrcall(method, &projection_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.projection_to_pyobject(projection_arg)
+        value = type_funcs.projection_to_pyobject(deref(<Projection *>ret_value_ptr))
     elif return_type == ARGTYPE_COLOR:
-        ptrcall(method, &color_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.color_to_pyobject(color_arg)
+        value = type_funcs.color_to_pyobject(deref(<Color *>ret_value_ptr))
     elif return_type == ARGTYPE_STRING_NAME:
-        ptrcall(method, &stringname_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.string_name_to_pyobject(stringname_arg)
+        value = type_funcs.string_name_to_pyobject(deref(<StringName *>ret_value_ptr))
     elif return_type == ARGTYPE_NODE_PATH:
-        ptrcall(method, &nodepath_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.node_path_to_pyobject(nodepath_arg)
+        value = type_funcs.node_path_to_pyobject(deref(<NodePath *>ret_value_ptr))
     elif return_type == ARGTYPE_RID:
-        ptrcall(method, &rid_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.rid_to_pyobject(rid_arg)
+        value = type_funcs.rid_to_pyobject(deref(<_RID *>ret_value_ptr))
     elif return_type == ARGTYPE_OBJECT:
-        ptrcall(method, &ptr_arg, <const void **>ptr_args, size)
-        pyarg = object_to_pyobject(ptr_arg)
+        value = object_to_pyobject(deref(<void **>ret_value_ptr))
     elif return_type == ARGTYPE_CALLABLE:
-        ptrcall(method, &callable_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.callable_to_pyobject(callable_arg)
+        value = type_funcs.callable_to_pyobject(deref(<GodotCppCallable *>ret_value_ptr))
     elif return_type == ARGTYPE_SIGNAL:
-        ptrcall(method, &signal_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.signal_to_pyobject(signal_arg)
+        value = type_funcs.signal_to_pyobject(deref(<GodotCppSignal *>ret_value_ptr))
     elif return_type == ARGTYPE_DICTIONARY:
-        ptrcall(method, &dictionary_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.dictionary_to_pyobject(dictionary_arg)
+        value = type_funcs.dictionary_to_pyobject(deref(<Dictionary *>ret_value_ptr))
     elif return_type == ARGTYPE_ARRAY:
-        ptrcall(method, &array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.array_to_pyobject(array_arg)
+        value = type_funcs.array_to_pyobject(deref(<Array *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_BYTE_ARRAY:
-        ptrcall(method, &packed_byte_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_byte_array_to_pyobject(packed_byte_array_arg)
+        value = type_funcs.packed_byte_array_to_pyobject(deref(<PackedByteArray *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_INT32_ARRAY:
-        ptrcall(method, &packed_int32_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_int32_array_to_pyobject(packed_int32_array_arg)
+        value = type_funcs.packed_int32_array_to_pyobject(deref(<PackedInt32Array *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_INT64_ARRAY:
-        ptrcall(method, &packed_int64_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_int64_array_to_pyobject(packed_int64_array_arg)
+        value = type_funcs.packed_int64_array_to_pyobject(deref(<PackedInt64Array *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_FLOAT32_ARRAY:
-        ptrcall(method, &packed_float32_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_float32_array_to_pyobject(packed_float32_array_arg)
+        value = type_funcs.packed_float32_array_to_pyobject(deref(<PackedFloat32Array *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_FLOAT64_ARRAY:
-        ptrcall(method, &packed_float64_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_float64_array_to_pyobject(packed_float64_array_arg)
+        value = type_funcs.packed_float64_array_to_pyobject(deref(<PackedFloat64Array *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_STRING_ARRAY:
-        ptrcall(method, &packed_string_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_string_array_to_pyobject(packed_string_array_arg)
+        value = type_funcs.packed_string_array_to_pyobject(deref(<PackedStringArray *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_VECTOR2_ARRAY:
-        ptrcall(method, &packed_vector2_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_vector2_array_to_pyobject(packed_vector2_array_arg)
+        value = type_funcs.packed_vector2_array_to_pyobject(deref(<PackedVector2Array *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_VECTOR3_ARRAY:
-        ptrcall(method, &packed_vector3_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_vector3_array_to_pyobject(packed_vector3_array_arg)
+        value = type_funcs.packed_vector3_array_to_pyobject(deref(<PackedVector3Array *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_COLOR_ARRAY:
-        ptrcall(method, &packed_color_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_color_array_to_pyobject(packed_color_array_arg)
+        value = type_funcs.packed_color_array_to_pyobject(deref(<PackedColorArray *>ret_value_ptr))
     elif return_type == ARGTYPE_PACKED_VECTOR4_ARRAY:
-        ptrcall(method, &packed_vector4_array_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.packed_vector4_array_to_pyobject(packed_vector4_array_arg)
+        value = type_funcs.packed_vector4_array_to_pyobject(deref(<PackedVector4Array *>ret_value_ptr))
     elif return_type == ARGTYPE_VARIANT:
-        ptrcall(method, &variant_arg, <const void **>ptr_args, size)
-        pyarg = type_funcs.variant_to_pyobject(variant_arg)
+        value = type_funcs.variant_to_pyobject(deref(<Variant *>ret_value_ptr))
     else:
-        unknown_argtype_error = True
+        gdextension_interface_mem_free(ptr_args)
+
+        msg = "Could not convert %r from %r in %r" % (method.type_info[0], value, method)
+        UtilityFunctions.printerr(msg)
+
+        raise EnginePtrCallException(msg)
 
     gdextension_interface_mem_free(ptr_args)
 
-    if unknown_argtype_error:
-        UtilityFunctions.push_error(
-            "NOT IMPLEMENTED: Could not convert %r from %r in %r" % (return_type, pyarg, method)
-        )
-        return
-
-    if return_type != ARGTYPE_NIL:
-        return pyarg
+    return value

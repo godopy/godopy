@@ -4,6 +4,7 @@ from libc.stdint cimport *
 from libc.stddef cimport wchar_t
 cimport cpython
 cimport godot_cpp as cpp
+from gdextension cimport ArgType, Object
 
 cdef extern from *:
     """
@@ -236,6 +237,194 @@ cdef public void variant_packed_vector3_array_from_pyobject(object p_obj, cpp.Va
 cdef public void variant_packed_color_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 cdef public void variant_packed_vector4_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 
+cdef public object variant_to_pyobject(const cpp.Variant &v)
+cdef public void variant_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
+
+
+cdef class Pointer:
+    cdef void *ptr
+
+    @staticmethod
+    cdef Pointer create(const void *ptr)
+
+cdef Pointer pointer_to_pyobject(const void *ptr)
+cdef int pointer_from_pyobject(Pointer p_obj, void **r_ret) except -1
+
+
+cdef class Buffer:
+    cdef uint8_t *ptr
+    cdef int64_t size
+
+cdef class IntPointer(Pointer):
+    pass
+
+cdef class FloatPointer(Pointer):
+    pass
+
+
+cdef class AudioFrame:
+    cdef public float left
+    cdef public float right
+
+cdef AudioFrame audio_frame_to_pyobject(const cpp.AudioFrame *af)
+cdef int audio_frame_from_pyobject(AudioFrame p_obj, cpp.AudioFrame *r_ret) except -1
+
+
+cdef class CaretInfo:
+    cdef numpy.ndarray data
+    cdef public int leading_direction
+    cdef public int trailing_direction
+
+cdef CaretInfo caret_info_to_pyobject(const cpp.CaretInfo *ci)
+cdef int caret_info_from_pyobject(CaretInfo p_obj, cpp.CaretInfo *r_ret) except -1
+
+
+cdef class Glyph:
+    cdef public int start
+    cdef public int end
+    cdef public uint8_t count
+    cdef public uint8_t repeat
+    cdef public uint16_t flags
+    cdef public float x_off
+    cdef public float y_off
+    cdef public float advance
+    cdef public RID font_rid
+    cdef public int font_size
+    cdef public int32_t index
+
+
+cdef Glyph glyph_to_pyobject(const cpp.Glyph *g)
+cdef int glyph_from_pyobject(Glyph p_obj, cpp.Glyph *r_ret) except -1
+
+
+cdef class ObjectID:
+    cdef public uint64_t id
+
+cdef object object_id_to_pyobject(const cpp.ObjectID *oid)
+cdef int object_id_from_pyobject(object p_obj, cpp.ObjectID *r_ret) except -1
+
+
+cdef class PhysicsServer2DExtensionMotionResult:
+    cdef numpy.ndarray data
+    cdef public float collision_depth
+    cdef public float collision_safe_fraction
+    cdef public float collision_unsafe_fraction
+    cdef public int collision_local_shape
+    cdef public ObjectID collider_id
+    cdef public RID collider
+    cdef public int collider_shape
+
+ctypedef PhysicsServer2DExtensionMotionResult _PS2DEMotionResult
+cdef _PS2DEMotionResult physics_server2d_extension_motion_result_to_pyobject(const cpp._PS2DEMotionResult *)
+cdef int physics_server2d_extension_motion_result_from_pyobject(_PS2DEMotionResult, cpp._PS2DEMotionResult *) except -1
+
+
+cdef class PhysicsServer2DExtensionRayResult:
+    cdef numpy.ndarray data
+    cdef public RID rid
+    cdef public ObjectID collider_id
+    cdef public Object collider
+    cdef public int shape
+
+ctypedef PhysicsServer2DExtensionRayResult _PS2DERayResult
+cdef _PS2DERayResult physics_server2d_extension_ray_result_to_pyobject(const cpp._PS2DERayResult *)
+cdef int physics_server2d_extension_ray_result_from_pyobject(_PS2DERayResult, cpp._PS2DERayResult *) except -1
+
+
+cdef class PhysicsServer2DExtensionShapeRestInfo:
+    cdef numpy.ndarray data
+    cdef public RID rid
+    cdef public ObjectID collider_id
+    cdef public int shape
+
+ctypedef PhysicsServer2DExtensionShapeRestInfo _PS2DEShapeRestInfo
+cdef _PS2DEShapeRestInfo physics_server2d_extension_shape_rest_info_to_pyobject(const cpp._PS2DEShapeRestInfo *)
+cdef int physics_server2d_extension_shape_rest_info_from_pyobject(_PS2DEShapeRestInfo,
+                                                                  cpp._PS2DEShapeRestInfo *) except -1
+
+
+cdef class PhysicsServer2DExtensionShapeResult:
+    cdef public RID rid
+    cdef public ObjectID collider_id
+    cdef public Object collider
+    cdef public int shape
+
+ctypedef PhysicsServer2DExtensionShapeResult _PS2DEShapeResult
+cdef _PS2DEShapeResult physics_server2d_extension_shape_result_to_pyobject(const cpp._PS2DEShapeResult *)
+cdef int physics_server2d_extension_shape_result_from_pyobject(_PS2DEShapeResult, cpp._PS2DEShapeResult *) except -1
+
+
+cdef class PhysicsServer3DExtensionMotionCollision:
+    cdef numpy.ndarray data
+    cdef public float depth
+    cdef public int local_shape
+    cdef public ObjectID collider_id
+    cdef public RID collider
+    cdef public int collider_shape
+
+ctypedef PhysicsServer3DExtensionMotionCollision _PS3DEMotionCollision
+cdef _PS3DEMotionCollision physics_server3d_extension_motion_collision_to_pyobject(const cpp._PS3DEMotionCollision *)
+cdef int physics_server3d_extension_motion_collision_from_pyobject(_PS3DEMotionCollision,
+                                                                   cpp._PS3DEMotionCollision *) except -1
+
+
+cdef class PhysicsServer3DExtensionMotionResult:
+    cdef numpy.ndarray data
+    cdef public float collision_depth
+    cdef public float collision_safe_fraction
+    cdef public float collision_unsafe_fraction
+    cdef public list collisions
+
+ctypedef PhysicsServer3DExtensionMotionResult _PS3DEMotionResult
+cdef _PS3DEMotionResult physics_server3d_extension_motion_result_to_pyobject(const cpp._PS3DEMotionResult *)
+cdef int physics_server3d_extension_motion_result_from_pyobject(_PS3DEMotionResult, cpp._PS3DEMotionResult *) except -1
+
+
+cdef class PhysicsServer3DExtensionRayResult:
+    cdef numpy.ndarray data
+    cdef public RID rid
+    cdef public ObjectID collider_id
+    cdef public Object collider
+    cdef public int shape
+    cdef public int face_index
+
+ctypedef PhysicsServer3DExtensionRayResult _PS3DERayResult
+cdef _PS3DERayResult physics_server3d_extension_ray_result_to_pyobject(const cpp._PS3DERayResult *)
+cdef int physics_server3d_extension_ray_result_from_pyobject(_PS3DERayResult, cpp._PS3DERayResult *) except -1
+
+
+cdef class PhysicsServer3DExtensionShapeRestInfo:
+    cdef numpy.ndarray data
+    cdef public RID rid
+    cdef public ObjectID collider_id
+    cdef public int shape
+
+ctypedef PhysicsServer3DExtensionShapeRestInfo _PS3DEShapeRestInfo
+cdef _PS3DEShapeRestInfo physics_server3d_extension_shape_rest_info_to_pyobject(const cpp._PS3DEShapeRestInfo *)
+cdef int physics_server3d_extension_shape_rest_info_from_pyobject(_PS3DEShapeRestInfo,
+                                                                  cpp._PS3DEShapeRestInfo *) except -1
+
+cdef class PhysicsServer3DExtensionShapeResult:
+    cdef public RID rid
+    cdef public ObjectID collider_id
+    cdef public Object collider
+    cdef public int shape
+
+ctypedef PhysicsServer3DExtensionShapeResult _PS3DEShapeResult
+cdef _PS3DEShapeResult physics_server3d_extension_shape_result_to_pyobject(const cpp._PS3DEShapeResult *)
+cdef int physics_server3d_extension_shape_result_from_pyobject(_PS3DEShapeResult, cpp._PS3DEShapeResult *) except -1
+
+
+cdef class ScriptLanguageExtensionProfilingInfo:
+    cdef public str signature
+    cdef public uint64_t call_count
+    cdef public uint64_t total_time
+    cdef public uint64_t self_time
+
+ctypedef ScriptLanguageExtensionProfilingInfo _SLEPInfo
+cdef _SLEPInfo script_language_extension_profiling_info_to_pyobject(const cpp._SLEPInfo *)
+cdef int script_language_extension_profiling_info_from_pyobject(_SLEPInfo, cpp._SLEPInfo *)
+
 
 cdef variant_to_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_to_pyobject_funcs
 cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_funcs
@@ -243,5 +432,4 @@ cdef variant_from_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_from_pyobject_fu
 cdef cpp.VariantType pytype_to_variant_type(object p_type) noexcept
 cdef cpp.VariantType pyobject_to_variant_type(object p_obj) noexcept
 
-cdef public object variant_to_pyobject(const cpp.Variant &v)
-cdef public void variant_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
+cdef ArgType pytype_to_argtype(object p_type) noexcept

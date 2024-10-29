@@ -39,8 +39,8 @@ from libcpp.cast cimport *
 from cpython.bytearray cimport PyByteArray_Check
 from cython.view cimport array as cvarray
 from gdextension cimport (
-    BuiltinMethod, Object,
-    object_to_pyobject, variant_object_to_pyobject,
+    BuiltinMethod,
+    object_to_pyobject, cppobject_from_pyobject, variant_object_to_pyobject,
     object_from_pyobject, variant_object_from_pyobject,
     variant_type_to_str, str_to_variant_type
 )
@@ -56,7 +56,7 @@ import pathlib
 
 import numpy as np
 
-from typing import AnyStr, Dict, List, Mapping, Sequence, Tuple
+from typing import AnyStr, Dict, List, Mapping, Sequence, Tuple, TypeVar, Generic
 
 __all__ = [
     'Nil',
@@ -153,8 +153,47 @@ __all__ = [
     'PackedVector2Array',
     'PackedVector3Array',
     'PackedColorArray',
-    'PackedVector4Array'
+    'PackedVector4Array',
+
+    'Variant',
+
+    # Non-Variant types:
+    'Pointer',
+    'Buffer',
+    'IntPointer',
+    'FloatPointer',
+
+    'AudioFrame',
+    'CaretInfo',
+    'Glyph',
+    'ObjectID',
+
+    'PhysicsServer2DExtensionMotionResult',
+    'PhysicsServer2DExtensionRayResult',
+    'PhysicsServer2DExtensionShapeRestInfo',
+    'PhysicsServer2DExtensionShapeResult',
+    'PhysicsServer3DExtensionMotionCollision',
+    'PhysicsServer3DExtensionMotionResult',
+    'PhysicsServer3DExtensionRayResult',
+    'PhysicsServer3DExtensionShapeRestInfo',
+    'PhysicsServer3DExtensionShapeResult',
+    'ScriptLanguageExtensionProfilingInfo'
 ]
+
+
+T = TypeVar('T')
+
+class Variant(Generic[T]):
+    """
+    Used for Variant arguments and return values.
+
+    Very simple wrapper of any other object.
+    """
+    def __init__(self, wrapped: T):
+        self.wrapped = wrapped
+
+    def get_wrapped(self) -> T:
+        return self.wrapped
 
 
 cdef object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
@@ -196,6 +235,10 @@ include "includes/projection.pxi"
 include "includes/color.pxi"
 include "includes/misc.pxi"
 include "includes/packed_arrays.pxi"
+
+
+include "includes/pointer.pxi"
+include "includes/structures.pxi"
 
 
 cdef type NoneType = type(None)
@@ -420,8 +463,43 @@ cdef int array_to_vartype(object arr) except -2:
 
 
 cdef cpp.VariantType pytype_to_variant_type(object p_type) noexcept:
-    # TODO: Add some issubclass checks
-    return _pytype_to_vartype.get(p_type, <int>cpp.OBJECT)
+    cdef int vartype = _pytype_to_vartype.get(p_type, -1)
+
+    if vartype >= 0:
+        return <cpp.VariantType>vartype
+
+    return cpp.OBJECT
+
+
+_pytype_to_argtype = _pytype_to_vartype.copy()
+_pytype_to_argtype.update({
+    Variant: ArgType.ARGTYPE_VARIANT,
+    Pointer: ArgType.ARGTYPE_POINTER,
+    IntPointer: ArgType.ARGTYPE_POINTER,
+    FloatPointer: ArgType.ARGTYPE_POINTER,
+    AudioFrame: ArgType.ARGTYPE_AUDIO_FRAME,
+    CaretInfo: ArgType.ARGTYPE_CARET_INFO,
+    Glyph: ArgType.ARGTYPE_GLYPH,
+    ObjectID: ArgType.ARGTYPE_OBJECT_ID,
+    PhysicsServer2DExtensionMotionResult: ArgType.ARGTYPE_PHYSICS_SERVER2D_MOTION_RESULT,
+    PhysicsServer2DExtensionRayResult: ArgType.ARGTYPE_PHYSICS_SERVER2D_RAY_RESULT,
+    PhysicsServer2DExtensionShapeRestInfo: ArgType.ARGTYPE_PHYSICS_SERVER2D_SHAPE_REST_INFO,
+    PhysicsServer2DExtensionShapeResult: ArgType.ARGTYPE_PHYSICS_SERVER2D_SHAPE_RESULT,
+    PhysicsServer3DExtensionMotionCollision: ArgType.ARGTYPE_PHYSICS_SERVER3D_MOTION_RESULT,
+    PhysicsServer3DExtensionRayResult: ArgType.ARGTYPE_PHYSICS_SERVER3D_RAY_RESULT,
+    PhysicsServer3DExtensionShapeRestInfo: ArgType.ARGTYPE_PHYSICS_SERVER3D_SHAPE_REST_INFO,
+    PhysicsServer3DExtensionShapeResult: ArgType.ARGTYPE_PHYSICS_SERVER3D_SHAPE_RESULT,
+    ScriptLanguageExtensionProfilingInfo: ArgType.ARGTYPE_SCRIPTING_LANGUAGE_PROFILING_INFO
+})
+
+
+cdef ArgType pytype_to_argtype(object p_type) noexcept:
+    cdef int argtype = _pytype_to_argtype.get(p_type, -1)
+
+    if argtype >= 0:
+        return <ArgType>argtype
+
+    return ArgType.ARGTYPE_OBJECT
 
 
 cdef cpp.VariantType pyobject_to_variant_type(object p_obj) noexcept:
@@ -465,6 +543,9 @@ cdef public object variant_to_pyobject(const cpp.Variant &v):
 
 
 cdef public void variant_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    if isinstance(p_obj, Variant):
+        p_obj = p_obj.get_wrapped()
+
     cdef int vartype = <int>pyobject_to_variant_type(p_obj)
     cdef variant_from_pyobject_func_t func
     cdef str msg
