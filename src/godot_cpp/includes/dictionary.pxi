@@ -9,6 +9,8 @@ cdef extern from "godot_cpp/variant/dictionary.hpp" namespace "godot" nogil:
         Variant get(const Variant &p_key, const Variant &p_default) const
         bint is_typed() const
 
+        Dictionary duplicate() const
+
         void make_read_only()
         bint is_read_only() const
 

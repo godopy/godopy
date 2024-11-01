@@ -253,7 +253,7 @@ cdef int pointer_from_pyobject(Pointer p_obj, void **r_ret) except -1
 
 cdef class Buffer:
     cdef uint8_t *ptr
-    cdef int64_t size
+    cdef readonly int64_t size
 
 cdef class IntPointer(Pointer):
     pass

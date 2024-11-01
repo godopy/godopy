@@ -8,13 +8,21 @@ cdef dict _ERROR_TO_STR = {
 }
 
 
-class EngineCallException(Exception):
+class GDExtensionError(Exception):
     pass
 
-class EngineVariantCallException(EngineCallException):
+
+class GDExtensionArgumentError(GDExtensionError):
     pass
 
-class GDExtensionCallException(EngineVariantCallException):
+
+class GDExtensionEngineCallError(GDExtensionError):
+    pass
+
+class GDExtensionngineVariantCallError(GDExtensionEngineCallError):
+    pass
+
+class GDExtensionCallException(GDExtensionngineVariantCallError):
     def __init__(self, msg, error_code):
         if not msg:
             msg = _ERROR_TO_STR.get(error_code, '')
@@ -29,9 +37,9 @@ class GDExtensionCallException(EngineVariantCallException):
         return self.error_code
 
 
-class EnginePtrCallException(EngineCallException):
+class GDExtensionEnginePtrCallError(GDExtensionEngineCallError):
     pass
 
 
-class PythonPtrCallException(EngineCallException):
+class GDExtensionPythonPtrCallError(GDExtensionEngineCallError):
     pass

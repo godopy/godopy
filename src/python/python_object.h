@@ -47,4 +47,8 @@ public:
 
     Ref<PythonObject> getattr(const String &);
     bool is_callable();
+
+    uint64_t get_python_object_id() {
+        return (uint64_t)instance;
+    }
 };

@@ -321,7 +321,7 @@ cdef public object dictionary_to_pyobject(const cpp.Dictionary &p_val):
         pyvalue = variant_to_pyobject(value)
 
         ret[pykey] = pyvalue
-    
+
     return ret
 
 
@@ -333,6 +333,7 @@ cdef public object variant_dictionary_to_pyobject(const cpp.Variant &v):
 
 cdef public void dictionary_from_pyobject(object p_obj, cpp.Dictionary *r_ret) noexcept:
     cdef cpp.Dictionary ret
+
     cdef cpp.Variant key
     cdef cpp.Variant value
 
@@ -344,13 +345,22 @@ cdef public void dictionary_from_pyobject(object p_obj, cpp.Dictionary *r_ret) n
     else:
         cpp.UtilityFunctions.push_error("a mapping is required, got %r" % type(p_obj))
 
-    r_ret[0] = ret
+    r_ret[0] = ret.duplicate()
 
 
 cdef public void variant_dictionary_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
     cdef cpp.Dictionary ret
 
-    dictionary_from_pyobject(p_obj, &ret)
+    cdef cpp.Variant key
+    cdef cpp.Variant value
+
+    if PyMapping_Check(p_obj):
+        for pykey, pyvalue in p_obj.items():
+            variant_from_pyobject(pykey, &key)
+            variant_from_pyobject(pyvalue, &value)
+            cpp.godot_dictionary_set_item(ret, key, value)
+    else:
+        cpp.UtilityFunctions.push_error("a mapping is required, got %r" % type(p_obj))
 
     r_ret[0] = cpp.Variant(ret)
 
@@ -505,20 +515,32 @@ cdef public void array_from_pyobject(object p_obj, cpp.Array *r_ret) noexcept:
     if PySequence_Check(p_obj):
         size = PySequence_Size(p_obj)
         ret.resize(size)
-        for i in range(size):
-            pyitem = PySequence_GetItem(p_obj, i)
+        for i, pyitem in enumerate(p_obj):
             variant_from_pyobject(pyitem, &item)
             cpp.godot_array_set_item(ret, i, item)
-            ref.Py_DECREF(pyitem)
     else:
         cpp.UtilityFunctions.push_error("'list' or other sequence is required, got %r" % type(p_obj))
 
     r_ret[0] = ret
 
 
-cdef public void variant_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+cdef void variant_array_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
+    cdef int64_t size, i
     cdef cpp.Array ret
+    cdef cpp.Variant item
+    cdef object pyitem
+    cdef cpp.String s
 
-    array_from_pyobject(p_obj, &ret)
+    # TODO: Typed arrays to typed arrays
+
+    if PySequence_Check(p_obj):
+        size = PySequence_Size(p_obj)
+        ret.resize(size)
+        for i, pyitem in enumerate(p_obj):
+            variant_from_pyobject(pyitem, &item)
+            cpp.godot_array_set_item(ret, i, item)
+
+    else:
+        cpp.UtilityFunctions.push_error("'list' or other sequence is required, got %r" % type(p_obj))
 
     r_ret[0] = cpp.Variant(ret)

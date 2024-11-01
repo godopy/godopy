@@ -12,6 +12,8 @@ cdef extern from "godot_cpp/variant/array.hpp" namespace "godot" nogil:
         bint is_same_typed(const Array &p_array) const
         int64_t get_typed_builtin() const
 
+        Array duplicate()
+
         const Variant &operator[](int64_t p_index) const
         Variant &operator[](int64_t p_index)
 

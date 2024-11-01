@@ -25,9 +25,13 @@ include "api_data.pxi"
 
 cdef set _global_singleton_info = pickle.loads(_global_singleton_info__pickle)
 cdef dict _global_enum_info = pickle.loads(_global_enum_info__pickle)
-# cdef dict _global_struct_info = pickle.loads(_global_struct_info__pickle)
+cdef dict _global_struct_info = pickle.loads(_global_struct_info__pickle)
 cdef dict _global_inheritance_info = pickle.loads(_global_inheritance_info__pickle)
 cdef dict _global_utility_function_info = pickle.loads(_global_utility_function_info__pickle)
+
+# Custom class defined in C++
+_global_inheritance_info['PythonObject'] = 'RefCounted'
+
 
 # cdef set _global_core_classes = pickle.loads(_global_api_types__pickles['core'])
 # cdef set _global_editor_classes = pickle.loads(_global_api_types__pickles['editor'])

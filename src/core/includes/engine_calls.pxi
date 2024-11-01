@@ -55,7 +55,7 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
                     method.type_info[1:], method.type_info[0])
         )
         UtilityFunctions.printerr(msg)
-        raise EnginePtrCallException(msg)
+        raise GDExtensionEnginePtrCallError(msg)
 
     cdef GDExtensionUninitializedTypePtr *ptr_args = <GDExtensionUninitializedTypePtr *> \
         gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
@@ -76,7 +76,7 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
     if max_size > 0:
         arg_values = np.array([b'\0' * max_size] * (size + 1), dtype=np.void(max_size))
 
-    cdef int8_t arg_type
+    cdef int8_t arg_type = ARGTYPE_NO_ARGTYPE
     cdef void *arg_value_ptr
 
     for i in range(size):
@@ -85,7 +85,9 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
         arg_value_ptr = numpy.PyArray_GETPTR1(arg_values, i + 1)
 
         # NOTE: Cython compiles this to C switch/case
-        if arg_type == ARGTYPE_BOOL:
+        if arg_type == ARGTYPE_NIL:
+            (<void **>arg_value_ptr)[0] = NULL
+        elif arg_type == ARGTYPE_BOOL:
             type_funcs.bool_from_pyobject(value, <uint8_t *>arg_value_ptr)
         elif arg_type == ARGTYPE_INT:
             type_funcs.int_from_pyobject(value, <int64_t *>arg_value_ptr)
@@ -164,7 +166,11 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
         elif arg_type == ARGTYPE_VARIANT:
             type_funcs.variant_from_pyobject(value, <Variant *>arg_value_ptr)
         elif arg_type == ARGTYPE_POINTER:
-            type_funcs.pointer_from_pyobject(value, <void **>arg_value_ptr)
+            # Special case: cannot path ObjectID pointers, passed as void*
+            if type(value) is type_funcs.ObjectID:
+                type_funcs.object_id_from_pyobject(value, <ObjectID *>arg_value_ptr)
+            else:
+                type_funcs.pointer_from_pyobject(value, &arg_value_ptr)
         elif arg_type == ARGTYPE_AUDIO_FRAME:
             type_funcs.audio_frame_from_pyobject(value, <AudioFrame *>arg_value_ptr)
         elif arg_type == ARGTYPE_CARET_INFO:
@@ -226,10 +232,11 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
         else:
             gdextension_interface_mem_free(ptr_args)
 
-            msg = "Could not convert %r from %r in %r" % (method.type_info[i + 1], value, method)
+            msg = "Could not convert argument '%s[#%d]' from %r in %r" \
+                  % (method.type_info[i + 1], arg_type, value, method)
             UtilityFunctions.printerr(msg)
 
-            raise EnginePtrCallException(msg)
+            raise GDExtensionEnginePtrCallError(msg)
 
         ptr_args[i] = arg_value_ptr
 
@@ -244,7 +251,7 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
         ptrcall(method, NULL, <const void **>ptr_args, size)
     else:
         if max_size == 0:
-            raise EnginePtrCallException("Attempt to return a value of zero size")
+            raise GDExtensionEnginePtrCallError("Attempt to return a value of zero size")
 
         ptrcall(method, ret_value_ptr, <const void **>ptr_args, size)
 
@@ -329,13 +336,63 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
         value = type_funcs.packed_vector4_array_to_pyobject(deref(<PackedVector4Array *>ret_value_ptr))
     elif return_type == ARGTYPE_VARIANT:
         value = type_funcs.variant_to_pyobject(deref(<Variant *>ret_value_ptr))
+    elif return_type == ARGTYPE_POINTER:
+        value = type_funcs.pointer_to_pyobject(deref(<void **>ret_value_ptr))
+    elif return_type == ARGTYPE_AUDIO_FRAME:
+        value = type_funcs.audio_frame_to_pyobject(deref(<AudioFrame **>ret_value_ptr))
+    elif return_type == ARGTYPE_CARET_INFO:
+        value = type_funcs.caret_info_to_pyobject(deref(<CaretInfo **>ret_value_ptr))
+    elif return_type == ARGTYPE_GLYPH:
+        value = type_funcs.glyph_to_pyobject(deref(<Glyph **>ret_value_ptr))
+    elif return_type == ARGTYPE_OBJECT_ID:
+        value = type_funcs.object_id_to_pyobject(deref(<ObjectID **>ret_value_ptr))
+    elif return_type == ARGTYPE_PHYSICS_SERVER2D_MOTION_RESULT:
+        value = type_funcs.physics_server2d_extension_motion_result_to_pyobject(
+            deref(<PhysicsServer2DExtensionMotionResult **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_PHYSICS_SERVER2D_RAY_RESULT:
+        value = type_funcs.physics_server2d_extension_ray_result_to_pyobject(
+            deref(<PhysicsServer2DExtensionRayResult **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_PHYSICS_SERVER2D_SHAPE_REST_INFO:
+        value = type_funcs.physics_server2d_extension_shape_rest_info_to_pyobject(
+            deref(<PhysicsServer2DExtensionShapeRestInfo **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_PHYSICS_SERVER2D_SHAPE_RESULT:
+        value = type_funcs.physics_server2d_extension_shape_result_to_pyobject(
+            deref(<PhysicsServer2DExtensionShapeResult **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_PHYSICS_SERVER3D_MOTION_COLLISION:
+        value = type_funcs.physics_server3d_extension_motion_collision_to_pyobject(
+            deref(<PhysicsServer3DExtensionMotionCollision **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_PHYSICS_SERVER3D_MOTION_RESULT:
+        value = type_funcs.physics_server3d_extension_motion_result_to_pyobject(
+            deref(<PhysicsServer3DExtensionMotionResult **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_PHYSICS_SERVER3D_RAY_RESULT:
+        value = type_funcs.physics_server3d_extension_ray_result_to_pyobject(
+            deref(<PhysicsServer3DExtensionRayResult **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_PHYSICS_SERVER3D_SHAPE_REST_INFO:
+        value = type_funcs.physics_server3d_extension_shape_rest_info_to_pyobject(
+            deref(<PhysicsServer3DExtensionShapeRestInfo **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_PHYSICS_SERVER3D_SHAPE_RESULT:
+        value = type_funcs.physics_server3d_extension_shape_result_to_pyobject(
+            deref(<PhysicsServer3DExtensionShapeResult **>ret_value_ptr)
+        )
+    elif return_type == ARGTYPE_SCRIPTING_LANGUAGE_PROFILING_INFO:
+        value = type_funcs.script_language_extension_profiling_info_to_pyobject(
+            deref(<const ScriptLanguageExtensionProfilingInfo **>ret_value_ptr)
+        )
     else:
         gdextension_interface_mem_free(ptr_args)
 
-        msg = "Could not convert %r from %r in %r" % (method.type_info[0], value, method)
+        msg = "Could not convert return value '%s[#%d]' in %r" % (method.type_info[0], return_type, method)
         UtilityFunctions.printerr(msg)
 
-        raise EnginePtrCallException(msg)
+        raise GDExtensionEnginePtrCallError(msg)
 
     gdextension_interface_mem_free(ptr_args)
 

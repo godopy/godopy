@@ -163,37 +163,72 @@ __all__ = [
     'IntPointer',
     'FloatPointer',
 
+    'as_audio_frame',
     'AudioFrame',
+
+    'as_caret_info',
     'CaretInfo',
+
+    'as_glyph',
     'Glyph',
+
+    'as_object_id',
     'ObjectID',
 
+    'as_physics_server2d_extension_motion_result',
     'PhysicsServer2DExtensionMotionResult',
+
+    'as_physics_server2d_extension_ray_result',
     'PhysicsServer2DExtensionRayResult',
+
+    'as_physics_server2d_extension_shape_rest_info',
     'PhysicsServer2DExtensionShapeRestInfo',
+
+    'as_physics_server2d_extension_shape_result',
     'PhysicsServer2DExtensionShapeResult',
+
+    'as_physics_server3d_extension_motion_collision',
     'PhysicsServer3DExtensionMotionCollision',
+
+    'as_physics_server3d_extension_motion_result',
     'PhysicsServer3DExtensionMotionResult',
+
+    'as_physics_server3d_extension_ray_result',
     'PhysicsServer3DExtensionRayResult',
+
+    'as_physics_server3d_extension_shape_rest_info',
     'PhysicsServer3DExtensionShapeRestInfo',
+
+    'as_physics_server3d_extension_shape_result',
     'PhysicsServer3DExtensionShapeResult',
+
+    'as_script_language_extension_profiling_info',
     'ScriptLanguageExtensionProfilingInfo'
 ]
+
+
+cdef extern from *:
+    """
+    void _debug_print(PyObject *s) {
+        const wchar_t *wstr = PyUnicode_AsWideCharString(s, NULL);
+        godot::String ss;
+        godot::internal::gdextension_interface_string_new_with_wide_chars(&ss, wstr);
+        godot::UtilityFunctions::print(ss);
+    }
+    """
+    cdef void _debug_print(object) noexcept
 
 
 T = TypeVar('T')
 
 class Variant(Generic[T]):
     """
-    Used for Variant arguments and return values.
+    Annotates Variant arguments and return values.
 
     Very simple wrapper of any other object.
     """
     def __init__(self, wrapped: T):
-        self.wrapped = wrapped
-
-    def get_wrapped(self) -> T:
-        return self.wrapped
+        raise TypeError("'Variant' type can be used only to declare 'Variant' objects on the Godot Engine's side")
 
 
 cdef object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
@@ -543,14 +578,11 @@ cdef public object variant_to_pyobject(const cpp.Variant &v):
 
 
 cdef public void variant_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
-    if isinstance(p_obj, Variant):
-        p_obj = p_obj.get_wrapped()
-
     cdef int vartype = <int>pyobject_to_variant_type(p_obj)
     cdef variant_from_pyobject_func_t func
     cdef str msg
 
-    assert vartype >= 0 and vartype < <int>cpp.VARIANT_MAX, "incorrect vartype %d" % vartype
+    # assert vartype >= 0 and vartype < <int>cpp.VARIANT_MAX, "incorrect vartype %d" % vartype
 
     func = variant_from_pyobject_funcs[vartype]
     func(p_obj, r_ret)

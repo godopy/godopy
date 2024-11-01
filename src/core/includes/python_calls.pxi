@@ -39,17 +39,19 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
                 expected_size, method.type_info[1:], method.type_info[0])
         )
         UtilityFunctions.printerr(msg)
-        raise PythonPtrCallException(msg)
+        raise GDExtensionPythonPtrCallError(msg)
 
     cdef object args = PyTuple_New(p_count)
-    cdef object value
+    cdef object value = None
 
-    cdef int8_t arg_type
+    cdef int8_t arg_type = ARGTYPE_NO_ARGTYPE
     for i in range(p_count):
         arg_type = type_info[i + 1]
 
         # NOTE: Cython compiles this to C switch/case
-        if arg_type == ARGTYPE_BOOL:
+        if arg_type == ARGTYPE_NIL:
+            value = None
+        elif arg_type == ARGTYPE_BOOL:
             value = type_funcs.bool_to_pyobject(deref(<uint8_t *>p_args[i]))
         elif arg_type == ARGTYPE_INT:
             value = type_funcs.int_to_pyobject(deref(<int64_t *>p_args[i]))
@@ -178,10 +180,9 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
                 deref(<const ScriptLanguageExtensionProfilingInfo **>p_args[i])
             )
         else:
-            msg = "Can't convert %r argument in Python ptrcalls" % method.type_info[i]
-            UtilityFunctions.push_error(msg)
+            msg = "Could not convert argument '%s[#%d]' in %r" % (method.type_info[i], arg_type, method)
 
-            raise PythonPtrCallException(msg)
+            raise GDExtensionPythonPtrCallError(msg)
 
         ref.Py_INCREF(value)
         PyTuple_SET_ITEM(args, i, value)
@@ -198,7 +199,7 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
         ret_value_ptr = numpy.PyArray_GETPTR1(return_value, 0)
     else:
         if return_type != ARGTYPE_NIL:
-            raise PythonPtrCallException("Attempt to return a value of zero size")
+            raise GDExtensionPythonPtrCallError("Attempt to return a value of zero size")
 
     # NOTE: Cython compiles this to C switch/case
     if return_type == ARGTYPE_NIL:
@@ -342,10 +343,10 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
             <ScriptLanguageExtensionProfilingInfo *>ret_value_ptr
         )
     else:
-        msg = "Could not convert %r from %r in %r" % (method.type_info[0], value, method)
+        msg = "Could not convert return value %r from %r in %r" % (method.type_info[0], value, method)
         UtilityFunctions.push_error(msg)
 
-        raise PythonPtrCallException(msg)
+        raise GDExtensionPythonPtrCallError(msg)
 
     for i in range(return_size):
         (<uint8_t *>r_ret)[i] = (<uint8_t *>ret_value_ptr)[i]

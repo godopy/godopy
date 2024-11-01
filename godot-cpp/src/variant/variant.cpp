@@ -269,7 +269,6 @@ Variant::Variant(const PackedVector4Array &v) {
 
 Variant::Variant(const PyObject *v) {
 	ERR_FAIL_NULL(v);
-
 	variant_from_pyobject(const_cast<PyObject *>(v), reinterpret_cast<Variant *>(_native_ptr()));
 }
 

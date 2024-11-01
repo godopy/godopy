@@ -338,26 +338,6 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
     # print("\nall extra types:\n\t%s\n" % '\n\t'.join(fmt(all_types - builtin_argtypes)))
 
     # all extra types:
-    #     Variant
-    #     float*
-    #     int32_t*
-    #     struct[AudioFrame*]
-    #     struct[CaretInfo*]
-    #     struct[Glyph*]
-    #     struct[PhysicsServer2DExtensionMotionResult*]
-    #     struct[PhysicsServer2DExtensionRayResult*]
-    #     struct[PhysicsServer2DExtensionShapeRestInfo*]
-    #     struct[PhysicsServer2DExtensionShapeResult*]
-    #     struct[PhysicsServer3DExtensionMotionResult*]
-    #     struct[PhysicsServer3DExtensionRayResult*]
-    #     struct[PhysicsServer3DExtensionShapeRestInfo*]
-    #     struct[PhysicsServer3DExtensionShapeResult*]
-    #     struct[ScriptLanguageExtensionProfilingInfo*]
-    #     uint8_t **
-    #     uint8_t*
-    #     void*
-
-    # or more presizely:
     #     AudioFrame*
     #     CaretInfo*
     #     PhysicsServer2DExtensionMotionResult*
@@ -382,7 +362,7 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
     result = [
         'cdef bytes _global_singleton_info__pickle = \\\n%s' % pprint.pformat(singleton_data_pickled, width=120),
         'cdef bytes _global_enum_info__pickle = \\\n%s' % pprint.pformat(enum_data_pickled, width=120),
-        # 'cdef bytes _global_struct_info__pickle = \\\n%s' % pprint.pformat(struct_data_pickled, width=120),
+        'cdef bytes _global_struct_info__pickle = \\\n%s' % pprint.pformat(struct_data_pickled, width=120),
         'cdef bytes _global_inheritance_info__pickle = \\\n%s' % pprint.pformat(inheritance_data_pickled, width=120),
         # 'cdef dict _global_api_types__pickles = \\\n%s' % pprint.pformat(api_type_data_pickled, width=120),
         'cdef bytes _global_utility_function_info__pickle = \\\n%s' % pprint.pformat(utilfunc_data_pickled, width=120),

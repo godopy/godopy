@@ -11,6 +11,48 @@ cdef class Pointer:
 
         return self
 
+    def pointer_id(self):
+        return <uint64_t>self.ptr
+
+    @classmethod
+    def from_uint8_array(cls, numpy.ndarray arr):
+        if arr.ndim != 1:
+            raise ValueError("Expected 1-dimensional array, got %d dimensions" % (arr.ndim))
+
+        if arr.dtype != np.dtype('uint8'):
+            raise ValueError("Expected %r array, got %r" % (np.dtype('uint8'), arr.dtype))
+
+        if not arr.flags.c_contiguous:
+            raise ValueError("Expected C-contignuous array")
+
+        return Pointer.create(<const void *>arr.data)
+
+    @classmethod
+    def from_int64_array(cls, numpy.ndarray arr):
+        if arr.ndim != 1:
+            raise ValueError("Expected 1-dimensional array, got %d dimensions" % (arr.ndim))
+
+        if arr.dtype != np.dtype('int64'):
+            raise ValueError("Expected %r array, got %r" % (np.dtype('int64'), arr.dtype))
+
+        if not arr.flags.c_contiguous:
+            raise ValueError("Expected C-contignuous array")
+
+        return Pointer.create(<const void *>arr.data)
+
+    @classmethod
+    def from_float64_array(cls, numpy.ndarray arr):
+        if arr.ndim != 1:
+            raise ValueError("Expected 1-dimensional array, got %d dimensions" % (arr.ndim))
+
+        if arr.dtype != np.dtype('float64'):
+            raise ValueError("Expected %r array, got %r" % (np.dtype('float64'), arr.dtype))
+
+        if not arr.flags.c_contiguous:
+            raise ValueError("Expected C-contignuous array")
+
+        return Pointer.create(<const void *><double *>arr.data)
+
 
 cdef Pointer pointer_to_pyobject(const void *ptr):
     return Pointer.create(ptr)

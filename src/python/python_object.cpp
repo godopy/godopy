@@ -138,6 +138,7 @@ void PythonObject::_bind_methods() {
     ClassDB::bind_method(D_METHOD("getattr", "string"), &PythonObject::getattr);
     ClassDB::bind_method(D_METHOD("is_callable"), &PythonObject::is_callable);
     ClassDB::bind_method(D_METHOD("call", "array", "dictionary"), &PythonObject::call);
+    ClassDB::bind_method(D_METHOD("get_python_object_id"), &PythonObject::get_python_object_id);
 
     // FIXME: Can not compile call_varargs bind
     // MethodInfo mi;
