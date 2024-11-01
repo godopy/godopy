@@ -166,7 +166,7 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
         elif arg_type == ARGTYPE_VARIANT:
             type_funcs.variant_from_pyobject(value, <Variant *>arg_value_ptr)
         elif arg_type == ARGTYPE_POINTER:
-            # Special case: cannot path ObjectID pointers, passed as void*
+            # Special case: ObjectID pointers are passed as void*
             if type(value) is type_funcs.ObjectID:
                 type_funcs.object_id_from_pyobject(value, <ObjectID *>arg_value_ptr)
             else:

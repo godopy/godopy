@@ -28,6 +28,7 @@ if GDExtensionTestCase:
             self.argA = None
 
             self.gdscript = None
+            self._ids = []
 
         def set_gdscript_instance(self, gdscript: gd.classdb.Node) -> None:
             self.gdscript = gdscript
@@ -65,7 +66,7 @@ if GDExtensionTestCase:
             self.arg6 = arg6
             self.arg7 = arg7
 
-        def _misc_args(self,  arg1: StringName, arg2: NodePath, arg3: RID,
+        def _misc_args(self, arg1: StringName, arg2: NodePath, arg3: RID,
                       arg4: Object, arg5: Callable, arg6: Signal,
                       arg7: Dict, arg8: List) -> None:
             self.arg1 = arg1
@@ -77,12 +78,54 @@ if GDExtensionTestCase:
             self.arg7 = arg7
             self.arg8 = arg8
 
-        def _packed_array_args(self,  arg1: PackedByteArray,
+        def _packed_array_args(self, arg1: PackedByteArray,
                                arg2: PackedInt32Array, arg3: PackedInt64Array,
                                arg4: PackedFloat32Array, arg5: PackedFloat64Array,
                                arg6: PackedStringArray, arg7: PackedVector2Array,
                                arg8: PackedVector3Array, arg9: PackedColorArray,
                                argA: PackedVector4Array) -> None:
+            self.arg1 = arg1
+            self.arg2 = arg2
+            self.arg3 = arg3
+            self.arg4 = arg4
+            self.arg5 = arg5
+            self.arg6 = arg6
+            self.arg7 = arg7
+            self.arg8 = arg8
+            self.arg9 = arg9
+            self.argA = argA
+
+        def _other_args_1(self, arg1: Variant, arg2: Pointer, arg3: Pointer,
+                          arg4: Pointer, arg5: Pointer, arg6: Pointer,
+                          arg7: Pointer, arg8: Pointer, arg9: Pointer) -> None:
+            self.arg1 = arg1
+            self.arg2 = arg2
+            self.arg3 = arg3
+            self.arg4 = arg4
+            self.arg5 = arg5
+            self.arg6 = arg6
+            self.arg7 = arg7
+            self.arg8 = arg8
+            self.arg9 = arg9
+
+        def _other_args_2(self, arg1: AudioFrame, arg2: CaretInfo, arg3: Glyph,
+                          arg4: ObjectID) -> None:
+            self.arg1 = arg1
+            self.arg2 = arg2
+            self.arg3 = arg3
+            # Special case: ObjectID pointers are passed as void*
+            self.arg4 = as_object_id(arg4)
+
+        def _other_args_3(self, arg1: PhysicsServer2DExtensionMotionResult,
+                          arg2: PhysicsServer2DExtensionRayResult,
+                          arg3: PhysicsServer2DExtensionShapeRestInfo,
+                          arg4: PhysicsServer2DExtensionShapeResult,
+                          arg5: PhysicsServer3DExtensionMotionCollision,
+                          arg6: PhysicsServer3DExtensionMotionResult,
+                          arg7: PhysicsServer3DExtensionRayResult,
+                          arg8: PhysicsServer3DExtensionShapeRestInfo,
+                          arg9: PhysicsServer3DExtensionShapeResult,
+                          argA: ScriptLanguageExtensionProfilingInfo):
             self.arg1 = arg1
             self.arg2 = arg2
             self.arg3 = arg3
@@ -214,6 +257,122 @@ if GDExtensionTestCase:
         def _get_packed_vector4_array(self) -> PackedVector4Array:
             return as_packed_vector4_array([[2, 3, 4, 8], [5, 1, 7, 9]])
 
+        def _get_variant(self) -> Variant:
+            obj = object()
+            self._ids.append(id(obj))
+            return obj  # OBJECT Variant Type representing PythonObject
+
+        def _get_pointer1(self) -> Pointer:
+            arr = np.array([1])
+            self._arr1 = arr  # ensure array will be alive during tests
+            ptr = Pointer.from_int64_array(arr)
+            self._ids.append(ptr.pointer_id())
+            return ptr
+
+        def _get_pointer2(self) -> Pointer:
+            arr = np.array([2])
+            self._arr2 = arr  # ensure array will be alive during tests
+            ptr = Pointer.from_int64_array(arr)
+            self._ids.append(ptr.pointer_id())
+            return ptr
+
+        def _get_uint8_pointer1(self) -> Pointer:
+            arr = np.arange(1, 9, dtype=np.uint8)
+            self._arr3 = arr  # ensure array will be alive during tests
+            ptr = Pointer.from_uint8_array(arr)
+            self._ids.append(ptr.pointer_id())
+            return ptr
+
+        def _get_uint8_pointer2(self) -> Pointer:
+            arr = np.arange(9, 17, dtype=np.uint8)
+            self._arr4 = arr  # ensure array will be alive during tests
+            ptr = Pointer.from_uint8_array(arr)
+            self._ids.append(ptr.pointer_id())
+            return ptr
+
+        def _get_uint8_pointer3(self) -> Pointer:
+            arr = np.arange(17, 25, dtype=np.uint8)
+            self._arr5 = arr  # ensure array will be alive during tests
+            ptr = Pointer.from_uint8_array(arr)
+            self._ids.append(ptr.pointer_id())
+            return ptr
+
+        def _get_uint8_pointer4(self) -> Pointer:
+            arr = np.arange(25, 33, dtype=np.uint8)
+            self._arr6 = arr  # ensure array will be alive during tests
+            ptr = Pointer.from_uint8_array(arr)
+            self._ids.append(ptr.pointer_id())
+            return ptr
+
+        def _get_audio_frame(self) -> AudioFrame:
+            self._af = AudioFrame(1, 2)
+            return self._af
+
+        def _get_caret_info(self) -> CaretInfo:
+            self._ci = CaretInfo((1, 2, 3, 4), (5, 6, 7, 8), 9, 10)
+            return self._ci
+
+        def _get_glyph(self) -> Glyph:
+            self._g = Glyph(start=1, end=5)
+            return self._g
+
+        def _get_object_id(self) -> ObjectID:
+            self._oi = ObjectID(123)
+            return self._oi
+
+        def _get_ps2d_motion_result(self) -> PhysicsServer2DExtensionMotionResult:
+            self._mr2d = PhysicsServer2DExtensionMotionResult(
+                (1, 2), (3, 4), (5, 6), (7, 8), (9, 10), 1.0, 2.0, 3.0, 4, 5,
+                RID(), 6
+            )
+            return self._mr2d
+
+        def _get_ps2d_ray_result(self) -> PhysicsServer2DExtensionRayResult:
+            self._rr2d = PhysicsServer2DExtensionRayResult((1, 2), (3, 4), RID(), 1, self, 2)
+            return self._rr2d
+
+        def _get_ps2d_shape_rest_info(self) -> PhysicsServer2DExtensionShapeRestInfo:
+            self._sri2d = PhysicsServer2DExtensionShapeRestInfo((1, 2), (3, 4), RID(), 1, 2, (5, 6))
+            return self._sri2d
+
+        def _get_ps2d_shape_result(self) -> PhysicsServer2DExtensionShapeResult:
+            self._sr2d = PhysicsServer2DExtensionShapeResult(RID(), 1, self, 2)
+            return self._sr2d
+
+        def _get_ps3d_motion_collision(self) -> PhysicsServer3DExtensionMotionCollision:
+            self._mc3d = PhysicsServer3DExtensionMotionCollision(
+                (1, 2, 3), (4, 5, 6), (7, 8, 9), (10, 11, 12),
+                13., 14, 15, RID(), 16
+            )
+            return self._mc3d
+
+        def _get_ps3d_motion_result(self) -> PhysicsServer3DExtensionMotionResult:
+            self._mr3d = PhysicsServer3DExtensionMotionResult(
+                [1., 2., 3.], [4., 5., 6.], 7., 8., 9.,
+                [
+                    PhysicsServer3DExtensionMotionCollision(
+                        (1, 2, 3), (4, 5, 6), (7, 8, 9), (10, 11, 12),
+                        13., 14, 15, RID(), 16
+                    )
+                ]
+            )
+            return self._mr3d
+
+        def _get_ps3d_ray_result(self) -> PhysicsServer3DExtensionRayResult:
+            self._rr3d = PhysicsServer3DExtensionRayResult((1, 2, 3), (4, 5, 6), RID(), 7, self, 8, 9)
+            return self._rr3d
+
+        def _get_ps3d_shape_rest_info(self) -> PhysicsServer3DExtensionShapeRestInfo:
+            self._sri3d =  PhysicsServer3DExtensionShapeRestInfo((1, 2, 3), (4, 5, 6), RID(), 7, 8, (9, 10, 11))
+            return self._sri3d
+
+        def _get_ps3d_shape_result(self) -> PhysicsServer3DExtensionShapeResult:
+            self._sr3d = PhysicsServer3DExtensionShapeResult(RID(), 1, self, 2)
+            return self._sr3d
+
+        def _get_script_language_profiling_info(self) -> ScriptLanguageExtensionProfilingInfo:
+            self._slpi = ScriptLanguageExtensionProfilingInfo("test", 1, 2, 3)
+            return self._slpi
 
 else:
     ExtendedTestObject = None

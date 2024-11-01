@@ -201,6 +201,8 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
         if return_type != ARGTYPE_NIL:
             raise GDExtensionPythonPtrCallError("Attempt to return a value of zero size")
 
+    cdef bint return_as_pointer = False
+
     # NOTE: Cython compiles this to C switch/case
     if return_type == ARGTYPE_NIL:
         pass
@@ -283,70 +285,95 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
     elif return_type == ARGTYPE_VARIANT:
         type_funcs.variant_from_pyobject(value, <Variant *>ret_value_ptr)
     elif return_type == ARGTYPE_POINTER:
-        type_funcs.pointer_from_pyobject(value, <void **>ret_value_ptr)
+        # Special case: ObjectID pointers are passed as void*
+        if type(value) is type_funcs.ObjectID:
+            type_funcs.object_id_from_pyobject(value, <ObjectID *>ret_value_ptr)
+        else:
+            type_funcs.pointer_from_pyobject(value, &ret_value_ptr)
+        return_as_pointer = True
     elif return_type == ARGTYPE_AUDIO_FRAME:
         type_funcs.audio_frame_from_pyobject(value, <AudioFrame *>ret_value_ptr)
+        return_as_pointer = True
     elif return_type == ARGTYPE_CARET_INFO:
         type_funcs.caret_info_from_pyobject(value, <CaretInfo *>ret_value_ptr)
+        return_as_pointer = True
     elif return_type == ARGTYPE_GLYPH:
         type_funcs.glyph_from_pyobject(value, <Glyph *>ret_value_ptr)
+        return_as_pointer = True
     elif return_type == ARGTYPE_OBJECT_ID:
         type_funcs.object_id_from_pyobject(value, <ObjectID *>ret_value_ptr)
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER2D_MOTION_RESULT:
         type_funcs.physics_server2d_extension_motion_result_from_pyobject(
             value,
             <PhysicsServer2DExtensionMotionResult *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER2D_RAY_RESULT:
         type_funcs.physics_server2d_extension_ray_result_from_pyobject(
             value,
             <PhysicsServer2DExtensionRayResult *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER2D_SHAPE_REST_INFO:
         type_funcs.physics_server2d_extension_shape_rest_info_from_pyobject(
             value,
             <PhysicsServer2DExtensionShapeRestInfo *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER2D_SHAPE_RESULT:
         type_funcs.physics_server2d_extension_shape_result_from_pyobject(
             value,
             <PhysicsServer2DExtensionShapeResult *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER3D_MOTION_COLLISION:
         type_funcs.physics_server3d_extension_motion_collision_from_pyobject(
             value,
             <PhysicsServer3DExtensionMotionCollision *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER3D_MOTION_RESULT:
         type_funcs.physics_server3d_extension_motion_result_from_pyobject(
             value,
             <PhysicsServer3DExtensionMotionResult *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER3D_RAY_RESULT:
         type_funcs.physics_server3d_extension_ray_result_from_pyobject(
             value,
             <PhysicsServer3DExtensionRayResult *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER3D_SHAPE_REST_INFO:
         type_funcs.physics_server3d_extension_shape_rest_info_from_pyobject(
             value,
             <PhysicsServer3DExtensionShapeRestInfo *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_PHYSICS_SERVER3D_SHAPE_RESULT:
         type_funcs.physics_server3d_extension_shape_result_from_pyobject(
             value,
             <PhysicsServer3DExtensionShapeResult *>ret_value_ptr
         )
+        return_as_pointer = True
     elif return_type == ARGTYPE_SCRIPTING_LANGUAGE_PROFILING_INFO:
         type_funcs.script_language_extension_profiling_info_from_pyobject(
             value,
             <ScriptLanguageExtensionProfilingInfo *>ret_value_ptr
         )
+        return_as_pointer = True
     else:
         msg = "Could not convert return value %r from %r in %r" % (method.type_info[0], value, method)
         UtilityFunctions.push_error(msg)
 
         raise GDExtensionPythonPtrCallError(msg)
 
-    for i in range(return_size):
-        (<uint8_t *>r_ret)[i] = (<uint8_t *>ret_value_ptr)[i]
+    if return_as_pointer:
+        (<void **>r_ret)[0] = <void *>ret_value_ptr
+
+        # Data returned to Godot as a struct pointer must be kept alive
+        (<type_funcs._CStructDataKeeper>value)._c_struct_data = return_value
+    else:
+        for i in range(return_size):
+            (<uint8_t *>r_ret)[i] = (<uint8_t *>ret_value_ptr)[i]

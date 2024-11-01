@@ -262,7 +262,11 @@ cdef class FloatPointer(Pointer):
     pass
 
 
-cdef class AudioFrame:
+cdef class _CStructDataKeeper:
+    cdef numpy.ndarray _c_struct_data
+
+
+cdef class AudioFrame(_CStructDataKeeper):
     cdef public float left
     cdef public float right
 
@@ -270,7 +274,7 @@ cdef AudioFrame audio_frame_to_pyobject(const cpp.AudioFrame *af)
 cdef int audio_frame_from_pyobject(AudioFrame p_obj, cpp.AudioFrame *r_ret) except -1
 
 
-cdef class CaretInfo:
+cdef class CaretInfo(_CStructDataKeeper):
     cdef numpy.ndarray data
     cdef public int leading_direction
     cdef public int trailing_direction
@@ -279,7 +283,7 @@ cdef CaretInfo caret_info_to_pyobject(const cpp.CaretInfo *ci)
 cdef int caret_info_from_pyobject(CaretInfo p_obj, cpp.CaretInfo *r_ret) except -1
 
 
-cdef class Glyph:
+cdef class Glyph(_CStructDataKeeper):
     cdef public int start
     cdef public int end
     cdef public uint8_t count
@@ -297,14 +301,14 @@ cdef Glyph glyph_to_pyobject(const cpp.Glyph *g)
 cdef int glyph_from_pyobject(Glyph p_obj, cpp.Glyph *r_ret) except -1
 
 
-cdef class ObjectID:
+cdef class ObjectID(_CStructDataKeeper):
     cdef public uint64_t id
 
 cdef object object_id_to_pyobject(const cpp.ObjectID *oid)
 cdef int object_id_from_pyobject(object p_obj, cpp.ObjectID *r_ret) except -1
 
 
-cdef class PhysicsServer2DExtensionMotionResult:
+cdef class PhysicsServer2DExtensionMotionResult(_CStructDataKeeper):
     cdef numpy.ndarray data
     cdef public float collision_depth
     cdef public float collision_safe_fraction
@@ -319,7 +323,7 @@ cdef _PS2DEMotionResult physics_server2d_extension_motion_result_to_pyobject(con
 cdef int physics_server2d_extension_motion_result_from_pyobject(_PS2DEMotionResult, cpp._PS2DEMotionResult *) except -1
 
 
-cdef class PhysicsServer2DExtensionRayResult:
+cdef class PhysicsServer2DExtensionRayResult(_CStructDataKeeper):
     cdef numpy.ndarray data
     cdef public RID rid
     cdef public ObjectID collider_id
@@ -331,7 +335,7 @@ cdef _PS2DERayResult physics_server2d_extension_ray_result_to_pyobject(const cpp
 cdef int physics_server2d_extension_ray_result_from_pyobject(_PS2DERayResult, cpp._PS2DERayResult *) except -1
 
 
-cdef class PhysicsServer2DExtensionShapeRestInfo:
+cdef class PhysicsServer2DExtensionShapeRestInfo(_CStructDataKeeper):
     cdef numpy.ndarray data
     cdef public RID rid
     cdef public ObjectID collider_id
@@ -343,7 +347,7 @@ cdef int physics_server2d_extension_shape_rest_info_from_pyobject(_PS2DEShapeRes
                                                                   cpp._PS2DEShapeRestInfo *) except -1
 
 
-cdef class PhysicsServer2DExtensionShapeResult:
+cdef class PhysicsServer2DExtensionShapeResult(_CStructDataKeeper):
     cdef public RID rid
     cdef public ObjectID collider_id
     cdef public Object collider
@@ -354,7 +358,7 @@ cdef _PS2DEShapeResult physics_server2d_extension_shape_result_to_pyobject(const
 cdef int physics_server2d_extension_shape_result_from_pyobject(_PS2DEShapeResult, cpp._PS2DEShapeResult *) except -1
 
 
-cdef class PhysicsServer3DExtensionMotionCollision:
+cdef class PhysicsServer3DExtensionMotionCollision(_CStructDataKeeper):
     cdef numpy.ndarray data
     cdef public float depth
     cdef public int local_shape
@@ -368,7 +372,7 @@ cdef int physics_server3d_extension_motion_collision_from_pyobject(_PS3DEMotionC
                                                                    cpp._PS3DEMotionCollision *) except -1
 
 
-cdef class PhysicsServer3DExtensionMotionResult:
+cdef class PhysicsServer3DExtensionMotionResult(_CStructDataKeeper):
     cdef numpy.ndarray data
     cdef public float collision_depth
     cdef public float collision_safe_fraction
@@ -380,7 +384,7 @@ cdef _PS3DEMotionResult physics_server3d_extension_motion_result_to_pyobject(con
 cdef int physics_server3d_extension_motion_result_from_pyobject(_PS3DEMotionResult, cpp._PS3DEMotionResult *) except -1
 
 
-cdef class PhysicsServer3DExtensionRayResult:
+cdef class PhysicsServer3DExtensionRayResult(_CStructDataKeeper):
     cdef numpy.ndarray data
     cdef public RID rid
     cdef public ObjectID collider_id
@@ -393,7 +397,7 @@ cdef _PS3DERayResult physics_server3d_extension_ray_result_to_pyobject(const cpp
 cdef int physics_server3d_extension_ray_result_from_pyobject(_PS3DERayResult, cpp._PS3DERayResult *) except -1
 
 
-cdef class PhysicsServer3DExtensionShapeRestInfo:
+cdef class PhysicsServer3DExtensionShapeRestInfo(_CStructDataKeeper):
     cdef numpy.ndarray data
     cdef public RID rid
     cdef public ObjectID collider_id
@@ -404,7 +408,7 @@ cdef _PS3DEShapeRestInfo physics_server3d_extension_shape_rest_info_to_pyobject(
 cdef int physics_server3d_extension_shape_rest_info_from_pyobject(_PS3DEShapeRestInfo,
                                                                   cpp._PS3DEShapeRestInfo *) except -1
 
-cdef class PhysicsServer3DExtensionShapeResult:
+cdef class PhysicsServer3DExtensionShapeResult(_CStructDataKeeper):
     cdef public RID rid
     cdef public ObjectID collider_id
     cdef public Object collider
@@ -415,7 +419,7 @@ cdef _PS3DEShapeResult physics_server3d_extension_shape_result_to_pyobject(const
 cdef int physics_server3d_extension_shape_result_from_pyobject(_PS3DEShapeResult, cpp._PS3DEShapeResult *) except -1
 
 
-cdef class ScriptLanguageExtensionProfilingInfo:
+cdef class ScriptLanguageExtensionProfilingInfo(_CStructDataKeeper):
     cdef public str signature
     cdef public uint64_t call_count
     cdef public uint64_t total_time

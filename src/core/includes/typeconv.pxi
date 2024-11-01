@@ -122,9 +122,11 @@ cdef list ARGTYPE_LIST = TYPE_LIST + [
     'ScriptLanguageExtensionProfilingInfo'
 ]
 
+cdef size_t ptr_size = cython.sizeof(GDExtensionTypePtr)
+
 cdef list ARGTYPE_SIZE_LIST = TYPE_SIZE_LIST + [
     cython.sizeof(Variant),
-    cython.sizeof(GDExtensionTypePtr),
+    ptr_size,
 
     # NOTE: All structs are passed by pointer
     cython.sizeof(AudioFrame),

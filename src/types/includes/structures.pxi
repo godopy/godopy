@@ -560,7 +560,7 @@ cdef int physics_server3d_extension_motion_result_from_pyobject(_PS3DEMotionResu
     cdef size_t i
     cdef cpp._PS3DEMotionResult mr
     vector3_from_pyobject(p_obj.data[0], &mr.travel)
-    vector3_from_pyobject(p_obj.data[0], &mr.remainder)
+    vector3_from_pyobject(p_obj.data[1], &mr.remainder)
     mr.collision_depth = p_obj.collision_depth
     mr.collision_safe_fraction = p_obj.collision_safe_fraction
     mr.collision_unsafe_fraction = p_obj.collision_unsafe_fraction

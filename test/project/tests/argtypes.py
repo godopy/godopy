@@ -77,7 +77,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(t.arg6, 'Godot')
 
 
-        def test_atomic_type_return_to_python_ptrcalls(self) -> None:
+        def test_atomic_type_return_from_python_ptrcalls(self) -> None:
             t = ExtendedTestObject()
 
             # Make virtual calls from the Engine to Python
@@ -184,7 +184,7 @@ if ExtendedTestObject is not None:
             # Without converting to float32 numbers would differ due to the lost precision
             self.assertEqual(args[6].tolist(), [np.float32(n) for n in (0.2, 0.4, 0.5, 0.75)])
 
-        def test_math_type_args_from_python_ptrcalls(self) -> None:
+        def test_math_type_args_ptrcalls(self) -> None:
             t = ExtendedTestObject()
 
             # Make a call from Python to the Engine
@@ -282,7 +282,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(t.arg7.tolist(), [np.float32(n) for n in (0.2, 0.4, 0.5, 0.75)])
 
 
-        def test_math_type_return_to_python_ptrcalls(self) -> None:
+        def test_math_type_return_from_python_ptrcalls(self) -> None:
             t = ExtendedTestObject()
 
             # Make virtual calls from the Engine to Python
@@ -342,7 +342,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(args[7], ["Hello", 1, float(3.1), "World", 2.0])
 
 
-        def test_misc_type_args_from_python_ptrcalls(self) -> None:
+        def test_misc_type_args_ptrcalls(self) -> None:
             t = ExtendedTestObject()
             gdscript = self._main.get_node('TestCasesGDScript')
 
@@ -387,7 +387,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(t.arg8, ["Hello", 1, 3.1, "World", 2.0])
 
 
-        def test_misc_type_return_to_python_ptrcalls(self) -> None:
+        def test_misc_type_return_from_python_ptrcalls(self) -> None:
             t = ExtendedTestObject()
             gdscript = self._main.get_node('TestCasesGDScript')
             t.set_gdscript_instance(gdscript)
@@ -472,7 +472,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(args[9].tolist(), [[2, 3, 4, 8], [5, 1, 7, 9]])
 
 
-        def test_packed_array_type_args_from_python_ptrcalls(self) -> None:
+        def test_packed_array_type_args_ptrcalls(self) -> None:
             t = ExtendedTestObject()
 
             # Make a call from Python to the Engine
@@ -547,7 +547,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(t.argA.tolist(), [[2, 3, 4, 8], [5, 1, 7, 9]])
 
 
-        def test_packed_array_type_return_to_python_ptrcalls(self) -> None:
+        def test_packed_array_type_return_from_python_ptrcalls(self) -> None:
             t = ExtendedTestObject()
 
             # Make virtual calls from the Engine to Python
@@ -646,6 +646,7 @@ if ExtendedTestObject is not None:
                 as_script_language_extension_profiling_info(t.get_script_language_profiling_info())
             ]
 
+
             self.assertIsInstance(args[0], PhysicsServer2DExtensionMotionResult)
             self.assertEqual(args[0].travel.tolist(), [1, 2])
 
@@ -659,16 +660,16 @@ if ExtendedTestObject is not None:
             self.assertEqual(args[3].shape, 2)
 
             self.assertIsInstance(args[4], PhysicsServer3DExtensionMotionCollision)
-            self.assertEqual(args[4].position.tolist(), [1, 2, 3])
+            self.assertEqual(args[4].position.tolist(), [1., 2., 3.])
 
             self.assertIsInstance(args[5], PhysicsServer3DExtensionMotionResult)
-            self.assertEqual(args[5].travel.tolist(), [1, 2, 3])
+            self.assertEqual(args[5].travel.tolist(), [1., 2., 3.])
 
             self.assertIsInstance(args[6], PhysicsServer3DExtensionRayResult)
-            self.assertEqual(args[6].position.tolist(), [1, 2, 3])
+            self.assertEqual(args[6].position.tolist(), [1., 2., 3.])
 
             self.assertIsInstance(args[7], PhysicsServer3DExtensionShapeRestInfo)
-            self.assertEqual(args[7].point.tolist(), [1, 2, 3])
+            self.assertEqual(args[7].point.tolist(), [1., 2., 3.])
 
             self.assertIsInstance(args[8], PhysicsServer3DExtensionShapeResult)
             self.assertEqual(args[8].shape, 2)
@@ -677,7 +678,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(args[9].signature, 'test')
 
 
-        def test_other_type_args_from_python_ptrcalls(self) -> None:
+        def test_other_type_args_ptrcalls(self) -> None:
             t = ExtendedTestObject()
 
             arr_int1 = np.array([1])
@@ -705,10 +706,12 @@ if ExtendedTestObject is not None:
                 byte_ptr4
             ]
 
+            ids = [id(obj)] + [ptr.pointer_id() for ptr in args[1:]]
+
             # Make a call from Python to the Engine
             # Cover argument conversion from Python to Engine's types
             t.other_args_1(*args)
-            self._assert_other_types_1(t, [id(obj)] + [ptr.pointer_id() for ptr in args[1:]])
+            self._assert_other_types_1(t, ids)
 
             # Make a call from Python to the Engine
             # Cover argument conversion from Python to Engine's types
@@ -742,16 +745,123 @@ if ExtendedTestObject is not None:
             )
             self._assert_other_types_3(t)
 
+            # Make a virtual call from the Engine to Python
+            # Cover argument conversion from builtin Engine's types to Python
+            t.other_args_1_virtual_call()
 
-        def test_other_type_return_to_python_ptrcalls(self) -> None:
+            self.assertIsInstance(t.arg1, gd.classdb.PythonObject)
+            self.assertEqual(t.arg1.call('get_python_object_id'), ids[0])
+
+            self.assertIsInstance(t.arg2, Pointer)
+            self.assertEqual(t.arg2.pointer_id(), ids[1])
+
+            self.assertIsInstance(t.arg3, Pointer)
+            self.assertEqual(t.arg3.pointer_id(), ids[2])
+
+            buffer1 = Buffer(t.arg4, 8)
+            self.assertIsInstance(t.arg4, Pointer)
+            # pointer_ids are different because data was copied to C array
+            self.assertNotEqual(t.arg4.pointer_id(), ids[3])
+            self.assertEqual(buffer1.as_array().tolist(), [1, 2, 3, 4, 5, 6, 7, 8])
+
+            buffer2 = Buffer(t.arg5, 8)
+            self.assertIsInstance(t.arg5, Pointer)
+            self.assertNotEqual(t.arg5.pointer_id(), ids[4])
+            self.assertEqual(buffer2.as_array().tolist(), [9, 10, 11, 12, 13, 14, 15, 16])
+
+            buffer3 = Buffer(t.arg6, 8)
+            self.assertIsInstance(t.arg6, Pointer)
+            self.assertNotEqual(t.arg6.pointer_id(), ids[5])
+            self.assertEqual(buffer3.as_array().tolist(), [17, 18, 19, 20, 21, 22, 23, 24])
+
+            buffer4 = Buffer(t.arg7, 8)
+            self.assertIsInstance(t.arg7, Pointer)
+            self.assertNotEqual(t.arg7.pointer_id(), ids[6])
+            self.assertEqual(buffer4.as_array().tolist(), [25, 26, 27, 28, 29, 30, 31, 32])            
+
+            # Make a virtual call from the Engine to Python
+            # Cover argument conversion from builtin Engine's types to Python
+            t.other_args_2_virtual_call()
+
+            self.assertIsInstance(t.arg1, AudioFrame)
+            self.assertEqual(t.arg1.left, 1)
+
+            self.assertIsInstance(t.arg2, CaretInfo)
+            self.assertEqual(t.arg2.leading_caret.tolist(), [1, 2, 3, 4])
+
+            self.assertIsInstance(t.arg3, Glyph)
+            self.assertEqual(t.arg3.start, 1)
+
+            self.assertIsInstance(t.arg4, ObjectID)
+            self.assertEqual(t.arg4.id, 123)
+
+            # Make a virtual call from the Engine to Python
+            # Cover argument conversion from builtin Engine's types to Python
+            t.other_args_3_virtual_call()
+
+            self.assertIsInstance(t.arg1, PhysicsServer2DExtensionMotionResult)
+            self.assertEqual(t.arg1.travel.tolist(), [1, 2])
+
+            self.assertIsInstance(t.arg2, PhysicsServer2DExtensionRayResult)
+            self.assertEqual(t.arg2.position.tolist(), [1, 2])
+
+            self.assertIsInstance(t.arg3, PhysicsServer2DExtensionShapeRestInfo)
+            self.assertEqual(t.arg3.point.tolist(), [1, 2])
+
+            self.assertIsInstance(t.arg4, PhysicsServer2DExtensionShapeResult)
+            self.assertEqual(t.arg4.shape, 2)
+
+            self.assertIsInstance(t.arg5, PhysicsServer3DExtensionMotionCollision)
+            self.assertEqual(t.arg5.position.tolist(), [1, 2, 3])
+
+            self.assertIsInstance(t.arg6, PhysicsServer3DExtensionMotionResult)
+            self.assertEqual(t.arg6.travel.tolist(), [1, 2, 3])
+
+            self.assertIsInstance(t.arg7, PhysicsServer3DExtensionRayResult)
+            self.assertEqual(t.arg7.position.tolist(), [1, 2, 3])
+
+            self.assertIsInstance(t.arg8, PhysicsServer3DExtensionShapeRestInfo)
+            self.assertEqual(t.arg8.point.tolist(), [1, 2, 3])
+
+            self.assertIsInstance(t.arg9, PhysicsServer3DExtensionShapeResult)
+            self.assertEqual(t.arg9.shape, 2)
+
+            self.assertIsInstance(t.argA, ScriptLanguageExtensionProfilingInfo)
+            self.assertEqual(t.argA.signature, 'test')
+
+
+        def test_other_type_return_from_python_ptrcalls(self) -> None:
             t = ExtendedTestObject()
 
             # Make virtual calls from the Engine to Python
             # Cover return value conversion from Python to builtin Engine's types
-            # t.get_variant_virtual_call()
+            t.get_variant_virtual_call()
+            t.get_pointer1_virtual_call()
+            t.get_pointer2_virtual_call()
+            t.get_uint8_pointer1_virtual_call()
+            t.get_uint8_pointer2_virtual_call()
+            t.get_uint8_pointer3_virtual_call()
+            t.get_uint8_pointer4_virtual_call()
 
+            t.get_audio_frame_virtual_call()
+            t.get_caret_info_virtual_call()
+            t.get_glyph_virtual_call()
+            t.get_object_id_virtual_call()
 
-            # self._assert_other_types_1(t)
+            t.get_ps2d_motion_result_virtual_call()
+            t.get_ps2d_ray_result_virtual_call()
+            t.get_ps2d_shape_rest_info_virtual_call()
+            t.get_ps2d_shape_result_virtual_call()
+            t.get_ps3d_motion_collision_virtual_call()
+            t.get_ps3d_motion_result_virtual_call()
+            t.get_ps3d_ray_result_virtual_call()
+            t.get_ps3d_shape_rest_info_virtual_call()
+            t.get_ps3d_shape_result_virtual_call()
+            t.get_script_language_profiling_info_virtual_call()
+
+            self._assert_other_types_1(t, t._ids)
+            self._assert_other_types_2(t)
+            self._assert_other_types_3(t)
 
 
 class TestCaseArgTypes(BaseTestCase):
