@@ -865,7 +865,7 @@ if ExtendedTestObject is not None:
 
 
 class TestCaseArgTypes(BaseTestCase):
-    def test_atomic_type_args_to_python_varcalls(self):
+    def test_atomic_type_args_to_python_varcalls(self) -> None:
         gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from the Engine to Python
@@ -884,7 +884,7 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(r.arg4, 'GodoPy')
 
 
-    def test_atomic_type_args_from_python_varcalls(self):
+    def test_atomic_type_args_from_python_varcalls(self) -> None:
         gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from Python to the Engine
@@ -908,7 +908,7 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(args[3], 'GodoPy')
 
 
-    def test_math_type_args_to_python_varcalls(self):
+    def test_math_type_args_to_python_varcalls(self) -> None:
         gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from the Engine to Python
@@ -988,7 +988,7 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(r.arg7.tolist(), [np.float32(n) for n in (0.2, 0.4, 0.5, 0.75)])
 
 
-    def test_math_type_args_from_python_varcalls(self):
+    def test_math_type_args_from_python_varcalls(self) -> None:
         gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from Python to the Engine
@@ -1104,7 +1104,8 @@ class TestCaseArgTypes(BaseTestCase):
         # Without converting to float32 numbers would differ due to the lost precision
         self.assertEqual(args[6].tolist(), [np.float32(n) for n in (0.2, 0.4, 0.5, 0.75)])
 
-    def test_misc_type_args_to_python_varcalls(self):
+
+    def test_misc_type_args_to_python_varcalls(self) -> None:
         gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from the Engine to Python
@@ -1135,7 +1136,7 @@ class TestCaseArgTypes(BaseTestCase):
 
         # TODO: Typed arrays
 
-    def test_misc_args_from_python_varcalls(self):
+    def test_misc_args_from_python_varcalls(self) -> None:
         gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from Python to the Engine
@@ -1186,7 +1187,7 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(args[7], ["Hello", 1, "World", 2.0])
 
 
-    def test_packed_array_type_args_to_python_varcalls(self):
+    def test_packed_array_type_args_to_python_varcalls(self) -> None:
         gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from the Engine to Python
@@ -1245,7 +1246,8 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertIsInstance(r.argA[0], Vector4)
         self.assertEqual(r.argA.tolist(), [[2, 3, 4, 10], [9, 5, 6, 11], [1, 7, 8, 12]])
 
-    def test_packed_array_args_from_python_varcalls(self):
+
+    def test_packed_array_args_from_python_varcalls(self) -> None:
         gdscript = self._main.get_node('TestCasesGDScript')
 
         # Makes a call from Python to the Engine
@@ -1327,3 +1329,37 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(args[9].shape[1], 4)
         self.assertIsInstance(args[9][0], Vector4)
         self.assertEqual(args[9].tolist(), [[2, 3, 4, 8], [5, 1, 7, 9]])
+
+
+    def test_other_type_args_to_python_varcalls(self) -> None:
+        gdscript = self._main.get_node('TestCasesGDScript')
+
+        # Makes a call from the Engine to Python
+        # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
+        gdscript.call('test_other_types_1_out')
+
+        r = gdscript.call('get_resource')
+
+        self.assertIsInstance(r.arg1, float)
+        self.assertEqual(r.arg1, 5.0)
+
+        self.assertIsNone(r.arg2)
+
+
+    def test_other_type_args_from_python_varcalls(self) -> None:
+        gdscript = self._main.get_node('TestCasesGDScript')
+
+        # Makes a call from Python to the Engine
+        # Covers argument conversion from Python to Variant
+        gdscript.call('test_other_types_1_in', 5.0, None)
+
+        # Covers return value conversion from Variant to Python
+        args = [
+            gdscript.get('m_variant'),
+            gdscript.get('m_pointer'),
+        ]
+
+        self.assertIsInstance(args[0], float)
+        self.assertEqual(args[0], 5.0)
+
+        self.assertIsNone(args[1])

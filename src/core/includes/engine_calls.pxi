@@ -12,7 +12,7 @@ cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tu
     """
     Implements GDExtension's 'call' logic when calling Engine methods from Python
     """
-    cdef Variant ret
+    cdef Variant return_value
     cdef GDExtensionCallError err
 
     err.error = GDEXTENSION_CALL_OK
@@ -29,16 +29,16 @@ cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tu
         type_funcs.variant_from_pyobject(args[i], &vargs[i])
         varg_ptrs[i] = &vargs[i]
 
-    varcall(method, <const Variant **>varg_ptrs, size, &ret, &err)
+    varcall(method, <const Variant **>varg_ptrs, size, &return_value, &err)
 
     gdextension_interface_mem_free(varg_ptrs)
 
     if err.error != GDEXTENSION_CALL_OK:
-        error_text = ret.pythonize()
+        error_text = type_funcs.variant_to_pyobject(return_value)
 
         raise GDExtensionCallException(error_text, <int>err.error)
 
-    return ret.pythonize()
+    return type_funcs.variant_to_pyobject(return_value)
 
 
 cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tuple args):

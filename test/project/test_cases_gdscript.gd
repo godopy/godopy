@@ -42,6 +42,8 @@ var m_packed_vector2_array: PackedVector2Array
 var m_packed_vector3_array: PackedVector3Array
 var m_packed_color_array: PackedColorArray
 var m_packed_vector4_array: PackedVector4Array
+var m_variant: Variant
+var m_pointer
 
 
 func test_callable():
@@ -173,4 +175,16 @@ func test_packed_array_types_out():
 		res.packed_vector3_array_ret(),
 		res.packed_color_array_ret(),
 		res.packed_vector4_array_ret()
+	)
+
+
+func test_other_types_1_in(p_variant: Variant, p_pointer):
+	m_variant = p_variant
+	m_pointer = p_pointer
+
+
+func test_other_types_1_out():
+	res.other_args_1(
+		res.variant_ret(),
+		null
 	)

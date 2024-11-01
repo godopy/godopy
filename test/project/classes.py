@@ -391,7 +391,7 @@ class Example(gd.Class, inherits=classdb.Control):
 
 
 class TestResource(gd.Class, inherits=classdb.Resource):
-    def __init__(self):
+    def __init__(self) -> None:
         self.arg1 = None
         self.arg2 = None
         self.arg3 = None
@@ -404,7 +404,7 @@ class TestResource(gd.Class, inherits=classdb.Resource):
         self.argA = None
 
     @classdb.bind_method
-    def atomic_args(self, arg1: bool, arg2: int, arg3: float, arg4: str):
+    def atomic_args(self, arg1: bool, arg2: int, arg3: float, arg4: str) -> None:
         self.arg1 = arg1
         self.arg2 = arg2
         self.arg3 = arg3
@@ -413,7 +413,7 @@ class TestResource(gd.Class, inherits=classdb.Resource):
     @classdb.bind_method
     def math_args_1(self, arg1: Vector2, arg2: Vector2i, arg3: Rect2,
                     arg4: Rect2i, arg5: Vector3, arg6: Vector3i,
-                    arg7: Transform2D, arg8: Vector4, arg9: Vector4i):
+                    arg7: Transform2D, arg8: Vector4, arg9: Vector4i) -> None:
         self.arg1 = arg1
         self.arg2 = arg2
         self.arg3 = arg3
@@ -427,7 +427,7 @@ class TestResource(gd.Class, inherits=classdb.Resource):
     @classdb.bind_method
     def math_args_2(self, arg1: Plane, arg2: Quaternion, arg3: AABB,
                     arg4: Basis, arg5: Transform3D, arg6: Projection,
-                    arg7: Color):
+                    arg7: Color) -> None:
         self.arg1 = arg1
         self.arg2 = arg2
         self.arg3 = arg3
@@ -439,7 +439,7 @@ class TestResource(gd.Class, inherits=classdb.Resource):
     @classdb.bind_method
     def misc_args(self,  arg1: StringName, arg2: NodePath, arg3: RID,
                   arg4: Object, arg5: Callable, arg6: Signal,
-                  arg7: Dict, arg8: List):
+                  arg7: Dict, arg8: List) -> None:
         self.arg1 = arg1
         self.arg2 = arg2
         self.arg3 = arg3
@@ -455,7 +455,7 @@ class TestResource(gd.Class, inherits=classdb.Resource):
                           arg4: PackedFloat32Array, arg5: PackedFloat64Array,
                           arg6: PackedStringArray, arg7: PackedVector2Array,
                           arg8: PackedVector3Array, arg9: PackedColorArray,
-                          argA: PackedVector4Array):
+                          argA: PackedVector4Array) -> None:
         self.arg1 = arg1
         self.arg2 = arg2
         self.arg3 = arg3
@@ -466,6 +466,11 @@ class TestResource(gd.Class, inherits=classdb.Resource):
         self.arg8 = arg8
         self.arg9 = arg9
         self.argA = argA
+
+    @classdb.bind_method
+    def other_args_1(self, arg1: Variant, arg2: Pointer) -> None:
+        self.arg1 = arg1
+        self.arg2 = arg2
 
     @classdb.bind_method
     def bool_ret(self) -> bool:
@@ -618,3 +623,15 @@ class TestResource(gd.Class, inherits=classdb.Resource):
     @classdb.bind_method
     def packed_vector4_array_ret(self) -> PackedVector4Array:
         return as_packed_vector4_array([[2, 3, 4, 10], [9, 5, 6, 11], [1, 7, 8, 12]])
+
+    @classdb.bind_method
+    def variant_ret(self) -> Variant:
+        return 5.0  # FLOAT Variant Type
+
+    @classdb.bind_method
+    def pointer_ret(self) -> Pointer:
+        arr = np.array([1])
+        self._arr1 = arr  # ensure array will be alive during tests
+        ptr = Pointer.from_int64_array(arr)
+        # self._ids.append(ptr.pointer_id())
+        return ptr

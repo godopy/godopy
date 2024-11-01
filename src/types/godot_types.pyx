@@ -350,7 +350,25 @@ cdef dict _pytype_to_vartype = {
     PackedVector2Array: cpp.PACKED_VECTOR2_ARRAY,
     PackedVector3Array: cpp.PACKED_VECTOR3_ARRAY,
     PackedColorArray: cpp.PACKED_COLOR_ARRAY,
-    PackedVector4Array: cpp.PACKED_VECTOR4_ARRAY
+    PackedVector4Array: cpp.PACKED_VECTOR4_ARRAY,
+
+    # Following can not be passed as Variant arguments or return types
+    Pointer: cpp.NIL,
+    IntPointer: cpp.NIL,
+    FloatPointer: cpp.NIL,
+    AudioFrame: cpp.NIL,
+    CaretInfo: cpp.NIL,
+    Glyph: cpp.NIL,
+    ObjectID: cpp.NIL,
+    PhysicsServer2DExtensionMotionResult: cpp.NIL,
+    PhysicsServer2DExtensionRayResult: cpp.NIL,
+    PhysicsServer2DExtensionShapeRestInfo: cpp.NIL,
+    PhysicsServer2DExtensionShapeResult: cpp.NIL,
+    PhysicsServer3DExtensionMotionCollision: cpp.NIL,
+    PhysicsServer3DExtensionRayResult: cpp.NIL,
+    PhysicsServer3DExtensionShapeRestInfo: cpp.NIL,
+    PhysicsServer3DExtensionShapeResult: cpp.NIL,
+    ScriptLanguageExtensionProfilingInfo: cpp.NIL,
 }
 
 

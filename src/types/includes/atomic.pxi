@@ -59,22 +59,12 @@ cdef public object variant_int_to_pyobject(const cpp.Variant &v):
 
 
 cdef public void int_from_pyobject(object p_obj, int64_t *r_ret) noexcept:
-    # if not (PyLong_Check(p_obj) or not isinstance(p_obj, np.integer)):
-    #     cpp.UtilityFunctions.push_error("'int' is required, got %r" % type(p_obj))
-    #     r_ret[0] = 0
-    # else:
-
     r_ret[0] = <int64_t>p_obj
 
 
 
 cdef public void variant_int_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
-    cdef int64_t ret = 0
-
-    # if not (PyLong_Check(p_obj) or not isinstance(p_obj, np.integer)):
-    #     cpp.UtilityFunctions.push_error("'int' is required, got %r" % type(p_obj))
-    # else:
-    ret = <int64_t>p_obj
+    cdef int64_t ret = <int64_t>p_obj
 
     cdef cpp.Variant v = cpp.Variant(ret)
     gdextension_interface_variant_new_copy(r_ret, &v)
@@ -94,10 +84,6 @@ cdef public object variant_float_to_pyobject(const cpp.Variant &v):
 
 
 cdef public void float_from_pyobject(object p_obj, double *r_ret) noexcept:
-    # if not (PyFloat_Check(p_obj) or not isinstance(p_obj, np.floating)):
-    #     cpp.UtilityFunctions.push_error("'float' is required, got %r" % type(p_obj))
-    #     r_ret[0] = 0.0
-    # else:
     r_ret[0] = <double>p_obj
 
 
