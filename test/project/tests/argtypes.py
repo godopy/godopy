@@ -207,6 +207,81 @@ if ExtendedTestObject is not None:
 
             self._assert_math_types_2(t)
 
+            # Make a virtual call from the Engine to Python
+            # Cover argument conversion from builtin Engine's types to Python
+            t.math_args_1_virtual_call()
+
+            self.assertIsInstance(t.arg1, Vector2)
+            self.assertEqual(t.arg1.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg1.tolist(), [2.5, 5.])
+
+            self.assertIsInstance(t.arg2, Vector2i)
+            self.assertEqual(t.arg2.dtype, np.dtype('int32'))
+            self.assertEqual(t.arg2.tolist(), [5, 10])
+
+            self.assertIsInstance(t.arg3, Rect2)
+            self.assertEqual(t.arg3.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg3.tolist(), [0., 1., 100., 200.])
+
+            self.assertIsInstance(t.arg4, Rect2i)
+            self.assertEqual(t.arg4.dtype, np.dtype('int32'))
+            self.assertEqual(t.arg4.tolist(), [0, 1, 100, 200])
+
+            self.assertIsInstance(t.arg5, Vector3)
+            self.assertEqual(t.arg5.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg5.tolist(), [2.5, 5., 10.])
+
+            self.assertIsInstance(t.arg6, Vector3i)
+            self.assertEqual(t.arg6.dtype, np.dtype('int32'))
+            self.assertEqual(t.arg6.tolist(), [5, 10, 20])
+
+            self.assertIsInstance(t.arg7, Transform2D)
+            self.assertEqual(t.arg7.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg7.tolist(), [[1., 2.], [3., 4.], [5., 6.]])
+
+            self.assertIsInstance(t.arg8, Vector4)
+            self.assertEqual(t.arg8.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg8.tolist(), [2.5, 5., 10., 20.])
+
+            self.assertIsInstance(t.arg9, Vector4i)
+            self.assertEqual(t.arg9.dtype, np.dtype('int32'))
+            self.assertEqual(t.arg9.tolist(), [5, 10, 20, 40])
+
+
+            # Make a virtual call from the Engine to Python
+            # Cover argument conversion from builtin Engine's types to Python
+            t.math_args_2_virtual_call()
+
+            self.assertIsInstance(t.arg1, Plane)
+            self.assertEqual(t.arg1.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg1.tolist(), [5, 10, 20, 40])
+
+            self.assertIsInstance(t.arg2, Quaternion)
+            self.assertEqual(t.arg2.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg2.tolist(), [5, 10, 20, 40])
+
+            self.assertIsInstance(t.arg3, AABB)
+            self.assertEqual(t.arg3.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg3.tolist(), [[5, 10, 20], [40, 50, 60]])
+
+            self.assertIsInstance(t.arg4, Basis)
+            self.assertEqual(t.arg4.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg4.tolist(), [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+            self.assertIsInstance(t.arg5, Transform3D)
+            self.assertEqual(t.arg5.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg5.tolist(), [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]])
+
+            self.assertIsInstance(t.arg6, Projection)
+            self.assertEqual(t.arg6.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg6.tolist(), [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]])
+
+            self.assertIsInstance(t.arg7, Color)
+            self.assertEqual(t.arg7.dtype, np.dtype('float32'))
+            # Without converting to float32 numbers would differ due to the lost precision
+            self.assertEqual(t.arg7.tolist(), [np.float32(n) for n in (0.2, 0.4, 0.5, 0.75)])
+
+
         def test_math_type_return_to_python_ptrcalls(self) -> None:
             t = ExtendedTestObject()
 
@@ -285,6 +360,31 @@ if ExtendedTestObject is not None:
             )
 
             self._assert_misc_types(t, gdscript)
+
+            # Make a virtual call from the Engine to Python
+            # Cover argument conversion from builtin Engine's types to Python
+            t.misc_args_virtual_call()
+
+            self.assertIsInstance(t.arg1, StringName)
+            self.assertEqual(t.arg1, "GodoPy")
+
+            self.assertIsInstance(t.arg2, NodePath)
+            self.assertEqual(str(t.arg2), "test/resource.py")
+
+            self.assertIsInstance(t.arg3, RID)
+            self.assertEqual(int(t.arg3), int(gdscript.call('get_resource').get_rid()))
+
+            self.assertIsInstance(t.arg4, Object)
+            self.assertEqual(t.arg4, gdscript)
+
+            self.assertIsInstance(t.arg5, Callable)
+            self.assertIsInstance(t.arg6, Signal)
+
+            self.assertIsInstance(t.arg7, dict)
+            self.assertEqual(t.arg7, {"hello": "World!", 2: [4, 5, [6, 7, 'a']]})
+
+            self.assertIsInstance(t.arg8, list)
+            self.assertEqual(t.arg8, ["Hello", 1, 3.1, "World", 2.0])
 
 
         def test_misc_type_return_to_python_ptrcalls(self) -> None:
@@ -391,6 +491,60 @@ if ExtendedTestObject is not None:
             )
 
             self._assert_packed_array_types(t)
+
+            # Make a virtual call from the Engine to Python
+            # Cover argument conversion from builtin Engine's types to Python
+            t.packed_array_args_virtual_call()
+
+            self.assertIsInstance(t.arg1, PackedByteArray)
+            self.assertEqual(t.arg1.dtype, np.dtype('uint8'))
+            self.assertEqual(t.arg1.tolist(), [2, 3, 4, 5, 1, 7])
+
+            self.assertIsInstance(t.arg2, PackedInt32Array)
+            self.assertEqual(t.arg2.dtype, np.dtype('int32'))
+            self.assertEqual(t.arg2.tolist(), [2, 3, 4, 5, 1, 7])
+
+            self.assertIsInstance(t.arg3, PackedInt64Array)
+            self.assertEqual(t.arg3.dtype, np.dtype('int64'))
+            self.assertEqual(t.arg3.tolist(), [2, 3, 4, 5, 1, 7])
+
+            self.assertIsInstance(t.arg4, PackedFloat32Array)
+            self.assertEqual(t.arg4.dtype, np.dtype('float32'))
+            self.assertEqual([np.float32(x) for x in t.arg4.tolist()], [2., 3., 4., 5., 1.7, 7.])
+
+            self.assertIsInstance(t.arg5, PackedFloat64Array)
+            self.assertEqual(t.arg5.dtype, np.dtype('float64'))
+            self.assertEqual(t.arg5.tolist(), [2., 3., 4.2, 5., 1., 7.])
+
+            self.assertIsInstance(t.arg6, list)
+            self.assertEqual(t.arg6, ['Hello', 'World', '!'])
+
+            self.assertIsInstance(t.arg7, PackedVector2Array)
+            self.assertEqual(t.arg7.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg7.shape[1], 2)
+            self.assertIsInstance(t.arg7[0], Vector2)
+            self.assertEqual(t.arg7.tolist(), [[2, 3], [4, 5], [1, 7]])
+
+            self.assertIsInstance(t.arg8, PackedVector3Array)
+            self.assertEqual(t.arg8.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg8.shape[1], 3)
+            self.assertIsInstance(t.arg8[0], Vector3)
+            self.assertEqual(t.arg8.tolist(), [[2, 3, 4], [9, 5, 6], [1, 7, 8]])
+
+            self.assertIsInstance(t.arg9, PackedColorArray)
+            self.assertEqual(t.arg9.dtype, np.dtype('float32'))
+            self.assertEqual(t.arg9.shape[1], 4)
+            self.assertIsInstance(t.arg9[0], Color)
+            self.assertEqual(
+                [[np.float32(y) for y in x] for x in t.arg9.tolist()],
+                [[.2, .3, .4, 1.], [.9, .5, .6, 0.75], [.1, .7, .8, .1]]
+            )
+
+            self.assertIsInstance(t.argA, PackedVector4Array)
+            self.assertEqual(t.argA.dtype, np.dtype('float32'))
+            self.assertEqual(t.argA.shape[1], 4)
+            self.assertIsInstance(t.argA[0], Vector4)
+            self.assertEqual(t.argA.tolist(), [[2, 3, 4, 8], [5, 1, 7, 9]])
 
 
         def test_packed_array_type_return_to_python_ptrcalls(self) -> None:
