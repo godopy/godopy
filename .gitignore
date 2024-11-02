@@ -48,4 +48,5 @@ cython_debug/
 
 # Python
 /venv
-__pycache__
+__pycache__/*
+!__pycache__/.gdignore

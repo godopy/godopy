@@ -15,18 +15,20 @@ extern int python_deinitialize_level(ModuleInitializationLevel);
 
 void initialize_level(ModuleInitializationLevel p_level) {
 	if (p_level == MINIMUM_INITIALIZATION_LEVEL) {
-		// The only GDExtension class defined at godot-cpp level
-		// Simple PyObject* wrapper, provides getattr and call methods
+		// The only GDExtension class defined at godot-cpp level.
+		// A simple PyObject* wrapper, provides getattr and call methods
 		GDREGISTER_CLASS(PythonObject);
 
 		// Initialize thread handling
 		PythonRuntime::get_singleton()->ensure_current_thread_state(true);
 
 		UtilityFunctions::print_verbose("[Python] Importing core modules...");
+
 		PythonRuntime::get_singleton()->init_module("_gdextension_internals");
 		PythonRuntime::get_singleton()->init_module("entry_point");
 		PythonRuntime::get_singleton()->init_module("godot_types");
 		PythonRuntime::get_singleton()->init_module("gdextension");
+
 		UtilityFunctions::print_verbose("[Python] Success!");
 	}
 

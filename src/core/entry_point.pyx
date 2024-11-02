@@ -7,7 +7,6 @@ from _gdextension_internals cimport print_traceback
 
 import io
 import os
-import gc
 import sys
 import traceback
 import importlib
@@ -59,6 +58,7 @@ def redirect_python_stdio():
 
 cdef object initialize_funcs = []
 cdef object uninitialize_funcs = []
+
 cdef bint is_first_level = True
 cdef int first_level = 0
 
@@ -79,7 +79,7 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
             _python_deinitialize_level(p_level)
         except Exception as exc:
             print_traceback(exc)
-
+    
     return 0
 
 
@@ -90,12 +90,16 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
 
     for module_name in gdextension_config.REGISTERED_MODULES:
         mod_register_types = importlib.import_module('%s.register_types' % module_name)
+
         initialize_func = getattr(mod_register_types, 'initialize', None)
         uninitialize_func = getattr(mod_register_types, 'uninitialize', None)
+
         if initialize_func is not None:
             initialize_funcs.append(initialize_func)
+
         if uninitialize_func is not None:
             uninitialize_funcs.append(uninitialize_func)
+
 
     if is_first_level:
         redirect_python_stdio()
@@ -110,20 +114,21 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
 
         try:
             import register_types
+
             initialize_func = getattr(register_types, 'initialize', None)
             uninitialize_func = getattr(register_types, 'uninitialize', None)
+
             if initialize_func is not None:
                 initialize_funcs.append(initialize_func)
+
             if uninitialize_func is not None:
                 uninitialize_funcs.append(uninitialize_func)
+
         except ImportError as exc:
             f = io.StringIO()
             traceback.print_exception(exc, file=f)
             exc_text = f.getvalue()
             if isinstance(exc, ModuleNotFoundError) and "'register_types'" in exc_text:
-                # UtilityFunctions.print_rich(
-                #     "\n[color=orange]WARNING: 'register_types' module was not found.[/color]\n"
-                # )
                 pass
             else:
                 raise exc
@@ -131,8 +136,6 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
         is_first_level = False
         first_level = p_level
         uninitialize_funcs.reverse()
-
-        # gc.set_debug(gc.DEBUG_LEAK)
 
     for func in initialize_funcs:
         func(p_level)
@@ -152,5 +155,3 @@ cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *
             cls.unregister()
 
         _registered_classes = []
-
-        gc.collect()
