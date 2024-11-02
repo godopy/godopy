@@ -16,11 +16,12 @@ cdef public int print_traceback(object exc) except -1:
 
     return 0
 
+
 class Config(dict):
     def __getattr__(self, attr):
         return self[attr]
 
 
 default_gdextension_config = Config({
-    'REGISTERED_MODULES': ('godot', 'godopy')
+    'REGISTERED_MODULES': ('godot', 'godot_scripting', 'godopy')
 })
