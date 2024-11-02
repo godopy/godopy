@@ -13,11 +13,14 @@ cdef class MethodBind(EngineCallableBase):
         make_optimized_type_info(self.type_info, self._type_info_opt)
         self.is_vararg = info['is_vararg']
         cdef uint64_t _hash = info['hash']
-        cdef StringName class_name = StringName(instance.__godot_class__.__name__)
-        cdef StringName _method_name = StringName(method_name)
-        with nogil:
-            self._godot_method_bind = gdextension_interface_classdb_get_method_bind(
-                class_name._native_ptr(), _method_name._native_ptr(), _hash)
+        cdef PyStringName class_name = PyStringName(instance.__godot_class__.__name__)
+        cdef PyStringName _method_name = PyStringName(method_name)
+
+        self._godot_method_bind = gdextension_interface_classdb_get_method_bind(
+            class_name.ptr(),
+            _method_name.ptr(),
+            _hash
+        )
 
         # UtilityFunctions.print("Init MB %r" % self)
 

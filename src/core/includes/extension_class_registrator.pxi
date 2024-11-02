@@ -41,19 +41,16 @@ cdef class ExtensionClassRegistrator:
         # if kwargs.pop('has_get_property_list', False):
         #     ci.get_property_list_func = <GDExtensionClassGetPropertyList>&_ext_get_property_list_bind
 
-        cdef str name = self.__name__
-        cdef str inherits_name = inherits.__name__
-        cdef StringName _name = StringName(name)
-        cdef StringName _inherits_name = StringName(inherits_name)
+        cdef PyStringName name = PyStringName(self.__name__)
+        cdef PyStringName inherits_name = PyStringName(inherits.__name__)
 
-        with nogil:
-            gdextension_interface_classdb_register_extension_class4(
-                gdextension_library,
-                _name._native_ptr(),
-                _inherits_name._native_ptr(),
-                ci
-            )
-            gdextension_interface_mem_free(ci)
+        gdextension_interface_classdb_register_extension_class4(
+            gdextension_library,
+            name.ptr(),
+            inherits_name.ptr(),
+            ci
+        )
+        gdextension_interface_mem_free(ci)
 
         for method in registree.method_bindings.values():
             self.register_method(method)

@@ -14,7 +14,7 @@ cdef void _make_python_varcall(pycallable_ft method, const Variant **p_args, siz
 
     for i in range(p_count):
         arg = deref(<Variant *>p_args[i])
-        value = arg.pythonize()
+        value = type_funcs.variant_to_pyobject(arg)
         ref.Py_INCREF(value)
         PyTuple_SET_ITEM(args, i, value)
 

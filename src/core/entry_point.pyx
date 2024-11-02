@@ -9,6 +9,7 @@ from gdextension cimport (
     _BUILTIN_METHODDB,
     _CLASSDB
 )
+from godot_types cimport string_from_pyobject
 from default_gdextension_config cimport print_traceback
 
 import io

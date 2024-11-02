@@ -41,9 +41,9 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
 
         for (size_t i = 0; i < keys.size(); i++) {
             Variant k = keys[i];
-            PyObject *key = k;
+            PyObject *key = k.pythonize();
             ERR_FAIL_NULL_V(key, nullptr);
-            PyObject *val = p_kwargs[k];
+            PyObject *val = p_kwargs[k].pythonize();
             ERR_FAIL_NULL_V(val, nullptr);
             PyDict_SetItem(kwargs, key, val);
         }
@@ -53,11 +53,13 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
 
     if (result == nullptr) {
 		if (PyErr_Occurred()) {
-            PyErr_Print();
-            PyErr_Clear();
+            PyObject *exc = PyErr_GetRaisedException();
+            ERR_FAIL_NULL_V(exc, ret);
+            print_traceback(exc);
+            Py_DECREF(exc);
         }
 	} else {
-        result = Variant(result);
+        ret = Variant(result);
     }
     Py_XDECREF(result);
     PyGILState_Release(gil_state);
@@ -83,11 +85,13 @@ Variant PythonObject::call_one_arg(const Variant &p_arg) {
 
     if (result == nullptr) {
 		if (PyErr_Occurred()) {
-            PyErr_Print();
-            PyErr_Clear();
+            PyObject *exc = PyErr_GetRaisedException();
+            ERR_FAIL_NULL_V(exc, ret);
+            print_traceback(exc);
+            Py_DECREF(exc);
         }
 	} else {
-        result = Variant(result);
+        ret = Variant(result);
     }
     Py_XDECREF(result);
     PyGILState_Release(gil_state);
@@ -106,12 +110,7 @@ Ref<PythonObject> PythonObject::getattr(const String &p_attr_name) {
     if (PyErr_Occurred()) {
         PyObject *exc = PyErr_GetRaisedException();
 		ERR_FAIL_NULL_V(exc, object);
-		// PyObject *_traceback = PyException_GetTraceback(exc);
-		// ERR_FAIL_NULL_V(_traceback, module);
-		PyObject *str_exc = PyObject_Str(exc);
-		String traceback = String(str_exc);
-		ERR_PRINT("Python error occured: " + traceback);
-        Py_DECREF(str_exc);
+		print_traceback(exc);
         Py_DECREF(exc);
     }
     ERR_FAIL_NULL_V(attr, object);

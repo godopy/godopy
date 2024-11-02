@@ -167,11 +167,11 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 
     Py_INCREF(m);
     module->set_instance(m);
-	PyObject *repr = PyObject_Repr(m);
-    ERR_FAIL_NULL_V(repr, module);
-    module->set_repr(String(repr));
+	// PyObject *repr = PyObject_Repr(m);
+    // ERR_FAIL_NULL_V(repr, module);
+    // module->set_repr(String(repr));
 	Py_DECREF(m);
-	Py_DECREF(repr);
+	// Py_DECREF(repr);
     PyGILState_Release(gil_state);
 
     return module;

@@ -174,26 +174,6 @@ String::String(const char32_t *from) {
 	internal::gdextension_interface_string_new_with_utf32_chars(_native_ptr(), from);
 }
 
-String::String(const PyObject *from) {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-	if (PyUnicode_Check(from)) {
-		Py_ssize_t size;
-		const wchar_t *contents = PyUnicode_AsWideCharString((PyObject *)from, &size);
-		internal::gdextension_interface_string_new_with_wide_chars(_native_ptr(), contents);
-	} else if (PyBytes_Check(from)) {
-		const char *contents = PyBytes_AsString((PyObject *)from);
-		internal::gdextension_interface_string_new_with_utf8_chars(_native_ptr(), contents);
-	} else {
-		ERR_PRINT("Could not construct a String from PyObject *");
-		internal::gdextension_interface_string_new_with_latin1_chars(_native_ptr(), "");
-	}
-}
-
-String::operator PyObject *() const {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-	return py_str();
-}
-
 String String::utf8(const char *from, int64_t len) {
 	String ret;
 	ret.parse_utf8(from, len);
@@ -309,40 +289,6 @@ CharWideString String::wide_string() const {
 	str[length] = '\0';
 
 	return str;
-}
-
-PyObject *String::py_str() const {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-
-	int64_t length = internal::gdextension_interface_string_to_wide_chars(_native_ptr(), nullptr, 0);
-	int64_t size = length + 1;
-	CharWideString str;
-	str.resize(size);
-	internal::gdextension_interface_string_to_wide_chars(_native_ptr(), str.ptrw(), length);
-	str[length] = '\0';
-
-	PyObject *ret = PyUnicode_FromWideChar(str, length);
-	ERR_FAIL_NULL_V(ret, nullptr);
-	Py_XINCREF(ret);
-
-	return ret;
-}
-
-PyObject *String::py_bytes() const {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-
-	int64_t length = internal::gdextension_interface_string_to_utf8_chars(_native_ptr(), nullptr, 0);
-	int64_t size = length + 1;
-	CharString str;
-	str.resize(size);
-	internal::gdextension_interface_string_to_utf8_chars(_native_ptr(), str.ptrw(), length);
-	str[length] = '\0';
-
-	PyObject *ret = PyBytes_FromString(str);
-	ERR_FAIL_NULL_V(ret, nullptr);
-	Py_XINCREF(ret);
-
-	return ret;
 }
 
 Error String::resize(int64_t p_size) {
@@ -527,21 +473,6 @@ StringName::StringName(const char16_t *from) :
 StringName::StringName(const char32_t *from) :
 		StringName(String(from)) {}
 
-StringName::StringName(const PyObject *from) :
-		StringName(String(from)) {}
-
-PyObject *StringName::py_str() const {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-	String str = String(*this);
-	return str.py_str();
-}
-
-PyObject *StringName::py_bytes() const {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-	String str = String(*this);
-	return str.py_bytes();
-}
-
 NodePath::NodePath(const char *from) :
 		NodePath(String(from)) {}
 
@@ -553,20 +484,5 @@ NodePath::NodePath(const char16_t *from) :
 
 NodePath::NodePath(const char32_t *from) :
 		NodePath(String(from)) {}
-
-NodePath::NodePath(const PyObject *from) :
-		NodePath(String(from)) {}
-
-PyObject *NodePath::py_str() const {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-	String str = String(*this);
-	return str.py_str();
-}
-
-PyObject *NodePath::py_bytes() const {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-	String str = String(*this);
-	return str.py_bytes();
-}
 
 } // namespace godot

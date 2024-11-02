@@ -66,26 +66,22 @@ cdef class Object:
             raise TypeError("'godot_class' argument must be a Class instance or a string")
 
         self.__godot_class__ = godot_class if isinstance(godot_class, Class) else Class.get_class(godot_class)
-        cdef str class_name = self.__godot_class__.__name__
+        cdef PyStringName class_name = PyStringName(self.__godot_class__.__name__)
 
-        if not ClassDB.get_singleton().class_exists(class_name):
+        if not ClassDB.get_singleton().class_exists(class_name._base):
             raise NameError('Class %r does not exist' % class_name)
 
-        cdef StringName _class_name = StringName(class_name)
-
-        if Engine.get_singleton().has_singleton(class_name):
-            with nogil:
-                self._owner = gdextension_interface_global_get_singleton(_class_name._native_ptr())
+        if Engine.get_singleton().has_singleton(class_name._base):
+            self._owner = gdextension_interface_global_get_singleton(class_name.ptr())
             self.is_singleton = True
         else:
-            if not ClassDB.get_singleton().can_instantiate(class_name):
+            if not ClassDB.get_singleton().can_instantiate(class_name._base):
                 raise TypeError('Class %r can not be instantiated' % class_name)
 
-            with nogil:
-                if from_ptr:
-                    self._owner = <void *>from_ptr
-                else:
-                    self._owner = gdextension_interface_classdb_construct_object(_class_name._native_ptr())
+            if from_ptr:
+                self._owner = <void *>from_ptr
+            else:
+                self._owner = gdextension_interface_classdb_construct_object(class_name.ptr())
 
         _OBJECTDB[self.owner_id()] = self
 
@@ -100,18 +96,15 @@ cdef class Object:
             from godot import classdb
             self.__class__ = getattr(classdb, self.__godot_class__.__name__)
 
-        cdef str class_name = self.__godot_class__.__name__
+        cdef PyStringName class_name = PyStringName(self.__godot_class__.__name__)
         cdef void *prev_owner
 
-        if not ClassDB.get_singleton().class_exists(class_name):
+        if not ClassDB.get_singleton().class_exists(class_name._base):
             raise NameError('Class %r does not exist' % class_name)
 
-        cdef StringName _class_name = StringName(class_name)
-
-        if Engine.get_singleton().has_singleton(class_name):
+        if Engine.get_singleton().has_singleton(class_name._base):
             prev_owner = self._owner
-            with nogil:
-                self._owner = gdextension_interface_global_get_singleton(_class_name._native_ptr())
+            self._owner = gdextension_interface_global_get_singleton(class_name.ptr())
             if not self.is_singleton and self._owner != prev_owner:
                 UtilityFunctions.push_warning("Object %r was cast to singleton object, previous owner was lost")
                 if <uint64_t>prev_owner in _OBJECTDB:

@@ -24,8 +24,6 @@ cdef extern from "godot_cpp/variant/string.hpp" namespace "godot" nogil:
         String()
         String(const char *)
         String(const wchar_t *)
-        String(str)
-        String(bytes)
         String(const StringName &)
         String(const NodePath &)
         String(const PyObject *)
@@ -35,7 +33,5 @@ cdef extern from "godot_cpp/variant/string.hpp" namespace "godot" nogil:
         bint operator!=(const char *)
 
         CharString utf8()
-        bytes py_bytes()
-        str py_str()
 
         void *_native_ptr()

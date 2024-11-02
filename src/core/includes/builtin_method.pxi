@@ -30,14 +30,13 @@ cdef class BuiltinMethod(EngineCallableBase):
 
         self.type_info = info['type_info']
         make_optimized_type_info(self.type_info, self._type_info_opt)
-        cdef StringName name = StringName(<const PyObject *>method_name)
+        cdef PyStringName name = PyStringName(method_name)
         cdef uint64_t _hash = info['hash']
         cdef int type_id = str_to_variant_type(type_name)
 
-        with nogil:
-            self._godot_builtin_method = gdextension_interface_variant_get_ptr_builtin_method(
-                <GDExtensionVariantType>type_id, name._native_ptr(), _hash
-            )
+        self._godot_builtin_method = gdextension_interface_variant_get_ptr_builtin_method(
+            <GDExtensionVariantType>type_id, name.ptr(), _hash
+        )
 
         # UtilityFunctions.print("Init BM %r" % self)
 

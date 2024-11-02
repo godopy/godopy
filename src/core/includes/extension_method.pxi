@@ -93,14 +93,13 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
         cdef GDExtensionClassMethodArgumentMetadata return_value_metadata = \
             <GDExtensionClassMethodArgumentMetadata>self.get_return_metadata()
 
-        cdef str method_name = self.__name__
-        cdef StringName _method_name = StringName(method_name)
+        cdef PyStringName name = PyStringName(self.__name__)
 
         type_info = [variant_type_to_str(<VariantType>return_value_info.type)]
         type_info += [variant_type_to_str(<VariantType>arginfo.type) for arginfo in _arguments_info]
         self.type_info = tuple(type_info)
 
-        mi.name = _method_name._native_ptr()
+        mi.name = name.ptr()
         mi.method_userdata = <void *><PyObject *>self
         mi.call_func = &ExtensionMethod.call
         mi.ptrcall_func = &ExtensionMethod.ptrcall
@@ -117,14 +116,11 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
         ref.Py_INCREF(self)
         cls._used_refs.append(self)
 
-        cdef str class_name = cls.__name__
-        cdef StringName _class_name = StringName(class_name)
+        cdef PyStringName class_name = PyStringName(cls.__name__)
+        gdextension_interface_classdb_register_extension_class_method(gdextension_library, class_name.ptr(), &mi)
 
-        with nogil:
-            gdextension_interface_classdb_register_extension_class_method(gdextension_library, _class_name._native_ptr(), &mi)
+        gdextension_interface_mem_free(def_args)
+        gdextension_interface_mem_free(arguments_info)
+        gdextension_interface_mem_free(arguments_metadata)
 
-            gdextension_interface_mem_free(def_args)
-            gdextension_interface_mem_free(arguments_info)
-            gdextension_interface_mem_free(arguments_metadata)
-
-            self.is_registered = True
+        self.is_registered = True

@@ -64,7 +64,9 @@ cpdef input(str prompt=None):
     if prompt is not None:
         UtilityFunctions.printraw(prompt)
 
-    return OS.get_singleton().read_string_from_stdin()
+    cdef String s = OS.get_singleton().read_string_from_stdin()
+
+    return type_funcs.string_to_pyobject(s)
 
 
 def _has_class(str name):
@@ -89,13 +91,13 @@ def _enums_dir():
 # def _structs_dir():
 #     return _global_struct_info
 
-def _get_class_method_list(str name, no_inheritance=False):
-    cdef list data = (<Variant>ClassDB.get_singleton().class_get_method_list(name, no_inheritance)).pythonize()
+# def _get_class_method_list(str name, no_inheritance=False):
+#     cdef list data = (<Variant>ClassDB.get_singleton().class_get_method_list(name, no_inheritance)).pythonize()
 
-    res = {}
+#     res = {}
 
-    for item in data:
-        name = item.pop('name')
-        res[name] = item
+#     for item in data:
+#         name = item.pop('name')
+#         res[name] = item
 
-    return res
+#     return res

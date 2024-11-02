@@ -8,12 +8,10 @@ cdef class UtilityFunction(EngineCallableBase):
 
         self.type_info = info['type_info']
         make_optimized_type_info(self.type_info, self._type_info_opt)
-        cdef StringName name = StringName(function_name)
+        cdef PyStringName name = PyStringName(function_name)
         cdef uint64_t _hash = info['hash']
 
-        with nogil:
-            self._godot_utility_function = \
-                gdextension_interface_variant_get_ptr_utility_function(name._native_ptr(), _hash)
+        self._godot_utility_function = gdextension_interface_variant_get_ptr_utility_function(name.ptr(), _hash)
 
         # UtilityFunctions.print("Init UF %r" % self)
 

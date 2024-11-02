@@ -22,27 +22,21 @@ cdef class Extension(Object):
         self._needs_cleanup = not from_callback
 
         self.__godot_class__ = ext_class
+        cdef PyStringName class_name = PyStringName(ext_class.__name__)
+        cdef PyStringName base_class_name = PyStringName(base_class.__name__)
 
-        cdef str class_name = ext_class.__name__
-        cdef StringName _godot_class_name = StringName(class_name)
-
-        cdef str base_class_name = base_class.__name__
-        cdef StringName _godot_base_class_name = StringName(base_class_name)
-
-        with nogil:
-            self._owner = gdextension_interface_classdb_construct_object(_godot_base_class_name._native_ptr())
+        self._owner = gdextension_interface_classdb_construct_object(base_class_name.ptr())
 
         if notify:
             notification = MethodBind(self, 'notification')
             notification(0, False) # NOTIFICATION_POSTINITIALIZE
 
-        # INCREF because we lend a references of 'self' to Godot engine
+        # INCREF because we lend a references of 'self' to the Godot Engine
         ref.Py_INCREF(self) # for set_instance, DECREF in ExtensionClass._free_instance
 
         cdef void *self_ptr = <void *><PyObject *>self
 
-        with nogil:
-            gdextension_interface_object_set_instance(self._owner, _godot_class_name._native_ptr(), self_ptr)
+        gdextension_interface_object_set_instance(self._owner, class_name.ptr(), self_ptr)
 
         _OBJECTDB[self.owner_id()] = self
 
@@ -84,7 +78,7 @@ cdef class Extension(Object):
     @staticmethod
     cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil:
         cdef ExtensionClass cls = <ExtensionClass>p_cls
-        cdef str name = p_name.py_str()
+        cdef str name = str(type_funcs.string_name_to_pyobject(p_name))
 
         cdef void* func_and_typeinfo_ptr
 

@@ -57,14 +57,13 @@ cdef class ExtensionVirtualMethod(_ExtensionMethodBase):
         cdef GDExtensionClassMethodArgumentMetadata return_value_metadata = \
             <GDExtensionClassMethodArgumentMetadata>self.get_return_metadata()
 
-        cdef str method_name = self.__name__
-        cdef StringName _method_name = StringName(method_name)
+        cdef PyStringName name = PyStringName(self.__name__)
 
         type_info = [variant_type_to_str(<VariantType>return_value_info.type)]
         type_info += [variant_type_to_str(<VariantType>arginfo.type) for arginfo in _arguments_info]
         self.type_info = tuple(type_info)
 
-        mi.name = _method_name._native_ptr()
+        mi.name = name.ptr()
         mi.method_flags = GDEXTENSION_METHOD_FLAG_VIRTUAL
         mi.return_value = return_value_info
         mi.return_value_metadata = <GDExtensionClassMethodArgumentMetadata>self.get_return_metadata()
@@ -72,15 +71,11 @@ cdef class ExtensionVirtualMethod(_ExtensionMethodBase):
         mi.arguments = arguments_info
         mi.arguments_metadata = <GDExtensionClassMethodArgumentMetadata *>arguments_metadata
 
-        cdef str name = cls.__name__
-        cdef StringName _class_name = StringName(name)
+        cdef PyStringName class_name = PyStringName(cls.__name__)
+        gdextension_interface_classdb_register_extension_class_virtual_method(gdextension_library, class_name.ptr(), &mi)
 
-        with nogil:
-            gdextension_interface_classdb_register_extension_class_virtual_method(gdextension_library,
-                                                                                  _class_name._native_ptr(), &mi)
+        gdextension_interface_mem_free(def_args)
+        gdextension_interface_mem_free(arguments_info)
+        gdextension_interface_mem_free(arguments_metadata)
 
-            gdextension_interface_mem_free(def_args)
-            gdextension_interface_mem_free(arguments_info)
-            gdextension_interface_mem_free(arguments_metadata)
-
-            self.is_registered = True
+        self.is_registered = True

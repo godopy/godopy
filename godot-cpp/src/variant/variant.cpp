@@ -29,7 +29,6 @@
 /**************************************************************************/
 
 #include <godot_cpp/variant/variant.hpp>
-#include <godot_cpp/variant/godopy.hpp>
 
 #include <binding.h>
 
@@ -267,17 +266,8 @@ Variant::Variant(const PackedVector4Array &v) {
 	from_type_constructor[PACKED_VECTOR4_ARRAY](_native_ptr(), v._native_ptr());
 }
 
-Variant::Variant(const PyObject *v) {
-	ERR_FAIL_NULL(v);
-	variant_from_pyobject(const_cast<PyObject *>(v), reinterpret_cast<Variant *>(_native_ptr()));
-}
-
 Variant::~Variant() {
 	internal::gdextension_interface_variant_destroy(_native_ptr());
-}
-
-Variant::operator PyObject *() const {
-	return pythonize();
 }
 
 Variant::operator bool() const {
@@ -729,10 +719,6 @@ bool Variant::hash_compare(const Variant &variant) const {
 bool Variant::booleanize() const {
 	GDExtensionBool booleanized = internal::gdextension_interface_variant_booleanize(_native_ptr());
 	return PtrToArg<bool>::convert(&booleanized);
-}
-
-PyObject *Variant::pythonize() const {
-	return variant_to_pyobject(*this);
 }
 
 String Variant::stringify() const {

@@ -3,5 +3,5 @@ cdef extern from "godot_cpp/classes/engine.hpp" namespace "godot" nogil:
         @staticmethod
         Engine *get_singleton()
 
-        bint has_singleton(str) const
+        bint has_singleton(const StringName &) const
         bint is_editor_hint() const
