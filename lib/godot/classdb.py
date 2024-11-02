@@ -1,7 +1,17 @@
 import godot as gd
 import gdextension as gde
 
-__all__ = list(gde._classdb_dir())
+__all__ = ['bind_method', 'bind_vurtual_method'] + list(gde._classdb_dir())
+
+
+def bind_method(func):
+    func._gdmethod = func.__name__
+    return func
+
+
+def bind_virtual_method(func):
+    func._gdvirtualmethod = func.__name__
+    return func
 
 
 def __getattr__(name):

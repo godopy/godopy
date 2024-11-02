@@ -254,25 +254,4 @@ void Dictionary::set_typed(uint32_t p_key_type, const StringName &p_key_class_na
 			(GDExtensionVariantType)p_value_type, (GDExtensionConstStringNamePtr)&p_value_class_name, (GDExtensionConstVariantPtr)&p_value_script);
 }
 
-PackedStringArray::PackedStringArray(const PyObject *from) {
-	// IMPORTANT: Should be called only with GIL! Responsibility is on the caller
-
-	internal::_call_builtin_constructor(_method_bindings.constructor_0, &opaque);
-
-	if (PySequence_Check((PyObject *)from)) {
-		size_t size = PySequence_Size((PyObject *)from);
-		resize(size);
-		PyObject *value;
-		String _value;
-		for (size_t i = 0; i < size; i++) {
-			value = PySequence_GetItem((PyObject *)from, i);
-			_value = String(value);
-			set(i, _value);
-		}
-	} else {
-		ERR_PRINT("Could not cast Python object to PackedStringArray. "
-				  "Sequence is required. Created empty PackedStringArray.");
-	}
-}
-
 } // namespace godot

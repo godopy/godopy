@@ -1,0 +1,56 @@
+cdef class MethodBind(EngineCallableBase):
+    def __init__(self, Object instance, str method_name):
+        self._base = instance._owner
+        self.__name__ = method_name
+        self.__self__ = instance
+
+        info = instance.__godot_class__.get_method_info(method_name)
+        if info is None:
+            raise AttributeError('Method %r not found in class %r'
+                                 % (method_name, instance.__godot_class__.__name__))
+        
+        self.type_info = info['type_info']
+        make_optimized_type_info(self.type_info, self._type_info_opt)
+        self.is_vararg = info['is_vararg']
+        cdef uint64_t _hash = info['hash']
+        cdef PyStringName class_name = PyStringName(instance.__godot_class__.__name__)
+        cdef PyStringName _method_name = PyStringName(method_name)
+
+        self._godot_method_bind = gdextension_interface_classdb_get_method_bind(
+            class_name.ptr(),
+            _method_name.ptr(),
+            _hash
+        )
+
+        # UtilityFunctions.print("Init MB %r" % self)
+
+
+    def __call__(self, *args):
+        if self.is_vararg:
+            # UtilityFunctions.print("MB varcall %s %r" % (self, args))
+            return _make_engine_varcall[MethodBind](self, self._varcall, args)
+        else:
+            # UtilityFunctions.print("MB ptrcall %s %r" % (self, args))
+            return _make_engine_ptrcall[MethodBind](self, self._ptrcall, args)
+
+
+    def __str__(self):
+        return "%s.%s" % (self.__self__.__class__.__name__, self.__name__)
+
+    def __repr__(self):
+        class_name = '%s[%s.%s]' % (self.__class__.__name__, self.__self__.__class__.__name__, self.__name__)
+        return "<%s.%s at 0x%016X[0x%016X]>" % (self.__class__.__module__, class_name, <uint64_t><PyObject *>self,
+                                                <uint64_t><PyObject *>self._godot_method_bind)
+
+
+    cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil:
+        with nogil:
+            gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._base,
+                                                             p_args, r_ret)
+
+
+    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
+                       GDExtensionCallError *r_error) noexcept nogil:
+        with nogil:
+            gdextension_interface_object_method_bind_call(self._godot_method_bind, self._base,
+                                                          <const GDExtensionConstVariantPtr *>p_args, size, r_ret, r_error)

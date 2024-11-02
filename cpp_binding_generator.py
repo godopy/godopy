@@ -6,6 +6,106 @@ import shutil
 from pathlib import Path
 
 
+# Generated only classed used by GodoPy and their dependencies
+USED_ENGINE_CLASSES = {
+    'ArrayMesh',
+    'AudioListener2D',
+    'AudioListener3D',
+    'CallbackTweener',
+    'Camera2D',
+    'Camera3D',
+    'CameraAttributes',
+    'CanvasItem',
+    'CanvasLayer',
+    'ConcavePolygonShape3D',
+    'ConvexPolygonShape3D',
+    'ClassDB',
+    'ClassDBSingleton',
+    'Compositor',
+    'CompositorEffect',
+    'Control',
+    'GDExtensionTestCase',
+    'Image',
+    'InputEvent',
+    'IntervalTweener',
+    'Engine',
+    'Environment',
+    'FileAccess',
+    'Font',
+    'MainLoop',
+    'Material',
+    'Mesh',
+    'MethodTweener',
+    'MultiMesh',
+    'MultiplayerAPI',
+    'MultiplayerPeer',
+    'Node',
+    'Node2D',
+    'Node3D',
+    'Node3DGizmo',
+    'Object',
+    'OS',
+    'PackedScene',
+    'PacketPeer',
+    'PhysicsDirectSpaceState2D',
+    'PhysicsDirectSpaceState3D',
+    'PhysicsPointQueryParameters2D',
+    'PhysicsPointQueryParameters3D',
+    'PhysicsRayQueryParameters2D',
+    'PhysicsRayQueryParameters3D',
+    'PhysicsShapeQueryParameters2D',
+    'PhysicsShapeQueryParameters3D',
+    'ProjectSettings',
+    'PropertyTweener',
+    'RDAttachmentFormat',
+    'RDFramebufferPass',
+    'RDPipelineColorBlendState',
+    'RDPipelineColorBlendStateAttachment',
+    'RDPipelineDepthStencilState',
+    'RDPipelineMultisampleState',
+    'RDPipelineRasterizationState',
+    'RDPipelineSpecializationConstant',
+    'RDSamplerState',
+    'RDShaderSource',
+    'RDShaderSPIRV',
+    'RDTextureFormat',
+    'RDTextureView',
+    'RDVertexAttribute',
+    'RDUniform',
+    'RefCounted',
+    'RenderData',
+    'RenderingDevice',
+    'RenderingServer',
+    'RenderSceneBuffers',
+    'RenderSceneBuffersConfiguration',
+    'RenderSceneData',
+    'Resource',
+    'SceneState',
+    'SceneTree',
+    'SceneTreeTimer',
+    'ScriptLanguage',
+    'Shader',
+    'Shape3D',
+    'Sky',
+    'StyleBox',
+    'Theme',
+    'TextServer',
+    'Texture',
+    'Texture2D',
+    'TriangleMesh',
+    'Tween',
+    'Tweener',
+    'UtilityFunctions',
+    'Viewport',
+    'ViewportTexture',
+    'Window',
+    'WorkerThreadPool',
+    'World2D',
+    'World3D',
+    'XMLParser',
+}
+
+
 def generate_mod_version(argcount, const=False, returns=False):
     s = """
 #define MODBIND$VER($RETTYPE m_name$ARG) \\
@@ -231,6 +331,8 @@ def get_file_list(api_filepath, output_dir, headers=False, sources=False, profil
         if engine_class["name"] == "ClassDB":
             engine_class["name"] = "ClassDBSingleton"
             engine_class["alias_for"] = "ClassDB"
+        if engine_class["name"] not in USED_ENGINE_CLASSES:
+            continue
         header_filename = include_gen_folder / "classes" / (camel_to_snake(engine_class["name"]) + ".hpp")
         source_filename = source_gen_folder / "classes" / (camel_to_snake(engine_class["name"]) + ".cpp")
         if headers:
@@ -612,13 +714,13 @@ def generate_builtin_class_vararg_method_implements_header(builtin_classes):
 
     return "\n".join(result)
 
-PYTHONIZE = ["String", "StringName", "NodePath"]
 
 def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_classes):
     result = []
 
     class_name = builtin_api["name"]
     snake_class_name = camel_to_snake(class_name).upper()
+    lower_snake_class_name = snake_class_name.lower()
 
     header_guard = f"GODOT_CPP_{snake_class_name}_HPP"
 
@@ -631,10 +733,11 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
     result.append("#include <godot_cpp/core/defs.hpp>")
     result.append("")
 
-    if class_name in PYTHONIZE:
-        result.append("#define PY_SSIZE_T_CLEAN")
-        result.append("#include <Python.h>")
-        result.append("")
+    result.append("#define PY_SSIZE_T_CLEAN")
+    result.append("#include <Python.h>")
+    result.append("")
+
+    result.append("#include <godot_cpp/core/error_macros.hpp>")
 
     # Special cases.
     if class_name == "String":
@@ -660,7 +763,6 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
         result.append("")
 
     if is_packed_array(class_name):
-        result.append("#include <godot_cpp/core/error_macros.hpp>")
         result.append("#include <initializer_list>")
         result.append("")
 
@@ -690,6 +792,15 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
         result.append("")
 
     result.append("#include <gdextension_interface.h>")
+
+    result.append("")
+    result.append("namespace godot {")
+    result.append(f"\tclass {class_name};")
+    result.append("}")
+    result.append("")
+    result.append(f"extern PyObject *{lower_snake_class_name}_to_pyobject(const godot::{class_name} &);")
+    result.append(f"extern void {lower_snake_class_name}_from_pyobject(PyObject *, godot::{class_name} *);")
+
     result.append("")
     result.append("namespace godot {")
     result.append("")
@@ -794,9 +905,7 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
         result.append(f"\t{class_name}(const wchar_t *p_from);")
         result.append(f"\t{class_name}(const char16_t *p_from);")
         result.append(f"\t{class_name}(const char32_t *p_from);")
-        result.append(f"\t{class_name}(const PyObject *p_from);")
-    if class_name == "PackedStringArray":
-        result.append(f"\t{class_name}(const PyObject *p_from);")
+
     if class_name == "Callable":
         result.append("\tCallable(CallableCustom *p_custom);")
         result.append("\tCallableCustom *get_custom() const;")
@@ -816,8 +925,19 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
             else:
                 result.append(f'\tstatic const {correct_type(constant["type"])} {constant["name"]};')
 
+    # Python constructor
+    result += [
+        "",
+        "\t_FORCE_INLINE_ %s(const PyObject *p_from) {" % class_name,
+        "\t\tERR_FAIL_NULL(p_from);",
+        "\t\t%s_from_pyobject(const_cast<PyObject *>(p_from), reinterpret_cast<%s *>(_native_ptr()));" % (lower_snake_class_name, class_name),
+        "\t}",
+        ""
+    ]
+
     if builtin_api["has_destructor"]:
         result.append(f"\t~{class_name}();")
+        result.append("")
 
     method_list = []
 
@@ -873,16 +993,21 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
         result.append("\tstatic String num_real(double p_num, bool p_trailing = true);")
         result.append("\tError resize(int64_t p_size);")
 
-    if class_name == "String" or class_name == "StringName" or class_name == "NodePath":
-        result.append(f"\tPyObject *py_str() const;")
-        result.append(f"\tPyObject *py_bytes() const;")
-
     if "members" in builtin_api:
         for member in builtin_api["members"]:
             if f'get_{member["name"]}' not in method_list:
                 result.append(f'\t{correct_type(member["type"])} get_{member["name"]}() const;')
             if f'set_{member["name"]}' not in method_list:
                 result.append(f'\tvoid set_{member["name"]}({type_for_parameter(member["type"])}value);')
+
+    result += [
+        "",
+        "\ttemplate<typename T>",
+        "\t_FORCE_INLINE_ T to_type() const {",
+        "\t\treturn operator T();",
+        "\t}",
+        ""
+    ]
 
     if "operators" in builtin_api:
         for operator in builtin_api["operators"]:
@@ -895,8 +1020,6 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
                     result.append(
                         f'\t{correct_type(operator["return_type"])} operator{get_operator_cpp_name(operator["name"])}() const;'
                     )
-        if class_name == "String":
-            result.append('\toperator PyObject *() const;')
 
     # Copy assignment.
     if copy_constructor_index >= 0:
@@ -904,6 +1027,9 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
 
     # Move assignment.
     result.append(f"\t{class_name} &operator=({class_name} &&p_other);")
+
+    # Python conversion
+    result.append('\t_FORCE_INLINE_ operator PyObject *() const { return %s_to_pyobject(*this); }' % lower_snake_class_name)
 
     # Special cases.
     if class_name == "String":
@@ -1405,10 +1531,14 @@ def generate_engine_classes_bindings(api, output_dir, use_template_get_node):
 
     # First create map of classes and singletons.
     for class_api in api["classes"]:
+        if class_api["name"] not in USED_ENGINE_CLASSES:
+            continue
+
         # Generate code for the ClassDB singleton under a different name.
         if class_api["name"] in CLASS_ALIASES:
             class_api["alias_for"] = class_api["name"]
             class_api["name"] = CLASS_ALIASES[class_api["alias_for"]]
+
         engine_classes[class_api["name"]] = class_api["is_refcounted"]
     for native_struct in api["native_structures"]:
         if native_struct["name"] == "ObjectID":
@@ -1429,6 +1559,9 @@ def generate_engine_classes_bindings(api, output_dir, use_template_get_node):
         fully_used_classes = set()
 
         class_name = class_api["name"]
+
+        if class_name not in USED_ENGINE_CLASSES:
+            continue
 
         header_filename = include_gen_folder / (camel_to_snake(class_api["name"]) + ".hpp")
         source_filename = source_gen_folder / (camel_to_snake(class_api["name"]) + ".cpp")

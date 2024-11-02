@@ -19,9 +19,6 @@ __all__ = [
     'MODULE_INITIALIZATION_LEVEL_SCENE',
     'MODULE_INITIALIZATION_LEVEL_SERVERS',
 
-    'method',
-    'virtual_method',
-
     'GodotClassBase',
     'Class',
     'EngineClass',

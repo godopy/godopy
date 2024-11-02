@@ -91,6 +91,7 @@ def setup_builders(env):
         '-Isrc/gdextension_interface',
         '-Igen/gdextension_interface',
         '-Isrc/core',
+        '-Isrc/types',
         '-Isrc/godot_cpp',
         '-Igdextension',
         '-o',
@@ -119,7 +120,7 @@ def setup_builders(env):
 
 def main_godopy_cpp_sources(env):
     # Entry point and Python classes
-    env.Append(CPPPATH=['src/'])
+    env.AppendUnique(CPPPATH=['src/'])
     sources = Glob('src/*.cpp') + Glob('src/python/*.cpp') + Glob('src/variant/*.cpp')
 
     if env['platform'] == 'windows':
@@ -159,22 +160,26 @@ def _generated_cython_sources(env):
 def cython_sources(env):
     generated = _generated_cython_sources(env)
 
-    # required:
+    # always required:
     # 'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
     # 'io.py', 'abc.py', 'types.py',
     # 'encodings/latin_1.py',
 
     sources = [
-        env.Cython('src/core/gdextension.pyx'),
+        env.Cython('src/core/default_gdextension_config.pyx'),
         env.Cython('src/core/entry_point.pyx'),
-        env.Cython('src/core/_godot_types.pyx'),
+        env.Cython('src/types/godot_types.pyx'),
+        env.Cython('src/core/gdextension.pyx'),
     ]
 
     depends = [
         generated,
-        *Glob('src/core/*.pxi'),
         *Glob('src/core/*.pxd'),
-        *Glob('src/godot_cpp/defs/*.pxi'),
+        *Glob('src/types/*.pxd'),
+        *Glob('src/core/includes/*.pxi'),
+        *Glob('src/types/includes/*.pxi'),
+        *Glob('src/godot_cpp/*.pxd'),
+        *Glob('src/godot_cpp/includes/*.pxi'),
         *Glob('gdextension/*.pxd'),
         *Glob('gen/gdextension_interface/*.pxi'),
     ]
@@ -345,7 +350,7 @@ def install_godopy_python_packages(env):
 
 ###############################################################################
 
-if not 'VIRTUAL_ENV' in os.environ and not os.path.exists('./venv'):
+if not 'VIRTUAL_ENV' in os.environ:
     raise Exception("No virtual environment detected. "
                     "Please create and/or activate one "
                     "and install all requirements from 'requirements.txt'")

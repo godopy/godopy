@@ -44,7 +44,6 @@ public:
 	_FORCE_INLINE_ bool is_null() const { return id == 0; }
 	_FORCE_INLINE_ operator uint64_t() const { return id; }
 	_FORCE_INLINE_ operator int64_t() const { return id; }
-
 	_FORCE_INLINE_ bool operator==(const ObjectID &p_id) const { return id == p_id.id; }
 	_FORCE_INLINE_ bool operator!=(const ObjectID &p_id) const { return id != p_id.id; }
 	_FORCE_INLINE_ bool operator<(const ObjectID &p_id) const { return id < p_id.id; }

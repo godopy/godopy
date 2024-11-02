@@ -1,18 +1,25 @@
 cimport cython
-from cpython cimport ref, pystate
+from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
-from cython.operator cimport dereference as deref
-from python_runtime cimport *
+from cpython cimport (
+    PyObject, ref, pystate, PyLong_Check, PyLong_AsSsize_t,
+    PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM
+)
 
-import gc
+from python_runtime cimport *
+cimport godot_types as type_funcs
+from godot_types cimport StringName as PyStringName, variant_to_pyobject_func_t, variant_from_pyobject_func_t
+
+import sys
 import types
 import pickle
 import builtins
 import traceback
 import importlib
 
-import _godot_types as gdtypes
+import numpy as np
+import godot_types as gdtypes
 
 include "api_data.pxi"
 
@@ -22,30 +29,44 @@ cdef dict _global_struct_info = pickle.loads(_global_struct_info__pickle)
 cdef dict _global_inheritance_info = pickle.loads(_global_inheritance_info__pickle)
 cdef dict _global_utility_function_info = pickle.loads(_global_utility_function_info__pickle)
 
-cdef set _global_core_classes = pickle.loads(_global_api_types__pickles['core'])
-cdef set _global_editor_classes = pickle.loads(_global_api_types__pickles['editor'])
+# Custom class defined in C++
+_global_inheritance_info['PythonObject'] = 'RefCounted'
 
-include "typeconv.pxi"
 
-include "class.pxi"
-include "object.pxi"
-include "callable.pxi"
-include "method_bind.pxi"
-include "utility_function.pxi"
+# cdef set _global_core_classes = pickle.loads(_global_api_types__pickles['core'])
+# cdef set _global_editor_classes = pickle.loads(_global_api_types__pickles['editor'])
 
-include "extension_virtual_method.pxi"
-include "extension_method.pxi"
-include "extension_class.pxi"
-include "extension_callbacks.pxi"
-include "extension_class_registrator.pxi"
-include "extension.pxi"
+include "includes/typeconv.pxi"
+include "includes/exceptions.pxi"
+
+include "includes/class.pxi"
+include "includes/object.pxi"
+
+include "includes/engine_calls.pxi"
+include "includes/engine_callable.pxi"
+include "includes/method_bind.pxi"
+include "includes/utility_function.pxi"
+include "includes/builtin_method.pxi"
+
+include "includes/python_calls.pxi"
+include "includes/python_callable.pxi"
+include "includes/extension_method_base.pxi"
+include "includes/extension_virtual_method.pxi"
+include "includes/extension_method.pxi"
+
+include "includes/extension_class.pxi"
+include "includes/extension_callbacks.pxi"
+include "includes/extension_class_registrator.pxi"
+include "includes/extension.pxi"
 
 
 cpdef input(str prompt=None):
     if prompt is not None:
         UtilityFunctions.printraw(prompt)
 
-    return OS.get_singleton().read_string_from_stdin()
+    cdef String s = OS.get_singleton().read_string_from_stdin()
+
+    return type_funcs.string_to_pyobject(s)
 
 
 def _has_class(str name):
@@ -67,16 +88,16 @@ def _utility_functions_dir():
 def _enums_dir():
     return _global_enum_info
 
-def _structs_dir():
-    return _global_struct_info
+# def _structs_dir():
+#     return _global_struct_info
 
-def _get_class_method_list(str name, no_inheritance=False):
-    cdef list data = (<Variant>ClassDB.get_singleton().class_get_method_list(name, no_inheritance)).pythonize()
+# def _get_class_method_list(str name, no_inheritance=False):
+#     cdef list data = (<Variant>ClassDB.get_singleton().class_get_method_list(name, no_inheritance)).pythonize()
 
-    res = {}
+#     res = {}
 
-    for item in data:
-        name = item.pop('name')
-        res[name] = item
+#     for item in data:
+#         name = item.pop('name')
+#         res[name] = item
 
-    return res
+#     return res

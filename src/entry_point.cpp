@@ -22,9 +22,12 @@ void initialize_level(ModuleInitializationLevel p_level) {
 		// Initialize thread handling
 		PythonRuntime::get_singleton()->ensure_current_thread_state(true);
 
-		// Import core modules so we can safely call initialization functions from C++
+		UtilityFunctions::print_verbose("[Python] Importing core modules...");
+		PythonRuntime::get_singleton()->init_module("default_gdextension_config");
 		PythonRuntime::get_singleton()->init_module("entry_point");
+		PythonRuntime::get_singleton()->init_module("godot_types");
 		PythonRuntime::get_singleton()->init_module("gdextension");
+		UtilityFunctions::print_verbose("[Python] Success!");
 	}
 
 	if (p_level >= MINIMUM_INITIALIZATION_LEVEL) {

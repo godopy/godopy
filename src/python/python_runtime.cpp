@@ -6,10 +6,12 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
-PyMODINIT_FUNC PyInit_gdextension(void);
+
+PyMODINIT_FUNC PyInit_default_gdextension_config(void);
 PyMODINIT_FUNC PyInit_entry_point(void);
-PyMODINIT_FUNC PyInit__godot_type_tuples(void);
-PyMODINIT_FUNC PyInit__godot_types(void);
+PyMODINIT_FUNC PyInit_godot_types(void);
+PyMODINIT_FUNC PyInit_gdextension(void);
+
 
 using namespace godot;
 
@@ -27,7 +29,7 @@ PythonRuntime::PythonRuntime() {
 }
 
 void PythonRuntime::pre_initialize() {
-	UtilityFunctions::print_verbose("Python: Pre-Initializing runtime...");
+	UtilityFunctions::print_verbose("[Python] Pre-Initializing runtime...");
 
 	PyPreConfig preconfig;
 	PyPreConfig_InitIsolatedConfig(&preconfig);
@@ -37,7 +39,7 @@ void PythonRuntime::pre_initialize() {
 	PyStatus status = Py_PreInitialize(&preconfig);
 
 	if (PyStatus_Exception(status)) {
-		UtilityFunctions::push_error("Python: Pre-Initialization FAILED");
+		UtilityFunctions::push_error("[Python] Pre-Initialization FAILED");
 		Py_ExitStatusException(status);
 	}
 }
@@ -65,8 +67,8 @@ int PythonRuntime::set_config_paths(PyConfig *config) {
 	String bin_dir = exec_prefix.get_base_dir();
 	String res_path = bin_dir.get_base_dir();
 
-	UtilityFunctions::print_verbose("Python library name: " + exec_path);
-	UtilityFunctions::print_verbose("Detected project folder: " + res_path);
+	UtilityFunctions::print_verbose("[Python] Python library name: " + exec_path);
+	UtilityFunctions::print_verbose("[Python] Detected project folder: " + res_path);
 
 	SET_PYCONFIG_STRING(&config->program_name, exec_path.wide_string());
 	SET_PYCONFIG_STRING(&config->base_exec_prefix, exec_prefix.wide_string());
@@ -93,19 +95,19 @@ int PythonRuntime::set_config_paths(PyConfig *config) {
 void PythonRuntime::initialize() {
 	pre_initialize();
 
-	UtilityFunctions::print_verbose("Python: Initializing runtime...");
+	UtilityFunctions::print_verbose("[Python] Initializing runtime...");
 
 	PyStatus status;
 	PyConfig config;
 
-	PyImport_AppendInittab("gdextension", PyInit_gdextension);
+	PyImport_AppendInittab("default_gdextension_config", PyInit_default_gdextension_config);
 	PyImport_AppendInittab("entry_point", PyInit_entry_point);
-	PyImport_AppendInittab("_godot_type_tuples", PyInit__godot_type_tuples);
-	PyImport_AppendInittab("_godot_types", PyInit__godot_types);
+	PyImport_AppendInittab("godot_types", PyInit_godot_types);
+	PyImport_AppendInittab("gdextension", PyInit_gdextension);
 
 	PyConfig_InitIsolatedConfig(&config);
 
-	UtilityFunctions::print_verbose("Python: Configuring paths...");
+	UtilityFunctions::print_verbose("[Python] Configuring paths...");
 
 	if (set_config_paths(&config) != 0) {
 		goto fail;
@@ -118,7 +120,7 @@ void PythonRuntime::initialize() {
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
-	UtilityFunctions::print_verbose("Python: Initializing the interpreter...");
+	UtilityFunctions::print_verbose("[Python] Initializing the interpreter...");
 	status = Py_InitializeFromConfig(&config);
 	ERR_FAIL_PYSTATUS(status, fail);
 
@@ -136,7 +138,7 @@ void PythonRuntime::initialize() {
 
 fail:
 	PyConfig_Clear(&config);
-	UtilityFunctions::push_error("Python: Initialization FAILED.");
+	UtilityFunctions::push_error("[Python] Initialization FAILED.");
 	Py_ExitStatusException(status);
 }
 
@@ -157,12 +159,7 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 	if (PyErr_Occurred()) {
 		PyObject *exc = PyErr_GetRaisedException();
 		ERR_FAIL_NULL_V(exc, module);
-		// PyObject *_traceback = PyException_GetTraceback(exc);
-		// ERR_FAIL_NULL_V(_traceback, module);
-		PyObject *str_exc = PyObject_Str(exc);
-		String traceback = String(str_exc);
-		ERR_PRINT("Python error occured: " + traceback);
-		Py_DECREF(str_exc);
+		print_traceback(exc);
         Py_DECREF(exc);
 	}
 
@@ -170,11 +167,11 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 
     Py_INCREF(m);
     module->set_instance(m);
-	PyObject *repr = PyObject_Repr(m);
-    ERR_FAIL_NULL_V(repr, module);
-    module->set_repr(String(repr));
+	// PyObject *repr = PyObject_Repr(m);
+    // ERR_FAIL_NULL_V(repr, module);
+    // module->set_repr(String(repr));
 	Py_DECREF(m);
-	Py_DECREF(repr);
+	// Py_DECREF(repr);
     PyGILState_Release(gil_state);
 
     return module;
@@ -187,13 +184,8 @@ void PythonRuntime::init_module(const String &p_name) {
 	if (PyErr_Occurred()) {
 		PyObject *exc = PyErr_GetRaisedException();
 		ERR_FAIL_NULL(exc);
-		// PyObject *_traceback = PyException_GetTraceback(exc);
-		// ERR_FAIL_NULL_V(_traceback, module);
-		PyObject *str_exc = PyObject_Str(exc);
-		String traceback = String(str_exc);
-		ERR_PRINT("Python error occured: " + traceback);
-		Py_DECREF(str_exc);
-		Py_DECREF(exc);
+		print_traceback(exc);
+        Py_DECREF(exc);
 	}
 
 	ERR_FAIL_NULL(m);
@@ -222,7 +214,7 @@ void PythonRuntime::ensure_current_thread_state(bool setdefault) {
 
 	if (setdefault) {
 		main_thread_id = thread_id;
-		UtilityFunctions::print_verbose("Main thread id #", main_thread_id);
+		UtilityFunctions::print_verbose("[Python] Main thread id #", main_thread_id);
 		PyGILState_STATE gil_state = PyGILState_Ensure();
 		tstate = PyThreadState_Get();
 		thread_states[thread_id] = tstate;
@@ -233,7 +225,7 @@ void PythonRuntime::ensure_current_thread_state(bool setdefault) {
 		tstate = PyThreadState_New(interpreter_state);
 		thread_states[thread_id] = tstate;
 
-		UtilityFunctions::print_verbose("Set Python thread state for Godot thread #", thread_id);
+		UtilityFunctions::print_verbose("[Python] Set Python thread state for Godot thread #", thread_id);
 	}
 }
 

@@ -1,19 +1,38 @@
 from binding cimport *
-from godot_cpp cimport Variant, UtilityFunctions, OS, Engine, ProjectSettings
+from godot_cpp cimport Variant, String, UtilityFunctions, OS, Engine, ProjectSettings
 from gdextension cimport (
     ExtensionClass,
     _registered_classes,
     _NODEDB,
     _OBJECTDB,
     _METHODDB,
+    _BUILTIN_METHODDB,
     _CLASSDB
 )
+from godot_types cimport string_from_pyobject
+from default_gdextension_config cimport print_traceback
 
 import io
 import os
 import gc
 import sys
 import traceback
+import importlib
+
+import default_gdextension_config
+
+try:
+    mod = os.environ['GDEXTENSION_CONFIG_MODULE']
+    gdextension_config = importlib.import_module(mod)
+except (KeyError, ImportError):
+    try:
+        import gdextension_config
+    except ImportError:
+        gdextension_config = default_gdextension_config
+
+# gdextension_config = default_gdextension_config
+
+cdef tuple registered_packages = tuple(gdextension_config.REGISTERED_PACKAGES)
 
 
 cdef class StdoutWriter:
@@ -49,26 +68,10 @@ def redirect_python_stdio():
     sys.stderr = StderrWriter()
 
 
-cdef object initialize_func = None
-cdef object deinitialize_func = None
+cdef object initialize_funcs = []
+cdef object deinitialize_funcs = []
 cdef bint is_first_level = True
 cdef int first_level = 0
-
-try:
-    from godot import register_types as godot_register_types
-except ImportError as exc:
-    UtilityFunctions.print_rich(
-        "\n[color=red]ERROR: 'godot.register types' module was not found or raised an exception.[/color]\n"
-    )
-    raise SystemError("GodoPy was not properly installed, 'godot.register_types' is missing")
-
-try:
-    from godopy import register_types as godopy_register_types
-except ImportError as exc:
-    UtilityFunctions.print_rich(
-        "\n[color=red]ERROR: 'godopy.register types' module was not found or raised an exception.[/color]\n"
-    )
-    raise SystemError("GodoPy was not properly installed, 'godopy.register_types' is missing")
 
 
 cdef public int python_initialize_level(ModuleInitializationLevel p_level) noexcept nogil:
@@ -76,14 +79,8 @@ cdef public int python_initialize_level(ModuleInitializationLevel p_level) noexc
         try:
             _python_initialize_level(p_level)
         except Exception as exc:
-            f = io.StringIO()
-            traceback.print_exception(exc, file=f)
-            exc_text = f.getvalue()
-            UtilityFunctions.print_rich(
-                "\n[color=red]ERROR: '_python_initialize_level' raised an exception:[/color]"
-                "\n[color=orange]%s[/color]\n" % exc_text
-            )
-            return -1
+            print_traceback(exc)
+
     return 0
 
 
@@ -92,27 +89,32 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
         try:
             _python_deinitialize_level(p_level)
         except Exception as exc:
-            f = io.StringIO()
-            traceback.print_exception(exc, file=f)
-            exc_text = f.getvalue()
-            UtilityFunctions.print_rich(
-                "\n[color=red]ERROR: '_python_deinitialize_level' raised an exception:[/color]"
-                "\n[color=orange]%s[/color]\n" % exc_text
-            )
-            return -1
+            print_traceback(exc)
+
     return 0
 
 
 cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
-    global initialize_func, deinitialize_func, is_first_level, first_level
+    global initialize_funcs, deinitialize_funcs, is_first_level, first_level, registered_packages
 
     UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
+
+    for module_name in registered_packages:
+        mod_register_types = importlib.import_module('%s.register_types' % module_name)
+        initialize_func = getattr(mod_register_types, 'initialize', None)
+        deinitialize_func = getattr(mod_register_types, 'uninitialize', None)
+        if deinitialize_func is None:
+            deinitialize_func = getattr(mod_register_types, 'deinitialize', None)
+        if initialize_func is not None:
+            initialize_funcs.append(initialize_func)
+        if deinitialize_func is not None:
+            deinitialize_funcs.append(deinitialize_func)
 
     if is_first_level:
         redirect_python_stdio()
 
         if ProjectSettings.get_singleton().has_setting("application/run/print_header"):
-            UtilityFunctions.print("GodoPy version %s" % '0.0.0.5dev')
+            UtilityFunctions.print("GodoPy version %s" % '0.1dev')
             UtilityFunctions.print("Python version %s\n" % sys.version)
 
         venv_path = os.environ.get('VIRTUAL_ENV')
@@ -122,7 +124,13 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
         try:
             import register_types
             initialize_func = getattr(register_types, 'initialize', None)
-            deinitialize_func = getattr(register_types, 'deinitialize', None)
+            deinitialize_func = getattr(register_types, 'uninitialize', None)
+            if deinitialize_func is None:
+                deinitialize_func = getattr(register_types, 'deinitialize', None)
+            if initialize_func is not None:
+                initialize_funcs.append(initialize_func)
+            if deinitialize_func is not None:
+                deinitialize_funcs.append(deinitialize_func)
         except ImportError as exc:
             f = io.StringIO()
             traceback.print_exception(exc, file=f)
@@ -132,42 +140,32 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
                     "\n[color=orange]WARNING: 'register types' module was not found.[/color]\n"
                 )
             else:
-                UtilityFunctions.print_rich(
-                    "\n[color=red]ERROR: 'register types' module raised an exception:[/color]"
-                    "\n[color=orange]%s[/color]\n" % exc_text
-                )
+                raise exc
 
         is_first_level = False
         first_level = p_level
+        deinitialize_funcs.reverse()
 
         # gc.set_debug(gc.DEBUG_LEAK)
 
-    try:
-        godot_register_types.initialize(p_level)
-        godopy_register_types.initialize(p_level)
-    except NameError as exc:
-        raise SystemError("GodoPy was not properly installed: %s" % exc)
-
-    if initialize_func is not None:
-        initialize_func(p_level)
+    for func in initialize_funcs:
+        func(p_level)
 
 
 cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *:
-    global deinitialize_func, _registered_classes
+    global deinitialize_funcs, _registered_classes
+    cdef ExtensionClass cls
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup, level %d" % p_level)
 
-    if deinitialize_func:
-        deinitialize_func(p_level)
+    for func in deinitialize_funcs:
+        func(p_level)
 
-    godopy_register_types.deinitialize(p_level)
-    godot_register_types.deinitialize(p_level)
-
-    cdef ExtensionClass cls
     if p_level == first_level:
         _NODEDB = {}
         _OBJECTDB = {}
         _METHODDB = {}
+        _BUILTIN_METHODDB = {}
         _CLASSDB = {}
 
         for cls in _registered_classes:

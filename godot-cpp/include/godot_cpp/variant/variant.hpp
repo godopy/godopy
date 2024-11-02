@@ -33,15 +33,20 @@
 
 #include <godot_cpp/core/defs.hpp>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 #include <godot_cpp/variant/builtin_types.hpp>
 #include <godot_cpp/variant/variant_size.hpp>
+
+#include <godot_cpp/variant/variant.hpp>
+
+extern PyObject *variant_to_pyobject(godot::Variant const &);
+extern void variant_from_pyobject(PyObject *, godot::Variant *);
 
 #include <gdextension_interface.h>
 
 #include <array>
-
-#define PY_SSIZE_T_CLEAN
-#include <Python.h>
 
 namespace godot {
 
@@ -155,6 +160,7 @@ public:
 	Variant(const Variant &other);
 	Variant(Variant &&other);
 	Variant(bool v);
+	Variant(int v, bool as_bool);
 	Variant(int64_t v);
 	Variant(int32_t v) :
 			Variant(static_cast<int64_t>(v)) {}
@@ -217,16 +223,20 @@ public:
 	Variant(const PackedVector3Array &v);
 	Variant(const PackedColorArray &v);
 	Variant(const PackedVector4Array &v);
-	Variant(const PyObject *v);
+
+	_FORCE_INLINE_ Variant(const PyObject *v) {
+		ERR_FAIL_NULL(v);
+		variant_from_pyobject(const_cast<PyObject *>(v), reinterpret_cast<Variant *>(_native_ptr()));
+	}
+
 	~Variant();
 
 	// Cython cannot work with operator <Type> methods, but can work with templates
 	template<typename T>
 	_FORCE_INLINE_ T to_type() const {
-		operator T();
+		return operator T();
 	}
 
-	operator PyObject *() const;
 	operator bool() const;
 	operator int64_t() const;
 	operator int32_t() const;
@@ -335,8 +345,8 @@ public:
 	uint32_t hash() const;
 	uint32_t recursive_hash(int recursion_count) const;
 	bool hash_compare(const Variant &variant) const;
-	PyObject *pythonize(const Dictionary &type_hints=Dictionary()) const;
 	bool booleanize() const;
+	_FORCE_INLINE_ PyObject *pythonize() const { return variant_to_pyobject(*this); }
 	String stringify() const;
 	Variant duplicate(bool deep = false) const;
 	static void blend(const Variant &a, const Variant &b, float c, Variant &r_dst);
