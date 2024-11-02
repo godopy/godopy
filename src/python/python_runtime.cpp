@@ -7,7 +7,7 @@
 #include <godot_cpp/classes/engine.hpp>
 
 
-PyMODINIT_FUNC PyInit_default_gdextension_config(void);
+PyMODINIT_FUNC PyInit__gdextension_internals(void);
 PyMODINIT_FUNC PyInit_entry_point(void);
 PyMODINIT_FUNC PyInit_godot_types(void);
 PyMODINIT_FUNC PyInit_gdextension(void);
@@ -100,7 +100,7 @@ void PythonRuntime::initialize() {
 	PyStatus status;
 	PyConfig config;
 
-	PyImport_AppendInittab("default_gdextension_config", PyInit_default_gdextension_config);
+	PyImport_AppendInittab("_gdextension_internals", PyInit__gdextension_internals);
 	PyImport_AppendInittab("entry_point", PyInit_entry_point);
 	PyImport_AppendInittab("godot_types", PyInit_godot_types);
 	PyImport_AppendInittab("gdextension", PyInit_gdextension);
@@ -167,11 +167,11 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 
     Py_INCREF(m);
     module->set_instance(m);
-	// PyObject *repr = PyObject_Repr(m);
-    // ERR_FAIL_NULL_V(repr, module);
-    // module->set_repr(String(repr));
+	PyObject *repr = PyObject_Repr(m);
+    ERR_FAIL_NULL_V(repr, module);
+    module->set_repr(String(repr));
 	Py_DECREF(m);
-	// Py_DECREF(repr);
+	Py_DECREF(repr);
     PyGILState_Release(gil_state);
 
     return module;

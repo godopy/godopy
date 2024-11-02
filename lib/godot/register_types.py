@@ -2,5 +2,5 @@ def initialize(level):
     pass
 
 
-def deinitialize(level):
+def uninitialize(level):
     pass
