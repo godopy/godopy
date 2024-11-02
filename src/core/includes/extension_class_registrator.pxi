@@ -8,15 +8,19 @@ cdef class ExtensionClassRegistrator:
         if registree.is_registered:
             raise RuntimeError("%r is already registered" % registree)
 
-        cdef GDExtensionClassCreationInfo4 *ci = \
-            <GDExtensionClassCreationInfo4 *>gdextension_interface_mem_alloc(cython.sizeof(GDExtensionClassCreationInfo4))
-
+        cdef GDExtensionClassCreationInfo4 ci
         cdef void *registree_ptr = <PyObject *>registree
 
-        ci.is_virtual = kwargs.pop('is_virtual', False)
-        ci.is_abstract = kwargs.pop('is_abstract', False)
-        ci.is_exposed = kwargs.pop('is_exposed', True)
-        ci.is_runtime = kwargs.pop('is_runtime', False)
+        ci.is_virtual = kwargs.pop('is_virtual', registree.is_virtual)
+        ci.is_abstract = kwargs.pop('is_abstract', registree.is_abstract)
+        ci.is_exposed = kwargs.pop('is_exposed', registree.is_exposed)
+        ci.is_runtime = kwargs.pop('is_runtime', registree.is_runtime)
+
+        registree.is_virtual = ci.is_virtual
+        registree.is_abstract = ci.is_abstract
+        registree.is_exposed = ci.is_exposed
+        registree.is_runtime = ci.is_runtime
+
         ci.set_func = NULL # &_ext_set_bind
         ci.get_func = NULL # &_ext_.get_bind
         ci.get_property_list_func = NULL
@@ -31,12 +35,13 @@ cdef class ExtensionClassRegistrator:
         ci.create_instance_func = &ExtensionClass.create_instance
         ci.free_instance_func = &ExtensionClass.free_instance
         ci.recreate_instance_func = &ExtensionClass.recreate_instance
+
         ci.get_virtual_func = NULL
         ci.get_virtual_call_data_func = &Extension.get_virtual_call_data
         ci.call_virtual_with_data_func = &Extension.call_virtual_with_data
         ci.class_userdata = registree_ptr
 
-        ref.Py_INCREF(self.registree) # DECREF in ExtensionClass.__dealoc__
+        ref.Py_INCREF(self.registree) # DECREF in ExtensionClass.unregister()
 
         # if kwargs.pop('has_get_property_list', False):
         #     ci.get_property_list_func = <GDExtensionClassGetPropertyList>&_ext_get_property_list_bind
@@ -48,9 +53,8 @@ cdef class ExtensionClassRegistrator:
             gdextension_library,
             name.ptr(),
             inherits_name.ptr(),
-            ci
+            &ci
         )
-        gdextension_interface_mem_free(ci)
 
         for method in registree.method_bindings.values():
             self.register_method(method)

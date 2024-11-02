@@ -207,6 +207,10 @@ cdef class ExtensionClass(Class):
     Implements all class registration calls and delegates them to `gdextension.ClassRegistrator`
     """
     cdef readonly bint is_registered
+    cdef readonly bint is_virtual
+    cdef readonly bint is_abstract
+    cdef readonly bint is_exposed
+    cdef readonly bint is_runtime
     cdef readonly dict method_bindings
     cdef readonly dict python_method_bindings
     cdef readonly dict virtual_method_bindings

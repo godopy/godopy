@@ -33,9 +33,6 @@ cdef dict _global_utility_function_info = pickle.loads(_global_utility_function_
 _global_inheritance_info['PythonObject'] = 'RefCounted'
 
 
-# cdef set _global_core_classes = pickle.loads(_global_api_types__pickles['core'])
-# cdef set _global_editor_classes = pickle.loads(_global_api_types__pickles['editor'])
-
 include "includes/typeconv.pxi"
 include "includes/exceptions.pxi"
 
@@ -87,17 +84,3 @@ def _utility_functions_dir():
 
 def _enums_dir():
     return _global_enum_info
-
-# def _structs_dir():
-#     return _global_struct_info
-
-# def _get_class_method_list(str name, no_inheritance=False):
-#     cdef list data = (<Variant>ClassDB.get_singleton().class_get_method_list(name, no_inheritance)).pythonize()
-
-#     res = {}
-
-#     for item in data:
-#         name = item.pop('name')
-#         res[name] = item
-
-#     return res

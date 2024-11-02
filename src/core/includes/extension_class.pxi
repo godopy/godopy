@@ -16,6 +16,10 @@ cdef class ExtensionClass(Class):
         self.__method_info__ = {}
 
         self.is_registered = False
+        self.is_virtual = kwargs.pop('is_virtual', False)
+        self.is_abstract = kwargs.pop('is_abstract', False)
+        self.is_exposed = kwargs.pop('is_exposed', True)
+        self.is_runtime = kwargs.pop('is_runtime', False)
 
         self.method_bindings = {}
         self.python_method_bindings = {}
@@ -148,26 +152,6 @@ cdef class ExtensionClass(Class):
 
 
     @staticmethod
-    cdef void free_instance(void *data, void *p_instance) noexcept nogil:
-        ExtensionClass._free_instance(data, p_instance)
-
-
-    @staticmethod
-    cdef int _free_instance(void *p_self, void *p_instance) except -1 with gil:
-        cdef ExtensionClass self = <ExtensionClass>p_self
-        cdef Extension instance = <Extension>p_instance
-
-        # UtilityFunctions.print("Freeing %r" % instance)
-
-        if self.__name__ in _NODEDB:
-            del _NODEDB[self.__name__]
-
-        ref.Py_DECREF(instance)
-
-        return 0
-
-
-    @staticmethod
     cdef GDExtensionObjectPtr create_instance(void *p_class_userdata,
                                               GDExtensionBool p_notify_postinitialize) noexcept nogil:
         return ExtensionClass._create_instance(p_class_userdata, p_notify_postinitialize)
@@ -201,6 +185,26 @@ cdef class ExtensionClass(Class):
             _NODEDB[self.__name__] = instance
 
         return instance._owner
+
+
+    @staticmethod
+    cdef void free_instance(void *data, void *p_instance) noexcept nogil:
+        ExtensionClass._free_instance(data, p_instance)
+
+
+    @staticmethod
+    cdef int _free_instance(void *p_self, void *p_instance) except -1 with gil:
+        cdef ExtensionClass self = <ExtensionClass>p_self
+        cdef Extension instance = <Extension>p_instance
+
+        # UtilityFunctions.print("Freeing %r" % instance)
+
+        if self.__name__ in _NODEDB:
+            del _NODEDB[self.__name__]
+
+        ref.Py_DECREF(instance)
+
+        return 0
 
 
     @staticmethod
