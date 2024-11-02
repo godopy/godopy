@@ -42,7 +42,7 @@ def initialize(level):
         gds.ResourceSaver.add_resource_format_saver(saver, True)
 
 
-def deinitialize(level):
+def uninitialize(level):
     global python_runtime_singleton, python_language, loader, saver
 
     if level == gd.MODULE_INITIALIZATION_LEVEL_SCENE:

@@ -1,16 +1,9 @@
 from binding cimport *
 from godot_cpp cimport Variant, String, UtilityFunctions, OS, Engine, ProjectSettings
-from gdextension cimport (
-    ExtensionClass,
-    _registered_classes,
-    _NODEDB,
-    _OBJECTDB,
-    _METHODDB,
-    _BUILTIN_METHODDB,
-    _CLASSDB
-)
+from gdextension cimport ExtensionClass,  _registered_classes
+
 from godot_types cimport string_from_pyobject
-from default_gdextension_config cimport print_traceback
+from _gdextension_internals cimport print_traceback
 
 import io
 import os
@@ -19,7 +12,7 @@ import sys
 import traceback
 import importlib
 
-import default_gdextension_config
+import _gdextension_internals
 
 try:
     mod = os.environ['GDEXTENSION_CONFIG_MODULE']
@@ -28,11 +21,7 @@ except (KeyError, ImportError):
     try:
         import gdextension_config
     except ImportError:
-        gdextension_config = default_gdextension_config
-
-# gdextension_config = default_gdextension_config
-
-cdef tuple registered_packages = tuple(gdextension_config.REGISTERED_PACKAGES)
+        gdextension_config = _gdextension_internals.default_gdextension_config
 
 
 cdef class StdoutWriter:
@@ -69,7 +58,7 @@ def redirect_python_stdio():
 
 
 cdef object initialize_funcs = []
-cdef object deinitialize_funcs = []
+cdef object uninitialize_funcs = []
 cdef bint is_first_level = True
 cdef int first_level = 0
 
@@ -95,20 +84,18 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
 
 
 cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
-    global initialize_funcs, deinitialize_funcs, is_first_level, first_level, registered_packages
+    global initialize_funcs, uninitialize_funcs, is_first_level, first_level, registered_packages
 
     UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
 
-    for module_name in registered_packages:
+    for module_name in gdextension_config.REGISTERED_MODULES:
         mod_register_types = importlib.import_module('%s.register_types' % module_name)
         initialize_func = getattr(mod_register_types, 'initialize', None)
-        deinitialize_func = getattr(mod_register_types, 'uninitialize', None)
-        if deinitialize_func is None:
-            deinitialize_func = getattr(mod_register_types, 'deinitialize', None)
+        uninitialize_func = getattr(mod_register_types, 'uninitialize', None)
         if initialize_func is not None:
             initialize_funcs.append(initialize_func)
-        if deinitialize_func is not None:
-            deinitialize_funcs.append(deinitialize_func)
+        if uninitialize_func is not None:
+            uninitialize_funcs.append(uninitialize_func)
 
     if is_first_level:
         redirect_python_stdio()
@@ -124,27 +111,26 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
         try:
             import register_types
             initialize_func = getattr(register_types, 'initialize', None)
-            deinitialize_func = getattr(register_types, 'uninitialize', None)
-            if deinitialize_func is None:
-                deinitialize_func = getattr(register_types, 'deinitialize', None)
+            uninitialize_func = getattr(register_types, 'uninitialize', None)
             if initialize_func is not None:
                 initialize_funcs.append(initialize_func)
-            if deinitialize_func is not None:
-                deinitialize_funcs.append(deinitialize_func)
+            if uninitialize_func is not None:
+                uninitialize_funcs.append(uninitialize_func)
         except ImportError as exc:
             f = io.StringIO()
             traceback.print_exception(exc, file=f)
             exc_text = f.getvalue()
             if isinstance(exc, ModuleNotFoundError) and "'register_types'" in exc_text:
-                UtilityFunctions.print_rich(
-                    "\n[color=orange]WARNING: 'register types' module was not found.[/color]\n"
-                )
+                # UtilityFunctions.print_rich(
+                #     "\n[color=orange]WARNING: 'register_types' module was not found.[/color]\n"
+                # )
+                pass
             else:
                 raise exc
 
         is_first_level = False
         first_level = p_level
-        deinitialize_funcs.reverse()
+        uninitialize_funcs.reverse()
 
         # gc.set_debug(gc.DEBUG_LEAK)
 
@@ -153,21 +139,15 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
 
 
 cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *:
-    global deinitialize_funcs, _registered_classes
+    global uninitialize_funcs, _registered_classes
     cdef ExtensionClass cls
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup, level %d" % p_level)
 
-    for func in deinitialize_funcs:
+    for func in uninitialize_funcs:
         func(p_level)
 
     if p_level == first_level:
-        _NODEDB = {}
-        _OBJECTDB = {}
-        _METHODDB = {}
-        _BUILTIN_METHODDB = {}
-        _CLASSDB = {}
-
         for cls in _registered_classes:
             cls.unregister()
 

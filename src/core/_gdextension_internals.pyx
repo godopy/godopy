@@ -4,14 +4,23 @@ import io, traceback
 
 
 cdef public int print_traceback(object exc) except -1:
-    f = io.StringIO()
+    cdef object f = io.StringIO()
+
     traceback.print_exception(exc, file=f)
-    exc_text = f.getvalue()
+    cdef object exc_text = f.getvalue()
+
     UtilityFunctions.print_rich(
         "\n[color=red]ERROR: %s[/color]"
         "\n[color=orange]%s[/color]\n" % (exc, exc_text)
     )
+
     return 0
 
+class Config(dict):
+    def __getattr__(self, attr):
+        return self[attr]
 
-REGISTERED_PACKAGES = ('godot', 'godopy')
+
+default_gdextension_config = Config({
+    'REGISTERED_MODULES': ('godot', 'godopy')
+})

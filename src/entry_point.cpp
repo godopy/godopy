@@ -23,7 +23,7 @@ void initialize_level(ModuleInitializationLevel p_level) {
 		PythonRuntime::get_singleton()->ensure_current_thread_state(true);
 
 		UtilityFunctions::print_verbose("[Python] Importing core modules...");
-		PythonRuntime::get_singleton()->init_module("default_gdextension_config");
+		PythonRuntime::get_singleton()->init_module("_gdextension_internals");
 		PythonRuntime::get_singleton()->init_module("entry_point");
 		PythonRuntime::get_singleton()->init_module("godot_types");
 		PythonRuntime::get_singleton()->init_module("gdextension");
