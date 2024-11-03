@@ -57,6 +57,7 @@ def generate_api_data(api, output_dir):
     ref_filename = gen_folder / "api_data_reference.py"
 
     api_data, reference = generate_api_data_file(
+            api['header'],
             api['classes'],
             api['builtin_classes'],
             api['singletons'],
@@ -123,7 +124,7 @@ BUILTIN_TYPE_LIST = [
     'PackedVector4Array',
 ]
 
-def generate_api_data_file(classes, builtin_classes, singletons, utility_functions, enums, structs):
+def generate_api_data_file(header, classes, builtin_classes, singletons, utility_functions, enums, structs):
     singleton_data = set()
     inheritance_data = {}
     api_type_data = {}
@@ -141,7 +142,7 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
 
     utilfunc_data = {}
     enum_data = {}
-    struct_data = {}
+    struct_data = set()
 
     max_types = 0
 
@@ -162,14 +163,9 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
     all_enums |= set(enum_data.keys())
 
     for struct in structs:
-        struct_data[struct['name']] = struct['format']
+        struct_data.add(struct['name'])
 
     struct_data_pickled = pickle.dumps(struct_data)
-
-    pythoncall_argtypes = set()
-    pythoncall_returntypes = set()
-    enginecall_argtypes = set()
-    enginecall_returntypes = set()
 
     for class_api in builtin_classes:
         class_name = class_api['name']
@@ -182,7 +178,6 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                 type_info = []
                 return_type = method.get('return_type', 'Nil')
                 type_info.append(return_type)
-                enginecall_returntypes.add(return_type)
                 method_info = {}
                 for key in ('is_vararg', 'is_static', 'hash'):
                     method_info[key] = method[key]
@@ -192,7 +187,6 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                         arg_name = argument['name']
                         arg_type = argument['type']
                         type_info.append(arg_type)
-                        enginecall_argtypes.add(arg_type)
                         arguments.append((arg_name, arg_type))
                 method_info['arguments'] = arguments
                 method_info['type_info'] = tuple(type_info)
@@ -234,10 +228,6 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                 type_info = []
                 return_type = method.get('return_value', {}).get('type', 'Nil')
                 type_info.append(return_type)
-                if method['is_virtual']:
-                    enginecall_returntypes.add(return_type)
-                else:
-                    pythoncall_returntypes.add(return_type)
                 method_info = {
                     'hash': hash
                 }
@@ -249,10 +239,6 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                         arg_name = argument['name']
                         arg_type = argument['type']
                         type_info.append(arg_type)
-                        if method_info['is_virtual']:
-                            pythoncall_argtypes.add(arg_type)
-                        else:
-                            enginecall_argtypes.add(arg_type)
                         arguments.append((arg_name, arg_type))
                 method_info['arguments'] = arguments
                 method_info['type_info'] = tuple(type_info)
@@ -267,7 +253,6 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
         method_name = method['name']
         type_info = []
         return_type = method.get('return_value', {}).get('type', 'Nil')
-        enginecall_returntypes.add(return_type)
         type_info.append(return_type)
         method_info = {
             'hash': method['hash'],
@@ -279,7 +264,6 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
                 arg_name = argument['name']
                 arg_type = argument['type']
                 type_info.append(arg_type)
-                enginecall_argtypes.add(arg_type)
                 arguments.append({ arg_name: arg_type })
         method_info['arguments'] = arguments
         method_info['type_info'] = tuple(type_info)
@@ -288,83 +272,12 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
     utilfunc_data_pickled = pickle.dumps(utilfunc_data)
     inheritance_data_pickled = pickle.dumps(inheritance_data)
 
-    for (key, value) in api_type_data.items():
-        api_type_data_pickled[key] = pickle.dumps(value)
-
-    real_pythoncall_argtypes = set()
-    real_pythoncall_returntypes = set()
-    real_enginecall_argtypes = set()
-    real_enginecall_returntypes = set()
-
-    for (argtypes, real_argtypes) in [
-        (pythoncall_argtypes, real_pythoncall_argtypes),
-        (pythoncall_returntypes, real_pythoncall_returntypes),
-        (enginecall_argtypes, real_enginecall_argtypes),
-        (enginecall_returntypes, real_enginecall_returntypes)
-    ]:
-        for argtype in argtypes:
-            # if argtype.startswith('const'):
-            #     argtype = argtype[6:]
-            if argtype.startswith('enum') or argtype in all_enums:
-                real_argtypes.add('int')
-            elif argtype.startswith('bitfield'):
-                real_argtypes.add('int')
-            elif argtype in inheritance_data:
-                real_argtypes.add('Object')
-            elif argtype.startswith('typedarray'):
-                arrtype = argtype.split('::')[1]
-                if arrtype in inheritance_data:
-                    arrtype = 'Object'
-                # real_argtypes.add('Array[%s]' % arrtype)
-                real_argtypes.add('Array')
-            elif argtype in struct_data:
-                real_argtypes.add('%s' % argtype)
-            elif argtype.endswith('*'):
-                if argtype.rstrip('*').rstrip() in struct_data:
-                    real_argtypes.add('%s' % argtype)
-                else:
-                    real_argtypes.add('%s' % argtype)
-            else:
-                real_argtypes.add(argtype)
-
-    fmt = lambda s: list(sorted(s))
-    builtin_argtypes = set(BUILTIN_TYPE_LIST)
-    # print("\npythoncall args:\n\t%s\n" % '\n\t'.join(fmt(real_pythoncall_argtypes - builtin_argtypes)))
-    # print("pythoncall return values:\n\t%s\n\n" % '\n\t'.join(fmt(real_pythoncall_returntypes - builtin_argtypes)))
-    # print("enginecall args:\n\t%s\n" % '\n\t'.join(fmt(real_enginecall_argtypes - builtin_argtypes)))
-    # print("enginecall return values:\n\t%s\n" % '\n\t'.join(fmt(real_enginecall_returntypes - builtin_argtypes)))
-
-    # all_types = real_pythoncall_argtypes | real_pythoncall_returntypes | real_enginecall_argtypes | real_enginecall_returntypes
-    # print("\nall extra types:\n\t%s\n" % '\n\t'.join(fmt(all_types - builtin_argtypes)))
-
-    # all extra types:
-    #     AudioFrame*
-    #     CaretInfo*
-    #     PhysicsServer2DExtensionMotionResult*
-    #     PhysicsServer2DExtensionRayResult*
-    #     PhysicsServer2DExtensionShapeRestInfo*
-    #     PhysicsServer2DExtensionShapeResult*
-    #     PhysicsServer3DExtensionMotionResult*
-    #     PhysicsServer3DExtensionRayResult*
-    #     PhysicsServer3DExtensionShapeRestInfo*
-    #     PhysicsServer3DExtensionShapeResult*
-    #     ScriptLanguageExtensionProfilingInfo*
-    #     Variant
-    #     const Glyph*
-    #     const uint8_t **
-    #     const uint8_t*
-    #     const void*
-    #     float*
-    #     int32_t*
-    #     uint8_t*
-    #     void*
-
     result = [
+        'cdef dict _api_header = %r' % header,
         'cdef bytes _global_singleton_info__pickle = \\\n%s' % pprint.pformat(singleton_data_pickled, width=120),
         'cdef bytes _global_enum_info__pickle = \\\n%s' % pprint.pformat(enum_data_pickled, width=120),
         'cdef bytes _global_struct_info__pickle = \\\n%s' % pprint.pformat(struct_data_pickled, width=120),
         'cdef bytes _global_inheritance_info__pickle = \\\n%s' % pprint.pformat(inheritance_data_pickled, width=120),
-        # 'cdef dict _global_api_types__pickles = \\\n%s' % pprint.pformat(api_type_data_pickled, width=120),
         'cdef bytes _global_utility_function_info__pickle = \\\n%s' % pprint.pformat(utilfunc_data_pickled, width=120),
 
         'cdef dict _global_method_info__pickles = \\\n%s' % pprint.pformat(class_method_data_pickled, width=120),
@@ -375,11 +288,10 @@ def generate_api_data_file(classes, builtin_classes, singletons, utility_functio
     ]
 
     result2 = [
-        # '_global_type_info = \\\n%s' % pprint.pformat(type_data, width=120),
         '_global_singleton_info = \\\n%s' % pprint.pformat(singleton_data, width=120),
         '_global_enum_info = \\\n%s' % pprint.pformat(enum_data, width=120),
         '_global_inheritance_info = \\\n%s' % pprint.pformat(inheritance_data, width=120),
-        #'_global_api_types = \\\n%s' % pprint.pformat(api_type_data, width=120),
+
         '_global_utility_function_info = \\\n%s' % pprint.pformat(utilfunc_data, width=120),
 
         '_global_struct_info = \\\n%s' % pprint.pformat(struct_data, width=120),

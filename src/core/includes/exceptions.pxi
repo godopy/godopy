@@ -1,10 +1,10 @@
 cdef dict _ERROR_TO_STR = {
-	<int>GDEXTENSION_CALL_ERROR_INVALID_METHOD: "[GDExtensionCallError #%d] Invalid method",
-	<int>GDEXTENSION_CALL_ERROR_INVALID_ARGUMENT: "[GDExtensionCallError #%d] Invalid argument: expected a different variant type",
-	<int>GDEXTENSION_CALL_ERROR_TOO_MANY_ARGUMENTS: "[GDExtensionCallError #%d] Too many arguments: expected lower number of arguments",
-	<int>GDEXTENSION_CALL_ERROR_TOO_FEW_ARGUMENTS: "[GDExtensionCallError #%d] Too few arguments: expected higher number of arguments",
-	<int>GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL: "[GDExtensionCallError #%d] Instance is NULL",
-    <int>GDEXTENSION_CALL_ERROR_METHOD_NOT_CONST: "GDExtensionCallError #%d (GDEXTENSION_CALL_ERROR_METHOD_NOT_CONST)"
+	CALL_ERROR_INVALID_METHOD: "[CallError #%d] Invalid method",
+	CALL_ERROR_INVALID_ARGUMENT: "[CallError #%d] Invalid argument: expected a different variant type",
+	CALL_ERROR_TOO_MANY_ARGUMENTS: "[CallError #%d] Too many arguments: expected lower number of arguments",
+	CALL_ERROR_TOO_FEW_ARGUMENTS: "[CallError #%d] Too few arguments: expected higher number of arguments",
+	CALL_ERROR_INSTANCE_IS_NULL: "[CallError #%d] Instance is NULL",
+    CALL_ERROR_METHOD_NOT_CONST: "CallError #%d (CALL_ERROR_METHOD_NOT_CONST)"
 }
 
 

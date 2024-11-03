@@ -1,18 +1,13 @@
 import enum
 
-import gdextension as gde
+import gdextension
 from . import classdb, singletons
 from .core import *
-
-
-input = gde.input
 
 
 __all__ = [
     'classdb',
     'singletons',
-
-    'input',
 
     'MODULE_INITIALIZATION_LEVEL_CORE',
     'MODULE_INITIALIZATION_LEVEL_EDITOR',
@@ -174,22 +169,22 @@ class _classdict(dict):
 
 
 def _set_globals():
-    for func_name in gde._utility_functions_dir():
+    for func_name in gdextension.utility_functions_set():
         if func_name in _SKIP_UTILITY_FUNCTION:
             continue
-        globals()[func_name] = gde.UtilityFunction(func_name)
+        globals()[func_name] = gdextension.UtilityFunction(func_name)
 
-    for enum_name, enum_data_list in gde._enums_dir().items():
+    for enum_name, enum_data_list in gdextension.global_enums_dict().items():
         enum_name = enum_name.replace('.', '')
         enum_data = _classdict(enum_data_list)
         enum_data._member_names = enum_data.keys()
         globals()[enum_name] = enum.EnumType(enum_name, (enum.IntEnum,), enum_data)
 
 
-MODULE_INITIALIZATION_LEVEL_CORE = 0
-MODULE_INITIALIZATION_LEVEL_SERVERS = 1
-MODULE_INITIALIZATION_LEVEL_SCENE = 2
-MODULE_INITIALIZATION_LEVEL_EDITOR = 3
+MODULE_INITIALIZATION_LEVEL_CORE = gdextension.INITIALIZATION_CORE
+MODULE_INITIALIZATION_LEVEL_SERVERS = gdextension.INITIALIZATION_SERVERS
+MODULE_INITIALIZATION_LEVEL_SCENE = gdextension.INITIALIZATION_SCENE
+MODULE_INITIALIZATION_LEVEL_EDITOR = gdextension.INITIALIZATION_EDITOR
 
 
 _set_globals()

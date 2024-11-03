@@ -1,8 +1,11 @@
+"""
+Provides GodotClassBase metaclass and base classes for all Godot classes and objects.
+"""
 import types
-from typing import Any, List
+from typing import Any, List, Mapping, Dict
 
-import godot as gd
-import gdextension as gde
+import godot
+import gdextension
 
 
 __all__ = [
@@ -19,7 +22,7 @@ _ext_class_cache = {}
 class GodotClassBase(type):
     """Metaclass for all Godot engine and extension classes"""
 
-    def __new__(cls, name, bases, attrs, **kwargs):
+    def __new__(cls, name: str, bases: tuple, attrs: Mapping[str, Any], **kwargs: Dict[str, Any]) -> type:
         super_new = super().__new__
 
         godot_cls = attrs.pop('__godot_class__', None)
@@ -27,7 +30,7 @@ class GodotClassBase(type):
             # Engine class
             module = attrs.pop('__module__', 'godot.classdb')
 
-            if module == 'godot.classdb' and gde._has_singleton(name):
+            if module == 'godot.classdb' and gdextension.has_singleton(name):
                 module = 'godot.singletons'
 
             new_attrs = {
@@ -38,7 +41,6 @@ class GodotClassBase(type):
 
             attrs.update(new_attrs)
 
-            # gd.print('Setup Engine class %s' % name)
             return super_new(cls, name, bases, attrs)
 
         # Ensure initialization is only performed for subclasses of Godot classes
@@ -46,7 +48,7 @@ class GodotClassBase(type):
         parents = [b for b in bases if isinstance(b, GodotClassBase)]
         if not parents:
             if name != 'Class' and name != 'EngineClass':
-                gd.push_warning("Attempt to create %r Godot class without a valid base" % name)
+                godot.push_warning("Attempt to create %r Godot class without a valid base" % name)
             # Create Class or EngineClass
             return super_new(cls, name, bases, attrs)
 
@@ -54,7 +56,7 @@ class GodotClassBase(type):
         if inherits is None:
             raise TypeError("'inherits' keyword argument is required in Godot class definitions")
 
-        godot_cls = gde.ExtensionClass(name, inherits.__godot_class__)
+        godot_cls = gdextension.ExtensionClass(name, inherits.__godot_class__)
 
         module = attrs.pop('__module__')
         new_attrs = {
@@ -67,7 +69,6 @@ class GodotClassBase(type):
             parent_method_info = inherits.get_method_info(attr)
             if attr == '__init__':
                 value.__name__ = value.__qualname__ = '__inner_init__'
-                # print("Set up __init__(%r) of %s" % (value, name))
                 new_attrs['__inner_init__'] = godot_cls.bind_python_method(value)
 
             # Virtual functions have no hash
@@ -77,7 +78,7 @@ class GodotClassBase(type):
 
             elif attr.startswith('_') and isinstance(value, types.FunctionType):
                 # Warn users about _functions that are not virtuals
-                gd.push_warning("No virtual method %r found in the base class %r" % (attr, inherits))
+                godot.push_warning("No virtual method %r found in the base class %r" % (attr, inherits))
             elif getattr(value, '_gdmethod', False):
                 new_attrs[attr] = godot_cls.bind_method(value)
             elif getattr(value, '_gdvirtualmethod', False):
@@ -96,10 +97,13 @@ class GodotClassBase(type):
         return getattr(cls.__godot_class__, name)
 
 
-class Extension(gde.Extension):
+class Extension(gdextension.Extension):
+    """
+    Base class for all custom GDExtension objects.
+    """
     def __getattr__(self, name) -> Any:
         try:
-            mb = gde.MethodBind(self, name)
+            mb = gdextension.MethodBind(self, name)
 
             self.__dict__[name] = mb
 
@@ -109,8 +113,8 @@ class Extension(gde.Extension):
 
     def __dir__(self) -> List[str]:
         return list(set(
-            self.__godot_class__.__method_info__.keys() +
-            self.__dict__.keys()
+            list(self.__godot_class__.__method_info__.keys()) +
+            [k for k in self.__dict__.keys() if not k.stratswith('_')]
         ))
 
     def cast_to(self, class_name: str) -> None:
@@ -120,6 +124,9 @@ class Extension(gde.Extension):
         self._switch_class(getattr(classdb, class_name))
 
 class Class(Extension, metaclass=GodotClassBase):
+    """
+    Base class for all custom GDExtension classes.
+    """
     def __init__(self, **kwargs) -> None:
         has_kwargs = list(kwargs.keys())
 
@@ -138,10 +145,13 @@ class Class(Extension, metaclass=GodotClassBase):
         super().__init__(godot_cls, from_callback=from_callback)
 
 
-class EngineObject(gde.Object):
+class EngineObject(gdextension.Object):
+    """
+    Base class for all Engine objects.
+    """
     def __getattr__(self, name) -> Any:
         try:
-            mb = gde.MethodBind(self, name)
+            mb = gdextension.MethodBind(self, name)
 
             self.__dict__[name] = mb
 
@@ -163,6 +173,9 @@ class EngineObject(gde.Object):
 
 
 class EngineClass(EngineObject, metaclass=GodotClassBase):
+    """
+    Base class for all Engine classes.
+    """
     def __init__(self, from_ptr=0):
         godot_cls = self.__class__.__godot_class__
         super().__init__(godot_cls, from_ptr=from_ptr)
