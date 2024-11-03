@@ -7,7 +7,10 @@ var res = TestResource.new()
 var m_bool: bool
 var m_int: int
 var m_float: float
-var m_string: String
+var m_string1: String
+var m_string2: String
+var m_string3: String
+var m_string4: String
 var m_vector2: Vector2
 var m_vector2i: Vector2i
 var m_rect2: Rect2
@@ -62,15 +65,27 @@ func get_signal():
 	return test_signal
 
 
-func test_atomic_types_in(p_bool: bool, p_int: int, p_float: float, p_string: String):
+func test_atomic_types_in(p_bool: bool, p_int: int, p_float: float, p_string1: String, p_string2: String,
+						  p_string3: String, p_string4: String):
 	m_bool = p_bool
 	m_int = p_int
 	m_float = p_float
-	m_string = p_string
+	m_string1 = p_string1
+	m_string2 = p_string2
+	m_string3 = p_string3
+	m_string4 = p_string4
 
 
 func test_atomic_types_out():
-	res.atomic_args(res.bool_ret(), res.int_ret(), res.float_ret(), res.string_ret())
+	res.atomic_args(
+		res.bool_ret(),
+		res.int_ret(),
+		res.float_ret(),
+		res.string_ret(),
+		res.unicode_ret(),
+		res.bytes_ret(),
+		res.utf8_ret()
+	)
 
 
 func test_math_types_1_in(p_vector2: Vector2, p_vector2i: Vector2i, p_rect2: Rect2,

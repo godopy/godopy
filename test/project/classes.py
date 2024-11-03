@@ -404,11 +404,15 @@ class TestResource(gd.Class, inherits=classdb.Resource):
         self.argA = None
 
     @classdb.bind_method
-    def atomic_args(self, arg1: bool, arg2: int, arg3: float, arg4: str) -> None:
+    def atomic_args(self, arg1: bool, arg2: int, arg3: float, arg4: str,
+                    arg5: str, arg6: bytes, arg7: bytes) -> None:
         self.arg1 = arg1
         self.arg2 = arg2
         self.arg3 = arg3
         self.arg4 = arg4
+        self.arg5 = arg5
+        self.arg6 = arg6
+        self.arg7 = arg7
 
     @classdb.bind_method
     def math_args_1(self, arg1: Vector2, arg2: Vector2i, arg3: Rect2,
@@ -487,6 +491,18 @@ class TestResource(gd.Class, inherits=classdb.Resource):
     @classdb.bind_method
     def string_ret(self) -> str:
         return 'GodoPy'
+
+    @classdb.bind_method
+    def unicode_ret(self) -> str:
+        return '⚠️'
+
+    @classdb.bind_method
+    def bytes_ret(self) -> bytes:
+        return b'GodoPy'
+
+    @classdb.bind_method
+    def utf8_ret(self) -> bytes:
+        return '⚠️'.encode('utf-8')
 
     @classdb.bind_method
     def vector2_ret(self) -> Vector2:
