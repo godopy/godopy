@@ -24,25 +24,14 @@ cdef public object variant_bool_to_pyobject(const cpp.Variant &v):
     return ret != 0
 
 
-# TODO: Keep type checks only in debug builds
-
 cdef public void bool_from_pyobject(object p_obj, uint8_t *r_ret) noexcept:
-    # if not (PyBool_Check(p_obj) or isinstance(p_obj, np.bool_)):
-    #     cpp.UtilityFunctions.push_error("'bool' is required, got %r" % type(p_obj))
-    #     r_ret[0] = <uint8_t>False
-    # else:
     r_ret[0] = <uint8_t>PyObject_IsTrue(p_obj)
 
 
 cdef public void variant_bool_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
-    cdef bint ret = False
-    # if not (PyBool_Check(p_obj) or not isinstance(p_obj, np.bool_)):
-    #     cpp.UtilityFunctions.push_error("'bool' is required, got %r" % type(p_obj))
-    # else:
-    ret = PyObject_IsTrue(p_obj)
+    cdef bint ret = PyObject_IsTrue(p_obj)
 
-    cdef cpp.Variant v = cpp.Variant(ret, True)
-    gdextension_interface_variant_new_copy(r_ret, &v)
+    r_ret[0] = cpp.Variant(ret, True)
 
 
 int = int
@@ -90,10 +79,7 @@ cdef public void float_from_pyobject(object p_obj, double *r_ret) noexcept:
 cdef public void variant_float_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
     cdef double ret = 0.0
 
-    if not (PyFloat_Check(p_obj) or not isinstance(p_obj, np.floating)):
-        cpp.UtilityFunctions.push_error("'float' is required, got %r" % type(p_obj))
-    else:
-        ret = <double>p_obj
+    ret = <double>p_obj
 
     cdef cpp.Variant v = cpp.Variant(ret)
     gdextension_interface_variant_new_copy(r_ret, &v)

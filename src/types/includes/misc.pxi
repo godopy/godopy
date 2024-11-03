@@ -45,24 +45,9 @@ cdef public object variant_string_name_to_pyobject(const cpp.Variant &v):
 
 
 cdef public void string_name_from_pyobject(object p_obj, cpp.StringName *r_ret) noexcept:
-    cdef const wchar_t *wstr
-    cdef const char *cstr
-    cdef bytes tmp
     cdef cpp.String s
 
-    if PyUnicode_Check(p_obj):
-        wstr = PyUnicode_AsWideCharString(p_obj, NULL)
-        gdextension_interface_string_new_with_wide_chars(&s, wstr)
-    elif PyBytes_Check(p_obj):
-        cstr = PyBytes_AsString(p_obj)
-        gdextension_interface_string_new_with_utf8_chars(&s, cstr)
-    elif isinstance(p_obj, np.flexible):
-        tmp = bytes(p_obj)
-        cstr = PyBytes_AsString(tmp)
-        gdextension_interface_string_new_with_utf8_chars(&s, cstr)
-    else:
-        cpp.UtilityFunctions.push_error("Could not convert %r to C++ StringName" % p_obj)
-        s = cpp.String()
+    string_from_pyobject(p_obj, &s)
 
     r_ret[0] = cpp.StringName(s)
 
