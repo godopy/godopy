@@ -1,12 +1,7 @@
-def initialize(level):
-    pass
+from typing import Mapping
 
 
-def uninitialize(level):
-    pass
-
-
-def configure(config):
+def configure(config: Mapping) -> None:
     from godot.classdb import Object
     from godot.core import _ext_class_cache
 

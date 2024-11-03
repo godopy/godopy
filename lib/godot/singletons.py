@@ -1,18 +1,27 @@
-import godot as gd
-import gdextension as gde
+"""
+Contains all Godot singletons that are available classes in the Extension API.
+All singleton objects in this module are loaded only when they are needed.
+"""
+from typing import List, Any
+
+import godot
+import gdextension
 
 
-__all__ = list(gde._singletons_dir())
+__all__ = list(gdextension.singletons_set())
 
 
 __path__ = None
 
 
-def __getattr__(name):
+def __getattr__(name) -> gdextension.Object:
+    """
+    Creates and returns an instance of godot.EngineClass for all available singletons in the Extension API.
+    """
     try:
-        if gde._has_singleton(name):
-            godot_class = gde.Class.get(name)
-            cls = gd.GodotClassBase(name, (gd.EngineClass,), {'__godot_class__': godot_class})
+        if gdextension.has_singleton(name):
+            godot_class = gdextension.Class.get(name)
+            cls = godot.GodotClassBase(name, (godot.EngineClass,), {'__godot_class__': godot_class})
 
             singleton = cls()
             globals()[name] = singleton
@@ -35,5 +44,8 @@ def __getattr__(name):
             raise exc
 
 
-def __dir__():
+def __dir__() -> List[str]:
+    """
+    Lists all available singletons.
+    """
     return __all__

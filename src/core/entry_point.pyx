@@ -1,3 +1,8 @@
+"""
+Extends GDExtension Initialization API. Enables initialization of Python
+modules.
+"""
+
 from binding cimport *
 from godot_cpp cimport Variant, String, UtilityFunctions, OS, Engine, ProjectSettings
 from gdextension cimport ExtensionClass,  _registered_classes, configure
