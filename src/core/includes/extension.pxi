@@ -9,27 +9,27 @@ cdef dict _bound_method_cache = {}
 
 
 cdef class Extension(Object):
-    def __init__(self, ExtensionClass ext_class, Class base_class, bint notify=True, bint from_callback=False):
-        if not isinstance(base_class, Class):
-            raise TypeError("godot.Class instance is required for 'ext_class', got %r" % type(base_class))
+    def __init__(self, ExtensionClass cls=None, **kwargs):
+        if cls is None:
+            cls = kwargs.pop('__godot_class__', None)
 
-        if not isinstance(ext_class, ExtensionClass):
-            raise TypeError("ExtensionClass instance is required for 'ext_class', got %r" % type(ext_class))
+        if not isinstance(cls, ExtensionClass):
+            raise TypeError("Expected ExtensionClass instance, got %r" % type(cls))
 
-        if not ext_class.is_registered:
+        base_class = cls.__inherits__
+
+        if not cls.is_registered:
             raise RuntimeError('Extension class must be registered')
+
+        cdef bint from_callback = kwargs.pop('from_callback', False)
 
         self._needs_cleanup = not from_callback
 
-        self.__godot_class__ = ext_class
-        cdef PyStringName class_name = PyStringName(ext_class.__name__)
+        self.__godot_class__ = cls
+        cdef PyStringName class_name = PyStringName(cls.__name__)
         cdef PyStringName base_class_name = PyStringName(base_class.__name__)
 
-        self._owner = gdextension_interface_classdb_construct_object(base_class_name.ptr())
-
-        if notify:
-            notification = MethodBind(self, 'notification')
-            notification(0, False) # NOTIFICATION_POSTINITIALIZE
+        self._owner = gdextension_interface_classdb_construct_object2(base_class_name.ptr())
 
         # INCREF because we lend a references of 'self' to the Godot Engine
         ref.Py_INCREF(self) # for set_instance, DECREF in ExtensionClass._free_instance
@@ -45,25 +45,12 @@ cdef class Extension(Object):
         if inner_init:
             inner_init(self)
 
+
+        notification = MethodBind(self, 'notification')
+        notification(0, False) # NOTIFICATION_POSTINITIALIZE
+
         # print("%r initialized, from callback: %r" % (self, from_callback))
 
-
-    cpdef destroy(self):
-        with nogil:
-            # Will call ExtensionClass._free_instance
-            gdextension_interface_object_destroy(self._owner)
-            self._owner = NULL
-            self._needs_cleanup = False
-
-
-    def __del__(self):
-        if self._needs_cleanup and self._owner != NULL:
-            print('Clean %r' % self)
-            with nogil:
-                # Will call ExtensionClass._free_instance
-                gdextension_interface_object_destroy(self._owner)
-                self._owner = NULL
-                self._needs_cleanup = False
 
     @staticmethod
     cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil:

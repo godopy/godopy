@@ -5,6 +5,9 @@ from .script import Python
 from .language import PythonLanguage
 from .resource_format import ResourceFormatLoaderPython, ResourceFormatSaverPython
 
+import godot.singletons
+
+
 python_language = None
 script_loader = None
 script_saver = None

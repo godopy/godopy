@@ -59,8 +59,18 @@ cdef class Class:
         return mi
 
 
+    cdef void *get_tag(self) except NULL:
+        cdef PyStringName class_name = PyStringName(self.__name__)
+
+        return gdextension_interface_classdb_get_class_tag(class_name.ptr())
+
+
+    def get_tag_id(self) -> int:
+        return <uint64_t>self.get_tag()
+
+
     @staticmethod
-    def _get_class(name):
+    def get(name):
         return Class.get_class(name)
 
 
