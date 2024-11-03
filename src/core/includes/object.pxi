@@ -185,8 +185,3 @@ cdef class Object:
     def ref_set_object(self):
         if self._ref_owner != NULL:
             gdextension_interface_ref_set_object(self._owner, self._ref_owner)
-
-
-# TODO: Implement 'special' *Engine* object that has customized
-#       'register_singleton' and 'register_script_language' methods
-#       that would set 'is_singleton' to true.
