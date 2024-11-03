@@ -1,3 +1,150 @@
+def print_error(exc, message=None, *, bint editor_notify=True):
+    """
+    Logs an error to Godot's built-in debugger and to the OS terminal.
+    """
+    cdef bytes descr = str(exc).encode('utf-8'), msg, filename, function
+    cdef int32_t lineno
+
+    try:
+        frame = inspect.currentframe()
+        try:
+            frameinfo = inspect.getframeinfo(frame.f_back)
+
+            filename = frameinfo.filename.encode('utf-8')
+            function = frameinfo.function.encode('utf-8')
+            lineno = int(frameinfo.lineno)
+        finally:
+            del frame
+    except ValueError:
+        # Cython code, no call stack to inspect
+        # Read values from the traceback text if an Exception object was passed
+        if isinstance(exc, Exception):
+            f = io.StringIO()
+            traceback.print_exception(exc, file=f)
+            exc_text = f.getvalue()
+            exc_lines = exc_text.splitlines()
+            info_line = [s.strip().strip(',') for s in exc_lines[-2].split()]
+
+            filename = info_line[1].encode('utf-8')
+            function = info_line[-1].encode('utf-8')
+            lineno = int(info_line[3])
+        else:
+            filename = function = b'<unknown>'
+            lineno = -1
+
+    if message is not None:
+        msg = str(message).encode('utf-8')
+        gdextension_interface_print_error_with_message(descr, msg, function, filename, lineno, editor_notify)
+    else:
+        gdextension_interface_print_error(descr, function, filename, lineno, editor_notify)
+
+
+def print_error_with_traceback(exc, message=None, *, bint editor_notify=True):
+    """
+    Logs an error with a traceback (if available) to Godot's built-in debugger and to the OS terminal.
+    """
+    if isinstance(exc, Exception):
+        f = io.StringIO()
+        traceback.print_exception(exc, file=f)
+        UtilityFunctions.print_rich("[color=purple]%s[/color]" % f.getvalue())
+
+    print_error(exc, message, editor_notify=editor_notify)
+
+
+def print_warning(warning, message=None, *, bint editor_notify=True):
+    """
+    Logs a warning to Godot's built-in debugger and to the OS terminal.
+    """
+    cdef bytes descr = str(warning).encode('utf-8'), msg, filename, function
+    cdef int32_t lineno
+
+    try:
+        frame = inspect.currentframe()
+        try:
+            frameinfo = inspect.getframeinfo(frame.f_back)
+
+            filename = frameinfo.filename.encode('utf-8')
+            function = frameinfo.function.encode('utf-8')
+            lineno = int(frameinfo.lineno)
+        finally:
+            del frame
+    except ValueError:
+        # Cython code, no call stack to inspect
+        # Read values from the traceback text if the warning was passed as an Exception object
+        if isinstance(warning, Exception):
+            f = io.StringIO()
+            traceback.print_exception(warning, file=f)
+            exc_text = f.getvalue()
+            exc_lines = exc_text.splitlines()
+            info_line = [s.strip().strip(',') for s in exc_lines[-2].split()]
+
+            filename = info_line[1].encode('utf-8')
+            function = info_line[-1].encode('utf-8')
+            lineno = int(info_line[3])
+        else:
+            filename = function = b'<unknown>'
+            lineno = -1
+
+    if message is not None:
+        msg = str(message).encode('utf-8')
+        gdextension_interface_print_warning_with_message(descr, msg, function, filename, lineno, editor_notify)
+    else:
+        gdextension_interface_print_warning(descr, function, filename, lineno, editor_notify)
+
+
+def print_script_error(exc, message=None, *, bint editor_notify=True):
+    """
+    Logs a script error to Godot's built-in debugger and to the OS terminal.
+    """
+    cdef bytes descr = str(exc).encode('utf-8'), msg, filename, function
+    cdef int32_t lineno
+
+    try:
+        frame = inspect.currentframe()
+        try:
+            frameinfo = inspect.getframeinfo(frame.f_back)
+
+            filename = frameinfo.filename.encode('utf-8')
+            function = frameinfo.function.encode('utf-8')
+            lineno = int(frameinfo.lineno)
+        finally:
+            del frame
+    except ValueError:
+        # Cython code, no call stack to inspect
+        # Read values from the traceback text if an Exception object was passed
+        if isinstance(exc, Exception):
+            f = io.StringIO()
+            traceback.print_exception(exc, file=f)
+            exc_text = f.getvalue()
+            exc_lines = exc_text.splitlines()
+            info_line = [s.strip().strip(',') for s in exc_lines[-2].split()]
+
+            filename = info_line[1].encode('utf-8')
+            function = info_line[-1].encode('utf-8')
+            lineno = int(info_line[3])
+        else:
+            filename = function = b'<unknown>'
+            lineno = -1
+
+    if message is not None:
+        msg = str(message).encode('utf-8')
+        gdextension_interface_print_script_error_with_message(descr, msg, function, filename, lineno, editor_notify)
+    else:
+        gdextension_interface_print_script_error(descr, function, filename, lineno, editor_notify)
+
+
+def print_script_error_with_traceback(exc, message=None, *, bint editor_notify=True):
+    """
+    Logs an error with a traceback (if available) to Godot's built-in debugger and to the OS terminal.
+    """
+    if isinstance(exc, Exception):
+        f = io.StringIO()
+        traceback.print_exception(exc, file=f)
+        UtilityFunctions.print_rich("[color=gray]%s[/color]" % f.getvalue())
+
+    print_script_error(exc, message, editor_notify=editor_notify)
+
+
 cdef dict _ERROR_TO_STR = {
 	CALL_ERROR_INVALID_METHOD: "[CallError #%d] Invalid method",
 	CALL_ERROR_INVALID_ARGUMENT: "[CallError #%d] Invalid argument: expected a different variant type",

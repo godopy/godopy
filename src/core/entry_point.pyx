@@ -8,7 +8,7 @@ from godot_cpp cimport Variant, String, UtilityFunctions, OS, Engine, ProjectSet
 from gdextension cimport ExtensionClass,  _registered_classes, configure
 
 from godot_types cimport string_from_pyobject
-from _gdextension_internals cimport print_traceback
+from _gdextension_internals cimport print_traceback_and_die
 
 import io
 import os
@@ -111,7 +111,7 @@ cdef object uninitialize_funcs = []
 cdef object configure_funcs = []
 
 cdef bint is_first_level = True
-cdef int first_level = 0
+cdef size_t first_level = 0
 
 
 cdef public int python_initialize_level(ModuleInitializationLevel p_level) noexcept nogil:
@@ -119,7 +119,7 @@ cdef public int python_initialize_level(ModuleInitializationLevel p_level) noexc
         try:
             _python_initialize_level(p_level)
         except Exception as exc:
-            print_traceback(exc)
+            print_traceback_and_die(exc)
 
     return 0
 
@@ -129,7 +129,7 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
         try:
             _python_deinitialize_level(p_level)
         except Exception as exc:
-            print_traceback(exc)
+            print_traceback_and_die(exc)
     
     return 0
 

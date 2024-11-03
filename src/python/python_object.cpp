@@ -55,7 +55,7 @@ Variant PythonObject::call(const Array &p_args, const Dictionary &p_kwargs) {
 		if (PyErr_Occurred()) {
             PyObject *exc = PyErr_GetRaisedException();
             ERR_FAIL_NULL_V(exc, ret);
-            print_traceback(exc);
+            print_traceback_and_die(exc);
             Py_DECREF(exc);
         }
 	} else {
@@ -87,8 +87,7 @@ Variant PythonObject::call_one_arg(const Variant &p_arg) {
 		if (PyErr_Occurred()) {
             PyObject *exc = PyErr_GetRaisedException();
             ERR_FAIL_NULL_V(exc, ret);
-            print_traceback(exc);
-            Py_DECREF(exc);
+            print_traceback_and_die(exc);
         }
 	} else {
         ret = Variant(result);
@@ -110,8 +109,7 @@ Ref<PythonObject> PythonObject::getattr(const String &p_attr_name) {
     if (PyErr_Occurred()) {
         PyObject *exc = PyErr_GetRaisedException();
 		ERR_FAIL_NULL_V(exc, object);
-		print_traceback(exc);
-        Py_DECREF(exc);
+		print_traceback_and_die(exc);
     }
     ERR_FAIL_NULL_V(attr, object);
     Py_INCREF(attr);

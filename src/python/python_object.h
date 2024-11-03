@@ -6,7 +6,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-extern int print_traceback(PyObject *);
+extern void print_traceback_and_die(PyObject *);
 
 using namespace godot;
 

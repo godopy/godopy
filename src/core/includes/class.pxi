@@ -13,10 +13,6 @@ def get_method_info(class_name):
 
 
 cdef class Class:
-    """\
-    Represents Godot engine classes. Instances of this class and derived
-    classes encapsulate Godot *classes*.
-    """
     def __init__(self, str name):
         raise TypeError("Godot Engine classes can't be instantiated")
 

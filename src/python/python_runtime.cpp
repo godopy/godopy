@@ -159,8 +159,7 @@ Ref<PythonObject> PythonRuntime::import_module(const String &p_name) {
 	if (PyErr_Occurred()) {
 		PyObject *exc = PyErr_GetRaisedException();
 		ERR_FAIL_NULL_V(exc, module);
-		print_traceback(exc);
-        Py_DECREF(exc);
+		print_traceback_and_die(exc);
 	}
 
 	ERR_FAIL_NULL_V(m, module);
@@ -184,8 +183,7 @@ void PythonRuntime::init_module(const String &p_name) {
 	if (PyErr_Occurred()) {
 		PyObject *exc = PyErr_GetRaisedException();
 		ERR_FAIL_NULL(exc);
-		print_traceback(exc);
-        Py_DECREF(exc);
+		print_traceback_and_die(exc);
 	}
 
 	ERR_FAIL_NULL(m);
