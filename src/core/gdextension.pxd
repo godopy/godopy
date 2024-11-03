@@ -171,6 +171,8 @@ cdef class MethodBind(EngineCallableBase):
     cdef Object __self__
     cdef void *_base
     cdef GDExtensionMethodBindPtr _godot_method_bind
+    cdef object key
+    cdef object func
 
     cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil
     cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,

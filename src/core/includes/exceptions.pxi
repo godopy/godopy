@@ -1,9 +1,30 @@
+def _exc_info_from_exc(exc) -> Tuple[bytes, bytes, int]:
+    f = io.StringIO()
+    traceback.print_exception(exc, file=f)
+    exc_text = f.getvalue()
+    exc_lines = exc_text.splitlines()
+
+    info_line_str = exc_lines[-2]
+
+    if info_line_str.strip().startswith('^'):
+        info_line_str = exc_lines[-4]
+
+    info_line = [s.strip().strip(',') for s in info_line_str.split()]
+
+    filename = info_line[1].encode('utf-8')
+    function = info_line[-1].encode('utf-8')
+    lineno = int(info_line[3])
+
+    return filename, function, lineno
+
+
 def print_error(exc, message=None, *, bint editor_notify=True):
     """
     Logs an error to Godot's built-in debugger and to the OS terminal.
     """
-    cdef bytes descr = str(exc).encode('utf-8'), msg, filename, function
-    cdef int32_t lineno
+    cdef bytes descr = str(exc).encode('utf-8'), msg
+    cdef bytes filename = b'<unknown>', function = b'<unknown>'
+    cdef int32_t lineno = -1
 
     try:
         frame = inspect.currentframe()
@@ -19,18 +40,8 @@ def print_error(exc, message=None, *, bint editor_notify=True):
         # Cython code, no call stack to inspect
         # Read values from the traceback text if an Exception object was passed
         if isinstance(exc, Exception):
-            f = io.StringIO()
-            traceback.print_exception(exc, file=f)
-            exc_text = f.getvalue()
-            exc_lines = exc_text.splitlines()
-            info_line = [s.strip().strip(',') for s in exc_lines[-2].split()]
+            filename, function, lineno = _exc_info_from_exc(exc)
 
-            filename = info_line[1].encode('utf-8')
-            function = info_line[-1].encode('utf-8')
-            lineno = int(info_line[3])
-        else:
-            filename = function = b'<unknown>'
-            lineno = -1
 
     if message is not None:
         msg = str(message).encode('utf-8')
@@ -55,8 +66,9 @@ def print_warning(warning, message=None, *, bint editor_notify=True):
     """
     Logs a warning to Godot's built-in debugger and to the OS terminal.
     """
-    cdef bytes descr = str(warning).encode('utf-8'), msg, filename, function
-    cdef int32_t lineno
+    cdef bytes descr = str(warning).encode('utf-8'), msg
+    cdef bytes filename = b'<unknown>', function = b'<unknown>'
+    cdef int32_t lineno = -1
 
     try:
         frame = inspect.currentframe()
@@ -72,18 +84,7 @@ def print_warning(warning, message=None, *, bint editor_notify=True):
         # Cython code, no call stack to inspect
         # Read values from the traceback text if the warning was passed as an Exception object
         if isinstance(warning, Exception):
-            f = io.StringIO()
-            traceback.print_exception(warning, file=f)
-            exc_text = f.getvalue()
-            exc_lines = exc_text.splitlines()
-            info_line = [s.strip().strip(',') for s in exc_lines[-2].split()]
-
-            filename = info_line[1].encode('utf-8')
-            function = info_line[-1].encode('utf-8')
-            lineno = int(info_line[3])
-        else:
-            filename = function = b'<unknown>'
-            lineno = -1
+            filename, function, lineno = _exc_info_from_exc(warning)
 
     if message is not None:
         msg = str(message).encode('utf-8')
@@ -96,8 +97,9 @@ def print_script_error(exc, message=None, *, bint editor_notify=True):
     """
     Logs a script error to Godot's built-in debugger and to the OS terminal.
     """
-    cdef bytes descr = str(exc).encode('utf-8'), msg, filename, function
-    cdef int32_t lineno
+    cdef bytes descr = str(exc).encode('utf-8'), msg
+    cdef bytes filename = b'<unknown>', function = b'<unknown>'
+    cdef int32_t lineno = -1
 
     try:
         frame = inspect.currentframe()
@@ -113,18 +115,7 @@ def print_script_error(exc, message=None, *, bint editor_notify=True):
         # Cython code, no call stack to inspect
         # Read values from the traceback text if an Exception object was passed
         if isinstance(exc, Exception):
-            f = io.StringIO()
-            traceback.print_exception(exc, file=f)
-            exc_text = f.getvalue()
-            exc_lines = exc_text.splitlines()
-            info_line = [s.strip().strip(',') for s in exc_lines[-2].split()]
-
-            filename = info_line[1].encode('utf-8')
-            function = info_line[-1].encode('utf-8')
-            lineno = int(info_line[3])
-        else:
-            filename = function = b'<unknown>'
-            lineno = -1
+            filename, function, lineno = _exc_info_from_exc(exc)
 
     if message is not None:
         msg = str(message).encode('utf-8')

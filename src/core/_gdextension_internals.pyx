@@ -15,7 +15,12 @@ cdef int print_traceback(object exc) except -1:
     cdef object exc_text = f.getvalue()
 
     exc_lines = exc_text.splitlines()
-    info_line = [s.strip().strip(',') for s in exc_lines[-2].split()]
+    info_line_str = exc_lines[-2]
+
+    if info_line_str.strip().startswith('^'):
+        info_line_str = exc_lines[-4]
+
+    info_line = [s.strip().strip(',') for s in info_line_str.split()]
 
     cdef bytes descr = str(exc).encode('utf-8')
     cdef bytes path = info_line[1].encode('utf-8')

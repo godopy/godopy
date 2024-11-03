@@ -22,7 +22,7 @@ def initialize(level):
 
         result = Engine.register_script_language(python_language)
         if result != godot.Error.OK:
-            raise RuntimeError("Could not register PythonScript language, error: %r" % gd.Error(result))
+            raise RuntimeError("Could not register PythonScript language, error: %r" % godot.Error(result))
 
         Python.register()
         ResourceFormatLoaderPython.register()
