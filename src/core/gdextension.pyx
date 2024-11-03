@@ -11,9 +11,11 @@ from python_runtime cimport *
 cimport godot_types as type_funcs
 from godot_types cimport StringName as PyStringName, variant_to_pyobject_func_t, variant_from_pyobject_func_t
 
+import io
 import sys
 import types
 import pickle
+import inspect
 import builtins
 import traceback
 import importlib
@@ -42,7 +44,6 @@ cdef int configure(object config) except -1:
 
 include "includes/typeconv.pxi"
 include "includes/constants.pxi"
-include "includes/exceptions.pxi"
 
 
 # INTERFACE
@@ -75,86 +76,12 @@ def get_extension_api_version() -> GodotVersion:
 
 # INTERFACE: Memory
 
-cdef class _Memory:
-    """
-    Allocates, reallocates and frees memory.
-    """
-    cdef void *ptr
-    cdef size_t num_bytes
-
-    def __cinit__(self, size_t p_bytes) -> None:
-        "Allocates memory."
-
-        self.ptr = gdextension_interface_mem_alloc(p_bytes)
-        self.num_bytes = p_bytes
-
-        if self.ptr == NULL:
-            raise MemoryError()
-
-    cdef void *realloc(self, size_t p_bytes) except NULL nogil:
-        "Reallocates memory."
-
-        self.ptr = gdextension_interface_mem_realloc(self.ptr, p_bytes)
-
-        if self.ptr == NULL:
-            with gil:
-                raise MemoryError()
-
-        self.num_bytes = p_bytes
-
-        return self.ptr
-
-    cdef void free(self) noexcept nogil:
-        "Frees memory."
-
-        if self.ptr != NULL:
-            gdextension_interface_mem_free(self.ptr)
-
-            self.ptr = NULL
-
-    def __dealloc__(self) -> None:
-        self.free()
+include "includes/memory.pxi"
 
 
 # INTERFACE: Godot Core
 
-cpdef print_error(description, function, file, int32_t line, bint editor_notify):
-    """
-    Logs an error to Godot's built-in debugger and to the OS terminal.
-    """
-    gdextension_interface_print_error(description, function, file, line, editor_notify)
-
-cpdef print_error_with_message(description, message, function, file, int32_t line, bint editor_notify):
-    """
-    Logs an error with a message to Godot's built-in debugger and to the OS terminal.
-    """
-    gdextension_interface_print_error_with_message(description, message, function, file, line, editor_notify)
-
-
-cpdef print_warning(description, function, file, int32_t line, bint editor_notify):
-    """
-    Logs a warning to Godot's built-in debugger and to the OS terminal.
-    """
-    gdextension_interface_print_warning(description, function, file, line, editor_notify)
-
-cpdef print_warning_with_message(description, message, function, file, int32_t line, bint editor_notify):
-    """
-    Logs a warning with a message to Godot's built-in debugger and to the OS terminal.
-    """
-    gdextension_interface_print_warning_with_message(description, message, function, file, line, editor_notify)
-
-
-cpdef print_script_error(description, function, file, int32_t line, bint editor_notify):
-    """
-    Logs a script error to Godot's built-in debugger and to the OS terminal.
-    """
-    gdextension_interface_print_script_error(description, function, file, line, editor_notify)
-
-cpdef print_script_error_with_message(description, message, function, file, int32_t line, bint editor_notify):
-    """
-    Logs a script error with a message to Godot's built-in debugger and to the OS terminal.
-    """
-    gdextension_interface_print_script_error_with_message(description, message, function, file, line, editor_notify)
+include "includes/exceptions.pxi"
 
 
 # INTERFACE: ClassDB/Object
@@ -173,6 +100,7 @@ include "includes/python_callable.pxi"
 include "includes/extension_method_base.pxi"
 include "includes/extension_virtual_method.pxi"
 include "includes/extension_method.pxi"
+
 
 # INTERFACE: ClassDB Extension
 

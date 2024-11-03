@@ -177,8 +177,9 @@ cdef public void string_from_pyobject(object p_obj, cpp.String *r_ret) noexcept:
         cstr = PyBytes_AsString(tmp)
         gdextension_interface_string_new_with_utf8_chars(r_ret, cstr)
     else:
-        cpp.UtilityFunctions.push_error("Could not convert %r to C++ String" % p_obj)
-        r_ret[0] = cpp.String()
+        p_ob = str(p_obj)
+        wstr = PyUnicode_AsWideCharString(p_obj, NULL)
+        gdextension_interface_string_new_with_wide_chars(r_ret, wstr)
 
 
 cdef public void variant_string_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
@@ -198,7 +199,9 @@ cdef public void variant_string_from_pyobject(object p_obj, cpp.Variant *r_ret) 
         cstr = PyBytes_AsString(tmp)
         gdextension_interface_string_new_with_utf8_chars(&s, cstr)
     else:
-        cpp.UtilityFunctions.push_error("Could not convert %r to C++ String" % p_obj)
+        p_ob = str(p_obj)
+        wstr = PyUnicode_AsWideCharString(p_obj, NULL)
+        gdextension_interface_string_new_with_wide_chars(r_ret, wstr)
 
     cdef cpp.Variant v = cpp.Variant(s)
     gdextension_interface_variant_new_copy(r_ret, &v)
