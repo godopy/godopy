@@ -1,4 +1,5 @@
 import types
+from typing import Any, List
 
 import godot as gd
 import gdextension as gde
@@ -96,7 +97,7 @@ class GodotClassBase(type):
 
 
 class Extension(gde.Extension):
-    def __getattr__(self, name):
+    def __getattr__(self, name) -> Any:
         try:
             mb = gde.MethodBind(self, name)
 
@@ -106,24 +107,24 @@ class Extension(gde.Extension):
         except AttributeError as exc:
             raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
 
-    def __dir__(self):
+    def __dir__(self) -> List[str]:
         return list(set(
             self.__godot_class__.__method_info__.keys() +
             self.__dict__.keys()
         ))
 
+    def cast_to(self, class_name: str) -> None:
+        from godot import classdb
 
-# semi-public, not in __all__, for internal use
-def _class_from_godot_class(godot_cls):
-    return _ext_class_cache[godot_cls]
+        super().cast_to(class_name)
+        self._switch_class(getattr(classdb, class_name))
 
 class Class(Extension, metaclass=GodotClassBase):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         has_kwargs = list(kwargs.keys())
 
         godot_cls = kwargs.pop('__godot_class__', self.__class__.__godot_class__)
-        _notify = kwargs.pop('_notify', True)
-        _from_callback = kwargs.pop('_from_callback', False)
+        from_callback = kwargs.pop('from_callback', False)
         _internal_check = kwargs.pop('_internal_check', '')
 
         # kwargs are for internal use only, add some protection
@@ -134,11 +135,11 @@ class Class(Extension, metaclass=GodotClassBase):
         if kwargs:
             raise TypeError(msg % (self.__godot_class__, list(kwargs.keys()).pop()))
 
-        super().__init__(godot_cls, godot_cls.__inherits__, _notify, _from_callback)
+        super().__init__(godot_cls, from_callback=from_callback)
 
 
 class EngineObject(gde.Object):
-    def __getattr__(self, name):
+    def __getattr__(self, name) -> Any:
         try:
             mb = gde.MethodBind(self, name)
 
@@ -149,8 +150,16 @@ class EngineObject(gde.Object):
             raise AttributeError("%r object has no attribute %r" % (self.__class__, name))
 
 
-    def __dir__(self):
+    def __dir__(self) -> List[str]:
         return self.__godot_class__.__method_info__.keys()
+
+
+    def cast_to(self, class_name: str) -> None:
+        from godot import classdb
+
+        super().cast_to(class_name)
+
+        self._switch_class(getattr(classdb, class_name))
 
 
 class EngineClass(EngineObject, metaclass=GodotClassBase):

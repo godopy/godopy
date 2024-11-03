@@ -20,6 +20,9 @@ from binding cimport *
 from godot_cpp cimport *
 
 
+cdef int configure(object config) except -1
+
+
 cpdef str variant_type_to_str(VariantType vartype)
 cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
 
@@ -129,6 +132,8 @@ cdef class Class:
     cdef int initialize_class(self) except -1
     cpdef object get_method_info(self, method_name)
 
+    cdef void *get_tag(self) except NULL
+
     @staticmethod
     cdef Class get_class(object name)
 
@@ -146,8 +151,11 @@ cdef public class Object [object GDPyObject, type GDPyObject_Type]:
     processes class inheritance chains.
     """
     cdef void *_owner
-    cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be real owner
-    cdef bint is_singleton
+    cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be a real owner
+    cdef bint _instance_set
+    cdef bint _needs_cleanup
+
+    cdef readonly bint is_singleton
     cdef readonly Class __godot_class__
 
 
@@ -271,10 +279,6 @@ cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Ty
         `creation_info4.get_virtual_call_data_func = &Extension.get_virtual_call_data`
         `creation_info4.call_virtual_with_data_func = &Extension.call_virtual_with_data`
     """
-    cdef bint _needs_cleanup
-
-    cpdef destroy(self)
-
     @staticmethod
     cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil
 
