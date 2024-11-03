@@ -882,6 +882,12 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(r.arg3, math.tau)
         self.assertIsInstance(r.arg4, str)
         self.assertEqual(r.arg4, 'GodoPy')
+        self.assertIsInstance(r.arg5, str)
+        self.assertEqual(r.arg5, '⚠️')
+        self.assertIsInstance(r.arg6, str)
+        self.assertEqual(r.arg6, 'GodoPy')
+        self.assertIsInstance(r.arg7, str)
+        self.assertEqual(r.arg7, '⚠️')
 
 
     def test_atomic_type_args_from_python_varcalls(self) -> None:
@@ -889,14 +895,17 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from Python to the Engine
         # Covers argument conversion from Python to Variant
-        gdscript.call('test_atomic_types_in', True, 42, math.tau, "GodoPy")
+        gdscript.call('test_atomic_types_in', True, 42, math.tau, "GodoPy", "⚠️", b"GodoPy", "⚠️".encode('utf-8'))
 
         # Covers return value conversion from Variant to Python
         args = [
             gdscript.get('m_bool'),
             gdscript.get('m_int'),
             gdscript.get('m_float'),
-            gdscript.get('m_string')
+            gdscript.get('m_string1'),
+            gdscript.get('m_string2'),
+            gdscript.get('m_string3'),
+            gdscript.get('m_string4'),
         ]
         self.assertIsInstance(args[0], bool)
         self.assertEqual(args[0], True)
@@ -906,6 +915,12 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(args[2], math.tau)
         self.assertIsInstance(args[3], str)
         self.assertEqual(args[3], 'GodoPy')
+        self.assertIsInstance(args[4], str)
+        self.assertEqual(args[4], '⚠️')
+        self.assertIsInstance(args[5], str)
+        self.assertEqual(args[5], 'GodoPy')
+        self.assertIsInstance(args[6], str)
+        self.assertEqual(args[6], '⚠️')
 
 
     def test_math_type_args_to_python_varcalls(self) -> None:

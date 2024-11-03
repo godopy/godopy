@@ -168,18 +168,18 @@ cdef public void string_from_pyobject(object p_obj, cpp.String *r_ret) noexcept:
 
     if PyUnicode_Check(p_obj):
         wstr = PyUnicode_AsWideCharString(p_obj, NULL)
-        gdextension_interface_string_new_with_wide_chars(r_ret, wstr)
+        gdextension_interface_string_new_with_wide_chars_and_len(r_ret, wstr, len(p_obj))
     elif PyBytes_Check(p_obj):
         cstr = PyBytes_AsString(p_obj)
-        gdextension_interface_string_new_with_utf8_chars(r_ret, cstr)
+        gdextension_interface_string_new_with_utf8_chars_and_len2(r_ret, cstr, len(p_obj))
     elif isinstance(p_obj, np.flexible):
         tmp = bytes(p_obj)
         cstr = PyBytes_AsString(tmp)
-        gdextension_interface_string_new_with_utf8_chars(r_ret, cstr)
+        gdextension_interface_string_new_with_utf8_chars_and_len2(r_ret, cstr, len(tmp))
     else:
-        p_ob = str(p_obj)
+        p_obj = str(p_obj)
         wstr = PyUnicode_AsWideCharString(p_obj, NULL)
-        gdextension_interface_string_new_with_wide_chars(r_ret, wstr)
+        gdextension_interface_string_new_with_wide_chars_and_len(r_ret, wstr, len(p_obj))
 
 
 cdef public void variant_string_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept:
@@ -190,18 +190,18 @@ cdef public void variant_string_from_pyobject(object p_obj, cpp.Variant *r_ret) 
 
     if PyUnicode_Check(p_obj):
         wstr = PyUnicode_AsWideCharString(p_obj, NULL)
-        gdextension_interface_string_new_with_wide_chars(&s, wstr)
+        gdextension_interface_string_new_with_wide_chars_and_len(&s, wstr, len(p_obj))
     elif PyBytes_Check(p_obj):
         cstr = PyBytes_AsString(p_obj)
-        gdextension_interface_string_new_with_utf8_chars(&s, cstr)
+        gdextension_interface_string_new_with_utf8_chars_and_len2(&s, cstr, len(p_obj))
     elif isinstance(p_obj, np.flexible):
         tmp = bytes(p_obj)
         cstr = PyBytes_AsString(tmp)
-        gdextension_interface_string_new_with_utf8_chars(&s, cstr)
+        gdextension_interface_string_new_with_utf8_chars_and_len2(&s, cstr, len(tmp))
     else:
-        p_ob = str(p_obj)
+        p_obj = str(p_obj)
         wstr = PyUnicode_AsWideCharString(p_obj, NULL)
-        gdextension_interface_string_new_with_wide_chars(r_ret, wstr)
+        gdextension_interface_string_new_with_wide_chars_and_len(&s, wstr, len(p_obj))
 
     cdef cpp.Variant v = cpp.Variant(s)
     gdextension_interface_variant_new_copy(r_ret, &v)
