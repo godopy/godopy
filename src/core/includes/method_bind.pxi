@@ -137,18 +137,9 @@ cdef class MethodBind(EngineCallableBase):
 
         # UtilityFunctions.print("Init MB %r" % self)
 
-
-    def __call__(self, *args):
-        if self.func is not None:
-            return self.func(self, *args)
-        elif self.is_vararg:
-            return _make_engine_varcall[MethodBind](self, self._varcall, args)
-        else:
-            return _make_engine_ptrcall[MethodBind](self, self._ptrcall, args)
-
-
     def __str__(self):
         return self.key
+
 
     def __repr__(self):
         class_name = '%s[%s]' % (self.__class__.__name__, self.key)
@@ -161,7 +152,25 @@ cdef class MethodBind(EngineCallableBase):
             return "<%s.%s at 0x%016X[0x%016X]>" % (self.__class__.__module__, class_name, self_addr, mb_addr)
 
 
+    def __call__(self, *args):
+        """
+        Calls a method on an Object.
+        """
+        try:
+            if self.func is not None:
+                return self.func(self, *args)
+            elif self.is_vararg:
+                return _make_engine_varcall[MethodBind](self, self._varcall, args)
+            else:
+                return _make_engine_ptrcall[MethodBind](self, self._ptrcall, args)
+        except Exception as exc:
+            print_error_with_traceback(exc)
+
+
     cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil:
+        """
+        Calls a method on an Object (using a "ptrcall").
+        """
         with nogil:
             gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._base,
                                                              p_args, r_ret)
@@ -169,6 +178,15 @@ cdef class MethodBind(EngineCallableBase):
 
     cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
                        GDExtensionCallError *r_error) noexcept nogil:
+        """
+        Calls a method on an Object.
+        """
         with nogil:
-            gdextension_interface_object_method_bind_call(self._godot_method_bind, self._base,
-                                                          <const GDExtensionConstVariantPtr *>p_args, size, r_ret, r_error)
+            gdextension_interface_object_method_bind_call(
+                self._godot_method_bind,
+                self._base,
+                 <const GDExtensionConstVariantPtr *>p_args,
+                 size,
+                 r_ret,
+                 r_error
+            )

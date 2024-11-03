@@ -16,6 +16,7 @@ cdef class PythonCallableBase:
 cdef class BoundExtensionMethod(PythonCallableBase):
     def __init__(self, Extension instance, object method, tuple type_info=None):
         self.__name__ = method.__name__
+        self.error_count = 0
 
         if isinstance(method, ExtensionMethod):
             assert method.is_registered, "attempt to bind unregistered extension method"

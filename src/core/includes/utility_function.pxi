@@ -17,7 +17,10 @@ cdef class UtilityFunction(EngineCallableBase):
 
 
     def __call__(self, *args):
-        return _make_engine_ptrcall[UtilityFunction](self, self._ptrcall, args)
+        try:
+            return _make_engine_ptrcall[UtilityFunction](self, self._ptrcall, args)
+        except Exception as exc:
+            print_error_with_traceback(exc)
 
 
     def __repr__(self):

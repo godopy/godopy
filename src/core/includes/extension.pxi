@@ -38,16 +38,16 @@ cdef class Extension(Object):
 
         gdextension_interface_object_set_instance(self._owner, class_name.ptr(), self_ptr)
 
-        _OBJECTDB[self.owner_id()] = self
-
         cdef object inner_init = self.__godot_class__.python_method_bindings.get('__inner_init__')
 
         if inner_init:
             inner_init(self)
 
-
         notification = MethodBind(self, 'notification')
         notification(0, False) # NOTIFICATION_POSTINITIALIZE
+
+        _OBJECTDB[self.owner_id()] = self
+        gdtypes.add_object_type(self.__class__)
 
         # print("%r initialized, from callback: %r" % (self, from_callback))
 
@@ -103,6 +103,7 @@ cdef class Extension(Object):
                                      GDExtensionTypePtr r_ret) noexcept nogil:
         Extension._call_virtual_with_data(p_instance, p_func, <const void **>p_args, <void *>r_ret)
 
+
     @staticmethod
     cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
                                       void *r_ret) noexcept with gil:
@@ -127,4 +128,11 @@ cdef class Extension(Object):
             method = BoundExtensionMethod(self, func, func_and_info[1])
             _bound_method_cache[key] = self, method
 
-        _make_python_ptrcall(method, r_ret, p_args, method.get_argument_count())
+        try:
+            _make_python_ptrcall(method, r_ret, p_args, method.get_argument_count())
+        except Exception as exc:
+            method.error_count += 1
+            if method.error_count > 1:
+                print_traceback_and_die(exc)
+            else:
+                print_error_with_traceback(exc)

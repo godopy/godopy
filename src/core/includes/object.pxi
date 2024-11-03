@@ -59,12 +59,39 @@ cdef void object_from_other_pyobject(object obj, void **r_ret) noexcept nogil:
 
 
 cdef class Object:
-    def __cinit__(self):
+    """
+    Defines all Godot Engine's objects.
+
+    Combined with MethodBind/ScriptMethod classes, provides a full
+    implementation of GDExtension's Object interface.
+
+    Implements following GDExtension API calls:
+        in `__init__(from_ptr=0)`:
+            if object is a singleton:
+                `global_get_singleton`
+            else:
+                `classdb_construct_object2`
+                `object_set_instance`
+
+        in `destroy()`: `object_destroy`
+        in `get_godot_class_name()`: `object_get_class_name`
+        in `cast_to()`: `object_cast_to`
+        in `get_instance_from_id()`: `object_get_instance_from_id`
+        in `get_instance_id()`: `object_get_instance_id`
+        in `has_script_method()`: `object_has_script_method`
+
+    See MethodBind.__call__, MethodBind._varcall, MethodBind._ptrcall for
+    `object_method_bind_call`/`object_method_bind_ptrcall` API implementation
+
+    See ScriptMethod.__call__(), ScriptMethod._varcall for
+    `object_call_script_method` API implementation.
+    """
+    def __cinit__(self) -> None:
         self.is_singleton = False
         self._instance_set = False
         self._needs_cleanup = False
 
-    def __init__(self, object godot_class='Object', *, uint64_t from_ptr=0):
+    def __init__(self, godot_class: Class | str = 'Object', *, from_ptr: uint64_t = 0) -> None:
         if not isinstance(godot_class, (Class, str)):
             raise TypeError("'godot_class' argument must be a Class instance or a string")
 
@@ -93,9 +120,31 @@ cdef class Object:
             notification(0, False) # NOTIFICATION_POSTINITIALIZE
 
         _OBJECTDB[<uint64_t>self._owner] = self
+        gdtypes.add_object_type(self.__class__)
 
 
-    def destroy(self, *, _internal_call=False):
+    def __repr__(self) -> str:
+        class_name = self.__class__.__name__
+        if self.__class__ is Object or class_name == 'Extension':
+            class_name = '%s[%s]' % (self.__class__.__name__, self.__godot_class__.__name__)
+
+        if self._ref_owner != NULL:
+            return "<%s.%s object at 0x%016X[0x%016X[0x%016X]]>" % (
+                self.__class__.__module__, class_name, <uint64_t><PyObject *>self,
+                <uint64_t>self._owner, <uint64_t>self._ref_owner)
+
+        return "<%s.%s object at 0x%016X[0x%016X]>" % (
+            self.__class__.__module__, class_name, <uint64_t><PyObject *>self, <uint64_t>self._owner)
+
+
+    def __dealloc__(self) -> None:
+        self.destroy(_internal_call=True)
+
+
+    def destroy(self, *, _internal_call=False) -> None:
+        """
+        Destroys an Object.
+        """
         if self._owner != NULL and self._needs_cleanup:
             # Will call ExtensionClass._free_instance for Extension objects
             gdextension_interface_object_destroy(self._owner)
@@ -113,25 +162,30 @@ cdef class Object:
             raise TypeError("%r can not be destroyed")
 
 
-    def __dealloc__(self):
-        self.destroy(_internal_call=True)
-
-
-    def get_godot_class_name(self):
+    def get_godot_class_name(self) -> PyStringName:
+        """
+        Gets the class name of an Object from the Engine.
+        """
         cdef StringName class_name
         gdextension_interface_object_get_class_name(self._owner, gdextension_library, &class_name)
 
         return type_funcs.string_name_to_pyobject(class_name)
 
 
-    def _switch_class(self, cls):
+    def _switch_class(self, cls: object) -> None:
+        """
+        Changes a class of an Object, a helper for Object.cast_to implementations with concrete Python classes
+        """
         if isinstance(cls, Class) or hasattr(cls, '__godot_class__') and isinstance(cls.__godot_class__, Class):
             self.__class__ = cls
         else:
             raise TypeError("Expected a Godot class, got %r" % cls)
 
 
-    def cast_to(self, object godot_class):
+    def cast_to(self, object godot_class: Class | str) -> None:
+        """
+        Casts an Object to a different type.
+        """
         if not isinstance(godot_class, (Class, str)):
             raise ValueError("'godot_class' argument must be a Class instance or a string")
 
@@ -157,18 +211,35 @@ cdef class Object:
                     _OBJECTDB[self.owner_id()] = self
             self.is_singleton = True
 
-    def __repr__(self):
-        class_name = self.__class__.__name__
-        if self.__class__ is Object or class_name == 'Extension':
-            class_name = '%s[%s]' % (self.__class__.__name__, self.__godot_class__.__name__)
+    @staticmethod
+    def get_instance_from_id(uint64_t id) -> Object:
+        """
+        Gets an Object by its instance ID.
+        """
+        cdef void *owner = gdextension_interface_object_get_instance_from_id(id)
 
-        if self._ref_owner != NULL:
-            return "<%s.%s object at 0x%016X[0x%016X[0x%016X]]>" % (
-                self.__class__.__module__, class_name, <uint64_t><PyObject *>self,
-                <uint64_t>self._owner, <uint64_t>self._ref_owner)
+        return object_to_pyobject(owner)
 
-        return "<%s.%s object at 0x%016X[0x%016X]>" % (
-            self.__class__.__module__, class_name, <uint64_t><PyObject *>self, <uint64_t>self._owner)
+    def get_instance_id(self) -> gdtypes.ObjectID:
+        """
+        Gets the instance ID from an Object.
+        """
+        return type_funcs.ObjectID(gdextension_interface_object_get_instance_id(self._owner))
+
+    def has_script_method(self, method_name: str) -> bool:
+        """
+        Checks if this object has a script with the given method.
+        """
+        cdef PyStringName method = PyStringName(method_name)
+
+        return gdextension_interface_object_has_script_method(self._owner, method.ptr())
+
+    def call_script_method(self, method_name: str, *args: Any) -> Any:
+        """
+        Call the given script method on this object.
+        """
+        cdef ScriptMethod method = ScriptMethod(self, method_name)
+        return method(*args)
 
     def owner_hash(self):
         return self.owner_id()
@@ -180,8 +251,14 @@ cdef class Object:
         return <uint64_t>self._ref_owner
 
     def ref_get_object(self):
+        """
+        Gets the Object from a reference. Sets the resulting pointer to `self._ref_owner`.
+        """
         self._ref_owner = gdextension_interface_ref_get_object(self._owner)
 
     def ref_set_object(self):
+        """
+        Sets the Object referred to by a reference.
+        """
         if self._ref_owner != NULL:
             gdextension_interface_ref_set_object(self._owner, self._ref_owner)

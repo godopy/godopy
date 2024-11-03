@@ -39,7 +39,7 @@ from libcpp.cast cimport *
 from cpython.bytearray cimport PyByteArray_Check
 from cython.view cimport array as cvarray
 from gdextension cimport (
-    BuiltinMethod,
+    BuiltinMethod, Extension,
     object_to_pyobject, cppobject_from_pyobject, variant_object_to_pyobject,
     object_from_pyobject, variant_object_from_pyobject,
     variant_type_to_str, str_to_variant_type
@@ -56,7 +56,7 @@ import pathlib
 
 import numpy as np
 
-from typing import AnyStr, Dict, List, Mapping, Sequence, Tuple, TypeVar, Generic
+from typing import Any, AnyStr, Dict, List, Mapping, Sequence, Tuple, TypeVar, Generic
 
 
 __all__ = [
@@ -325,6 +325,7 @@ cdef dict _pytype_to_vartype = {
     pathlib.PurePosixPath: cpp.NODE_PATH,
     RID: cpp.RID,
     Object: cpp.OBJECT,
+    Extension: cpp.OBJECT,
     Callable: cpp.CALLABLE,
     Signal: cpp.SIGNAL,
     dict: cpp.DICTIONARY,
@@ -371,6 +372,18 @@ cdef dict _pytype_to_vartype = {
     PhysicsServer3DExtensionShapeResult: cpp.NIL,
     ScriptLanguageExtensionProfilingInfo: cpp.NIL,
 }
+
+
+def add_object_type(object new_obj_type):
+    """
+    Updates type lookup dictionaries for optimized VariantType/ArgType detection
+    """
+    if not isinstance(new_obj_type, type):
+        raise TypeError("Argument 'new_obj_type' has incorrect type (expected type, got %r)" % new_obj_type)
+
+    if new_obj_type not in _pytype_to_vartype:
+        _pytype_to_vartype[new_obj_type] = cpp.OBJECT
+        _pytype_to_argtype[new_obj_type] = cpp.OBJECT
 
 
 cdef variant_to_pyobject_func_t[<int>cpp.VARIANT_MAX] variant_to_pyobject_funcs = [
@@ -528,6 +541,7 @@ cdef cpp.VariantType pytype_to_variant_type(object p_type) noexcept:
 _pytype_to_argtype = _pytype_to_vartype.copy()
 _pytype_to_argtype.update({
     Variant: ArgType.ARGTYPE_VARIANT,
+    Any: ArgType.ARGTYPE_VARIANT,
     Pointer: ArgType.ARGTYPE_POINTER,
     IntPointer: ArgType.ARGTYPE_POINTER,
     FloatPointer: ArgType.ARGTYPE_POINTER,

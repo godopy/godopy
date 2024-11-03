@@ -1,3 +1,4 @@
+@cython.final
 cdef class _Memory:
     """
     Allocates, reallocates and frees memory.

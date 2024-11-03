@@ -14,9 +14,14 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
         cdef Object instance = <object>p_self
         cdef BoundExtensionMethod method = BoundExtensionMethod(instance, func)
 
-        # UtilityFunctions.print("Make python varcall %r %r" % (func, method))
-        _make_python_varcall[BoundExtensionMethod](method, p_args, p_count, r_ret, r_error)
-
+        try:
+            _make_python_varcall(method, p_args, p_count, r_ret, r_error)
+        except Exception as exc:
+            method.error_count += 1
+            if method.error_count > 1:
+                print_traceback_and_die(exc)
+            else:
+                print_error_with_traceback(exc)
 
     @staticmethod
     cdef void ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
@@ -31,8 +36,14 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
         cdef Object instance = <object>p_self
         cdef BoundExtensionMethod method = BoundExtensionMethod(instance, func)
 
-        # UtilityFunctions.print("Make python ptrcall %r %r" % (func, method))
-        _make_python_ptrcall[BoundExtensionMethod](method, r_ret, p_args, method.get_argument_count())
+        try:
+            _make_python_ptrcall(method, r_ret, p_args, method.get_argument_count())
+        except Exception as exc:
+            method.error_count += 1
+            if method.error_count > 1:
+                print_traceback_and_die(exc)
+            else:
+                print_error_with_traceback(exc)
 
 
     cdef int register(self, ExtensionClass cls) except -1:
@@ -41,62 +52,33 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
         if self.get_argument_count() < 1:
             raise TypeError('At least 1 argument ("self") is required')
 
-        cdef PropertyInfo _return_value_info = self.get_return_info()
-        cdef GDExtensionPropertyInfo return_value_info
+        cdef PropertyInfo py_retinfo = self.get_return_info()
+        cdef _GDEPropInfoData return_value_info = _GDEPropInfoData(py_retinfo)
 
-        cdef PyStringName ret_name = PyStringName(_return_value_info.name)
-        cdef PyStringName ret_classname = PyStringName(_return_value_info.class_name)
-        cdef PyStringName ret_hintstring = PyStringName(_return_value_info.hint_string)
+        cdef list _defargs = self.get_default_arguments()
+        cdef size_t defarg_count = len(_defargs)
+        cdef _Memory defarg_mem = _Memory(defarg_count * cython.sizeof(GDExtensionVariantPtr))
 
-        return_value_info.type = <GDExtensionVariantType>(<VariantType>_return_value_info.type)
-        return_value_info.name = ret_name.ptr()
-        return_value_info.class_name = ret_classname.ptr()
-        return_value_info.hint = _return_value_info.hint
-        return_value_info.hint_string = ret_hintstring.ptr()
-        return_value_info.usage = _return_value_info.usage
+        cdef vector[Variant] defargs = vector[Variant]()
+        defargs.resize(defarg_count)
+        for i in range(defarg_count):
+            type_funcs.variant_from_pyobject(_defargs[i], &defargs[i])
+            (<Variant **>defarg_mem.ptr)[i] = &defargs[i]
 
         # Skip self arg
-        cdef list _arguments_info = self.get_argument_info_list()[1:]
+        cdef py_arginfo = self.get_argument_info_list()[1:]
+        cdef _GDEPropInfoListData arguments_info = _GDEPropInfoListData(py_arginfo)
 
-        cdef size_t i = 0
-        cdef size_t argsize = len(_arguments_info)
-
-        cdef list _def_args = self.get_default_arguments()
-        cdef GDExtensionVariantPtr *def_args = <GDExtensionVariantPtr *> \
-            gdextension_interface_mem_alloc(len(_def_args) * cython.sizeof(GDExtensionVariantPtr))
-
-        cdef Variant defarg
-        for i in range(len(_def_args)):
-            defarg = <Variant>_def_args[i]
-            def_args[i] = <GDExtensionVariantPtr>&defarg
-
-        cdef GDExtensionPropertyInfo *arguments_info = <GDExtensionPropertyInfo *> \
-            gdextension_interface_mem_alloc(argsize * cython.sizeof(GDExtensionPropertyInfo))
-
-        cdef list attr_names = [PyStringName(info.name) for info in _arguments_info]
-        cdef list attr_classnames = [PyStringName(info.class_name) for info in _arguments_info]
-        cdef list attr_hintstrings = [PyStringName(info.hint_string) for info in _arguments_info]
-
-        for i in range(argsize):
-            arguments_info[i].type = <GDExtensionVariantType>(<VariantType>_arguments_info[i].type)
-            arguments_info[i].name = (<PyStringName>attr_names[i]).ptr()
-            arguments_info[i].class_name = (<PyStringName>attr_classnames[i]).ptr()
-            arguments_info[i].hint = _arguments_info[i].hint
-            arguments_info[i].hint_string = (<PyStringName>attr_hintstrings[i]).ptr()
-            arguments_info[i].usage = _arguments_info[i].usage
-
-        cdef list _arguments_metadata = self.get_argument_metadata_list()[1:]
-        cdef int *arguments_metadata = <int *>gdextension_interface_mem_alloc(len(_arguments_metadata) * cython.sizeof(int))
-        for i in range(len(_arguments_metadata)):
-            arguments_metadata[i] = <int>_arguments_metadata[i]
-
-        cdef GDExtensionClassMethodArgumentMetadata return_value_metadata = \
-            <GDExtensionClassMethodArgumentMetadata>self.get_return_metadata()
+        cdef list arguments_metadata = self.get_argument_metadata_list()[1:]
+        cdef size_t argmeta_count = len(arguments_metadata)
+        cdef _Memory argmeta_mem = _Memory(argmeta_count * cython.sizeof(int))
+        for i in range(argmeta_count):
+            (<int *>argmeta_mem.ptr)[i] = <int>arguments_metadata[i]
 
         cdef PyStringName name = PyStringName(self.__name__)
 
-        type_info = [variant_type_to_str(<VariantType>return_value_info.type)]
-        type_info += [variant_type_to_str(<VariantType>arginfo.type) for arginfo in _arguments_info]
+        type_info = [variant_type_to_str(<VariantType>py_retinfo.type)]
+        type_info += [variant_type_to_str(<VariantType>arginfo.type) for arginfo in py_arginfo]
         self.type_info = tuple(type_info)
 
         mi.name = name.ptr()
@@ -105,22 +87,18 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
         mi.ptrcall_func = &ExtensionMethod.ptrcall
         mi.method_flags = GDEXTENSION_METHOD_FLAG_NORMAL
         mi.has_return_value = self.has_return()
-        mi.return_value_info = &return_value_info
+        mi.return_value_info = return_value_info.ptr()
         mi.return_value_metadata = <GDExtensionClassMethodArgumentMetadata>self.get_return_metadata()
-        mi.argument_count = argsize
-        mi.arguments_info = arguments_info
-        mi.arguments_metadata = <GDExtensionClassMethodArgumentMetadata *>arguments_metadata
-        mi.default_argument_count = self.get_default_argument_count()
-        mi.default_arguments = def_args
+        mi.argument_count = arguments_info.propinfo_count
+        mi.arguments_info = arguments_info.ptr()
+        mi.arguments_metadata = <GDExtensionClassMethodArgumentMetadata *>argmeta_mem.ptr
+        mi.default_argument_count = defarg_count
+        mi.default_arguments = <GDExtensionVariantPtr *>defarg_mem.ptr
 
         ref.Py_INCREF(self)
         cls._used_refs.append(self)
 
         cdef PyStringName class_name = PyStringName(cls.__name__)
         gdextension_interface_classdb_register_extension_class_method(gdextension_library, class_name.ptr(), &mi)
-
-        gdextension_interface_mem_free(def_args)
-        gdextension_interface_mem_free(arguments_info)
-        gdextension_interface_mem_free(arguments_metadata)
 
         self.is_registered = True

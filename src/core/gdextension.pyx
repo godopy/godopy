@@ -10,6 +10,7 @@ from cpython cimport (
 from python_runtime cimport *
 cimport godot_types as type_funcs
 from godot_types cimport StringName as PyStringName, variant_to_pyobject_func_t, variant_from_pyobject_func_t
+from _gdextension_internals cimport print_traceback_and_die
 
 import io
 import sys
@@ -18,8 +19,7 @@ import pickle
 import inspect
 import builtins
 import traceback
-import importlib
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Any
 from collections import namedtuple
 
 import numpy as np
@@ -92,6 +92,7 @@ include "includes/object.pxi"
 include "includes/engine_calls.pxi"
 include "includes/engine_callable.pxi"
 include "includes/method_bind.pxi"
+include "includes/script_method.pxi"
 include "includes/utility_function.pxi"
 include "includes/builtin_method.pxi"
 

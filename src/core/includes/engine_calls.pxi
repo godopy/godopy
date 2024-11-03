@@ -1,5 +1,6 @@
 ctypedef fused gdcallable_ft:
     MethodBind
+    ScriptMethod
     UtilityFunction
     BuiltinMethod
 
@@ -21,17 +22,13 @@ cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tu
 
     cdef vector[Variant] vargs = vector[Variant]()
     vargs.resize(size)
-    cdef Variant **varg_ptrs = <Variant **>gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionVariantPtr))
-    if varg_ptrs == NULL:
-        raise MemoryError("Not enough memory")
+    cdef _Memory vargptr_mem = _Memory(size * cython.sizeof(GDExtensionVariantPtr))
 
     for i in range(size):
         type_funcs.variant_from_pyobject(args[i], &vargs[i])
-        varg_ptrs[i] = &vargs[i]
+        (<Variant **>vargptr_mem.ptr)[i] = &vargs[i]
 
-    varcall(method, <const Variant **>varg_ptrs, size, &return_value, &err)
-
-    gdextension_interface_mem_free(varg_ptrs)
+    varcall(method, <const Variant **>vargptr_mem.ptr, size, &return_value, &err)
 
     if err.error != GDEXTENSION_CALL_OK:
         error_text = type_funcs.variant_to_pyobject(return_value)
@@ -54,14 +51,15 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
                 % (method.__class__.__name__, method.__name__,  size, expected_size,
                     method.type_info[1:], method.type_info[0])
         )
-        UtilityFunctions.printerr(msg)
         raise GDExtensionEnginePtrCallError(msg)
 
-    cdef GDExtensionUninitializedTypePtr *ptr_args = <GDExtensionUninitializedTypePtr *> \
-        gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
+    # cdef GDExtensionUninitializedTypePtr *ptr_args = <GDExtensionUninitializedTypePtr *> \
+    #     gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
 
-    if ptr_args == NULL:
-        raise MemoryError("Not enough memory")
+    # if ptr_args == NULL:
+    #     raise MemoryError("Not enough memory")
+
+    cdef _Memory args_mem = _Memory(size * cython.sizeof(GDExtensionConstTypePtr))
 
     cdef object value
 
@@ -230,7 +228,7 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
                 <ScriptLanguageExtensionProfilingInfo *>arg_value_ptr
             )
         else:
-            gdextension_interface_mem_free(ptr_args)
+            # gdextension_interface_mem_free(ptr_args)
 
             msg = "Could not convert argument '%s[#%d]' from %r in %r" \
                   % (method.type_info[i + 1], arg_type, value, method)
@@ -238,7 +236,7 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
 
             raise GDExtensionEnginePtrCallError(msg)
 
-        ptr_args[i] = arg_value_ptr
+        (<GDExtensionUninitializedTypePtr *>args_mem.ptr)[i] = arg_value_ptr
 
 
     cdef int8_t return_type = type_info[0]
@@ -248,12 +246,12 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
         ret_value_ptr = numpy.PyArray_GETPTR1(arg_values, 0)
 
     if return_type == ARGTYPE_NIL:
-        ptrcall(method, NULL, <const void **>ptr_args, size)
+        ptrcall(method, NULL, <const void **>args_mem.ptr, size)
     else:
         if max_size == 0:
             raise GDExtensionEnginePtrCallError("Attempt to return a value of zero size")
 
-        ptrcall(method, ret_value_ptr, <const void **>ptr_args, size)
+        ptrcall(method, ret_value_ptr, <const void **>args_mem.ptr, size)
 
     # NOTE: Cython compiles this to C switch/case
     if return_type == ARGTYPE_NIL:
@@ -387,13 +385,11 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tu
             deref(<const ScriptLanguageExtensionProfilingInfo **>ret_value_ptr)
         )
     else:
-        gdextension_interface_mem_free(ptr_args)
+        # gdextension_interface_mem_free(ptr_args)
 
         msg = "Could not convert return value '%s[#%d]' in %r" % (method.type_info[0], return_type, method)
-        UtilityFunctions.printerr(msg)
-
         raise GDExtensionEnginePtrCallError(msg)
 
-    gdextension_interface_mem_free(ptr_args)
+    # gdextension_interface_mem_free(ptr_args)
 
     return value
