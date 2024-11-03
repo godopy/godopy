@@ -327,7 +327,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(str(args[1]), 'test/resource.py')
 
             self.assertIsInstance(args[2], RID)
-            self.assertEqual(int(args[2]), int(gdscript.call('get_resource').get_rid()))
+            self.assertEqual(int(args[2]), int(gdscript.call_script_method('get_resource').get_rid()))
 
             self.assertIsInstance(args[3], Object)
             self.assertEqual(args[3].__class__.__name__, "Node")
@@ -351,10 +351,10 @@ if ExtendedTestObject is not None:
             t.misc_args(
                 StringName('GodoPy'),
                 NodePath('test/resource.py'),
-                gdscript.call('get_resource').get_rid(),
+                gdscript.call_script_method('get_resource').get_rid(),
                 gdscript,
-                gdscript.call('get_callable'),
-                gdscript.call('get_signal'),
+                gdscript.call_script_method('get_callable'),
+                gdscript.call_script_method('get_signal'),
                 {"hello": "World!", 2: [4, 5, [6, 7, 'a']]},
                 ["Hello", 1, 3.1, "World", 2.0]
             )
@@ -372,7 +372,7 @@ if ExtendedTestObject is not None:
             self.assertEqual(str(t.arg2), "test/resource.py")
 
             self.assertIsInstance(t.arg3, RID)
-            self.assertEqual(int(t.arg3), int(gdscript.call('get_resource').get_rid()))
+            self.assertEqual(int(t.arg3), int(gdscript.call_script_method('get_resource').get_rid()))
 
             self.assertIsInstance(t.arg4, Object)
             self.assertEqual(t.arg4, gdscript)
@@ -870,9 +870,9 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from the Engine to Python
         # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
-        gdscript.call('test_atomic_types_out')
+        gdscript.call_script_method('test_atomic_types_out')
 
-        r = gdscript.call('get_resource')
+        r = gdscript.call_script_method('get_resource')
 
         self.assertIsInstance(r.arg1, bool)
         self.assertEqual(r.arg1, True)
@@ -895,7 +895,7 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from Python to the Engine
         # Covers argument conversion from Python to Variant
-        gdscript.call('test_atomic_types_in', True, 42, math.tau, "GodoPy", "⚠️", b"GodoPy", "⚠️".encode('utf-8'))
+        gdscript.call_script_method('test_atomic_types_in', True, 42, math.tau, "GodoPy", "⚠️", b"GodoPy", "⚠️".encode('utf-8'))
 
         # Covers return value conversion from Variant to Python
         args = [
@@ -928,9 +928,9 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from the Engine to Python
         # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
-        gdscript.call('test_math_types_1_out')
+        gdscript.call_script_method('test_math_types_1_out')
 
-        r = gdscript.call('get_resource')
+        r = gdscript.call_script_method('get_resource')
 
         self.assertIsInstance(r.arg1, Vector2)
         self.assertEqual(r.arg1.dtype, np.dtype('float32'))
@@ -970,8 +970,8 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from the Engine to Python
         # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
-        gdscript.call('test_math_types_2_out')
-        r = gdscript.call('get_resource')
+        gdscript.call_script_method('test_math_types_2_out')
+        r = gdscript.call_script_method('get_resource')
 
         self.assertIsInstance(r.arg1, Plane)
         self.assertEqual(r.arg1.dtype, np.dtype('float32'))
@@ -1008,7 +1008,7 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from Python to the Engine
         # Covers argument conversion from Python to Variant
-        gdscript.call(
+        gdscript.call_script_method(
             'test_math_types_1_in',
             Vector2(2.5, 5.), Vector2i(5, 10),
             Rect2(0., 1., 100., 200.), Rect2i(0, 1, 100, 200),
@@ -1068,7 +1068,7 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from Python to the Engine
         # Covers argument conversion from Python to Variant
-        gdscript.call(
+        gdscript.call_script_method(
             'test_math_types_2_in',
             Plane(5, 10, 20, 40),
             Quaternion(5, 10, 20, 40),
@@ -1125,9 +1125,9 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from the Engine to Python
         # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
-        gdscript.call('test_misc_types_out')
+        gdscript.call_script_method('test_misc_types_out')
 
-        r = gdscript.call('get_resource')
+        r = gdscript.call_script_method('get_resource')
 
         self.assertIsInstance(r.arg1, StringName)
         self.assertEqual(r.arg1, "GodoPy")
@@ -1156,14 +1156,14 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from Python to the Engine
         # Covers argument conversion from Python to Variant
-        gdscript.call(
+        gdscript.call_script_method(
             'test_misc_types_in',
             StringName('GodoPy'),
             NodePath('test/resource.py'),
-            gdscript.call('get_resource').get_rid(),
+            gdscript.call_script_method('get_resource').get_rid(),
             gdscript,
-            gdscript.call('get_callable'),
-            gdscript.call('get_signal'),
+            gdscript.call_script_method('get_callable'),
+            gdscript.call_script_method('get_signal'),
             {"hello": "World!"},
             ["Hello", 1, "World", 2.0]
         )
@@ -1187,7 +1187,7 @@ class TestCaseArgTypes(BaseTestCase):
         self.assertEqual(str(args[1]), 'test/resource.py')
 
         self.assertIsInstance(args[2], RID)
-        self.assertEqual(int(args[2]), int(gdscript.call('get_resource').get_rid()))
+        self.assertEqual(int(args[2]), int(gdscript.call_script_method('get_resource').get_rid()))
 
         self.assertIsInstance(args[3], Object)
         self.assertEqual(args[3].__class__.__name__, "Node")
@@ -1207,9 +1207,9 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from the Engine to Python
         # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
-        gdscript.call('test_packed_array_types_out')
+        gdscript.call_script_method('test_packed_array_types_out')
 
-        r = gdscript.call('get_resource')
+        r = gdscript.call_script_method('get_resource')
 
         self.assertIsInstance(r.arg1, PackedByteArray)
         self.assertEqual(r.arg1.dtype, np.dtype('uint8'))
@@ -1267,7 +1267,7 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from Python to the Engine
         # Covers argument conversion from Python to Variant
-        gdscript.call(
+        gdscript.call_script_method(
             'test_packed_array_types_in',
             PackedByteArray([2, 3, 4, 5, 1, 7]),
             PackedInt32Array([2, 3, 4, 5, 1, 7]),
@@ -1351,9 +1351,9 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from the Engine to Python
         # Covers argument conversion from Variant to Python and return value convesion from Python to Variant
-        gdscript.call('test_other_types_1_out')
+        gdscript.call_script_method('test_other_types_1_out')
 
-        r = gdscript.call('get_resource')
+        r = gdscript.call_script_method('get_resource')
 
         self.assertIsInstance(r.arg1, float)
         self.assertEqual(r.arg1, 5.0)
@@ -1366,7 +1366,7 @@ class TestCaseArgTypes(BaseTestCase):
 
         # Makes a call from Python to the Engine
         # Covers argument conversion from Python to Variant
-        gdscript.call('test_other_types_1_in', 5.0, None)
+        gdscript.call_script_method('test_other_types_1_in', 5.0, None)
 
         # Covers return value conversion from Variant to Python
         args = [

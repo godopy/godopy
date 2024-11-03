@@ -22,7 +22,7 @@ _ext_class_cache = {}
 class GodotClassBase(type):
     """Metaclass for all Godot engine and extension classes"""
 
-    def __new__(cls, name: str, bases: tuple, attrs: Mapping[str, Any], **kwargs: Dict[str, Any]) -> type:
+    def __new__(cls, name: str, bases: tuple, attrs: Mapping[str, Any], **kwargs: Any) -> type:
         super_new = super().__new__
 
         godot_cls = attrs.pop('__godot_class__', None)
@@ -176,6 +176,6 @@ class EngineClass(EngineObject, metaclass=GodotClassBase):
     """
     Base class for all Engine classes.
     """
-    def __init__(self, from_ptr=0):
+    def __init__(self, from_ptr : int = 0) -> None:
         godot_cls = self.__class__.__godot_class__
         super().__init__(godot_cls, from_ptr=from_ptr)

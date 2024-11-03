@@ -13,7 +13,7 @@ script_loader = None
 script_saver = None
 
 
-def initialize(level):
+def initialize(level: int) -> None:
     global python_language, script_loader, script_saver
 
     if level == godot.MODULE_INITIALIZATION_LEVEL_SCENE:
@@ -37,7 +37,7 @@ def initialize(level):
         ResourceSaver.add_resource_format_saver(script_saver, True)
 
 
-def uninitialize(level):
+def uninitialize(level: int) -> None:
     global script_saver, script_loader, python_language
 
     if level == godot.MODULE_INITIALIZATION_LEVEL_SCENE:

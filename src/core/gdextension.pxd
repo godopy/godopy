@@ -139,17 +139,6 @@ cdef class Class:
 
 
 cdef public class Object [object GDPyObject, type GDPyObject_Type]:
-    """
-    Defines all Godot Engine's objects.
-
-    Implements following GDExtension API calls:
-        in `Object.__init__`:
-            `global_get_singleton` (for singleton objects)
-            `classdb_construct_object` (for all others)
-
-    Captures method, property (TODO) and signal (TODO) information,
-    processes class inheritance chains.
-    """
     cdef void *_owner
     cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be a real owner
     cdef bint _instance_set
@@ -175,6 +164,15 @@ cdef class MethodBind(EngineCallableBase):
     cdef object func
 
     cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil
+    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
+                       GDExtensionCallError *r_error) noexcept nogil
+
+
+cdef class ScriptMethod(EngineCallableBase):
+    cdef Object __self__
+    cdef void *_base
+    cdef StringName _method
+
     cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
                        GDExtensionCallError *r_error) noexcept nogil
 
@@ -324,7 +322,6 @@ cdef class _ExtensionMethodBase:
     cdef list get_argument_metadata_list(self)
     cdef GDExtensionBool has_return(self) except -1
     cdef uint32_t get_argument_count(self) except -1
-    cdef uint32_t get_default_argument_count(self) except -1
 
 
 cdef class ExtensionVirtualMethod(_ExtensionMethodBase):
@@ -369,5 +366,6 @@ cdef class PythonCallableBase:
 
 cdef class BoundExtensionMethod(PythonCallableBase):
     cdef readonly Extension __self__
+    cdef size_t error_count
 
     cdef size_t get_argument_count(self) except -2

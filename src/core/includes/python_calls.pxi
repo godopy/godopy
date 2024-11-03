@@ -1,16 +1,12 @@
-ctypedef fused pycallable_ft:
-    BoundExtensionMethod
-
-
-cdef void _make_python_varcall(pycallable_ft method, const Variant **p_args, size_t p_count, Variant *r_ret,
-                                      GDExtensionCallError *r_error) noexcept:
+cdef int _make_python_varcall(BoundExtensionMethod method, const Variant **p_args, size_t p_count, Variant *r_ret,
+                               GDExtensionCallError *r_error) except -1:
     """
     Implements GDExtension's 'call' logic when calling Python methods from the Engine
     """
     cdef int i
-    cdef object args = PyTuple_New(p_count)
+    cdef object args = PyTuple_New(p_count), value
     cdef Variant arg
-    cdef object value
+    cdef bint success = True
 
     for i in range(p_count):
         arg = deref(<Variant *>p_args[i])
@@ -18,14 +14,25 @@ cdef void _make_python_varcall(pycallable_ft method, const Variant **p_args, siz
         ref.Py_INCREF(value)
         PyTuple_SET_ITEM(args, i, value)
 
-    cdef object ret = method(*args)
-    if r_error:
+    try:
+        value = method(*args)
+    except Exception as exc:
+        method.error_count += 1
+
+        if method.error_count > 1:
+            print_traceback_and_die(exc)
+        else:
+            print_error_with_traceback(exc)
+            value = None
+            success = False
+
+    if r_error and success:
         r_error[0].error = GDEXTENSION_CALL_OK
 
-    type_funcs.variant_from_pyobject(ret, r_ret)
+    type_funcs.variant_from_pyobject(value, r_ret)
 
 
-cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p_args, size_t p_count) noexcept:
+cdef int _make_python_ptrcall(BoundExtensionMethod method, void *r_ret, const void **p_args, size_t p_count) except -1:
     """
     Implements GDExtension's 'ptrcall' logic when calling Python methods from the Engine
     """
@@ -187,8 +194,17 @@ cdef void _make_python_ptrcall(pycallable_ft method, void *r_ret, const void **p
         ref.Py_INCREF(value)
         PyTuple_SET_ITEM(args, i, value)
 
+    try:
+        value = method(*args)
+    except Exception as exc:
+        method.error_count += 1
 
-    value = method(*args)
+        if method.error_count > 1:
+            print_traceback_and_die(exc)
+        else:
+            print_error_with_traceback(exc)
+            value = None
+
     cdef int8_t return_type = type_info[0]
     cdef size_t return_size = get_max_arg_size(type_info, 1)
     cdef numpy.ndarray return_value
