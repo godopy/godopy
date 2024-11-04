@@ -1,4 +1,6 @@
 ctypedef fused gdcallable_ft:
+    VariantMethod
+    VariantStaticMethod
     MethodBind
     ScriptMethod
     UtilityFunction
