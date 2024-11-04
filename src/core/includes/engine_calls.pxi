@@ -70,14 +70,7 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, ob
         )
         raise GDExtensionEnginePtrCallError(msg)
 
-    # cdef GDExtensionUninitializedTypePtr *ptr_args = <GDExtensionUninitializedTypePtr *> \
-    #     gdextension_interface_mem_alloc(size * cython.sizeof(GDExtensionConstTypePtr))
-
-    # if ptr_args == NULL:
-    #     raise MemoryError("Not enough memory")
-
     cdef _Memory args_mem = _Memory(size * cython.sizeof(GDExtensionConstTypePtr))
-
     cdef object value
 
     # Optimized get_node for Python nodes
@@ -245,8 +238,6 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, ob
                 <ScriptLanguageExtensionProfilingInfo *>arg_value_ptr
             )
         else:
-            # gdextension_interface_mem_free(ptr_args)
-
             msg = "Could not convert argument '%s[#%d]' from %r in %r" \
                   % (method.type_info[i + 1], arg_type, value, method)
             UtilityFunctions.printerr(msg)
@@ -402,11 +393,7 @@ cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, ob
             deref(<const ScriptLanguageExtensionProfilingInfo **>ret_value_ptr)
         )
     else:
-        # gdextension_interface_mem_free(ptr_args)
-
         msg = "Could not convert return value '%s[#%d]' in %r" % (method.type_info[0], return_type, method)
         raise GDExtensionEnginePtrCallError(msg)
-
-    # gdextension_interface_mem_free(ptr_args)
 
     return value
