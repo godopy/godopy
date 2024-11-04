@@ -1,14 +1,18 @@
-ctypedef fused gdcallable_ft:
-    VariantMethod
-    VariantStaticMethod
+ctypedef fused ptrcallable_t:
     MethodBind
-    ScriptMethod
     UtilityFunction
     BuiltinMethod
 
 
-ctypedef void (*_ptrcall_func)(gdcallable_ft, void *, const void **, size_t) noexcept nogil
-ctypedef void (*_varcall_func)(gdcallable_ft, const Variant **, size_t, Variant *, GDExtensionCallError *) noexcept nogil
+ctypedef fused varcallable_t:
+    VariantMethod
+    VariantStaticMethod
+    MethodBind
+    ScriptMethod
+
+
+ctypedef void (*_ptrcall_func)(ptrcallable_t, void *, const void **, size_t) noexcept nogil
+ctypedef void (*_varcall_func)(varcallable_t, const Variant **, size_t, Variant *, GDExtensionCallError *) noexcept nogil
 
 
 @cython.final
@@ -35,7 +39,7 @@ cdef class _VariantPtrArray:
         return <const Variant **>self.memory.ptr
 
 
-cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, object args):
+cdef object _make_engine_varcall(varcallable_t method, _varcall_func varcall, object args):
     """
     Implements GDExtension's 'call' logic when calling Engine methods from Python
     """
@@ -55,7 +59,7 @@ cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, ob
     return type_funcs.variant_to_pyobject(return_value)
 
 
-cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, object args):
+cdef object _make_engine_ptrcall(ptrcallable_t method, _ptrcall_func ptrcall, object args):
     """
     Implements GDExtension's 'ptrcall' logic when calling Engine methods from Python
     """
