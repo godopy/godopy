@@ -230,7 +230,6 @@ cdef class ExtensionClass(Class):
     cdef void *get_method_and_method_type_info_ptr(self, str name) except NULL
     cdef void *get_special_method_info_ptr(self, SpecialMethod method) except NULL
     cdef int set_registered(self) except -1
-    cdef int unregister(self) except -1
 
     @staticmethod
     cdef void free_instance(void *data, void *p_instance) noexcept nogil
@@ -246,19 +245,6 @@ cdef class ExtensionClass(Class):
 
     @staticmethod
     cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
-
-
-cdef class ExtensionClassRegistrator:
-    """
-    Registers `ExtensionClass` objects.
-
-    Implements following GDExtension API calls:
-        in `ExtensionClassRegistrator.__cinit__`:
-            `classdb_register_extension_class4`
-    """
-    cdef str __name__
-    cdef ExtensionClass registree
-    cdef Class inherits
 
     cdef int register_method(self, func: types.FunctionType) except -1
     cdef int register_virtual_method(self, func: types.FunctionType) except -1
@@ -317,11 +303,11 @@ cdef class _ExtensionMethodBase:
     cdef PropertyInfo get_argument_info(self, int pos)
     cdef PropertyInfo get_return_info(self)
     cdef list get_argument_info_list(self)
-    cdef int get_return_metadata(self) except -1
-    cdef int metadata_from_type(self, VariantType t) except -1 nogil
+    cdef int get_return_metadata(self) noexcept
+    cdef int metadata_from_type(self, VariantType t) noexcept nogil
     cdef list get_argument_metadata_list(self)
-    cdef GDExtensionBool has_return(self) except -1
-    cdef uint32_t get_argument_count(self) except -1
+    cdef GDExtensionBool has_return(self) noexcept
+    cdef uint32_t get_argument_count(self) noexcept
 
 
 cdef class ExtensionVirtualMethod(_ExtensionMethodBase):

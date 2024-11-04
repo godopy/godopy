@@ -9,45 +9,50 @@ cdef class PropertyInfo:
 
     def __repr__(self):
         cls_name = '%s.' % self.class_name if self.class_name else ''
-        return '<PropertyInfo %s%s:%s>' % (cls_name, self.name, variant_type_to_str(self.type))
+        name = self.name or '<return-value>'
+
+        return '<PropertyInfo %s%s:%s>' % (cls_name, name, variant_type_to_str(self.type))
 
 
 @cython.final
 cdef class _GDEPropInfoData:
-    cdef _Memory propinfo_mem
-    cdef PyStringName name
-    cdef PyStringName classname
-    cdef PyStringName hintstring
+    cdef _Memory memory
+    cdef StringName name
+    cdef StringName classname
+    cdef StringName hintstring
 
     def __cinit__(self, PropertyInfo propinfo):
-        self.propinfo_mem = _Memory(cython.sizeof(GDExtensionPropertyInfo))
-        self.name = PyStringName(propinfo.name)
-        self.classname = PyStringName(propinfo.class_name)
-        self.hintstring = PyStringName(propinfo.hint_string)
+        self.memory = _Memory(cython.sizeof(GDExtensionPropertyInfo))
+        self.name = StringName(<const PyObject *>propinfo.name)
+        self.classname = StringName(<const PyObject *>propinfo.class_name)
+        self.hintstring = StringName(<const PyObject *>propinfo.hint_string)
 
-        (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr).type = <GDExtensionVariantType>(<VariantType>propinfo.type)
-        (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr).name = self.name.ptr()
-        (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr).class_name = self.classname.ptr()
-        (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr).hint = propinfo.hint
-        (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr).hint_string = self.hintstring.ptr()
-        (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr).usage = propinfo.usage
+        (<GDExtensionPropertyInfo *>self.memory.ptr).type = <GDExtensionVariantType>(<VariantType>propinfo.type)
+        (<GDExtensionPropertyInfo *>self.memory.ptr).name = self.name._native_ptr()
+        (<GDExtensionPropertyInfo *>self.memory.ptr).class_name = self.classname._native_ptr()
+        (<GDExtensionPropertyInfo *>self.memory.ptr).hint = propinfo.hint
+        (<GDExtensionPropertyInfo *>self.memory.ptr).hint_string = self.hintstring._native_ptr()
+        (<GDExtensionPropertyInfo *>self.memory.ptr).usage = propinfo.usage
+
+    def __dealloc__(self):
+        self.memory.free()
 
     cdef GDExtensionPropertyInfo *ptr(self):
-        return <GDExtensionPropertyInfo *>self.propinfo_mem.ptr
+        return <GDExtensionPropertyInfo *>self.memory.ptr
 
 
 @cython.final
 cdef class _GDEPropInfoListData:
-    cdef _Memory propinfo_mem
-    cdef size_t propinfo_count
+    cdef _Memory memory
+    cdef size_t count
     cdef list names
     cdef list classnames
     cdef list hintstrings
 
     def __cinit__(self, object propinfo_list):
-        cdef size_t i, propinfo_count = len(propinfo_list)
-        self.propinfo_count = propinfo_count
-        self.propinfo_mem = _Memory(cython.sizeof(GDExtensionPropertyInfo) * propinfo_count)
+        cdef size_t i
+        self.count = len(propinfo_list)
+        self.memory = _Memory(cython.sizeof(GDExtensionPropertyInfo) * self.count)
 
         self.names = [PyStringName(prop_info.name) for prop_info in propinfo_list]
         self.classnames = [PyStringName(prop_info.class_name) for prop_info in propinfo_list]
@@ -55,21 +60,44 @@ cdef class _GDEPropInfoListData:
 
         cdef PropertyInfo propinfo
 
-        for i in range(propinfo_count):
+        for i in range(self.count):
             propinfo = propinfo_list[i]
-            (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr)[i].type = \
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].type = \
                 <GDExtensionVariantType>(<VariantType>propinfo.type)
-            (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr)[i].name = \
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].name = \
                 (<PyStringName>self.names[i]).ptr()
-            (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr)[i].class_name = \
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].class_name = \
                 (<PyStringName>self.classnames[i]).ptr()
-            (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr)[i].hint = propinfo.hint
-            (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr)[i].hint_string = \
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].hint = propinfo.hint
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].hint_string = \
                 (<PyStringName>self.hintstrings[i]).ptr()
-            (<GDExtensionPropertyInfo *>self.propinfo_mem.ptr)[i].usage = propinfo.usage
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].usage = propinfo.usage
+
+    def __dealloc__(self):
+        self.memory.free()
 
     cdef GDExtensionPropertyInfo *ptr(self):
-        return <GDExtensionPropertyInfo *>self.propinfo_mem.ptr
+        return <GDExtensionPropertyInfo *>self.memory.ptr
+
+
+@cython.final
+cdef class _GDEArgumentMetadataArray:
+    cdef _Memory memory
+    cdef size_t count
+
+    def __cinit__(self, object argmeta_list):
+        cdef size_t i
+        self.count = len(argmeta_list)
+        self.memory = _Memory(cython.sizeof(int) * self.count)
+
+        for i in range(self.count):
+            (<int *>self.memory.ptr)[i] = <int>argmeta_list[i]
+
+    def __dealloc__(self):
+        self.memory.free()
+
+    cdef GDExtensionClassMethodArgumentMetadata *ptr(self):
+        return <GDExtensionClassMethodArgumentMetadata *>self.memory.ptr
 
 
 cdef class _ExtensionMethodBase:
@@ -123,12 +151,13 @@ cdef class _ExtensionMethodBase:
         return [self.get_argument_info(i) for i in range(self.get_argument_count())]
 
 
-    cdef int get_return_metadata(self) except -1:
+    cdef int get_return_metadata(self) noexcept:
         cdef VariantType t = type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get('return', None))
+
         return self.metadata_from_type(t)
 
 
-    cdef int metadata_from_type(self, VariantType t) except -1 nogil:
+    cdef int metadata_from_type(self, VariantType t) noexcept nogil:
         if t == INT:
             return <int>GDEXTENSION_METHOD_ARGUMENT_METADATA_INT_IS_INT64
         elif t == FLOAT:
@@ -153,10 +182,10 @@ cdef class _ExtensionMethodBase:
         return metadata_list
 
 
-    cdef GDExtensionBool has_return(self) except -1:
+    cdef GDExtensionBool has_return(self) noexcept:
         return <GDExtensionBool>bool(self.__func__.__annotations__.get('return'))
 
 
-    cdef uint32_t get_argument_count(self) except -1:
+    cdef uint32_t get_argument_count(self) noexcept:
         # includes self
         return <uint32_t>self.__func__.__code__.co_argcount

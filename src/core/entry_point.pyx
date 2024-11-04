@@ -5,7 +5,7 @@ modules.
 
 from binding cimport *
 from godot_cpp cimport Variant, String, UtilityFunctions, OS, Engine, ProjectSettings
-from gdextension cimport ExtensionClass,  _registered_classes, configure
+from gdextension cimport ExtensionClass, _CLASSDB, configure
 
 from godot_types cimport string_from_pyobject
 from _gdextension_internals cimport print_traceback_and_die
@@ -206,8 +206,7 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
 
 
 cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *:
-    global uninitialize_funcs, _registered_classes, first_level
-    cdef ExtensionClass cls
+    global uninitialize_funcs, _CLASSDB, first_level
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup, level %d" % p_level)
 
@@ -215,7 +214,7 @@ cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *
         func(p_level)
 
     if p_level == first_level:
-        for cls in _registered_classes:
+        for cls in _CLASSDB.values():
             cls.unregister()
 
         _registered_classes = []

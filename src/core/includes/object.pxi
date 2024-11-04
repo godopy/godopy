@@ -81,7 +81,7 @@ cdef class Object:
         in `has_script_method()`: `object_has_script_method`
 
     See MethodBind.__call__, MethodBind._varcall, MethodBind._ptrcall for
-    `object_method_bind_call`/`object_method_bind_ptrcall` API implementation
+    `object_method_bind_call`/`object_method_bind_ptrcall` API implementation.
 
     See ScriptMethod.__call__(), ScriptMethod._varcall for
     `object_call_script_method` API implementation.

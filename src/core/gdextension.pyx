@@ -106,8 +106,6 @@ include "includes/extension_method.pxi"
 # INTERFACE: ClassDB Extension
 
 include "includes/extension_class.pxi"
-include "includes/extension_callbacks.pxi"
-include "includes/extension_class_registrator.pxi"
 include "includes/extension.pxi"
 
 
