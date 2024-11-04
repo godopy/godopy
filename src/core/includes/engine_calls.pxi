@@ -9,7 +9,31 @@ ctypedef void (*_ptrcall_func)(gdcallable_ft, void *, const void **, size_t) noe
 ctypedef void (*_varcall_func)(gdcallable_ft, const Variant **, size_t, Variant *, GDExtensionCallError *) noexcept nogil
 
 
-cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tuple args):
+@cython.final
+cdef class _VariantPtrArray:
+    cdef vector[Variant] args
+    cdef size_t count
+    cdef _Memory memory
+
+    def __cinit__(self, object args):
+        cdef size_t i
+        self.count = len(args)
+
+        self.args = vector[Variant](self.count)
+        self.memory = _Memory(self.count * cython.sizeof(GDExtensionVariantPtr))
+
+        for i in range(self.count):
+            type_funcs.variant_from_pyobject(args[i], &self.args[i])
+            (<Variant **>self.memory.ptr)[i] = &self.args[i]
+
+    def __dealloc__(self):
+        self.memory.free()
+
+    cdef const Variant **ptr(self):
+        return <const Variant **>self.memory.ptr
+
+
+cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, object args):
     """
     Implements GDExtension's 'call' logic when calling Engine methods from Python
     """
@@ -18,17 +42,8 @@ cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tu
 
     err.error = GDEXTENSION_CALL_OK
 
-    cdef size_t i = 0, size = len(args)
-
-    cdef vector[Variant] vargs = vector[Variant]()
-    vargs.resize(size)
-    cdef _Memory vargptr_mem = _Memory(size * cython.sizeof(GDExtensionVariantPtr))
-
-    for i in range(size):
-        type_funcs.variant_from_pyobject(args[i], &vargs[i])
-        (<Variant **>vargptr_mem.ptr)[i] = &vargs[i]
-
-    varcall(method, <const Variant **>vargptr_mem.ptr, size, &return_value, &err)
+    cdef _VariantPtrArray vargs = _VariantPtrArray(args)
+    varcall(method, vargs.ptr(), vargs.count, &return_value, &err)
 
     if err.error != GDEXTENSION_CALL_OK:
         error_text = type_funcs.variant_to_pyobject(return_value)
@@ -38,7 +53,7 @@ cdef object _make_engine_varcall(gdcallable_ft method, _varcall_func varcall, tu
     return type_funcs.variant_to_pyobject(return_value)
 
 
-cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, tuple args):
+cdef object _make_engine_ptrcall(gdcallable_ft method, _ptrcall_func ptrcall, object args):
     """
     Implements GDExtension's 'ptrcall' logic when calling Engine methods from Python
     """

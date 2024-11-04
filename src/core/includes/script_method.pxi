@@ -15,8 +15,8 @@ cdef class ScriptMethod(EngineCallableBase):
 
     def __repr__(self):
         class_name = '%s[%s.%s]' % (self.__class__.__name__, self.__self__.__class__.__name__, self.__name__)
-        return "<%s.%s at 0x%016X[0x%016X]>" % (self.__class__.__module__, class_name, <uint64_t><PyObject *>self,
-                                                <uint64_t><PyObject *>self._godot_builtin_method)
+
+        return "<%s.%s at 0x%016X>" % (self.__class__.__module__, class_name, <uint64_t><PyObject *>self)
 
 
     cdef void _varcall(self, const Variant **p_args, size_t p_count, Variant *r_ret,

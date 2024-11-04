@@ -65,6 +65,11 @@ cdef class Class:
         return <uint64_t>self.get_tag()
 
 
+    def unregister(self) -> None:
+        if self.__name__ in _CLASSDB:
+            del _CLASSDB[self.__name__]
+
+
     @staticmethod
     def get(name):
         return Class.get_class(name)

@@ -1,5 +1,4 @@
 cdef dict _NODEDB = {}
-cdef list _registered_classes = []
 
 
 cdef class ExtensionClass(Class):
@@ -105,16 +104,21 @@ cdef class ExtensionClass(Class):
 
     cdef int set_registered(self) except -1:
         self.is_registered = True
-        _registered_classes.append(self)
+        _CLASSDB[self.__name__] = self
 
         return 0
 
 
-    cdef int unregister(self) except -1:
+    def unregister(self) -> None:
         if not self.is_registered:
-            return 0
+            if self.__name__ in _CLASSDB:
+                del _CLASSDB[self.__name__]
+
+            return
 
         # print("Unregistering Godot class %r" % self)
+
+        del _CLASSDB[self.__name__]
 
         for reference in self._used_refs:
             ref.Py_DECREF(reference)
@@ -135,20 +139,23 @@ cdef class ExtensionClass(Class):
             self.unregister()
 
 
-    def register(self):
-        return ExtensionClassRegistrator(self, self.__inherits__)
-
+    def register(self, **kwargs):
+        try:
+            return self._register(**kwargs)
+        except Exception as exc:
+            print_traceback_and_die(exc)
 
     def register_abstract(self):
-        return ExtensionClassRegistrator(self, self.__inherits__, is_abstract=True)
+        return self.register(is_abstract=True)
+
 
 
     def register_internal(self):
-        return ExtensionClassRegistrator(self, self.__inherits__, is_exposed=False)
+        return self.register(is_exposed=False)
 
 
     def register_runtime(self):
-        return ExtensionClassRegistrator(self, self.__inherits__, is_runtime=True)
+        return self.register(is_runtime=True)
 
 
     @staticmethod
@@ -213,3 +220,79 @@ cdef class ExtensionClass(Class):
             print('ExtensinoClass recreate callback called; classs ptr:%x instance ptr:%x'
                   % (<uint64_t>p_data, <uint64_t>p_instance))
         return NULL
+
+
+    def _register(self, **kwargs):
+        if self.is_registered:
+            raise RuntimeError("%r is already registered" % self)
+
+        cdef GDExtensionClassCreationInfo4 ci
+        cdef void *self_ptr = <PyObject *>self
+
+        ci.is_virtual = kwargs.pop('is_virtual', self.is_virtual)
+        ci.is_abstract = kwargs.pop('is_abstract', self.is_abstract)
+        ci.is_exposed = kwargs.pop('is_exposed', self.is_exposed)
+        ci.is_runtime = kwargs.pop('is_runtime', self.is_runtime)
+
+        self.is_virtual = ci.is_virtual
+        self.is_abstract = ci.is_abstract
+        self.is_exposed = ci.is_exposed
+        self.is_runtime = ci.is_runtime
+
+        ci.set_func = NULL # &_ext_set_bind
+        ci.get_func = NULL # &_ext_.get_bind
+        ci.get_property_list_func = NULL
+        ci.free_property_list_func = NULL # &_ext_free_property_list_bind
+        ci.property_can_revert_func = NULL # &_ext_property_can_revert_bind
+        ci.property_get_revert_func = NULL # &_ext_property_get_revert_bind
+        ci.validate_property_func = NULL # _ext_validate_property_bind
+        ci.notification_func = NULL # &_ext_notification_bind
+        ci.to_string_func = NULL # &_ext_to_string_bind
+        ci.reference_func = NULL
+        ci.unreference_func = NULL
+        ci.create_instance_func = &ExtensionClass.create_instance
+        ci.free_instance_func = &ExtensionClass.free_instance
+        ci.recreate_instance_func = &ExtensionClass.recreate_instance
+
+        ci.get_virtual_func = NULL
+        ci.get_virtual_call_data_func = &Extension.get_virtual_call_data
+        ci.call_virtual_with_data_func = &Extension.call_virtual_with_data
+        ci.class_userdata = self_ptr
+
+        ref.Py_INCREF(self) # DECREF in ExtensionClass.unregister()
+
+        # if kwargs.pop('has_get_property_list', False):
+        #     ci.get_property_list_func = <GDExtensionClassGetPropertyList>&_ext_get_property_list_bind
+
+        cdef StringName name = StringName(<const PyObject *>self.__name__)
+        cdef StringName inherits_name = StringName(<const PyObject *>self.__inherits__.__name__)
+
+        gdextension_interface_classdb_register_extension_class4(
+            gdextension_library,
+            name._native_ptr(),
+            inherits_name._native_ptr(),
+            &ci
+        )
+
+        for method in self.method_bindings.values():
+            self.register_method(method)
+
+        for method in self.virtual_method_bindings.values():
+            self.register_virtual_method(method)
+
+        self.set_registered()
+
+        # print("%r is registered\n" % self)
+
+
+    cdef int register_method(self, func: types.FunctionType) except -1:
+        cdef ExtensionMethod method = ExtensionMethod(func)
+
+        return method.register(self)
+
+
+
+    cdef int register_virtual_method(self, func: types.FunctionType) except -1:
+        cdef ExtensionVirtualMethod method = ExtensionVirtualMethod(func)
+
+        return method.register(self)

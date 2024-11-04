@@ -9,16 +9,29 @@ cdef class _Memory:
     def __cinit__(self, size_t p_bytes) -> None:
         "Allocates memory."
 
-        self.ptr = gdextension_interface_mem_alloc(p_bytes)
+        if p_bytes > 0:
+            self.ptr = gdextension_interface_mem_alloc(p_bytes)
+
+            if self.ptr == NULL:
+                raise MemoryError()
+        else:
+            self.ptr = NULL
+
         self.num_bytes = p_bytes
 
-        if self.ptr == NULL:
-            raise MemoryError()
+    def __dealloc__(self) -> None:
+        self.free()
+
+    def __repr__(self):
+        return "<%s._Memory at 0x%08X %dB>" % (self.__class__.__module__, <uint64_t>self.ptr, self.num_bytes)
 
     cdef void *realloc(self, size_t p_bytes) except NULL nogil:
         "Reallocates memory."
 
-        self.ptr = gdextension_interface_mem_realloc(self.ptr, p_bytes)
+        if self.ptr != NULL:
+            self.ptr = gdextension_interface_mem_realloc(self.ptr, p_bytes)
+        else:
+            self.ptr = gdextension_interface_mem_alloc(p_bytes)
 
         if self.ptr == NULL:
             with gil:
@@ -35,11 +48,6 @@ cdef class _Memory:
             gdextension_interface_mem_free(self.ptr)
 
             self.ptr = NULL
-
-    def __dealloc__(self) -> None:
-        "Frees memory."
-        self.free()
-
 
     def as_array(self) -> np.ndarray:
         """
