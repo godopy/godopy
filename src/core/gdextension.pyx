@@ -1,3 +1,8 @@
+"""\
+This module provides a reasonably low-level Python implementation
+of the GDExtension API.
+"""
+
 cimport cython
 from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector

@@ -9,6 +9,20 @@ cdef dict _bound_method_cache = {}
 
 
 cdef class Extension(Object):
+    """
+    Defines all instances of `gdextension.Class`.
+
+    Implements following GDExtension API calls:
+        in `Extension.__init__`
+            `classdb_construct_object` (of base class)
+            `object_set_instance`
+        in `Extension.__del__` and `Extension.destroy`
+            `object_destroy`
+
+    Implements virtual call callbacks in the ClassCreationInfo4 structure:
+        `creation_info4.get_virtual_call_data_func = &Extension.get_virtual_call_data`
+        `creation_info4.call_virtual_with_data_func = &Extension.call_virtual_with_data`
+    """
     def __init__(self, ExtensionClass cls=None, **kwargs):
         if cls is None:
             cls = kwargs.pop('__godot_class__', None)

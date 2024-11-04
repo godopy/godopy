@@ -2,6 +2,21 @@ cdef dict _NODEDB = {}
 
 
 cdef class ExtensionClass(Class):
+    """
+    Defines all custom classes which extend the Godot Engine.
+    Inherits `gdextendion.Class`
+
+    Implements all class registration/unregistration API calls:
+        `classdb_register_extension_class4`
+        `classdb_unregister_extension_class`
+
+    Implements instance management callbacks in the ClassCreationInfo4 structure:
+        `creation_info4.create_instance_func = &ExtensionClass.create_instance`
+        `creation_info4.free_instance_func = &ExtensionClass.free_instance`
+        `creation_info4.recreate_instance_func = &ExtensionClass.recreate_instance`
+
+    Stores information about all new methods and class registration state.
+    """
     def __init__(self, name, object inherits, **kwargs):
         if not isinstance(inherits, (Class, str)):
             raise TypeError("'inherits' argument must be a Class instance or a string")
@@ -31,6 +46,7 @@ cdef class ExtensionClass(Class):
     def __call__(self):
         if not self.is_registered:
             raise RuntimeError("Extension class is not registered")
+
         return Extension(self, self.__inherits__)
 
 

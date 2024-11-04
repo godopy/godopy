@@ -17,6 +17,9 @@ ctypedef void (*_varcall_func)(varcallable_t, const Variant **, size_t, Variant 
 
 @cython.final
 cdef class _VariantPtrArray:
+    """
+    Variant pointer array storage.
+    """
     cdef vector[Variant] args
     cdef size_t count
     cdef _Memory memory

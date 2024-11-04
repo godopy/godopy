@@ -1,10 +1,3 @@
-"""\
-This module provides a reasonably low-level Python implementation
-of the GDExtension API
-"""
-
-# TODO: Refactor to resemble GDExtension API structure closer
-
 from libc.stdint cimport int8_t
 from cpython cimport PyObject
 
@@ -107,24 +100,6 @@ cdef enum ArgType:
 
 
 cdef class Class:
-    """
-    Defines all Godot Engine's classes.
-
-    NOTE: Although instances of `gdextension.Class` and its subclasses implement
-    class functionality, they are still *objects* on the Python level.
-
-    Only on the higher level (`godot` module) they would be wrapped as real Python
-    classes.
-
-    Works as a singleton, can't be instantiated directly: use `Class.get_class`
-    in Cython or `Class._get_class` in Python to create/get instances
-    `gdextension.Class`.
-
-    Doesn't implement any GDExtension API calls by itself.
-
-    Captures method, property (TODO) and signal (TODO) information,
-    processes class inheritance chains.
-    """
     cdef readonly dict __method_info__
     cdef readonly str __name__
     cdef readonly Class __inherits__
@@ -218,19 +193,6 @@ cdef enum SpecialMethod:
 
 
 cdef class ExtensionClass(Class):
-    """
-    Defines all custom classes which extend the Godot Engine.
-    Inherits `gdextendion.Class`
-
-    Implements instance management callbacks in the ClassCreationInfo4 structure:
-        `creation_info4.create_instance_func = &ExtensionClass.create_instance`
-        `creation_info4.free_instance_func = &ExtensionClass.free_instance`
-        `creation_info4.recreate_instance_func = &ExtensionClass.recreate_instance`
-
-    Stores information about all new methods and class registration state.
-
-    Implements all class registration calls and delegates them to `gdextension.ClassRegistrator`
-    """
     cdef readonly bint is_registered
     cdef readonly bint is_virtual
     cdef readonly bint is_abstract
@@ -268,20 +230,6 @@ cdef class ExtensionClass(Class):
 
 
 cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Type]:
-    """
-    Defines all instances of `gdextension.Class`.
-
-    Implements following GDExtension API calls:
-        in `Extension.__init__`
-            `classdb_construct_object` (of base class)
-            `object_set_instance`
-        in `Extension.__del__` and `Extension.destroy`
-            `object_destroy`
-
-    Implements virtual call callbacks in the ClassCreationInfo4 structure:
-        `creation_info4.get_virtual_call_data_func = &Extension.get_virtual_call_data`
-        `creation_info4.call_virtual_with_data_func = &Extension.call_virtual_with_data`
-    """
     @staticmethod
     cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil
 
@@ -332,15 +280,6 @@ cdef class ExtensionVirtualMethod(_ExtensionMethodBase):
 
 
 cdef class ExtensionMethod(_ExtensionMethodBase):
-    """"
-    Defines all custom methods of `gdextension.Extension` objects.
-
-    Implements following GDExtension API calls:
-        in `ExtensionMethod.register`
-            `classdb_register_extension_class_method`
-
-    Implements `call`/`ptrcall` callbacks in the `ClassMethodInfo` structure.
-    """
     cdef int register(self, ExtensionClass cls) except -1
 
     @staticmethod

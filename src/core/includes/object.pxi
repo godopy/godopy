@@ -85,6 +85,9 @@ cdef class Object:
 
     See ScriptMethod.__call__(), ScriptMethod._varcall for
     `object_call_script_method` API implementation.
+
+    `object_*_instance_binding` API is not implemented, no use-cases for it
+    were found.
     """
     def __cinit__(self) -> None:
         self.is_singleton = False

@@ -13,6 +13,24 @@ def get_method_info(class_name):
 
 
 cdef class Class:
+    """
+    Defines all Godot Engine's classes.
+
+    NOTE: Although instances of `gdextension.Class` and its subclasses implement
+    class functionality, they are still *objects* on the Python level.
+
+    Only on the higher level (`godot` module) they would be wrapped as real Python
+    classes.
+
+    Works as a singleton, can't be instantiated directly: use `Class.get_class`
+    in Cython or `Class._get_class` in Python to create/get instances
+    `gdextension.Class`.
+
+    Doesn't implement any GDExtension API calls by itself.
+
+    Captures method, property (TODO) and signal (TODO) information,
+    processes class inheritance chains.
+    """
     def __init__(self, str name):
         raise TypeError("Godot Engine classes can't be instantiated")
 
