@@ -604,7 +604,7 @@ cdef cpp.VariantType pyobject_to_variant_type(object p_obj) noexcept:
 
 
 cdef public object variant_to_pyobject(const cpp.Variant &v):
-    cdef int vartype = <int>v.get_type()
+    cdef int vartype = <int>gdextension_interface_variant_get_type(v._native_ptr())
     cdef variant_to_pyobject_func_t func = variant_to_pyobject_funcs[vartype]
 
     return func(v)

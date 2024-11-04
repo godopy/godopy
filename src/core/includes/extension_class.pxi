@@ -291,7 +291,6 @@ cdef class ExtensionClass(Class):
         return method.register(self)
 
 
-
     cdef int register_virtual_method(self, func: types.FunctionType) except -1:
         cdef ExtensionVirtualMethod method = ExtensionVirtualMethod(func)
 

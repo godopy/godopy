@@ -19,9 +19,7 @@ cdef public object bool_to_pyobject(const uint8_t p_bool):
 
 
 cdef public object variant_bool_to_pyobject(const cpp.Variant &v):
-    cdef uint8_t ret = v.to_type[bint]()
-
-    return ret != 0
+    return gdextension_interface_variant_booleanize(v._native_ptr()) != 0
 
 
 cdef public void bool_from_pyobject(object p_obj, uint8_t *r_ret) noexcept:
@@ -137,7 +135,9 @@ cdef public object string_to_pyobject(const cpp.String &p_string):
 
 
 cdef public object variant_string_to_pyobject(const cpp.Variant &v):
-    cdef cpp.String ret = v.to_type[cpp.String]()
+    cdef cpp.String ret
+    gdextension_interface_variant_stringify(v._native_ptr(), ret._native_ptr())
+
     cdef cpp.CharWideString wstr
     cdef int64_t len = gdextension_interface_string_to_wide_chars(ret._native_ptr(), NULL, 0)
     wstr.resize(len + 1)
