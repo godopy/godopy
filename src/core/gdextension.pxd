@@ -154,6 +154,23 @@ cdef class EngineCallableBase:
     cdef int8_t[16] _type_info_opt
 
 
+cdef class VariantMethod(EngineCallableBase):
+    cdef object __self__
+    cdef Variant _base
+    cdef StringName _method
+
+    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
+                       GDExtensionCallError *r_error) noexcept nogil
+
+
+cdef class VariantStaticMethod(EngineCallableBase):
+    cdef VariantType _base
+    cdef StringName _method
+
+    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
+                       GDExtensionCallError *r_error) noexcept nogil
+
+
 cdef class MethodBind(EngineCallableBase):
     cdef readonly bint is_vararg
 

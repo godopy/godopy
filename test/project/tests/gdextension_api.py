@@ -1,4 +1,5 @@
 from ._base import BaseTestCase
+from classes import TestResource
 
 import gdextension
 
@@ -23,3 +24,10 @@ class TestCaseGDExtensionAPI(BaseTestCase):
         self.assertIsInstance(api_version.string, str)
         self.assertEqual(godot_version.string[:16], 'Godot Engine v4.')
         self.assertEqual(api_version.string[:16], 'Godot Engine v4.')
+
+    def test_variant_call(self):
+        gdscript = self._main.get_node('TestCasesGDScript')
+        m = gdextension.VariantMethod(gdscript, 'get_resource')
+        resource = m()
+
+        self.assertIsInstance(resource, TestResource)
