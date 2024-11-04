@@ -1,4 +1,13 @@
 cdef class ExtensionMethod(_ExtensionMethodBase):
+    """"
+    Defines all custom methods of `gdextension.Extension` objects.
+
+    Implements following GDExtension API calls:
+        in `ExtensionMethod.register`
+            `classdb_register_extension_class_method`
+
+    Implements `call`/`ptrcall` callbacks in the `ClassMethodInfo` structure.
+    """
     @staticmethod
     cdef void call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
                    const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
