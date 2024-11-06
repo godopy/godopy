@@ -76,34 +76,38 @@ cdef class ExtensionClass(Class):
         return <void *><PyObject *>info
 
 
-    def bind_method(self, method: types.FunctionType):
-        if not isinstance(method, types.FunctionType):
-            raise TypeError("Function is required, got %s" % type(method))
-        self.method_bindings[method.__name__] = method
+    def bind_method(self, method: CallablePythonType, name: AnyStr = None):
+        if not callable(method):
+            raise ValueError("Callable is required, got %s" % type(method))
+        name = name or method.__name__
+        self.method_bindings[name] = method
 
         return method
 
 
-    def bind_python_method(self, method: types.FunctionType):
-        if not isinstance(method, types.FunctionType):
-            raise TypeError("Function is required, got %s" % type(method))
-        self.python_method_bindings[method.__name__] = method
+    def bind_python_method(self, method: CallablePythonType, name: AnyStr = None):
+        if not callable(method):
+            raise ValueError("Callable is required, got %s" % type(method))
+        name = name or method.__name__
+        self.python_method_bindings[name] = method
 
         return method
 
 
-    def bind_virtual_method(self, method: types.FunctionType):
-        if not isinstance(method, types.FunctionType):
-            raise TypeError("Function is required")
-        self.virtual_method_implementation_bindings[method.__name__] = method
+    def bind_virtual_method(self, method: CallablePythonType, name: AnyStr = None):
+        if not callable(method):
+            raise ValueError("Callable is required, got %s" % type(method))
+        name = name or method.__name__
+        self.virtual_method_implementation_bindings[name] = method
 
         return method
 
 
-    def add_virtual_method(self, method: types.FunctionType):
-        if not isinstance(method, types.FunctionType):
-            raise TypeError("Function is required")
-        self.virtual_method_bindings[method.__name__] = method
+    def add_virtual_method(self, method: CallablePythonType, name: AnyStr = None):
+        if not callable(method):
+            raise ValueError("Callable is required, got %s" % type(method))
+        name = name or method.__name__
+        self.virtual_method_bindings[name] = method
 
         return method
 
@@ -127,25 +131,19 @@ cdef class ExtensionClass(Class):
 
     def unregister(self) -> None:
         if not self.is_registered:
-            if self.__name__ in _CLASSDB:
-                del _CLASSDB[self.__name__]
-
             return
 
-        # print("Unregistering Godot class %r" % self)
-
-        del _CLASSDB[self.__name__]
-
         for reference in self._used_refs:
+            # print(reference, Py_REFCNT(reference))
             ref.Py_DECREF(reference)
 
         self._used_refs = []
 
-        ref.Py_DECREF(self)
         cdef PyStringName class_name = PyStringName(self.__name__)
         gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name.ptr())
 
-        self.is_registered = False
+        # print(self, Py_REFCNT(self))
+        # ref.Py_DECREF(self)
 
         return 0
 

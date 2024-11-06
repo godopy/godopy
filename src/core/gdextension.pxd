@@ -26,13 +26,15 @@ cdef public void object_from_pyobject(object p_obj, void **r_ret) noexcept
 cdef public void cppobject_from_pyobject(object p_obj, GodotCppObject **r_ret) noexcept
 cdef public void variant_object_from_pyobject(object p_obj, Variant *r_ret) noexcept
 
+cdef object script_instance_to_pyobject(void *)
+cdef int script_instance_from_pyobject(ScriptInstance p_obj, void **) except -1
 
 cdef dict _NODEDB
 cdef dict _OBJECTDB
 cdef dict _METHODDB
 cdef dict _BUILTIN_METHODDB
 cdef dict _CLASSDB
-cdef list _registered_classes
+cdef dict _bound_method_cache
 
 
 cdef enum ArgType:
@@ -78,6 +80,7 @@ cdef enum ArgType:
 
     ARGTYPE_VARIANT
     ARGTYPE_POINTER
+    ARGTYPE_SCRIPT_INSTANCE
 
     ARGTYPE_AUDIO_FRAME
     ARGTYPE_CARET_INFO
@@ -97,6 +100,14 @@ cdef enum ArgType:
 
     ARGTYPE_MAX
     ARGTYPE_NO_ARGTYPE = -1
+
+
+cdef class _Memory:
+    cdef void *ptr
+    cdef size_t num_bytes
+
+    cdef void *realloc(self, size_t p_bytes) except NULL nogil
+    cdef void free(self) noexcept nogil
 
 
 cdef class Class:
@@ -186,6 +197,115 @@ cdef class BuiltinMethod(EngineCallableBase):
     cdef BuiltinMethod new_with_baseptr(object owner, object method_name, void *_base)
 
 
+cdef class PropertyInfo:
+    cdef public VariantType type
+    cdef public object name
+    cdef public object class_name
+    cdef public uint32_t hint
+    cdef public object hint_string
+    cdef public uint32_t usage
+
+
+cdef class MethodInfo:
+    cdef public object name
+    cdef public PropertyInfo return_value
+    cdef public uint32_t flags
+    cdef public int32_t id
+    cdef public list arguments
+    cdef public list default_arguments
+
+
+cdef class PythonCallableBase:
+    cdef readonly object __name__
+    cdef readonly object __func__
+    cdef readonly tuple type_info
+    cdef int8_t[16] _type_info_opt
+
+
+cdef class BoundPythonMethod(PythonCallableBase):
+    cdef readonly object __self__
+    cdef size_t error_count
+
+    cdef size_t get_argument_count(self) except -2
+
+
+cdef class _PropertyInfoDataArray:
+    cdef _Memory memory
+    cdef size_t count
+    cdef list names
+    cdef list classnames
+    cdef list hintstrings
+
+    cdef GDExtensionPropertyInfo *ptr(self) noexcept nogil
+
+
+cdef class _MethodInfoDataArray:
+    cdef _Memory memory
+    cdef size_t count
+    cdef list names
+    cdef _PropertyInfoDataArray return_values
+    cdef list arguments
+
+    cdef GDExtensionMethodInfo *ptr(self) noexcept nogil
+
+
+cdef class ScriptInstance:
+    cdef void *_base
+    cdef _Memory _info
+
+    cdef readonly object __name__
+    cdef readonly Extension __language__
+    cdef readonly Extension __script__
+    cdef readonly Object __owner__
+    cdef readonly dict __script_dict__
+
+    cdef _PropertyInfoDataArray property_info_data
+    cdef _MethodInfoDataArray method_info_data
+
+    @staticmethod
+    cdef uint8_t set_callback(void *p_instance, const void *p_name, const void *p_value) noexcept nogil
+
+    @staticmethod
+    cdef uint8_t get_callback(void *p_instance, const void *p_name, void *r_ret) noexcept nogil
+
+    @staticmethod
+    cdef const GDExtensionPropertyInfo *get_property_list_callback(void *p_instance, uint32_t *r_count) noexcept nogil
+
+    @staticmethod
+    cdef void *get_owner_callback(void *p_instance) noexcept nogil
+
+    @staticmethod
+    cdef const GDExtensionMethodInfo *get_method_list_callback(void *p_instance, uint32_t *r_count) noexcept nogil
+
+    @staticmethod
+    cdef uint8_t has_method_callback(void *p_instance, const void *p_name) noexcept nogil
+
+    @staticmethod
+    cdef int64_t get_method_argument_count_callback(void *p_instance, const void *p_name, uint8_t *r_is_valid) noexcept nogil
+
+    @staticmethod
+    cdef void call_callback(void *p_instance, const void *p_method, const (const void *) *p_args, int64_t p_count,
+                            void *r_ret, GDExtensionCallError *r_error) noexcept nogil
+
+    @staticmethod
+    cdef void notification_callback(void *p_instance, int32_t p_what, uint8_t p_reversed) noexcept nogil
+
+    @staticmethod
+    cdef void to_string_callback(void *p_instance, uint8_t *r_is_valid, void *r_out) noexcept nogil
+
+    @staticmethod
+    cdef void *get_script_callback(void *p_instance) noexcept nogil
+
+    @staticmethod
+    cdef uint8_t is_placeholder_callback(void *p_instance) noexcept nogil
+
+    @staticmethod
+    cdef void *get_language_callback(void *p_instance) noexcept nogil
+
+    @staticmethod
+    cdef void free_callback(void *p_instance) noexcept nogil
+
+
 cdef enum SpecialMethod:
     _THREAD_ENTER = 1
     _THREAD_EXIT = 2
@@ -249,15 +369,6 @@ cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Ty
                                       void *r_ret) noexcept with gil
 
 
-cdef class PropertyInfo:
-    cdef public VariantType type
-    cdef public str name
-    cdef public str class_name
-    cdef public uint32_t hint
-    cdef public str hint_string
-    cdef public uint32_t usage
-
-
 cdef class _ExtensionMethodBase:
     cdef readonly str __name__
     cdef readonly object __func__
@@ -283,31 +394,15 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
     cdef int register(self, ExtensionClass cls) except -1
 
     @staticmethod
-    cdef void call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
-                   const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
-                   GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil
+    cdef void call(void *p_method_userdata, void *p_instance, const (const void *) *p_args, int64_t p_argument_count,
+                   void *r_return, GDExtensionCallError *r_error) noexcept nogil
 
     @staticmethod
-    cdef void _call(void *p_method, void *p_self, const Variant **p_args, size_t p_argcount,
-                    Variant *r_ret, GDExtensionCallError *r_error) noexcept with gil
+    cdef void _call(void *p_method, void *p_self, const Variant **p_args, size_t p_argcount, Variant *r_ret,
+                    GDExtensionCallError *r_error) noexcept with gil
 
     @staticmethod
-    cdef void ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
-                      const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept nogil
+    cdef void ptrcall(void *p_method_userdata, void *p_instance, const (const void *) *p_args, void *r_return) noexcept nogil
 
     @staticmethod
     cdef void _ptrcall(void *p_method, void *p_self, const void **p_args, void *r_return) noexcept with gil
-
-
-cdef class PythonCallableBase:
-    cdef readonly str __name__
-    cdef readonly object __func__
-    cdef readonly tuple type_info
-    cdef int8_t[16] _type_info_opt
-
-
-cdef class BoundExtensionMethod(PythonCallableBase):
-    cdef readonly Extension __self__
-    cdef size_t error_count
-
-    cdef size_t get_argument_count(self) except -2

@@ -6,14 +6,14 @@ cdef class ExtensionVirtualMethod(_ExtensionMethodBase):
             raise TypeError('At least 1 argument ("self") is required')
 
         cdef PropertyInfo py_retinfo = self.get_return_info()
-        cdef _GDEPropInfoData retinfo = _GDEPropInfoData(py_retinfo)
+        cdef _PropertyInfoData retinfo = _PropertyInfoData(py_retinfo)
 
         # Skip self arg
         cdef py_arginfo = self.get_argument_info_list()[1:]
-        cdef _GDEPropInfoListData arginfo = _GDEPropInfoListData(py_arginfo)
+        cdef _PropertyInfoDataArray arginfo = _PropertyInfoDataArray(py_arginfo)
 
         cdef list py_argmeta = self.get_argument_metadata_list()[1:]
-        cdef _GDEArgumentMetadataArray argmeta = _GDEArgumentMetadataArray(py_argmeta)
+        cdef _ArgumentMetadataArray argmeta = _ArgumentMetadataArray(py_argmeta)
 
         type_info = [variant_type_to_str(<VariantType>py_retinfo.type)]
         type_info += [variant_type_to_str(<VariantType>info.type) for info in py_arginfo]

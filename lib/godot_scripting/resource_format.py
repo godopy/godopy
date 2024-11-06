@@ -1,45 +1,44 @@
 from typing import List
 
 import godot
-from godot.classdb import ResourceFormatLoader, ResourceFormatSaver
+from godot.classdb import ResourceFormatLoader, ResourceFormatSaver, Resource
 
-from .script import Python
+from .script import PythonScript
 
 
-class ResourceFormatLoaderPython(godot.Class, inherits=ResourceFormatLoader):
-    def _get_recognized_extensions(self) -> List[str]:
+class ResourceFormatLoaderPython(godot.Class, inherits=ResourceFormatLoader, no_virtual_underscore=True):
+    def get_recognized_extensions(self) -> List[str]:
+        # godot.print("get_recognized_extensions")
         return ['py']
 
-    def _handles_type(self, type: str) -> bool:
+    def handles_type(self, type: str) -> bool:
+        # godot.print(f"handles_type: {type}")
         return type == 'Script' or type == 'PythonScript'
 
-    def _get_resource_type(self, path: str) -> str:
+    def get_resource_type(self, path: str) -> str:
+        # godot.print(f"get_resource_type: {path}")
         if path.startswith('res://lib') or path == 'res://register_types.py':
             return False
-
         return 'Python' if path.endswith('.py') else ''
 
-    def _load(self, path: str, original_path: str, use_sub_threads: bool, cache_mode: int) -> Python:
-        print('LOAD', path, original_path, use_sub_threads, cache_mode)
-        res = Python()
-        res.load(path)
+    def load(self, path: str, original_path: str, use_sub_threads: bool, cache_mode: int) -> PythonScript:
+        # godot.print(f'load: {path}, {original_path}, {use_sub_threads}, {cache_mode}')
+        res = PythonScript()
+        res._load(path)
 
-        print("Resource %r loaded. Returning it to engine" % res)
         return res
 
 
-class ResourceFormatSaverPython(godot.Class, inherits=ResourceFormatSaver):
-    def _get_recognized_extensions(self, res) -> List[str]:
-        return ['py']
+class ResourceFormatSaverPython(godot.Class, inherits=ResourceFormatSaver, no_virtual_underscore=True):
+    def get_recognized_extensions(self, res: Resource) -> List[str]:
+        if isinstance(res, PythonScript):
+            return ['py']
+        return []
 
 
-    def _recognize(self, res) -> bool:
-        print("'_recognize' call", res)
-
-        return isinstance(res, Python)
+    def recognize(self, res) -> bool:
+        return isinstance(res, PythonScript)
 
 
-    def _save(self, res, path, flags) -> godot.Error:
-        print("'_save' call", res, path, flags)
-
+    def save(self, res, path, flags) -> godot.Error:
         return res.save(path)

@@ -41,9 +41,13 @@ def __getattr__(name) -> type:
             godot_class = gdextension.Class.get(name)
             cls = godot.GodotClassBase(name, (godot.EngineClass,), {'__godot_class__': godot_class})
 
-            globals()[name] = cls
-
-            return cls
+            if gdextension.has_singleton(name):
+                singleton = cls()
+                globals()[name] = singleton
+                return singleton
+            else:
+                globals()[name] = cls
+                return cls
 
         else:
             raise AttributeError('%r class does not exist' % name)

@@ -11,6 +11,10 @@ from cpython cimport (
     PyObject, ref, pystate, PyLong_Check, PyLong_AsSsize_t,
     PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM
 )
+cdef extern from "Python.h":
+    Py_ssize_t Py_REFCNT(object o)
+    Py_ssize_t _Py_REFCNT "Py_REFCNT" (PyObject *ptr)
+
 
 from python_runtime cimport *
 cimport godot_types as type_funcs
@@ -24,7 +28,7 @@ import pickle
 import inspect
 import builtins
 import traceback
-from typing import Dict, List, Set, Tuple, Any
+from typing import Any, AnyStr, Callable as CallablePythonType, Dict, List, Optional, Set, Tuple, Any
 from collections import namedtuple
 
 import numpy as np
@@ -89,7 +93,7 @@ include "includes/memory.pxi"
 include "includes/exceptions.pxi"
 
 
-# INTERFACE: ClassDB/Object
+# INTERFACE: Object/ClassDB/Other
 
 include "includes/class.pxi"
 include "includes/object.pxi"
@@ -97,20 +101,30 @@ include "includes/object.pxi"
 include "includes/engine_calls.pxi"
 include "includes/engine_callable.pxi"
 include "includes/method_bind.pxi"
-include "includes/variant_method.pxi"
-include "includes/variant_static_method.pxi"
 include "includes/script_method.pxi"
-include "includes/utility_function.pxi"
 include "includes/builtin_method.pxi"
 
+
+# INTERFACE: Variant
+
+include "includes/variant_method.pxi"
+include "includes/variant_static_method.pxi"
+include "includes/utility_function.pxi"
+
+
+# INTERFACE: Script Instance
+
+include "includes/method_info.pxi"
 include "includes/python_calls.pxi"
 include "includes/python_callable.pxi"
-include "includes/extension_method_base.pxi"
-include "includes/extension_virtual_method.pxi"
-include "includes/extension_method.pxi"
+include "includes/script_instance.pxi"
 
 
 # INTERFACE: ClassDB Extension
+
+include "includes/extension_method_base.pxi"
+include "includes/extension_virtual_method.pxi"
+include "includes/extension_method.pxi"
 
 include "includes/extension_class.pxi"
 include "includes/extension.pxi"

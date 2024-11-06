@@ -106,6 +106,7 @@ cdef list TYPE_SIZE_LIST = [
 cdef list ARGTYPE_LIST = TYPE_LIST + [
     'Variant',
     'Pointer',
+    'ScriptInstance',
     'AudioFrame',
     'CaretInfo',
     'Glyph',
@@ -126,6 +127,7 @@ cdef size_t ptr_size = cython.sizeof(GDExtensionTypePtr)
 
 cdef list ARGTYPE_SIZE_LIST = TYPE_SIZE_LIST + [
     cython.sizeof(Variant),
+    ptr_size,
     ptr_size,
 
     # NOTE: All structs are passed by pointer

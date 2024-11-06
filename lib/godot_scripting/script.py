@@ -1,203 +1,301 @@
 import os
-import traceback
 import importlib
+from typing import Any, Dict, List
+
 
 import godot
-from godot.singletons import ProjectSettings
-from godot.classdb import ScriptExtension
+import gdextension
+from godot import types
+from godot.classdb import Engine, ProjectSettings, ScriptExtension
 
 
-class Python(godot.Class, inherits=ScriptExtension):
+class PythonScriptInstance(gdextension.ScriptInstance):
+    def __init__(self, script: ScriptExtension, for_object: gdextension.Object) -> None:
+        super().__init__(script, for_object, script._script_dict)
+
+    def is_placeholder(self) -> bool:
+        print("is_placeholder")
+        return False
+
+    def notification(self, what, reversed=False):
+        print("NOTIFICATION", what, reversed)
+
+
+class PythonPlaceholderScriptInstance(gdextension.ScriptInstance):
+    def __init__(self, script: ScriptExtension, for_object: gdextension.Object) -> None:
+        super().__init__(script, for_object, {})
+
+    def is_placeholder(self):
+        print("placeholder is_placeholder")
+        return True
+
+
+class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=True):
     def __init__(self):
         from .register_types import python_language
 
-        self.source_lines = []
-        self.module = None
-        self.error = None
-        self.path = None
-        self.import_path = None
-        self.name = ''
-        self.main_class = None
+        self._source = ''
+        self._module = None
 
-        self.extends = ''
-        self.base = None
+        self._error = None
+        self._resource_path = None
+        self._import_path = None
+
+        self._script_dict = {}
+
+        self.name = ''
+
+        self.extends = None
+        self.base_script = None
+        self.instance = None
 
         self.language = python_language
 
-    def _has_source_code(self):
-        return len(self.source_lines) > 0
+        self._method_info_list = []
+        self._method_info_dict = {}
 
-    def _get_source_code(self):
-        return '\n'.join(self.source_lines)
+    def editor_can_reload_from_file(self):
+        print("editor_can_reload_from_file")
+        return True
 
-    def _set_source_code(self, code):
-        self.source_lines = code.splitlines()
+    def placeholder_erased(self, placeholder):
+        print("placeholder_erased", placeholder)
 
-    def load_source(self, f):
-        self.source_lines = []
-        for line in f:
-            self.source_lines.append(line.rstrip())
+    def can_instantiate(self):
+        return not Engine.is_editor_hint()
 
-    def save_source(self, f):
-        for line in self.source_lines:
-            f.write("%s\n" % line)
+    def get_base_script(self):
+        print("get_base_script")
+        return self.base_script
 
-    def import_module(self, path):
-        self.path = path
+    def get_global_name(self):
+        # print("get_gloabal_name", self.name)
+        return self.name
+
+    def inherits_script(self, script) -> bool:
+        print("inherits_script", script)
+        return False
+
+    def get_instance_base_type(self):
+        if self.extends is not None:
+            return self.extends.__name__
+
+        return ''
+
+    def instance_create(self, for_object: godot.Class) -> PythonScriptInstance:
+        self.instance = PythonScriptInstance(self, for_object)
+
+        self._method_info_list = [m.as_dict() for m in self.instance.method_list()]
+        self._method_info_dict = {}
+        for m in self._method_info_list:
+            self._method_info_dict[m['name']] = m
+
+        return self.instance
+
+    def placeholder_instance_create(self, for_object: godot.Class) -> PythonScriptInstance:
+        self.instance = PythonScriptInstance(self, for_object)
+
+        return self.instance
+
+    def instance_has(self, object):
+        print("instance_has", object)
+        return False
+
+    def has_source_code(self) -> bool:
+        return bool(self.source)
+
+    def get_source_code(self):
+        return self._source
+
+    def set_source_code(self, code: str) -> None:
+        self._source = code
+
+    def _load_source(self, f):
+        self._source = f.read()
+
+    def _save_source(self, f):
+        f.write(self._source)
+
+    def _import_module(self, path):
+        self._path = path
+
         _, inner_path = path.split('://')
         components = inner_path.split('/')
         filename = components.pop()
-        name, ext = os.path.splitext(filename)
+        name, _ = os.path.splitext(filename)
 
-        # self.name = name
-        self.import_path = '.'.join(components + [name])
+        self._import_path = '.'.join(components + [name])
 
-        print("Importing %r" % self.import_path)
-        self.module = importlib.import_module(self.import_path)
+        # print("Importing %r" % self._import_path)
+        self._module = importlib.import_module(self._import_path)
 
-        for obj in dir(self.module):
-            if isinstance(obj, type):
-                self.main_class = obj
-                self.name = obj.__name__
-                print("Detected Script class: %r(%r) in %r" % (self.name, obj, self))
-                break
+        self._script_dict.update(self._module.__dict__)
+
+        for key in list(self._script_dict.keys()):
+            if key == '__class_name__':
+                self.name = self._script_dict.pop(key)
+            elif key == '__extends__':
+                self.extends = self._script_dict.pop(key)
+            elif key.startswith('__'):
+                del self._script_dict[key]
+
         if not self.name:
-            print("No script class detected in %r" % self)
+            self.name = name.title().replace('_', '')
+
+        if self.extends is None:
+            # If a script does not define '__extends__' it is interprered as a SceneTree
+            # with one '_initialize' method where the whole script is executed with
+            # a global variable '__name__' being equal to '__main__'.
+            #
+            # This feature emulates the behavior of normal Python scripts.
+            from godot.classdb import SceneTree
+            self.extends = SceneTree
+
+            source = self.get_source_code()
+            def _initialize(self) -> None:
+                try:
+                    exec(source, {'__name__': '__main__'})
+                except Exception as exc:
+                    gdextension.print_script_error_with_traceback(exc)
+                    self.quit(1)
+
+                self.quit(0)
+
+            self._script_dict = {
+                '_initialize': _initialize
+            }
 
 
-    def set_error(self, exc):
-        self.error = exc
+    def _set_error(self, exc):
+        self._error = exc
 
 
-    def load(self, path=None) -> godot.Error:
+    def _load(self, path=None) -> godot.Error:
         if path is not None:
-            self.path = path
-        self.error = None
+            self._resource_path = path
+        self._error = None
 
         abspath = ProjectSettings.globalize_path(path)
-        print("abspath: %r" % abspath)
+        # print("abspath: %r" % abspath)
 
         try:
             with open(abspath, 'r', encoding='utf-8') as f:
-                self.load_source(f)
+                self._load_source(f)
         except Exception as exc:
-            traceback.print_exception(exc)
-            godot.push_error(str(exc))
-            self.set_error(exc)
-            return godot.Error.FAIL
+            gdextension.print_script_error_with_traceback(exc)
+            self._set_error(exc)
+            return godot.Error.FAILED
 
         try:
-            self.import_module(path)
+            self._import_module(path)
         except Exception as exc:
-            traceback.print_exception(exc)
-            godot.push_error(str(exc))
-            self.set_error(exc)
-            return godot.Error.FAIL
+            gdextension.print_script_error_with_traceback(exc)
+            self._set_error(exc)
+            return godot.Error.FAILED
 
-        print('Resource %r loaded from %r and imported to %r' % (self, self.path, self.module))
+        print('Resource %r loaded from %r and imported to %r' % (self, self._resource_path, self._module))
 
-        self.language.add_script(self)
+        self.language._add_script(self)
 
         return godot.Error.OK
 
 
-    def save(self, path=None) -> godot.Error:
+    def _save(self, path=None) -> godot.Error:
         if path is not None:
-            self.path = path
+            self._resource_path = path
 
-        self.error = None
-        print("Saving %r to %r" % (self, path))
-
+        self._error = None
         abspath = ProjectSettings.globalize_path(path)
-        print("abspath: %r" % abspath)
 
         try:
             with open(abspath, 'w', encoding='utf-8') as f:
                 self.save_source(f)
         except Exception as exc:
-            traceback.print_exception(exc)
-            godot.push_error(str(exc))
-            self.set_error(exc)
-            return godot.Error.FAIL
+            gdextension.print_script_error_with_traceback(exc)
+            self._set_error(exc)
+            return godot.Error.FAILED
 
-        print('Resource %r (%r) saved to %r' % (self, self.module, self.path))
+        print('Resource %r (%r) saved to %r' % (self, self._module, self._resource_path))
 
         return godot.Error.OK
 
-    def _update_exports(self):
-        pass
-
-    def _get_documentation(self):
-        pass
-
-    def _reload(self, keep_state):
-        if not self.path:
-            godot.push_error("No script path defined")
+    def reload(self, keep_state):
+        if not self._resource_path:
+            gdextension.print_error("No script path defined")
             return
 
-        self.load(self.path)
+        self._load(self._resource_path)
 
-    def _get_language(self):
-        return self.language
+    def get_documentation(self):
+        print("get_documentation")
+        return {}
 
-    def _is_valid(self):
-        print("_is_valid call %r %r" % (self.error is None, self.module is not None))
-        return self.error is None and self.module is not None
-
-    def _can_instantiate(self):
-        return self._is_valid()
-
-    def _is_tool(self):
-        return False
-
-    def _get_instance_base_type(self):
-        if self.extends:
-            return self.extends
-
+    def get_class_icon_path(self) -> str:
+        print("get_class_icon_path")
         return ''
 
-    def _get_base_script(self):
-        return self.base
+    def has_method(self, name):
+        print("has_method", name)
+        return name in self._method_info_dict
 
-    def _get_global_name(self):
-        return self.name
+    def has_static_method(self, name):
+        print("has_static_method", name)
+        return False
 
-    def _get_script_method_list(self):
+    def get_script_argument_count(self, method: str):
+        print("get_script_argument_count", method)
+        return 0
+
+    def get_method_info(self, name):
+        print("get_method_info", name)
+        return self._method_info_dict.get(name, {})
+
+    def is_tool(self):
+        return False
+
+    def is_valid(self):
+        print("is_valid call %r %r" % (self._error is None, self.module is not None))
+        return self._error is None and self._module is not None
+
+    def is_abstract(self):
+        # print("is_abstract")
+        return False
+
+    def get_language(self):
+        return self.language
+
+    def has_script_signal(self, sig: str):
+        print("get_script_signal", sig)
+        return False
+
+    def get_script_signal_list(self) -> List[Dict]:
         return []
 
-    def _has_method(self, name):
+    def has_property_default_value(self, prop_name) -> bool:
+        print("has_prop_default_value", prop_name)
         return False
 
-    def _has_static_method(self, name):
-        return False
+    def get_property_default_value(self, prop_name) -> Any:
+        print("get_prop_default_value", prop_name)
+        return None
 
-    def _get_method_info(self, name):
+    def update_exports(self):
+        print("update_exports")
+
+    def get_script_method_list(self):
+        print("get_script_method_list")
+        return self._method_info_list
+
+    def get_script_property_list(self):
+        print("get_script_property_list")
+        return []
+
+    def get_member_line(self, member: str) -> int:
+        return -1
+
+    def get_constants(self) -> Dict:
         return {}
 
-    def _get_script_property_list(self):
+    def get_members(self) -> List[types.StringName]:
+        print("get_members")
         return []
-
-    def _get_members(self):
-        return []
-
-    def _has_property_default_value(self, prop_name):
-        return False
-
-    def _has_script_signal(self, signal_name):
-        return False
-
-    def _get_script_signal_list(self):
-        return []
-
-    def _get_rpc_config(self):
-        return {}
-
-    def _get_constants(self):
-        return {}
-
-    def _instance_create(self, for_object):
-        pass
-        # TODO: gdextension_interface_script_instance_create3
-
-    def _instance_has(self, obj):
-        return False

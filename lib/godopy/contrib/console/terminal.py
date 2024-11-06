@@ -1,13 +1,14 @@
 import sys
 from code import InteractiveConsole
-import godot as gd
+
+import godot
+from godot.classdb import OS
 
 class GodotTerminalConsole(InteractiveConsole):
     def __init__(self):
         super().__init__({
             "__name__": "__console__",
             "__doc__": None,
-            "print_rich": gd.print_rich
         })
 
     def interact(self, banner):
@@ -44,7 +45,8 @@ class GodotTerminalConsole(InteractiveConsole):
                     prompt = sys.ps1
 
                 line = self.raw_input(prompt)
-                if line.strip() in ['exit', 'quit']:
+
+                if line.strip() in ['exit', 'quit', chr(4)]:
                     return
                 else:
                     more = self.push(line)
@@ -53,10 +55,13 @@ class GodotTerminalConsole(InteractiveConsole):
                 more = 0
 
     def write(self, data):
-        gd.printraw(data)
+        godot.printraw(data)
 
     def raw_input(self, prompt=None):
-        return gd.input(prompt)
+        if prompt:
+            godot.printraw(prompt)
+
+        return OS.read_string_from_stdin()
 
 
 def interact(godot_version=None):

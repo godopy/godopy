@@ -1,13 +1,12 @@
 import enum
 
 import gdextension
-from . import classdb, singletons
+from . import classdb
 from .core import *
 
 
 __all__ = [
     'classdb',
-    'singletons',
 
     'MODULE_INITIALIZATION_LEVEL_CORE',
     'MODULE_INITIALIZATION_LEVEL_EDITOR',

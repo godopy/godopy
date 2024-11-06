@@ -1,5 +1,5 @@
-cdef int _make_python_varcall(BoundExtensionMethod method, const Variant **p_args, size_t p_count, Variant *r_ret,
-                               GDExtensionCallError *r_error) except -1:
+cdef int _make_python_varcall(BoundPythonMethod method, const Variant **p_args, size_t p_count, Variant *r_ret,
+                               GDExtensionCallError *r_error, bint from_script=False) except -1:
     """
     Implements GDExtension's 'call' logic when calling Python methods from the Engine
     """
@@ -22,7 +22,10 @@ cdef int _make_python_varcall(BoundExtensionMethod method, const Variant **p_arg
         if method.error_count > 1:
             print_traceback_and_die(exc)
         else:
-            print_error_with_traceback(exc)
+            if from_script:
+                print_script_error_with_traceback(exc)
+            else:
+                print_error_with_traceback(exc)
             value = None
             success = False
 
@@ -32,7 +35,7 @@ cdef int _make_python_varcall(BoundExtensionMethod method, const Variant **p_arg
     type_funcs.variant_from_pyobject(value, r_ret)
 
 
-cdef int _make_python_ptrcall(BoundExtensionMethod method, void *r_ret, const void **p_args, size_t p_count) except -1:
+cdef int _make_python_ptrcall(BoundPythonMethod method, void *r_ret, const void **p_args, size_t p_count) except -1:
     """
     Implements GDExtension's 'ptrcall' logic when calling Python methods from the Engine
     """
@@ -219,6 +222,10 @@ cdef int _make_python_ptrcall(BoundExtensionMethod method, void *r_ret, const vo
 
     cdef bint return_as_pointer = False
 
+    # Guard againt None
+    if value is None:
+        return_type = ARGTYPE_NIL
+
     # NOTE: Cython compiles this to C switch/case
     if return_type == ARGTYPE_NIL:
         pass
@@ -269,7 +276,8 @@ cdef int _make_python_ptrcall(BoundExtensionMethod method, void *r_ret, const vo
     elif return_type == ARGTYPE_RID:
         type_funcs.rid_from_pyobject(value, <_RID *>ret_value_ptr)
     elif return_type == ARGTYPE_OBJECT:
-        object_from_pyobject(value, <void **>ret_value_ptr)
+        object_from_pyobject(value, &ret_value_ptr)
+        return_as_pointer = True
     elif return_type == ARGTYPE_CALLABLE:
         type_funcs.callable_from_pyobject(value, <GodotCppCallable *>ret_value_ptr)
     elif return_type == ARGTYPE_SIGNAL:
@@ -304,8 +312,14 @@ cdef int _make_python_ptrcall(BoundExtensionMethod method, void *r_ret, const vo
         # Special case: ObjectID pointers are passed as void*
         if type(value) is type_funcs.ObjectID:
             type_funcs.object_id_from_pyobject(value, <ObjectID *>ret_value_ptr)
+        # Special case ScriptInstances are passed as void*
+        elif isinstance(value, ScriptInstance):
+            script_instance_from_pyobject(value, &ret_value_ptr)
         else:
             type_funcs.pointer_from_pyobject(value, &ret_value_ptr)
+        return_as_pointer = True
+    elif return_type == ARGTYPE_SCRIPT_INSTANCE:
+        script_instance_from_pyobject(value, &ret_value_ptr)
         return_as_pointer = True
     elif return_type == ARGTYPE_AUDIO_FRAME:
         type_funcs.audio_frame_from_pyobject(value, <AudioFrame *>ret_value_ptr)

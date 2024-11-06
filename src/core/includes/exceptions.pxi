@@ -8,6 +8,8 @@ def _exc_info_from_exc(exc) -> Tuple[bytes, bytes, int]:
 
     if info_line_str.strip().startswith('^'):
         info_line_str = exc_lines[-4]
+    elif not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
+        info_line_str = exc_lines[-3]
 
     info_line = [s.strip().strip(',') for s in info_line_str.split()]
 

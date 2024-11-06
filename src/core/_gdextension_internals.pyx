@@ -21,8 +21,10 @@ cdef int print_traceback(object exc) except -1:
         exc_lines = exc_text.splitlines()
         info_line_str = exc_lines[-2]
 
-        if info_line_str.strip().startswith('^'):
+        if info_line_str.lstrip().startswith('^'):
             info_line_str = exc_lines[-4]
+        elif not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
+            info_line_str = exc_lines[-3]
 
         info_line = [s.strip().strip(',') for s in info_line_str.split()]
 

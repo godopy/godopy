@@ -1,5 +1,5 @@
 import godot
-from godot.singletons import Engine
+from godot.classdb import Engine
 
 from .core.python_runtime import PythonRuntime
 
@@ -7,7 +7,7 @@ from .core.python_runtime import PythonRuntime
 python_runtime_singleton = None
 
 
-def initialize(level):
+def initialize(level: int) -> None:
     global python_runtime_singleton
 
     if level == godot.MODULE_INITIALIZATION_LEVEL_SCENE:
@@ -16,7 +16,7 @@ def initialize(level):
         Engine.register_singleton('PythonRuntime', python_runtime_singleton)
 
 
-def uninitialize(level):
+def uninitialize(level: int) -> None:
     global python_runtime_singleton
 
     if level == godot.MODULE_INITIALIZATION_LEVEL_SCENE:
