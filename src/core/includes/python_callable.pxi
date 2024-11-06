@@ -13,8 +13,8 @@ cdef class PythonCallableBase:
         raise NotImplementedError("Base class, cannot instantiate")
 
 
-cdef class BoundExtensionMethod(PythonCallableBase):
-    def __init__(self, Extension instance, object method, tuple type_info=None):
+cdef class BoundPythonMethod(PythonCallableBase):
+    def __init__(self, object instance, object method, tuple type_info=None):
         self.__name__ = method.__name__
         self.error_count = 0
 
@@ -25,15 +25,14 @@ cdef class BoundExtensionMethod(PythonCallableBase):
 
         elif callable(method):
             self.__func__ = method
-            if type_info is None:
-                raise TypeError("'type_info' argument is required for python functions")
             self.type_info = type_info
 
         else:
             raise ValueError("Python callable is required")
 
         self.__self__ = instance
-        make_optimized_type_info(self.type_info, self._type_info_opt)
+        if type_info is not None:
+            make_optimized_type_info(self.type_info, self._type_info_opt)
 
 
     def __call__(self, *args, **kwargs):

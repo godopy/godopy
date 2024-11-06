@@ -9,19 +9,18 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
     Implements `call`/`ptrcall` callbacks in the `ClassMethodInfo` structure.
     """
     @staticmethod
-    cdef void call(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
-                   const GDExtensionConstVariantPtr *p_args, GDExtensionInt p_argument_count,
-                   GDExtensionVariantPtr r_return, GDExtensionCallError *r_error) noexcept nogil:
+    cdef void call(void *p_method_userdata, void *p_instance, const (const void *) *p_args, int64_t p_argument_count,
+                   void *r_return, GDExtensionCallError *r_error) noexcept nogil:
         ExtensionMethod._call(p_method_userdata, p_instance, <const Variant **>p_args, p_argument_count,
                               <Variant *>r_return, r_error)
 
 
     @staticmethod
-    cdef void _call(void *p_method, void *p_self, const Variant **p_args, size_t p_count,
-                    Variant *r_ret, GDExtensionCallError *r_error) noexcept with gil:
+    cdef void _call(void *p_method, void *p_self, const Variant **p_args, size_t p_count, Variant *r_ret,
+                    GDExtensionCallError *r_error) noexcept with gil:
         cdef ExtensionMethod func = <object>p_method
         cdef Object instance = <object>p_self
-        cdef BoundExtensionMethod method = BoundExtensionMethod(instance, func)
+        cdef BoundPythonMethod method = BoundPythonMethod(instance, func)
 
         try:
             _make_python_varcall(method, p_args, p_count, r_ret, r_error)
@@ -33,17 +32,15 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
                 print_error_with_traceback(exc)
 
     @staticmethod
-    cdef void ptrcall(void *p_method_userdata, GDExtensionClassInstancePtr p_instance,
-                      const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr r_return) noexcept nogil:
+    cdef void ptrcall(void *p_method_userdata, void *p_instance, const (const void *) *p_args, void *r_return) noexcept nogil:
         ExtensionMethod._ptrcall(p_method_userdata, p_instance, <const void **>p_args, <void *>r_return)
 
 
     @staticmethod
-    cdef void _ptrcall(void *p_method, GDExtensionClassInstancePtr p_self, const void **p_args,
-                       void *r_ret) noexcept with gil:
+    cdef void _ptrcall(void *p_method, void *p_self, const void **p_args, void *r_ret) noexcept with gil:
         cdef ExtensionMethod func = <object>p_method
         cdef Object instance = <object>p_self
-        cdef BoundExtensionMethod method = BoundExtensionMethod(instance, func)
+        cdef BoundPythonMethod method = BoundPythonMethod(instance, func)
 
         try:
             _make_python_ptrcall(method, r_ret, p_args, method.get_argument_count())
@@ -62,17 +59,17 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
             raise TypeError('At least 1 argument ("self") is required')
 
         cdef PropertyInfo py_retinfo = self.get_return_info()
-        cdef _GDEPropInfoData retinfo = _GDEPropInfoData(py_retinfo)
+        cdef _PropertyInfoData retinfo = _PropertyInfoData(py_retinfo)
 
         cdef list py_defargs = self.get_default_arguments()
         cdef _VariantPtrArray defargs = _VariantPtrArray(py_defargs)
 
         # Skip self arg
         cdef py_arginfo = self.get_argument_info_list()[1:]
-        cdef _GDEPropInfoListData arginfo = _GDEPropInfoListData(py_arginfo)
+        cdef _PropertyInfoDataArray arginfo = _PropertyInfoDataArray(py_arginfo)
 
         cdef list py_argmeta = self.get_argument_metadata_list()[1:]
-        cdef _GDEArgumentMetadataArray argmeta = _GDEArgumentMetadataArray(py_argmeta)
+        cdef _ArgumentMetadataArray argmeta = _ArgumentMetadataArray(py_argmeta)
 
         type_info = [variant_type_to_str(<VariantType>py_retinfo.type)]
         type_info += [variant_type_to_str(<VariantType>info.type) for info in py_arginfo]

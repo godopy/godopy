@@ -39,7 +39,7 @@ from libcpp.cast cimport *
 from cpython.bytearray cimport PyByteArray_Check
 from cython.view cimport array as cvarray
 from gdextension cimport (
-    BuiltinMethod, Extension,
+    BuiltinMethod, Extension, ScriptInstance,
     object_to_pyobject, cppobject_from_pyobject, variant_object_to_pyobject,
     object_from_pyobject, variant_object_from_pyobject,
     variant_type_to_str, str_to_variant_type
@@ -358,6 +358,7 @@ cdef dict _pytype_to_vartype = {
     Pointer: cpp.NIL,
     IntPointer: cpp.NIL,
     FloatPointer: cpp.NIL,
+    ScriptInstance: cpp.NIL,
     AudioFrame: cpp.NIL,
     CaretInfo: cpp.NIL,
     Glyph: cpp.NIL,
@@ -530,6 +531,9 @@ cdef int array_to_vartype(object arr) except -2:
 
 
 cdef cpp.VariantType pytype_to_variant_type(object p_type) noexcept:
+    if p_type is None:
+        return cpp.NIL
+
     cdef int vartype = _pytype_to_vartype.get(p_type, -1)
 
     if vartype >= 0:
@@ -545,6 +549,7 @@ _pytype_to_argtype.update({
     Pointer: ArgType.ARGTYPE_POINTER,
     IntPointer: ArgType.ARGTYPE_POINTER,
     FloatPointer: ArgType.ARGTYPE_POINTER,
+    ScriptInstance: ArgType.ARGTYPE_SCRIPT_INSTANCE,
     AudioFrame: ArgType.ARGTYPE_AUDIO_FRAME,
     CaretInfo: ArgType.ARGTYPE_CARET_INFO,
     Glyph: ArgType.ARGTYPE_GLYPH,
@@ -562,7 +567,13 @@ _pytype_to_argtype.update({
 
 
 cdef ArgType pytype_to_argtype(object p_type) noexcept:
+    if p_type is None:
+        return ArgType.ARGTYPE_NIL
+
     cdef int argtype = _pytype_to_argtype.get(p_type, -1)
+
+    if issubclass(p_type, ScriptInstance):
+        return ArgType.ARGTYPE_SCRIPT_INSTANCE
 
     if argtype >= 0:
         return <ArgType>argtype

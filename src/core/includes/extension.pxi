@@ -132,14 +132,14 @@ cdef class Extension(Object):
             return
 
         cdef Extension self
-        cdef BoundExtensionMethod method
+        cdef BoundPythonMethod method
 
         cdef bytes key = b'%08X%08X' % (<uint64_t>p_self, <uint64_t><PyObject *>func)
         if key in _bound_method_cache:
             self, method = _bound_method_cache[key]
         else:
             self = <object>p_self
-            method = BoundExtensionMethod(self, func, func_and_info[1])
+            method = BoundPythonMethod(self, func, func_and_info[1])
             _bound_method_cache[key] = self, method
 
         try:

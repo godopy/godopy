@@ -27,11 +27,11 @@ class GodotClassBase(type):
 
         godot_cls = attrs.pop('__godot_class__', None)
         if godot_cls is not None:
+            if kwargs:
+                raise TypeError(f"{cls.__name__!r} got an unexpected keyword argument {list(kwargs).pop()!r}")
+
             # Engine class
             module = attrs.pop('__module__', 'godot.classdb')
-
-            if module == 'godot.classdb' and gdextension.has_singleton(name):
-                module = 'godot.singletons'
 
             new_attrs = {
                 '__module__': module,
@@ -48,13 +48,24 @@ class GodotClassBase(type):
         parents = [b for b in bases if isinstance(b, GodotClassBase)]
         if not parents:
             if name != 'Class' and name != 'EngineClass':
-                godot.push_warning("Attempt to create %r Godot class without a valid base" % name)
+                gdextension.print_warning(f"Attempt to create {name!r} Godot class without a valid base")
+
+            if kwargs:
+                raise TypeError(f"{cls.__name__!r} got an unexpected keyword argument {list(kwargs).pop()!r}")
+
             # Create Class or EngineClass
             return super_new(cls, name, bases, attrs)
 
         inherits = kwargs.pop('inherits', None)
         if inherits is None:
             raise TypeError("'inherits' keyword argument is required in Godot class definitions")
+
+        # If set reverses the meaning of single leading underscores
+        no_virtual_underscore = kwargs.pop('no_virtual_underscore', False)
+        mixins = kwargs.pop('mixins', [])
+
+        if kwargs:
+            raise TypeError(f"{cls.__name__!r} got an unexpected keyword argument {list(kwargs).pop()!r}")
 
         godot_cls = gdextension.ExtensionClass(name, inherits.__godot_class__)
 
@@ -65,20 +76,43 @@ class GodotClassBase(type):
             '__godot_class__': godot_cls
         }
 
-        for attr, value in attrs.items():
+        all_attrs = {}
+        for mixin in mixins:
+            all_attrs.update(mixin.__dict__)
+
+        all_attrs.update(attrs)
+
+        is_virtual = lambda info: info['is_virtual']
+
+        for attr, value in all_attrs.items():
+            inner_attr_name = attr
             parent_method_info = inherits.get_method_info(attr)
+
+            if no_virtual_underscore:
+                underscored_attr = f'_{attr}'
+                old_info = parent_method_info
+                parent_method_info = inherits.get_method_info(underscored_attr)
+                if parent_method_info is not None and is_virtual(parent_method_info):
+                    inner_attr_name = underscored_attr
+                else:
+                    # Allow underscores even in 'no_virtual_underscore' mode
+                    parent_method_info = old_info
+
             if attr == '__init__':
-                value.__name__ = value.__qualname__ = '__inner_init__'
-                new_attrs['__inner_init__'] = godot_cls.bind_python_method(value)
+                new_attrs['__inner_init__'] = godot_cls.bind_python_method(value, '__inner_init__')
 
-            # Virtual functions have no hash
-            elif parent_method_info is not None and parent_method_info['hash'] is None:
-                # gd.print('Meta: FOUND VIRTUAL %s.%s %r' % (godot_cls.__inherits__.__name__, attr, parent_method_info))
-                new_attrs[attr] = godot_cls.bind_virtual_method(value)
+            elif parent_method_info is not None and is_virtual(parent_method_info):
+                # godot.print(f'[Virtual] {godot_cls.__inherits__.__name__}.{inner_attr_name} {parent_method_info!r}')
+                if inner_attr_name != attr:
+                    value._alias_of = inner_attr_name
+                new_attrs[inner_attr_name] = godot_cls.bind_virtual_method(value, inner_attr_name)
 
-            elif attr.startswith('_') and isinstance(value, types.FunctionType):
+            elif not no_virtual_underscore and attr.startswith('_') and isinstance(value, types.FunctionType):
                 # Warn users about _functions that are not virtuals
-                godot.push_warning("No virtual method %r found in the base class %r" % (attr, inherits))
+                gdextension.print_warning(f"No virtual method {attr!r} found in the base class {inherits!r}")
+            elif no_virtual_underscore and not attr.startswith('_') and isinstance(value, types.FunctionType):
+                # Warn users about functions that are not virtuals in 'no_virtual_underscore' mode
+                gdextension.print_warning(f"No virtual method '_{attr}' found in the base class {inherits!r}")
             elif getattr(value, '_gdmethod', False):
                 new_attrs[attr] = godot_cls.bind_method(value)
             elif getattr(value, '_gdvirtualmethod', False):

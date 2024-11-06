@@ -5,13 +5,17 @@ modules.
 
 from binding cimport *
 from godot_cpp cimport Variant, String, UtilityFunctions, OS, Engine, ProjectSettings
-from gdextension cimport ExtensionClass, _CLASSDB, configure
+from gdextension cimport ExtensionClass, _CLASSDB, _OBJECTDB, _NODEDB, configure
 
 from godot_types cimport string_from_pyobject
 from _gdextension_internals cimport print_traceback_and_die
 
+cdef extern from "Python.h":
+    Py_ssize_t Py_REFCNT(object o)
+
 import io
 import os
+import gc
 import sys
 import traceback
 import importlib
@@ -134,11 +138,10 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
     return 0
 
 
-cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
-    global initialize_funcs, uninitialize_funcs, configure_funcs, is_first_level, first_level, \
-           gdextension_config, config
+cdef int initialize_first_level() except -1:
+    global initialize_funcs, uninitialize_funcs, configure_funcs, _condig
 
-    UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
+    redirect_python_stdio()
 
     for module_name in _config.get('registered_modules'):
         mod_register_types = importlib.import_module('%s.register_types' % module_name)
@@ -156,57 +159,79 @@ cdef void _python_initialize_level(ModuleInitializationLevel p_level) except *:
         if configure_func is not None:
             configure_funcs.append(configure_func)
 
+    if ProjectSettings.get_singleton().has_setting("application/run/print_header"):
+        UtilityFunctions.print("GodoPy version %s" % '0.1dev')
+        UtilityFunctions.print("Python version %s\n" % sys.version)
+
+    venv_path = os.environ.get('VIRTUAL_ENV')
+    if venv_path and Engine.get_singleton().is_editor_hint():
+        sys.path.append(os.path.join(venv_path, 'Lib', 'site-packages'))
+
+    try:
+        import register_types
+
+        initialize_func = getattr(register_types, 'initialize', None)
+        uninitialize_func = getattr(register_types, 'uninitialize', None)
+        configure_fuc = getattr(register_types, 'configure', None)
+
+        if initialize_func is not None:
+            initialize_funcs.append(initialize_func)
+
+        if uninitialize_func is not None:
+            uninitialize_funcs.append(uninitialize_func)
+
+        if configure_func is not None:
+            configure_funcs.append(configure_func)
+
+
+    except ImportError as exc:
+        f = io.StringIO()
+        traceback.print_exception(exc, file=f)
+        exc_text = f.getvalue()
+        if isinstance(exc, ModuleNotFoundError) and "'register_types'" in exc_text:
+            pass
+        else:
+            raise exc
+
+    uninitialize_funcs.reverse()
+
+    for configure in configure_funcs:
+        configure(_config)
+
+
+cdef int deinitialize_first_level() except -1:
+    global _CLASSDB, _OBJECTDB, _NODEDB
+    _OBJECTDB = {}
+    _NODEDB = {}
+
+    # gc.collect()
+    for cls in _CLASSDB.values():
+        if isinstance(cls, ExtensionClass):
+            cls.unregister()
+            # print(f"{cls!r} refcount: {Py_REFCNT(cls)!d}")
+
+    _CLASSDB = {}
+
+    UtilityFunctions.print_verbose("GodoPy Python cleanup finished.")
+    # print("FINISHED!")
+
+
+cdef int _python_initialize_level(ModuleInitializationLevel p_level) except -1:
+    global is_first_level, first_level, initialize_funcs
+
+    UtilityFunctions.print_verbose("GodoPy Python initialization started, level %d" % p_level)
 
     if is_first_level:
-        redirect_python_stdio()
-
-        if ProjectSettings.get_singleton().has_setting("application/run/print_header"):
-            UtilityFunctions.print("GodoPy version %s" % '0.1dev')
-            UtilityFunctions.print("Python version %s\n" % sys.version)
-
-        venv_path = os.environ.get('VIRTUAL_ENV')
-        if venv_path and Engine.get_singleton().is_editor_hint():
-            sys.path.append(os.path.join(venv_path, 'Lib', 'site-packages'))
-
-        try:
-            import register_types
-
-            initialize_func = getattr(register_types, 'initialize', None)
-            uninitialize_func = getattr(register_types, 'uninitialize', None)
-            configure_fuc = getattr(register_types, 'configure', None)
-
-            if initialize_func is not None:
-                initialize_funcs.append(initialize_func)
-
-            if uninitialize_func is not None:
-                uninitialize_funcs.append(uninitialize_func)
-
-            if configure_func is not None:
-                configure_funcs.append(configure_func)
-
-
-        except ImportError as exc:
-            f = io.StringIO()
-            traceback.print_exception(exc, file=f)
-            exc_text = f.getvalue()
-            if isinstance(exc, ModuleNotFoundError) and "'register_types'" in exc_text:
-                pass
-            else:
-                raise exc
-
-        for configure in configure_funcs:
-            configure(_config)
-
+        initialize_first_level()
         is_first_level = False
         first_level = p_level
-        uninitialize_funcs.reverse()
 
     for func in initialize_funcs:
         func(p_level)
 
 
-cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *:
-    global uninitialize_funcs, _CLASSDB, first_level
+cdef int _python_deinitialize_level(ModuleInitializationLevel p_level) except -1:
+    global uninitialize_funcs, first_level
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup, level %d" % p_level)
 
@@ -214,7 +239,4 @@ cdef void _python_deinitialize_level(ModuleInitializationLevel p_level) except *
         func(p_level)
 
     if p_level == first_level:
-        for cls in _CLASSDB.values():
-            cls.unregister()
-
-        _registered_classes = []
+        deinitialize_first_level()

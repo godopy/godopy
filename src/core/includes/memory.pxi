@@ -3,9 +3,6 @@ cdef class _Memory:
     """
     Allocates, reallocates and frees memory.
     """
-    cdef void *ptr
-    cdef size_t num_bytes
-
     def __cinit__(self, size_t p_bytes) -> None:
         "Allocates memory."
 

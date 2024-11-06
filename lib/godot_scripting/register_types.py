@@ -1,11 +1,9 @@
 import godot
-from godot.singletons import Engine, ResourceLoader, ResourceSaver
+from godot.classdb import Engine, ResourceLoader, ResourceSaver
 
-from .script import Python
+from .script import PythonScript
 from .language import PythonLanguage
 from .resource_format import ResourceFormatLoaderPython, ResourceFormatSaverPython
-
-import godot.singletons
 
 
 python_language = None
@@ -24,7 +22,7 @@ def initialize(level: int) -> None:
         if result != godot.Error.OK:
             raise RuntimeError("Could not register PythonScript language, error: %r" % godot.Error(result))
 
-        Python.register()
+        PythonScript.register()
         ResourceFormatLoaderPython.register()
         ResourceFormatSaverPython.register()
 
@@ -41,14 +39,13 @@ def uninitialize(level: int) -> None:
     global script_saver, script_loader, python_language
 
     if level == godot.MODULE_INITIALIZATION_LEVEL_SCENE:
-        script_saver.unreference()
         ResourceSaver.remove_resource_format_saver(script_saver)
+        script_saver.unreference()
         script_saver.destroy()
         script_saver = None
 
-
-        script_loader.unreference()
         ResourceLoader.remove_resource_format_loader(script_loader)
+        script_loader.unreference()
         script_loader.destroy()
         script_loader = None
 
