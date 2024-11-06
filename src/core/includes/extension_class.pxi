@@ -143,7 +143,7 @@ cdef class ExtensionClass(Class):
         gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name.ptr())
 
         # print(self, Py_REFCNT(self))
-        # ref.Py_DECREF(self)
+        ref.Py_DECREF(self)
 
         return 0
 

@@ -5,7 +5,7 @@ modules.
 
 from binding cimport *
 from godot_cpp cimport Variant, String, UtilityFunctions, OS, Engine, ProjectSettings
-from gdextension cimport ExtensionClass, _CLASSDB, _OBJECTDB, _NODEDB, configure
+from gdextension cimport ExtensionClass, _CLASSDB, _OBJECTDB, _NODEDB, ALLOCATIONS, configure
 
 from godot_types cimport string_from_pyobject
 from _gdextension_internals cimport print_traceback_and_die
@@ -211,6 +211,8 @@ cdef int deinitialize_first_level() except -1:
             # print(f"{cls!r} refcount: {Py_REFCNT(cls)!d}")
 
     _CLASSDB = {}
+
+    print('Allocations at exit:', ALLOCATIONS)
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup finished.")
     # print("FINISHED!")

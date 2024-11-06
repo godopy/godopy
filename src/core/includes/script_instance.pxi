@@ -71,6 +71,8 @@ cdef class ScriptInstance:
         ref.Py_INCREF(self)
         self._base = gdextension_interface_script_instance_create3(info, self_ptr)
 
+        print('INSTANCE CREATED')
+
 
     def __dealloc__(self):
         self.free()
@@ -338,7 +340,10 @@ cdef class ScriptInstance:
             self.free()
 
     def free(self):
+        print('FREE')
         self._info.free()
+        self.property_info_data.free()
+        self.method_info_data.free()
         if self._base != NULL:
             ref.Py_DECREF(self)
             self._base = NULL
