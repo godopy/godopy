@@ -5,6 +5,7 @@ cdef public object object_to_pyobject(void *p_godot_object):
     if p_godot_object == NULL:
         return None
 
+    # Get the object from _OBJECTDB cache if it is there
     cdef uint64_t obj_id = <uint64_t>p_godot_object
     cdef Object obj = _OBJECTDB.get(obj_id, None)
 
