@@ -152,6 +152,7 @@ cdef extern from "binding.h" namespace "godot::internal" nogil:
     cdef GDExtensionInterfaceScriptInstanceCreate3 gdextension_interface_script_instance_create3
     cdef GDExtensionInterfacePlaceHolderScriptInstanceCreate gdextension_interface_placeholder_script_instance_create
     cdef GDExtensionInterfacePlaceHolderScriptInstanceUpdate gdextension_interface_placeholder_script_instance_update
+    cdef GDExtensionInterfaceObjectGetScriptInstance gdextension_interface_object_get_script_instance
     cdef GDExtensionInterfaceClassdbConstructObject gdextension_interface_classdb_construct_object
     cdef GDExtensionInterfaceClassdbConstructObject2 gdextension_interface_classdb_construct_object2
     cdef GDExtensionInterfaceClassdbGetMethodBind gdextension_interface_classdb_get_method_bind

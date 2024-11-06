@@ -1,5 +1,15 @@
+cdef dict _SCRIPTINSTANCEDB = {}
+
 cdef class ScriptInstance:
     def __init__(self, Extension script, Object owner, object cls_dict):
+        """
+        Creates a script instance with all callback functions (WIP).
+
+        Derived classes can customize the behavior and must provide missing
+        implementations.
+
+        A base class for script instances like PythonScriptInstance.
+        """
         self.__script__ = script
         self.__owner__ = owner
         self.__script_dict__ = {}
@@ -70,6 +80,8 @@ cdef class ScriptInstance:
 
         ref.Py_INCREF(self)
         self._base = gdextension_interface_script_instance_create3(info, self_ptr)
+
+        _SCRIPTINSTANCEDB[<uint64_t>self._base] = self
 
         print('INSTANCE CREATED')
 
@@ -340,12 +352,12 @@ cdef class ScriptInstance:
             self.free()
 
     def free(self):
-        print('FREE')
         self._info.free()
         self.property_info_data.free()
         self.method_info_data.free()
         if self._base != NULL:
             ref.Py_DECREF(self)
+            del _SCRIPTINSTANCEDB[<uint64_t>self._base]
             self._base = NULL
 
 

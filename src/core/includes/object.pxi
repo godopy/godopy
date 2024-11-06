@@ -79,6 +79,7 @@ cdef class Object:
         in `get_instance_from_id()`: `object_get_instance_from_id`
         in `get_instance_id()`: `object_get_instance_id`
         in `has_script_method()`: `object_has_script_method`
+        in `get_script_instance()`: `object_get_script_instance`
 
     See MethodBind.__call__, MethodBind._varcall, MethodBind._ptrcall for
     `object_method_bind_call`/`object_method_bind_ptrcall` API implementation.
@@ -265,3 +266,11 @@ cdef class Object:
         """
         if self._ref_owner != NULL:
             gdextension_interface_ref_set_object(self._owner, self._ref_owner)
+
+    def get_script_instance(self, Object language) -> Optional[ScriptInstance]:
+        """
+        Get the script instance data attached to this object.
+        """
+        cdef void *base = gdextension_interface_object_get_script_instance(self._owner, language._owner)
+
+        return _SCRIPTINSTANCEDB.get(<uint64_t>base, None)
