@@ -1,3 +1,5 @@
+cdef dict ALLOCATIONS = {}
+
 @cython.final
 cdef class _Memory:
     """
@@ -11,6 +13,9 @@ cdef class _Memory:
 
             if self.ptr == NULL:
                 raise MemoryError()
+
+            # UtilityFunctions.print('Allocated %d bytes, ptr %X' % (p_bytes, <uint64_t>self.ptr))
+            ALLOCATIONS[<uint64_t>self.ptr] = p_bytes
         else:
             self.ptr = NULL
 
@@ -42,6 +47,9 @@ cdef class _Memory:
         "Frees memory."
 
         if self.ptr != NULL:
+            with gil:
+                # UtilityFunctions.print('Freed ptr %X' % (<uint64_t>self.ptr))
+                del ALLOCATIONS[<uint64_t>self.ptr]
             gdextension_interface_mem_free(self.ptr)
 
             self.ptr = NULL

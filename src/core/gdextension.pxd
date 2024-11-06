@@ -35,6 +35,7 @@ cdef dict _METHODDB
 cdef dict _BUILTIN_METHODDB
 cdef dict _CLASSDB
 cdef dict _bound_method_cache
+cdef dict ALLOCATIONS
 
 
 cdef enum ArgType:
@@ -394,15 +395,14 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
     cdef int register(self, ExtensionClass cls) except -1
 
     @staticmethod
-    cdef void call(void *p_method_userdata, void *p_instance, const (const void *) *p_args, int64_t p_argument_count,
-                   void *r_return, GDExtensionCallError *r_error) noexcept nogil
+    cdef void call_callback(void *p_method_userdata, void *p_instance, const (const void *) *p_args, int64_t p_count,
+                            void *r_return, GDExtensionCallError *r_error) noexcept nogil
+
+    cdef int call(self, object instance, const Variant **p_args, size_t p_count, Variant *r_ret,
+                  GDExtensionCallError *r_error) except -1
 
     @staticmethod
-    cdef void _call(void *p_method, void *p_self, const Variant **p_args, size_t p_argcount, Variant *r_ret,
-                    GDExtensionCallError *r_error) noexcept with gil
+    cdef void ptrcall_callback(void *p_method_userdata, void *p_instance, const (const void *) *p_args,
+                               void *r_return) noexcept nogil
 
-    @staticmethod
-    cdef void ptrcall(void *p_method_userdata, void *p_instance, const (const void *) *p_args, void *r_return) noexcept nogil
-
-    @staticmethod
-    cdef void _ptrcall(void *p_method, void *p_self, const void **p_args, void *r_return) noexcept with gil
+    cdef int ptrcall(self, object instance, const void **p_args, void *r_ret) except -1

@@ -9,18 +9,23 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
     Implements `call`/`ptrcall` callbacks in the `ClassMethodInfo` structure.
     """
     @staticmethod
-    cdef void call(void *p_method_userdata, void *p_instance, const (const void *) *p_args, int64_t p_argument_count,
-                   void *r_return, GDExtensionCallError *r_error) noexcept nogil:
-        ExtensionMethod._call(p_method_userdata, p_instance, <const Variant **>p_args, p_argument_count,
-                              <Variant *>r_return, r_error)
+    cdef void call_callback(void *p_method_userdata, void *p_instance, const (const void *) *p_args, int64_t p_count,
+                            void *r_return, GDExtensionCallError *r_error) noexcept nogil:
+        with gil:
+            self = <object>p_method_userdata
+            instance = <object>p_instance
+            (<ExtensionMethod>self).call(
+                instance,
+                <const Variant **>p_args,
+                p_count,
+                <Variant *>r_return,
+                r_error
+            )
 
+    cdef int call(self, object instance, const Variant **p_args, size_t p_count, Variant *r_ret,
+                   GDExtensionCallError *r_error) except -1:
 
-    @staticmethod
-    cdef void _call(void *p_method, void *p_self, const Variant **p_args, size_t p_count, Variant *r_ret,
-                    GDExtensionCallError *r_error) noexcept with gil:
-        cdef ExtensionMethod func = <object>p_method
-        cdef Object instance = <object>p_self
-        cdef BoundPythonMethod method = BoundPythonMethod(instance, func)
+        cdef BoundPythonMethod method = BoundPythonMethod(instance, self.__func__)
 
         try:
             _make_python_varcall(method, p_args, p_count, r_ret, r_error)
@@ -32,15 +37,15 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
                 print_error_with_traceback(exc)
 
     @staticmethod
-    cdef void ptrcall(void *p_method_userdata, void *p_instance, const (const void *) *p_args, void *r_return) noexcept nogil:
-        ExtensionMethod._ptrcall(p_method_userdata, p_instance, <const void **>p_args, <void *>r_return)
+    cdef void ptrcall_callback(void *p_method_userdata, void *p_instance, const (const void *) *p_args,
+                               void *r_return) noexcept nogil:
+        with gil:
+            self = <object>p_method_userdata
+            instance = <object>p_instance
+            (<ExtensionMethod>self).ptrcall(instance, <const void **>p_args, <void *>r_return)
 
-
-    @staticmethod
-    cdef void _ptrcall(void *p_method, void *p_self, const void **p_args, void *r_ret) noexcept with gil:
-        cdef ExtensionMethod func = <object>p_method
-        cdef Object instance = <object>p_self
-        cdef BoundPythonMethod method = BoundPythonMethod(instance, func)
+    cdef int ptrcall(self, object instance, const void **p_args, void *r_ret) except -1:
+        cdef BoundPythonMethod method = BoundPythonMethod(instance, self)
 
         try:
             _make_python_ptrcall(method, r_ret, p_args, method.get_argument_count())
@@ -80,11 +85,12 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
 
         # TODO: Support static, const, vararg and editor flags
         cdef GDExtensionClassMethodFlags flags = GDEXTENSION_METHOD_FLAG_NORMAL
+        cdef void *self_ptr = <void *><PyObject *>self
 
         mi.name = name._native_ptr()
-        mi.method_userdata = <void *><PyObject *>self
-        mi.call_func = &ExtensionMethod.call
-        mi.ptrcall_func = &ExtensionMethod.ptrcall
+        mi.method_userdata = self_ptr
+        mi.call_func = &ExtensionMethod.call_callback
+        mi.ptrcall_func = &ExtensionMethod.ptrcall_callback
         mi.method_flags = flags
         mi.has_return_value = self.has_return()
         mi.return_value_info = retinfo.ptr()

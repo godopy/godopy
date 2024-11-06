@@ -6,7 +6,7 @@ cdef class _ExtensionMethodBase:
         self.__name__ = ''
 
 
-    def __init__(self, object method: types.FunctionType):
+    def __init__(self, object method: CallablePythonType) -> None:
         self.__func__ = method
         self.__name__ = method.__name__
 
