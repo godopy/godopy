@@ -144,11 +144,11 @@ cdef class Object:
         self.destroy(_internal_call=True)
 
 
-    def destroy(self, *, _internal_call=False) -> None:
+    def destroy(self, *, _internal_call=False, force=False) -> None:
         """
         Destroys an Object.
         """
-        if self._owner != NULL and self._needs_cleanup:
+        if self._owner != NULL and (self._needs_cleanup or force):
             # Will call ExtensionClass._free_instance for Extension objects
             gdextension_interface_object_destroy(self._owner)
 
@@ -161,8 +161,8 @@ cdef class Object:
                 ref.Py_DECREF(self)
                 self._instance_set = False
 
-        elif not _internal_call:
-            raise TypeError("%r can not be destroyed")
+        elif not _internal_call and not force:
+            raise TypeError("%r can not be destroyed" % self)
 
 
     def get_godot_class_name(self) -> PyStringName:

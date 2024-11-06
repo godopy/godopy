@@ -2,19 +2,19 @@ import math
 import numpy as np
 from typing import Dict, List
 
-import godot as gd
-from godot import classdb, singletons as gds
+import godot
+from godot import classdb
 from godot.types import *
 
 try:
-    # Godot must be compile with a custom module and updated api must be dumped
+    # Godot must be compiled with a custom module and the updated API must be dumped
     # and used to build GodoPy for extended tests to work
     GDExtensionTestCase = classdb.GDExtensionTestCase
 except AttributeError:
     GDExtensionTestCase = None
 
 if GDExtensionTestCase:
-    class ExtendedTestObject(gd.Class, inherits=GDExtensionTestCase):
+    class ExtendedTestObject(godot.Class, inherits=GDExtensionTestCase):
         def __init__(self) -> None:
             self.arg1 = None
             self.arg2 = None
@@ -30,7 +30,7 @@ if GDExtensionTestCase:
             self.gdscript = None
             self._ids = []
 
-        def set_gdscript_instance(self, gdscript: gd.classdb.Node) -> None:
+        def set_gdscript_instance(self, gdscript: godot.classdb.Node) -> None:
             self.gdscript = gdscript
 
         def _atomic_args(self, arg1: bool, arg2: int, arg3: int, arg4: float,
@@ -210,15 +210,18 @@ if GDExtensionTestCase:
             return NodePath("test/resource.py")
 
         def _get_rid(self) -> RID:
-            return self.gdscript.call('get_resource').get_rid()
+            res = self.gdscript.call_script_method('get_resource')
+            return res.get_rid()
 
         def _get_object(self) -> Object:
             return self.gdscript
 
         def _get_callable(self) -> Callable:
+            # XXX: gdscript.call_script_method crashes in gdextension_interface_object_call_script_method
             return self.gdscript.call('get_callable')
 
         def _get_signal(self) -> Signal:
+            # XXX: gdscript.call_script_method crashes in gdextension_interface_object_call_script_method
             return self.gdscript.call('get_signal')
 
         def _get_dictionary(self) -> Dict:
@@ -378,7 +381,7 @@ else:
     ExtendedTestObject = None
 
 
-class Example(gd.Class, inherits=classdb.Control):
+class Example(godot.Class, inherits=classdb.Control):
     def __init__(self):
         self.entered_tree = False
         self.exited_tree = False
@@ -390,7 +393,7 @@ class Example(gd.Class, inherits=classdb.Control):
         self.exited_tree = True
 
 
-class TestResource(gd.Class, inherits=classdb.Resource):
+class TestResource(godot.Class, inherits=classdb.Resource):
     def __init__(self) -> None:
         self.arg1 = None
         self.arg2 = None
