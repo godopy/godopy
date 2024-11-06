@@ -46,12 +46,15 @@ cdef public void cppobject_from_pyobject(object p_obj, GodotCppObject **r_ret) n
     r_ret[0] = o
 
 
+cdef GDExtensionVariantFromTypeConstructorFunc variant_from_object_constructor = \
+    gdextension_interface_get_variant_from_type_constructor(<GDExtensionVariantType>OBJECT)
+
+
 cdef public void variant_object_from_pyobject(object p_obj, Variant *r_ret) noexcept:
     cdef void *godot_object
     object_from_pyobject(p_obj, &godot_object)
 
-    cdef GodotCppObject *o = get_object_instance_binding(godot_object)
-    r_ret[0] = Variant(o)
+    variant_from_object_constructor(r_ret, &godot_object)
 
 
 cdef void object_from_other_pyobject(object obj, void **r_ret) noexcept nogil:

@@ -27,8 +27,7 @@ class TestCaseGDExtensionAPI(BaseTestCase):
 
     def test_variant_call(self):
         gdscript = self._main.get_node('TestCasesGDScript')
-        # XXX: gdextension_object_get_instance_binding crash
-        # m = gdextension.VariantMethod(gdscript, 'get_resource')
-        # resource = m()
+        m = gdextension.VariantMethod(gdscript, 'get_resource')
+        resource = m()
 
-        # self.assertIsInstance(resource, TestResource)
+        self.assertIsInstance(resource, TestResource)
