@@ -242,8 +242,8 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
         print("has_static_method", name)
         return False
 
-    def get_script_argument_count(self, method: str):
-        print("get_script_argument_count", method)
+    def get_script_method_argument_count(self, method: str):
+        print("get_script_method_argument_count", method)
         return 0
 
     def get_method_info(self, name):
