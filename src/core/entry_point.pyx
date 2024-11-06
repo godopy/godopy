@@ -204,7 +204,7 @@ cdef int deinitialize_first_level() except -1:
     _OBJECTDB = {}
     _NODEDB = {}
 
-    # gc.collect()
+    gc.collect()
     for cls in _CLASSDB.values():
         if isinstance(cls, ExtensionClass):
             cls.unregister()
@@ -212,7 +212,8 @@ cdef int deinitialize_first_level() except -1:
 
     _CLASSDB = {}
 
-    print('Allocations at exit:', ALLOCATIONS)
+    if ALLOCATIONS:
+        print('WARNING: allocations exist at exit:', ALLOCATIONS)
 
     UtilityFunctions.print_verbose("GodoPy Python cleanup finished.")
     # print("FINISHED!")

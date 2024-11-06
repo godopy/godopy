@@ -13,22 +13,20 @@ import numpy as np
 import math
 import unittest
 
-import godot as gd
-import gdextension as gde
-from godot import classdb, types
+import godot
+from godot.classdb import OS, Node
 
 import tests
 from tests._base import BaseTestCase
-from classes import TestResource
 
 
 class TestCaseEngineSingleton(BaseTestCase):
     def test_owner(self):
-        Engine = gd.singletons.Engine
+        from godot.classdb import Engine
         self.assertGreater(Engine.owner_id(), 0)
 
     def test_str_str_method(self):
-        ProjectSettings = gd.singletons.ProjectSettings
+        from godot.classdb import ProjectSettings
         self.assertEqual(ProjectSettings.get('application/run/main_scene'), 'res://main.tscn')
 
 class TestCaseSceneExtension(BaseTestCase):
@@ -55,35 +53,44 @@ class TestStream:
         self._test_data = []
 
     def write(self, data):
-        gd.printraw(data)
+        godot.printraw(data)
 
     def flush(self):
         pass
 
 
-class TestMain(gd.Class, inherits=classdb.Node):
+LIMIT = 1000
+
+class TestMain(godot.Class, inherits=Node):
     def __init__(self):
         self.suite = unittest.TestSuite()
 
+        num_tests = 0
         for attr_name, TestCase in globals().items():
             if attr_name.startswith('TestCase'):
-                self.suite.addTests(
-                    TestCase(self, cls_attr_name) for cls_attr_name in dir(TestCase)
-                                                  if cls_attr_name.startswith('test_')
-                )
+                _tests = []
+                for cls_attr_name in dir(TestCase):
+                    if cls_attr_name.startswith('test_'):
+                        if num_tests < LIMIT:
+                            _tests.append(TestCase(self, cls_attr_name))
+                            num_tests += 1
+                self.suite.addTests(_tests)
         for mod_name in dir(tests):
             mod = getattr(tests, mod_name)
             for case_name in dir(mod):
                 TestCase = getattr(mod, case_name)
                 if case_name.startswith('TestCase'):
-                    self.suite.addTests(
-                        TestCase(self, cls_attr_name) for cls_attr_name in dir(TestCase)
-                                                      if cls_attr_name.startswith('test_')
-                    )
+                    _tests = []
+                    for cls_attr_name in dir(TestCase):
+                        if cls_attr_name.startswith('test_'):
+                            if num_tests < LIMIT:
+                                _tests.append(TestCase(self, cls_attr_name))
+                                num_tests += 1
+                    self.suite.addTests(_tests)
 
     def _ready(self):
-        verbosity = 2 if gd.singletons.OS.is_stdout_verbose() else 1
-        if '--verbose-tests' in gd.singletons.OS.get_cmdline_args():
+        verbosity = 2 if OS.is_stdout_verbose() else 1
+        if '--verbose-tests' in OS.get_cmdline_args():
             verbosity = 2
 
         stream = TestStream()
