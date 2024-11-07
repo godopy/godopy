@@ -4,7 +4,7 @@ from libc.stdint cimport *
 from libc.stddef cimport wchar_t
 cimport cpython
 cimport godot_cpp as cpp
-from gdextension cimport ArgType, Object
+from gdextension cimport ArgType, Object, Callable
 
 cdef extern from *:
     """
@@ -161,22 +161,9 @@ cdef public void rid_from_pyobject(object p_obj, cpp._RID *r_ret) noexcept
 cdef public void variant_rid_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
 
 
-cdef class Callable:
-    # TODO: Try to use GDExtension API directly without godot-cpp objects
-    cdef cpp.GodotCppCallable _base
-
-    @staticmethod
-    cdef Callable from_cpp(const cpp.GodotCppCallable &)
-
-cdef public object callable_to_pyobject(const cpp.GodotCppCallable &c)
-cdef public object variant_callable_to_pyobject(const cpp.Variant &v)
-cdef public void callable_from_pyobject(object p_obj, cpp.GodotCppCallable *r_ret) noexcept
-cdef public void variant_callable_from_pyobject(object p_obj, cpp.Variant *r_ret) noexcept
-
-
 cdef class Signal:
     # TODO: Try to use GDExtension API directly without godot-cpp objects
-    cdef cpp.GodotCppSignal _base
+    cdef cpp.GodotCppSignal _godot_signal
 
     @staticmethod
     cdef Signal from_cpp(const cpp.GodotCppSignal &)

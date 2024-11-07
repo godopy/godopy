@@ -151,7 +151,7 @@ cdef object _make_engine_ptrcall(ptrcallable_t method, _ptrcall_func ptrcall, ob
         elif arg_type == ARGTYPE_OBJECT:
             object_from_pyobject(value, <void **>arg_value_ptr)
         elif arg_type == ARGTYPE_CALLABLE:
-            type_funcs.callable_from_pyobject(value, <GodotCppCallable *>arg_value_ptr)
+            callable_from_pyobject(value, <GodotCppCallable *>arg_value_ptr)
         elif arg_type == ARGTYPE_SIGNAL:
             type_funcs.signal_from_pyobject(value, <GodotCppSignal *>arg_value_ptr)
         elif arg_type == ARGTYPE_DICTIONARY:
@@ -320,7 +320,7 @@ cdef object _make_engine_ptrcall(ptrcallable_t method, _ptrcall_func ptrcall, ob
     elif return_type == ARGTYPE_OBJECT:
         value = object_to_pyobject(deref(<void **>ret_value_ptr))
     elif return_type == ARGTYPE_CALLABLE:
-        value = type_funcs.callable_to_pyobject(deref(<GodotCppCallable *>ret_value_ptr))
+        value = callable_to_pyobject(deref(<GodotCppCallable *>ret_value_ptr))
     elif return_type == ARGTYPE_SIGNAL:
         value = type_funcs.signal_to_pyobject(deref(<GodotCppSignal *>ret_value_ptr))
     elif return_type == ARGTYPE_DICTIONARY:

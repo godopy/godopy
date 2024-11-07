@@ -1,6 +1,9 @@
 cdef dict _SCRIPTINSTANCEDB = {}
 
 cdef class ScriptInstance:
+    """
+    Implements "Script Instance" GDExtension API (ScriptInstanceInfo3, script_instance_create3)
+    """
     def __init__(self, Extension script, Object owner, object cls_dict):
         """
         Creates a script instance with all callback functions (WIP).
@@ -34,7 +37,7 @@ cdef class ScriptInstance:
         cdef GDExtensionScriptInstanceInfo3 *info = <GDExtensionScriptInstanceInfo3 *>self._info.ptr
         cdef void *self_ptr = <void *><PyObject *>self
 
-        self._base = NULL
+        self._godot_script_instance = NULL
 
         info.set_func = &ScriptInstance.set_callback
         info.get_func = &ScriptInstance.get_callback
@@ -79,9 +82,9 @@ cdef class ScriptInstance:
         info.free_func = &ScriptInstance.free_callback
 
         ref.Py_INCREF(self)
-        self._base = gdextension_interface_script_instance_create3(info, self_ptr)
+        self._godot_script_instance = gdextension_interface_script_instance_create3(info, self_ptr)
 
-        _SCRIPTINSTANCEDB[<uint64_t>self._base] = self
+        _SCRIPTINSTANCEDB[<uint64_t>self._godot_script_instance] = self
 
         print('INSTANCE CREATED')
 
@@ -275,12 +278,12 @@ cdef class ScriptInstance:
             method = self.get_method(method_name)
             if method is not None:
                 try:
-                    bound_method = BoundPythonMethod(self.__owner__, method)
+                    bound_method = PythonCallable(self.__owner__, method)
                 except Exception as exc:
                     print_traceback_and_die(exc)
 
                 _make_python_varcall(
-                    <BoundPythonMethod>bound_method,
+                    <PythonCallable>bound_method,
                     <const Variant **>p_args,
                     p_count,
                     <Variant *>r_ret,
@@ -288,7 +291,7 @@ cdef class ScriptInstance:
                     True
                 )
 
-    def get_method(self, method_name: AnyStr) -> Optional[CallablePythonType]:
+    def get_method(self, method_name: AnyStr) -> Optional[typing.Callable]:
         return self.__script_dict__.get(method_name, None)
 
     @staticmethod
@@ -348,17 +351,16 @@ cdef class ScriptInstance:
     @staticmethod
     cdef void free_callback(void *p_instance) noexcept nogil:
         with gil:
-            self = <object>p_instance
-            self.free()
+            (<ScriptInstance>p_instance).free()
 
-    def free(self):
+    cdef int free(self) except -1:
         self._info.free()
         self.property_info_data.free()
         self.method_info_data.free()
-        if self._base != NULL:
+        if self._godot_script_instance != NULL:
             ref.Py_DECREF(self)
-            del _SCRIPTINSTANCEDB[<uint64_t>self._base]
-            self._base = NULL
+            del _SCRIPTINSTANCEDB[<uint64_t>self._godot_script_instance]
+            self._godot_script_instance = NULL
 
 
 cdef object script_instance_to_pyobject(void *p_ptr):
@@ -366,6 +368,6 @@ cdef object script_instance_to_pyobject(void *p_ptr):
 
 
 cdef int script_instance_from_pyobject(ScriptInstance p_obj, void **r_ret) except -1:
-    r_ret[0] = p_obj._base
+    r_ret[0] = p_obj._godot_script_instance
 
     return 0

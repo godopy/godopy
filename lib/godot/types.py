@@ -1,6 +1,6 @@
 from godot_types import __all__ as godot_types__all, __doc__
 from godot_types import *
 
-from gdextension import Object
+from gdextension import Object, Callable
 
-__all__ = godot_types__all + ['Object']
+__all__ = godot_types__all + ['Object', 'Callable']

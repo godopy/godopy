@@ -1,4 +1,4 @@
-cdef class VariantStaticMethod(EngineCallableBase):
+cdef class VariantStaticMethod:
     def __init__(self, object variant_type, str method_name):
         self.__name__ = method_name
 
@@ -11,7 +11,7 @@ cdef class VariantStaticMethod(EngineCallableBase):
         else:
             raise ValueError("Expected 'type', integer or integer enum, got %r" % variant_type)
 
-        self._base = vartype
+        self.__self__ = vartype
         self._method = StringName(<const PyObject *>method_name)
 
     def __call__(self, *args):
@@ -22,7 +22,7 @@ cdef class VariantStaticMethod(EngineCallableBase):
 
 
     def __repr__(self):
-        class_name = '%s[%s.%s]' % (self.__class__.__name__, self.__self__.__class__.__name__, self.__name__)
+        class_name = '%s[%s.%s]' % (self.__class__.__name__, variant_type_to_str(self.__self__), self.__name__)
 
         return "<%s.%s at 0x%016X>" % (self.__class__.__module__, class_name, <uint64_t><PyObject *>self)
 
@@ -31,7 +31,7 @@ cdef class VariantStaticMethod(EngineCallableBase):
                        GDExtensionCallError *r_error) noexcept nogil:
         with nogil:
             gdextension_interface_variant_call_static(
-                <GDExtensionVariantType>self._base,
+                <GDExtensionVariantType>self.__self__,
                 self._method._native_ptr(),
                 <GDExtensionConstVariantPtr *>p_args,
                 p_count,
