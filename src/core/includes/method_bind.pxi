@@ -16,25 +16,25 @@ _engine_register_script_language.makes_ptrcall = True
 
 
 def _xml_parser_open_buffer(MethodBind self, type_funcs.Buffer buffer) -> int:
-    return gdextension_interface_xml_parser_open_buffer(self._base, buffer.ptr, buffer.size)
+    return gdextension_interface_xml_parser_open_buffer(self._self_owner, buffer.ptr, buffer.size)
 
 
 def _file_access_store_buffer(MethodBind self, type_funcs.Buffer buffer) -> None:
-    gdextension_interface_file_access_store_buffer(self._base, buffer.ptr, buffer.size)
+    gdextension_interface_file_access_store_buffer(self._self_owner, buffer.ptr, buffer.size)
 
 
 def _file_access_get_buffer(MethodBind self, type_funcs.Buffer buffer, size_t length) -> int:
-    return gdextension_interface_file_access_get_buffer(self._base, buffer.ptr, length)
+    return gdextension_interface_file_access_get_buffer(self._self_owner, buffer.ptr, length)
 
 
 def _image_ptrw(MethodBind self) -> type_funcs.Pointer:
-    cdef uint8_t *ptr = gdextension_interface_image_ptrw(self._base)
+    cdef uint8_t *ptr = gdextension_interface_image_ptrw(self._self_owner)
 
     return type_funcs.Pointer.create(ptr)
 
 
 def _image_ptr(MethodBind self) -> type_funcs.Pointer:
-    cdef const uint8_t *ptr = gdextension_interface_image_ptr(self._base)
+    cdef const uint8_t *ptr = gdextension_interface_image_ptr(self._self_owner)
 
     return type_funcs.Pointer.create(ptr)
 
@@ -63,7 +63,7 @@ def _worker_thread_pool_add_group_task(MethodBind self, func, userdata, int elem
     ref.Py_INCREF(_data)
 
     return gdextension_interface_worker_thread_pool_add_native_group_task(
-        self._base,
+        self._self_owner,
         &thread_pool_group_func,
         <void *><PyObject *>_data,
         elements,
@@ -79,7 +79,7 @@ def _worker_thread_pool_add_task(MethodBind self, func, userdata, bint high_prio
     ref.Py_INCREF(_data)
 
     return gdextension_interface_worker_thread_pool_add_native_task(
-        self._base,
+        self._self_owner,
         &thread_pool_func,
         <void *><PyObject *>_data,
         high_priority,
@@ -100,11 +100,11 @@ cdef dict special_method_calls = {
 }
 
 
-cdef class MethodBind(EngineCallableBase):
+cdef class MethodBind:
     def __init__(self, Object instance, str method_name):
-        self._base = instance._owner
         self.__name__ = method_name
         self.__self__ = instance
+        self._self_owner = instance._owner
 
         self.key = "%s::%s" % (self.__self__.__godot_class__.__name__, self.__name__)
         self.func = special_method_calls.get(self.key, None)
@@ -172,8 +172,7 @@ cdef class MethodBind(EngineCallableBase):
         Calls a method on an Object (using a "ptrcall").
         """
         with nogil:
-            gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._base,
-                                                             p_args, r_ret)
+            gdextension_interface_object_method_bind_ptrcall(self._godot_method_bind, self._self_owner, p_args, r_ret)
 
 
     cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
@@ -184,9 +183,9 @@ cdef class MethodBind(EngineCallableBase):
         with nogil:
             gdextension_interface_object_method_bind_call(
                 self._godot_method_bind,
-                self._base,
-                 <const GDExtensionConstVariantPtr *>p_args,
-                 size,
-                 r_ret,
-                 r_error
+                self._self_owner,
+                <const (const void *) *>p_args,
+                size,
+                r_ret,
+                r_error
             )

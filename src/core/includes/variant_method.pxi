@@ -1,6 +1,6 @@
-cdef class VariantMethod(EngineCallableBase):
+cdef class VariantMethod:
     def __init__(self, object instance, str method_name):
-        type_funcs.variant_from_pyobject(instance, &self._base)
+        type_funcs.variant_from_pyobject(instance, &self._self_variant)
 
         self.__name__ = method_name
         self.__self__ = instance
@@ -24,7 +24,7 @@ cdef class VariantMethod(EngineCallableBase):
                        GDExtensionCallError *r_error) noexcept nogil:
         with nogil:
             gdextension_interface_variant_call(
-                self._base._native_ptr(),
+                self._self_variant._native_ptr(),
                 self._method._native_ptr(),
                 <GDExtensionConstVariantPtr *>p_args,
                 p_count,

@@ -1,4 +1,4 @@
-cdef int _make_python_varcall(BoundPythonMethod method, const Variant **p_args, size_t p_count, Variant *r_ret,
+cdef int _make_python_varcall(PythonCallable method, const Variant **p_args, size_t p_count, Variant *r_ret,
                                GDExtensionCallError *r_error, bint from_script=False) except -1:
     """
     Implements GDExtension's 'call' logic when calling Python methods from the Engine
@@ -35,7 +35,7 @@ cdef int _make_python_varcall(BoundPythonMethod method, const Variant **p_args, 
     type_funcs.variant_from_pyobject(value, r_ret)
 
 
-cdef int _make_python_ptrcall(BoundPythonMethod method, void *r_ret, const void **p_args, size_t p_count) except -1:
+cdef int _make_python_ptrcall(PythonCallable method, void *r_ret, const void **p_args, size_t p_count) except -1:
     """
     Implements GDExtension's 'ptrcall' logic when calling Python methods from the Engine
     """
@@ -110,7 +110,7 @@ cdef int _make_python_ptrcall(BoundPythonMethod method, void *r_ret, const void 
         elif arg_type == ARGTYPE_OBJECT:
             value = object_to_pyobject(deref(<void **>p_args[i]))
         elif arg_type == ARGTYPE_CALLABLE:
-            value = type_funcs.callable_to_pyobject(deref(<GodotCppCallable *>p_args[i]))
+            value = callable_to_pyobject(deref(<GodotCppCallable *>p_args[i]))
         elif arg_type == ARGTYPE_SIGNAL:
             value = type_funcs.signal_to_pyobject(deref(<GodotCppSignal *>p_args[i]))
         elif arg_type == ARGTYPE_DICTIONARY:
@@ -279,7 +279,7 @@ cdef int _make_python_ptrcall(BoundPythonMethod method, void *r_ret, const void 
         object_from_pyobject(value, &ret_value_ptr)
         return_as_pointer = True
     elif return_type == ARGTYPE_CALLABLE:
-        type_funcs.callable_from_pyobject(value, <GodotCppCallable *>ret_value_ptr)
+        callable_from_pyobject(value, <GodotCppCallable *>ret_value_ptr)
     elif return_type == ARGTYPE_SIGNAL:
         type_funcs.signal_from_pyobject(value, <GodotCppSignal *>ret_value_ptr)
     elif return_type == ARGTYPE_DICTIONARY:

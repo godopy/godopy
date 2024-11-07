@@ -31,3 +31,5 @@ cdef extern from "godot_cpp/variant/callable.hpp" namespace "godot" nogil:
         Variant call(const Variant &, const Variant &, const Variant &)
         Variant call(const Variant &, const Variant &, const Variant &, const Variant &)
         Variant call(const Variant &, const Variant &, const Variant &, const Variant &, const Variant &)
+
+        void *_native_ptr()

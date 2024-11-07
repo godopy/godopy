@@ -29,6 +29,12 @@ cdef public void variant_object_from_pyobject(object p_obj, Variant *r_ret) noex
 cdef object script_instance_to_pyobject(void *)
 cdef int script_instance_from_pyobject(ScriptInstance p_obj, void **) except -1
 
+cdef public object callable_to_pyobject(const GodotCppCallable &p_callable)
+cdef public object variant_callable_to_pyobject(const Variant &v)
+cdef public void callable_from_pyobject(object p_obj, GodotCppCallable *r_ret) noexcept
+cdef public void variant_callable_from_pyobject(object p_obj, Variant *r_ret) noexcept
+
+
 cdef dict _NODEDB
 cdef dict _OBJECTDB
 cdef dict _METHODDB
@@ -127,7 +133,7 @@ cdef class Class:
 
 cdef public class Object [object GDPyObject, type GDPyObject_Type]:
     cdef void *_owner
-    cdef void *_ref_owner  # According to gdextension_interface.h, if _owner is Ref, this would be a real owner
+    cdef void *_ref_owner
     cdef bint _instance_set
     cdef bint _needs_cleanup
 
@@ -135,34 +141,34 @@ cdef public class Object [object GDPyObject, type GDPyObject_Type]:
     cdef readonly Class __godot_class__
 
 
-cdef class EngineCallableBase:
+cdef class VariantMethod:
+    cdef readonly str __name__
+    cdef object __self__
+    cdef Variant _self_variant
+    cdef StringName _method
+
+    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
+                       GDExtensionCallError *r_error) noexcept nogil
+
+
+cdef class VariantStaticMethod:
+    cdef readonly str __name__
+    cdef readonly VariantType __self__
+    cdef StringName _method
+
+    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
+                       GDExtensionCallError *r_error) noexcept nogil
+
+
+cdef class MethodBind:
     cdef readonly str __name__
     cdef readonly tuple type_info
     cdef int8_t[16] _type_info_opt
 
-
-cdef class VariantMethod(EngineCallableBase):
-    cdef object __self__
-    cdef Variant _base
-    cdef StringName _method
-
-    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
-                       GDExtensionCallError *r_error) noexcept nogil
-
-
-cdef class VariantStaticMethod(EngineCallableBase):
-    cdef VariantType _base
-    cdef StringName _method
-
-    cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
-                       GDExtensionCallError *r_error) noexcept nogil
-
-
-cdef class MethodBind(EngineCallableBase):
     cdef readonly bint is_vararg
 
-    cdef Object __self__
-    cdef void *_base
+    cdef readonly Object __self__
+    cdef void *_self_owner
     cdef GDExtensionMethodBindPtr _godot_method_bind
     cdef object key
     cdef object func
@@ -172,30 +178,39 @@ cdef class MethodBind(EngineCallableBase):
                        GDExtensionCallError *r_error) noexcept nogil
 
 
-cdef class ScriptMethod(EngineCallableBase):
-    cdef Object __self__
-    cdef void *_base
+cdef class ScriptMethod:
+    cdef readonly str __name__
+    cdef readonly Object __self__
+    cdef void *_self_owner
     cdef StringName _method
 
     cdef void _varcall(self, const Variant **p_args, size_t size, Variant *r_ret,
                        GDExtensionCallError *r_error) noexcept nogil
 
 
-cdef class UtilityFunction(EngineCallableBase):
+cdef class UtilityFunction:
+    cdef readonly str __name__
+    cdef readonly tuple type_info
+    cdef int8_t[16] _type_info_opt
+
     cdef GDExtensionPtrUtilityFunction _godot_utility_function
 
     cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil
 
 
-cdef class BuiltinMethod(EngineCallableBase):
+cdef class BuiltinMethod:
+    cdef readonly str __name__
+    cdef readonly tuple type_info
+    cdef int8_t[16] _type_info_opt
+
     cdef object __self__
-    cdef void *_base
+    cdef void *_self_owner
     cdef GDExtensionPtrBuiltInMethod _godot_builtin_method
 
     cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil
 
     @staticmethod
-    cdef BuiltinMethod new_with_baseptr(object owner, object method_name, void *_base)
+    cdef BuiltinMethod new_with_selfptr(object owner, object method_name, void *selfptr)
 
 
 cdef class PropertyInfo:
@@ -216,18 +231,52 @@ cdef class MethodInfo:
     cdef public list default_arguments
 
 
-cdef class PythonCallableBase:
+cdef class Callable:
+    # TODO: Try to use GDExtension API directly without godot-cpp objects
+    cdef GodotCppCallable _godot_callable
+
+    @staticmethod
+    cdef Callable from_cpp(const GodotCppCallable &)
+
+
+cdef class PythonCallable(Callable):
     cdef readonly object __name__
     cdef readonly object __func__
-    cdef readonly tuple type_info
+    cdef readonly object __self__
+
+    cdef readonly object type_info
     cdef int8_t[16] _type_info_opt
 
+    cdef readonly size_t error_count
+    cdef readonly bint initialized
 
-cdef class BoundPythonMethod(PythonCallableBase):
-    cdef readonly object __self__
-    cdef size_t error_count
+    @staticmethod
+    cdef void call_callback(void *callable_userdata, const (const void *) *p_args, int64_t p_count, void *r_return,
+                            GDExtensionCallError *r_error) noexcept nogil
 
-    cdef size_t get_argument_count(self) except -2
+    @staticmethod
+    cdef uint32_t hash_callback(void *callable_userdata) noexcept nogil
+
+    cdef uint32_t hash(self) except -1
+
+    @staticmethod
+    cdef uint8_t equal_callback(void *callable_userdata_a, void *callable_userdata_b) noexcept nogil
+
+    @staticmethod
+    cdef uint8_t less_than_callback(void *callable_userdata_a, void *callable_userdata_b) noexcept nogil
+
+    @staticmethod
+    cdef void to_string_callback(void *callable_userdata, uint8_t *r_is_valid, void *r_out) noexcept nogil
+
+    @staticmethod
+    cdef int64_t get_argument_count_callback(void *callable_userdata, uint8_t *r_is_valid) noexcept nogil
+
+    cdef int64_t get_argument_count(self) except -1
+
+    @staticmethod
+    cdef void free_callback(void *callable_userdata) noexcept nogil
+
+    cdef int free(self) except -1
 
 
 cdef class _PropertyInfoDataArray:
@@ -251,7 +300,7 @@ cdef class _MethodInfoDataArray:
 
 
 cdef class ScriptInstance:
-    cdef void *_base
+    cdef void *_godot_script_instance
     cdef _Memory _info
 
     cdef readonly object __name__
@@ -305,6 +354,8 @@ cdef class ScriptInstance:
 
     @staticmethod
     cdef void free_callback(void *p_instance) noexcept nogil
+
+    cdef int free(self) except -1
 
 
 cdef enum SpecialMethod:

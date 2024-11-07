@@ -93,20 +93,20 @@ def as_string(object other):
 cdef class String(str):
     def to_camel_case(self):
         cdef cpp.String base = cpp.String(<const PyObject *>self)
-        cdef BuiltinMethod bm = BuiltinMethod.new_with_baseptr(self, 'to_camel_case', base._native_ptr())
+        cdef BuiltinMethod bm = BuiltinMethod.new_with_selfptr(self, 'to_camel_case', base._native_ptr())
 
         return String(bm())
 
     def to_pascal_case(self):
         cdef cpp.String base = cpp.String(<const PyObject *>self)
-        cdef BuiltinMethod bm = BuiltinMethod.new_with_baseptr(self, 'to_pascal_case', base._native_ptr())
+        cdef BuiltinMethod bm = BuiltinMethod.new_with_selfptr(self, 'to_pascal_case', base._native_ptr())
 
         return String(bm())
 
     def to_snake_case(self):
         cdef cpp.String base = cpp.String(<const PyObject *>self)
         string_from_pyobject(self, &base)
-        cdef BuiltinMethod bm = BuiltinMethod.new_with_baseptr(self, 'to_snake_case', base._native_ptr())
+        cdef BuiltinMethod bm = BuiltinMethod.new_with_selfptr(self, 'to_snake_case', base._native_ptr())
 
         return String(bm())
 

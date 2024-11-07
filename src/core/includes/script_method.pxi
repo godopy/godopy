@@ -1,8 +1,8 @@
-cdef class ScriptMethod(EngineCallableBase):
+cdef class ScriptMethod:
     def __init__(self, Object instance, str method_name):
-        self._base = instance._owner
         self.__name__ = method_name
         self.__self__ = instance
+        self._self_owner = instance._owner
         self._method = StringName(<const PyObject *>method_name)
 
 
@@ -23,7 +23,7 @@ cdef class ScriptMethod(EngineCallableBase):
                        GDExtensionCallError *r_error) noexcept nogil:
         with nogil:
             gdextension_interface_object_call_script_method(
-                self._base,
+                self._self_owner,
                 self._method._native_ptr(),
                 <GDExtensionConstVariantPtr *>p_args,
                 p_count,

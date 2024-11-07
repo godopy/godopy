@@ -76,7 +76,7 @@ cdef class ExtensionClass(Class):
         return <void *><PyObject *>info
 
 
-    def bind_method(self, method: CallablePythonType, name: AnyStr = None):
+    def bind_method(self, method: typing.Callable, name: Optional[AnyStr] = None):
         if not callable(method):
             raise ValueError("Callable is required, got %s" % type(method))
         name = name or method.__name__
@@ -85,7 +85,7 @@ cdef class ExtensionClass(Class):
         return method
 
 
-    def bind_python_method(self, method: CallablePythonType, name: AnyStr = None):
+    def bind_python_method(self, method: typing.Callable, name: Optional[AnyStr] = None):
         if not callable(method):
             raise ValueError("Callable is required, got %s" % type(method))
         name = name or method.__name__
@@ -94,7 +94,7 @@ cdef class ExtensionClass(Class):
         return method
 
 
-    def bind_virtual_method(self, method: CallablePythonType, name: AnyStr = None):
+    def bind_virtual_method(self, method: typing.Callable, name: Optional[AnyStr] = None):
         if not callable(method):
             raise ValueError("Callable is required, got %s" % type(method))
         name = name or method.__name__
@@ -103,7 +103,7 @@ cdef class ExtensionClass(Class):
         return method
 
 
-    def add_virtual_method(self, method: CallablePythonType, name: AnyStr = None):
+    def add_virtual_method(self, method: typing.Callable, name: Optional[AnyStr] = None):
         if not callable(method):
             raise ValueError("Callable is required, got %s" % type(method))
         name = name or method.__name__

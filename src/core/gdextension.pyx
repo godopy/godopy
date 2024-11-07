@@ -18,7 +18,10 @@ cdef extern from "Python.h":
 
 from python_runtime cimport *
 cimport godot_types as type_funcs
-from godot_types cimport StringName as PyStringName, variant_to_pyobject_func_t, variant_from_pyobject_func_t
+from godot_types cimport (
+    StringName as PyStringName,
+    variant_to_pyobject_func_t, variant_from_pyobject_func_t
+)
 from _gdextension_internals cimport print_traceback_and_die
 
 import io
@@ -28,7 +31,8 @@ import pickle
 import inspect
 import builtins
 import traceback
-from typing import Any, AnyStr, Callable as CallablePythonType, Dict, List, Optional, Set, Tuple, Any
+import typing
+from typing import Any, AnyStr, Dict, List, Optional, Set, Sequence, Tuple
 from collections import namedtuple
 
 import numpy as np
@@ -99,7 +103,6 @@ include "includes/class.pxi"
 include "includes/object.pxi"
 
 include "includes/engine_calls.pxi"
-include "includes/engine_callable.pxi"
 include "includes/method_bind.pxi"
 include "includes/script_method.pxi"
 include "includes/builtin_method.pxi"

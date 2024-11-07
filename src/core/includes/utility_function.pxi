@@ -1,4 +1,4 @@
-cdef class UtilityFunction(EngineCallableBase):
+cdef class UtilityFunction:
     def __init__(self, str function_name):
         self.__name__ = function_name
 

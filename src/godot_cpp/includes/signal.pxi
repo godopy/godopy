@@ -21,3 +21,5 @@ cdef extern from "godot_cpp/variant/signal.hpp" namespace "godot" nogil:
         void emit(const Variant &, const Variant &, const Variant &)
         void emit(const Variant &, const Variant &, const Variant &, const Variant &)
         void emit(const Variant &, const Variant &, const Variant &, const Variant &, const Variant &)
+
+        void *_native_ptr()

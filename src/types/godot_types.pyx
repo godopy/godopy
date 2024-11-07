@@ -40,8 +40,9 @@ from cpython.bytearray cimport PyByteArray_Check
 from cython.view cimport array as cvarray
 from gdextension cimport (
     BuiltinMethod, Extension, ScriptInstance,
-    object_to_pyobject, cppobject_from_pyobject, variant_object_to_pyobject,
-    object_from_pyobject, variant_object_from_pyobject,
+    object_to_pyobject, variant_object_to_pyobject,
+    object_from_pyobject, cppobject_from_pyobject, variant_object_from_pyobject,
+    variant_callable_to_pyobject, variant_callable_from_pyobject,
     variant_type_to_str, str_to_variant_type
 )
 from numpy cimport (
@@ -125,9 +126,8 @@ __all__ = [
 
     'RID',
 
-    # Object is in gdextension module
+    # Object, Callable are in the gdextension module
 
-    'Callable',
     'Signal',
 
     'Dictionary',

@@ -11,15 +11,14 @@ def get_builtin_method_info(type_name):
     return _BUILTIN_METHODDB[type_name]
 
 
-cdef class BuiltinMethod(EngineCallableBase):
+cdef class BuiltinMethod:
     @staticmethod
-    cdef BuiltinMethod new_with_baseptr(object instance, object method_name, void *_base):
+    cdef BuiltinMethod new_with_selfptr(object instance, object method_name, void *selfptr):
         cdef BuiltinMethod self = BuiltinMethod.__new__(BuiltinMethod)
 
         self.__name__ = method_name
-        self._base = _base
-
         self.__self__ = instance
+        self._self_owner = selfptr
 
         cdef str type_name = instance.__class__.__name__
 
@@ -60,4 +59,4 @@ cdef class BuiltinMethod(EngineCallableBase):
 
 
     cdef void _ptrcall(self, void *r_ret, const void **p_args, size_t p_numargs) noexcept nogil:
-        self._godot_builtin_method(self._base, <GDExtensionConstTypePtr *>p_args, r_ret, p_numargs)
+        self._godot_builtin_method(self._self_owner, <GDExtensionConstTypePtr *>p_args, r_ret, p_numargs)
