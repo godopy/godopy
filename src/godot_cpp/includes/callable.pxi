@@ -2,14 +2,10 @@ cdef extern from "godot_cpp/variant/callable.hpp" namespace "godot" nogil:
     cdef cppclass GodotCppCallable "godot::Callable":
         GodotCppCallable()
         GodotCppCallable(const GodotCppCallable &)
-        GodotCppCallable(GodotCppObject &, const StringName &)
-        GodotCppCallable(GodotCppObject &, str)
+        GodotCppCallable(GodotCppObject *, const StringName &)
 
         @staticmethod
         GodotCppCallable create(const Variant &, const StringName &)
-
-        @staticmethod
-        GodotCppCallable create(const Variant &, str)
 
         Variant callv(const Array &p_arguments) const
         bint is_null() const

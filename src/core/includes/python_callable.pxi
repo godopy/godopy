@@ -1,20 +1,3 @@
-cdef class Callable:
-    def __init__(self, object arg=None):
-        if isinstance(arg, Callable):
-            self._godot_callable = GodotCppCallable((<Callable>arg)._godot_callable)
-        elif arg is not None:
-            raise ValueError("Invalid positional argument 1, a 'gdextension.Callable' is required, got %r" % type(arg))
-        else:
-            self._godot_callable = GodotCppCallable()
-
-    @staticmethod
-    cdef Callable from_cpp(const GodotCppCallable &p_val):
-        cdef Callable self = Callable.__new__(Callable)
-        self._godot_callable = p_val
-
-        return self
-
-
 cdef class PythonCallable(Callable):
     """
     Implements "Callable" GDExtension API (CallableCustomInfo, callable_custom_create2).
@@ -215,44 +198,3 @@ cdef class PythonCallable(Callable):
         if self.initialized:
             ref.Py_DECREF(self)
             self.initialized = False
-
-
-
-cdef public object callable_to_pyobject(const GodotCppCallable &p_callable):
-    cdef object pycallable = None
-
-    cdef void *ptr = gdextension_interface_callable_custom_get_userdata(p_callable._native_ptr(), gdextension_token)
-
-    if ptr != NULL:
-        pycallable = <object>ptr
-        return pycallable
-    else:
-        return Callable.from_cpp(p_callable)
-
-
-cdef public object variant_callable_to_pyobject(const Variant &v):
-    cdef GodotCppCallable c = v.to_type[GodotCppCallable]()
-
-    return callable_to_pyobject(c)
-
-
-cdef public void callable_from_pyobject(object p_obj, GodotCppCallable *r_ret) noexcept:
-    if isinstance(p_obj, Callable):
-        r_ret[0] = (<Callable>p_obj)._godot_callable
-    else:
-        print_error("Expected 'Callable', got %r" % type(p_obj))
-
-        r_ret[0] = GodotCppCallable()
-
-
-cdef public void variant_callable_from_pyobject(object p_obj, Variant *r_ret) noexcept:
-    cdef GodotCppCallable ret
-
-    if isinstance(p_obj, Callable):
-        ret = (<Callable>p_obj)._godot_callable
-    else:
-        print_error("Expected 'Callable', got %r" % type(p_obj))
-
-        ret = GodotCppCallable()
-
-    r_ret[0] = Variant(ret)

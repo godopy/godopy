@@ -119,8 +119,13 @@ include "includes/utility_function.pxi"
 
 include "includes/method_info.pxi"
 include "includes/python_calls.pxi"
-include "includes/python_callable.pxi"
 include "includes/script_instance.pxi"
+
+
+# INTERFACE: Callable
+
+include "includes/callable.pxi"
+include "includes/python_callable.pxi"
 
 
 # INTERFACE: ClassDB Extension
