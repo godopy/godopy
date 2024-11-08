@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import re
 import shutil
 from pathlib import Path
 
@@ -355,7 +356,12 @@ if not 'VIRTUAL_ENV' in os.environ:
                     "Please create and/or activate one "
                     "and install all requirements from 'requirements.txt'")
 
-venv_folder = os.path.abspath(os.environ.get('VIRTUAL_ENV', 'venv'))
+venv_path = os.environ['VIRTUAL_ENV']
+if venv_path.startswith('/cygdrive/c'):
+    # Fix Cygwin paths
+    venv_path = re.sub(r"^/cygdrive/(\w)/", lambda m: f"{m.group(1).upper()}:/", venv_path)
+
+venv_folder = os.path.abspath(venv_path)
 numpy_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy'
 numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
 
