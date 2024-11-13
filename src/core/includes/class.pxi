@@ -22,11 +22,10 @@ cdef class Class:
     Only on the higher level (`godot` module) they would be wrapped as real Python
     classes.
 
-    Works as a singleton, can't be instantiated directly: use `Class.get_class`
-    in Cython or `Class._get_class` in Python to create/get instances
-    `gdextension.Class`.
+    Works as a singleton, can't be instantiated directly: use `Class.get_class()`
+    in Cython or `Class.get()` in Python to create/get instances of `gdextension.Class`.
 
-    Doesn't implement any GDExtension API calls by itself.
+    Implements `classdb_get_class_tag` GDExtension API call.
 
     Captures method, property (TODO) and signal (TODO) information,
     processes class inheritance chains.
@@ -74,13 +73,11 @@ cdef class Class:
 
 
     cdef void *get_tag(self) except NULL:
-        cdef PyStringName class_name = PyStringName(self.__name__)
-
-        return gdextension_interface_classdb_get_class_tag(class_name.ptr())
+        return self._godot_class_tag
 
 
-    def get_tag_id(self) -> int:
-        return <uint64_t>self.get_tag()
+    def get_godot_class_tag(self) -> int:
+        return <uint64_t>self._godot_class_tag
 
 
     @staticmethod
@@ -91,9 +88,12 @@ cdef class Class:
     @staticmethod
     cdef Class get_class(object name):
         cdef Class cls
+        cdef StringName _name
 
         if not isinstance(name, str):
             raise ValueError("String is required, got %r" % type(name))
+
+        type_funcs.string_name_from_pyobject(name, &_name)
 
         if name not in _CLASSDB:
             name = str(name)
@@ -101,6 +101,7 @@ cdef class Class:
             cls = Class.__new__(Class, name)
             _CLASSDB[name] = cls
             cls.__name__ = name
+            cls._godot_class_tag = gdextension_interface_classdb_get_class_tag(_name._native_ptr())
             cls.initialize_class()
 
         return _CLASSDB[name]

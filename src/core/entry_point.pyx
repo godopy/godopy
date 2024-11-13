@@ -207,7 +207,7 @@ cdef int deinitialize_first_level() except -1:
     gc.collect()
     for cls in _CLASSDB.values():
         if isinstance(cls, ExtensionClass):
-            cls.unregister()
+            (<ExtensionClass>cls).unregister()
             # print(f"{cls!r} refcount: {Py_REFCNT(cls)!d}")
 
     _CLASSDB = {}

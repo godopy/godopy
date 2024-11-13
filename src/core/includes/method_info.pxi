@@ -25,7 +25,7 @@ cdef class PropertyInfo:
 
 
 cdef class MethodInfo:
-    def __cinit__(self, name: AnyStr, object arguments, int32_t id, PropertyInfo return_value=None, uint32_t flags=0,
+    def __cinit__(self, name: Str, object arguments, int32_t id, PropertyInfo return_value=None, uint32_t flags=0,
                   object default_arguments=None) -> None:
         self.name = str(name)
         if return_value is None:
@@ -94,19 +94,19 @@ cdef class _PropertyInfoDataArray:
         self.count = len(propinfo_list)
         self.memory = _Memory(cython.sizeof(GDExtensionPropertyInfo) * self.count)
 
-        self.names = [PyStringName(prop_info.name) for prop_info in propinfo_list]
-        self.classnames = [PyStringName(prop_info.class_name) for prop_info in propinfo_list]
-        self.hintstrings = [PyStringName(prop_info.hint_string) for prop_info in propinfo_list]
+        self.names = [PyGDStringName(prop_info.name) for prop_info in propinfo_list]
+        self.classnames = [PyGDStringName(prop_info.class_name) for prop_info in propinfo_list]
+        self.hintstrings = [PyGDStringName(prop_info.hint_string) for prop_info in propinfo_list]
 
         cdef PropertyInfo propinfo
 
         for i in range(self.count):
             propinfo = propinfo_list[i]
             (<GDExtensionPropertyInfo *>self.memory.ptr)[i].type = <GDExtensionVariantType>(<VariantType>propinfo.type)
-            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].name = (<PyStringName>self.names[i]).ptr()
-            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].class_name = (<PyStringName>self.classnames[i]).ptr()
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].name = (<PyGDStringName>self.names[i]).ptr()
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].class_name = (<PyGDStringName>self.classnames[i]).ptr()
             (<GDExtensionPropertyInfo *>self.memory.ptr)[i].hint = propinfo.hint
-            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].hint_string = (<PyStringName>self.hintstrings[i]).ptr()
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].hint_string = (<PyGDStringName>self.hintstrings[i]).ptr()
             (<GDExtensionPropertyInfo *>self.memory.ptr)[i].usage = propinfo.usage
 
     def free(self):
@@ -133,7 +133,7 @@ cdef class _MethodInfoDataArray:
         self.count = len(methodinfo_list)
         self.memory = _Memory(cython.sizeof(GDExtensionMethodInfo) * self.count)
 
-        self.names = [PyStringName(info.name) for info in methodinfo_list]
+        self.names = [PyGDStringName(info.name) for info in methodinfo_list]
 
         self.return_values = _PropertyInfoDataArray([info.return_value for info in methodinfo_list])
         self.arguments = [_PropertyInfoDataArray(info.arguments) for info in methodinfo_list]
@@ -142,7 +142,7 @@ cdef class _MethodInfoDataArray:
 
         for i in range(self.count):
             methodinfo = methodinfo_list[i]
-            (<GDExtensionMethodInfo *>self.memory.ptr)[i].name = (<PyStringName>self.names[i]).ptr()
+            (<GDExtensionMethodInfo *>self.memory.ptr)[i].name = (<PyGDStringName>self.names[i]).ptr()
             (<GDExtensionMethodInfo *>self.memory.ptr)[i].return_value = \
                 (<GDExtensionPropertyInfo *>self.return_values.ptr)[i]
             (<GDExtensionMethodInfo *>self.memory.ptr)[i].flags = methodinfo.flags

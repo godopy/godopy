@@ -29,7 +29,7 @@ cdef class BuiltinMethod:
 
         self.type_info = info['type_info']
         make_optimized_type_info(self.type_info, self._type_info_opt)
-        cdef PyStringName name = PyStringName(method_name)
+        cdef PyGDStringName name = PyGDStringName(method_name)
         cdef uint64_t _hash = info['hash']
         cdef int type_id = str_to_variant_type(type_name)
 

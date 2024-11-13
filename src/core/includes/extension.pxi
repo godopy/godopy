@@ -10,14 +10,14 @@ cdef dict _bound_method_cache = {}
 
 cdef class Extension(Object):
     """
-    Defines all instances of `gdextension.Class`.
+    Defines all instances of `gdextension.ExtensionClass`.
+
+    Inherits `gdextension.Object` and all its methods.
 
     Implements following GDExtension API calls:
         in `Extension.__init__`
-            `classdb_construct_object` (of base class)
+            `classdb_construct_object2`
             `object_set_instance`
-        in `Extension.__del__` and `Extension.destroy`
-            `object_destroy`
 
     Implements virtual call callbacks in the ClassCreationInfo4 structure:
         `creation_info4.get_virtual_call_data_func = &Extension.get_virtual_call_data`
@@ -40,8 +40,8 @@ cdef class Extension(Object):
         self._needs_cleanup = not from_callback
 
         self.__godot_class__ = cls
-        cdef PyStringName class_name = PyStringName(cls.__name__)
-        cdef PyStringName base_class_name = PyStringName(base_class.__name__)
+        cdef PyGDStringName class_name = PyGDStringName(cls.__name__)
+        cdef PyGDStringName base_class_name = PyGDStringName(base_class.__name__)
 
         self._owner = gdextension_interface_classdb_construct_object2(base_class_name.ptr())
 
@@ -52,7 +52,7 @@ cdef class Extension(Object):
 
         gdextension_interface_object_set_instance(self._owner, class_name.ptr(), self_ptr)
 
-        cdef object inner_init = self.__godot_class__.python_method_bindings.get('__inner_init__')
+        cdef object inner_init = self.__godot_class__._bind.pymethod.get('__inner_init__')
 
         if inner_init:
             inner_init(self)
@@ -90,7 +90,7 @@ cdef class Extension(Object):
 
             return func_and_typeinfo_ptr
 
-        if name not in cls.virtual_method_implementation_bindings:
+        if name not in cls._bind.gdvirtual:
             return NULL
 
         func_and_typeinfo_ptr = cls.get_method_and_method_type_info_ptr(name)
@@ -134,7 +134,9 @@ cdef class Extension(Object):
         cdef Extension self
         cdef PythonCallable method
 
-        cdef bytes key = b'%08X%08X' % (<uint64_t>p_self, <uint64_t><PyObject *>func)
+        cdef uint32_t key = hash_murmur3_one_64(<uint64_t>p_self)
+        key = hash_murmur3_one_64(<uint64_t><PyObject *>func, key)
+
         if key in _bound_method_cache:
             self, method = _bound_method_cache[key]
         else:

@@ -101,7 +101,7 @@ cdef dict special_method_calls = {
 
 
 cdef class MethodBind:
-    def __init__(self, Object instance, str method_name):
+    def __init__(self, Object instance, method_name: Str) -> None:
         self.__name__ = method_name
         self.__self__ = instance
         self._self_owner = instance._owner
@@ -110,7 +110,7 @@ cdef class MethodBind:
         self.func = special_method_calls.get(self.key, None)
 
         cdef uint64_t _hash
-        cdef PyStringName class_name, _method_name
+        cdef PyGDStringName class_name, _method_name
 
         if self.func is None or getattr(self.func, 'makes_ptrcall', False):
             info = instance.__godot_class__.get_method_info(method_name)
@@ -122,8 +122,8 @@ cdef class MethodBind:
             make_optimized_type_info(self.type_info, self._type_info_opt)
             self.is_vararg = info['is_vararg']
             _hash = info['hash']
-            class_name = PyStringName(instance.__godot_class__.__name__)
-            _method_name = PyStringName(method_name)
+            class_name = PyGDStringName(instance.__godot_class__.__name__)
+            _method_name = PyGDStringName(method_name)
 
             self._godot_method_bind = gdextension_interface_classdb_get_method_bind(
                 class_name.ptr(),
