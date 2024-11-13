@@ -469,8 +469,8 @@ cdef class ExtensionClass(Class):
 
     cdef list _used_refs
 
-    cdef tuple get_method_and_method_type_info(self, str name)
-    cdef void *get_method_and_method_type_info_ptr(self, str name) except NULL
+    cdef object get_method_and_method_type_info(self, object name)
+    cdef void *get_method_and_method_type_info_ptr(self, object name) except NULL
     cdef void *get_special_method_info_ptr(self, SpecialMethod method) except NULL
 
     cdef int register_method(self, func: typing.Callable, name: Str) except -1
@@ -487,19 +487,20 @@ cdef class ExtensionClass(Class):
     cdef int unregister(self) except -1
 
     @staticmethod
-    cdef void free_instance(void *data, void *p_instance) noexcept nogil
+    cdef void *create_instance_callback(void *p_class_userdata, uint8_t p_notify) noexcept nogil
 
     @staticmethod
-    cdef int _free_instance(void *p_self, void *p_instance) except -1 with gil
+    cdef void free_instance_callback(void *p_class_userdata, void *p_instance) noexcept nogil
 
     @staticmethod
-    cdef GDExtensionObjectPtr create_instance(void *p_class_userdata, GDExtensionBool p_notify) noexcept nogil
+    cdef void *recreate_instance_callback(void *p_data, void *p_instance) noexcept nogil
 
     @staticmethod
-    cdef GDExtensionObjectPtr _create_instance(void *p_self, bint p_notify) except? NULL with gil
+    cdef void *get_virtual_call_data_callback(void *p_userdata, void *p_name) noexcept nogil
 
-    @staticmethod
-    cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
+    cdef int free_instance(self, object instance) except -1
+    cdef void *create_instance(self, bint p_notify) except? NULL
+    cdef int get_virtual_call_data(self, object name, void **r_ret) except -1
 
     cdef int _register(self, object kwargs) except -1
 
@@ -511,20 +512,27 @@ cdef enum SpecialMethod:
 
 
 cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Type]:
-    @staticmethod
-    cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil
+    cdef dict _callable_cache
+    cdef _PropertyInfoDataArray property_info_data
 
     @staticmethod
-    cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil
+    cdef uint8_t set_callback(void *p_instance, const void *p_name, const void *p_value) noexcept nogil
 
     @staticmethod
-    cdef void _call_special_virtual(SpecialMethod placeholder) noexcept nogil
+    cdef uint8_t get_callback(void *p_instance, const void *p_name, void *r_ret) noexcept nogil
 
     @staticmethod
-    cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
-                                     void *p_func, const GDExtensionConstTypePtr *p_args,
-                                     GDExtensionTypePtr r_ret) noexcept nogil
+    cdef const GDExtensionPropertyInfo *get_property_list_callback(void *p_instance, uint32_t *r_count) noexcept nogil
 
     @staticmethod
-    cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
-                                      void *r_ret) noexcept with gil
+    cdef void notification_callback(void *p_instance, int32_t p_what, uint8_t p_reversed) noexcept nogil
+
+    @staticmethod
+    cdef void to_string_callback(void *p_instance, uint8_t *r_is_valid, void *r_out) noexcept nogil
+
+    @staticmethod
+    cdef void call_virtual_with_data_callback(void *p_instance, const void *p_name, void *p_func,
+                                              const (const void *) *p_args, void *r_ret) noexcept nogil
+
+    cdef void call_special_virtual(self, SpecialMethod method) noexcept nogil
+    cdef int call_virtual_with_data(self, object func_and_info, const void **p_args, void *r_ret) except -1

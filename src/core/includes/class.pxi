@@ -72,6 +72,24 @@ cdef class Class:
         return mi
 
 
+    def issubclass(self, p_class: Class | Str) -> bool:
+        cdef Class cls
+
+        if isinstance(p_class, str):
+            cls = Class.get_class(p_class)
+        elif isinstance(p_class, Class):
+            cls = p_class
+        else:
+            raise ValueError("Expected 'gdextension.Class' or 'str', got %r" % type(p_class))
+
+        if self.__name__ == cls.__name__:
+            return True
+        elif self.__inherits__ is not None:
+            return self.__inherits__.issubclass(cls)
+
+        return False
+
+
     cdef void *get_tag(self) except NULL:
         return self._godot_class_tag
 

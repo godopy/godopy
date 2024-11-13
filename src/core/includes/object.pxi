@@ -171,6 +171,10 @@ cdef class Object:
             raise TypeError("%r can not be destroyed" % self)
 
 
+    def isinstance(self,  p_class: Class | Str) -> bool:
+        return self.__godot_class__.issubclass(p_class)
+
+
     def get_godot_class_name(self) -> PyGDStringName:
         """
         Gets the class name of an Object from the Engine.

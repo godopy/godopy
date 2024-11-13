@@ -5,12 +5,9 @@ cdef dict special_method_to_enum = {
 }
 
 
-cdef dict _bound_method_cache = {}
-
-
 cdef class Extension(Object):
     """
-    Defines all instances of `gdextension.ExtensionClass`.
+    Defines all `gdextension.Extension` instances defined by `gdextension.ExtensionClass`.
 
     Inherits `gdextension.Object` and all its methods.
 
@@ -19,9 +16,8 @@ cdef class Extension(Object):
             `classdb_construct_object2`
             `object_set_instance`
 
-    Implements virtual call callbacks in the ClassCreationInfo4 structure:
-        `creation_info4.get_virtual_call_data_func = &Extension.get_virtual_call_data`
-        `creation_info4.call_virtual_with_data_func = &Extension.call_virtual_with_data`
+    Implements virtual call callback in the ClassCreationInfo4 structure:
+        `creation_info4.call_virtual_with_data_func = &Extension.call_virtual_with_data_callback`
     """
     def __init__(self, ExtensionClass cls=None, **kwargs):
         if cls is None:
@@ -63,42 +59,123 @@ cdef class Extension(Object):
         _OBJECTDB[self.owner_id()] = self
         gdtypes.add_object_type(self.__class__)
 
+        self._callable_cache = {}
+
         # print("%r initialized, from callback: %r" % (self, from_callback))
 
 
     @staticmethod
-    cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil:
-        cdef StringName name = deref(<StringName *>p_name)
+    cdef uint8_t set_callback(void *p_instance, const void *p_name, const void *p_value) noexcept nogil:
+        cdef Variant value = deref(<Variant *>p_value)
 
-        # Ensure that PyThreadState is created for the current Godot thread,
-        # otherwise calling a GIL function from uninitialized threads would create a deadlock
-        PythonRuntime.get_singleton().ensure_current_thread_state()
+        with gil:
+            self = <object>p_instance
+            try:
+                setattr(
+                    self,
+                    type_funcs.string_name_to_pyobject(deref(<StringName *>p_name)),
+                    type_funcs.variant_to_pyobject(value)
+                )
 
-        return Extension._get_virtual_call_data(p_userdata, name)
+                return True
 
-    @staticmethod
-    cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil:
-        cdef ExtensionClass cls = <ExtensionClass>p_cls
-        cdef str name = str(type_funcs.string_name_to_pyobject(p_name))
+            except AttributeError:
+                return False
 
-        cdef void* func_and_typeinfo_ptr
-
-        # Special case, some virtual methods of ScriptLanguageExtension
-        # which does not belong to Python ScriptLanguage implementations
-        if name in special_method_to_enum:
-            func_and_typeinfo_ptr = cls.get_special_method_info_ptr(special_method_to_enum[name])
-
-            return func_and_typeinfo_ptr
-
-        if name not in cls._bind.gdvirtual:
-            return NULL
-
-        func_and_typeinfo_ptr = cls.get_method_and_method_type_info_ptr(name)
-
-        return func_and_typeinfo_ptr
 
     @staticmethod
-    cdef void _call_special_virtual(SpecialMethod method) noexcept nogil:
+    cdef uint8_t get_callback(void *p_instance, const void *p_name, void *r_ret) noexcept nogil:
+        with gil:
+            self = <object>p_instance
+            try:
+                ret = getattr(self, type_funcs.string_name_to_pyobject(deref(<StringName *>p_name)))
+                type_funcs.variant_from_pyobject(ret, <Variant *>r_ret)
+
+                return True
+            except AttributeError:
+                return False
+
+
+    @staticmethod
+    cdef const GDExtensionPropertyInfo *get_property_list_callback(void *p_instance, uint32_t *r_count) noexcept nogil:
+        with gil:
+            UtilityFunctions.print("Extension.get_property_list_callback")
+            self = <object>p_instance
+            try:
+                property_list = self.get_property_list()
+                (<Extension>self).property_info_data = _PropertyInfoDataArray(property_list)
+                if r_count:
+                    r_count[0] = <uint32_t>((<Extension>self).property_info_data).count
+                return <const GDExtensionPropertyInfo *>((<Extension>self).property_info_data).ptr
+
+            except Exception as exc:
+                print_error_with_traceback(exc)
+
+                if r_count:
+                    r_count[0] = <uint32_t>0
+                return NULL
+
+
+    def get_property_list(self) -> List[PropertyInfo]:
+        cdef list propinfo_list = []
+        cdef VariantType vartype
+        cdef uint32_t hint = 0, usage = 0
+
+        if not hasattr(self, '__dict__'):
+            return propinfo_list
+
+        for key, value in self.__dict__.items():
+            if key.startswith('_') or callable(value):
+                continue
+
+            vartype = type_funcs.pytype_to_variant_type(type(value))
+            if hasattr(value, '__hint__'):
+                hint = value.__hint__
+            if hasattr(value, '__usage__'):
+                usage = usage
+
+            propinfo_list.append(PropertyInfo(vartype, key, self.__name__, hint=hint, usage=usage))
+
+        return propinfo_list
+
+
+    @staticmethod
+    cdef void notification_callback(void *p_instance, int32_t p_what, uint8_t p_reversed) noexcept nogil:
+        with gil:
+            # UtilityFunctions.print("Extension.notification_callback")
+            self = <object>p_instance
+            try:
+                # UtilityFunctions.print("Extension.notification_callback %r" % p_what)
+                self.notification(p_what, p_reversed)
+            except Exception as exc:
+                print_error_with_traceback(exc)
+
+
+    def notification(self, what: int, reversed: bool) -> None:
+        pass
+
+
+    @staticmethod
+    cdef void to_string_callback(void *p_instance, uint8_t *r_is_valid, void *r_out) noexcept nogil:
+        with gil:
+            UtilityFunctions.print("Extension.to_string_callback")
+            self = <object>p_instance
+            try:
+                type_funcs.string_from_pyobject(repr(self), <String *>r_out)
+                type_funcs.bool_from_pyobject(True, r_is_valid)
+            except Exception as exc:
+                print_error_with_traceback(exc)
+
+
+    @staticmethod
+    cdef void call_virtual_with_data_callback(void *p_instance, const void *p_name, void *p_func,
+                                              const (const void *) *p_args, void *r_ret) noexcept nogil:
+        with gil:
+            self = <object>p_instance
+            (<Extension>self).call_virtual_with_data(<object>p_func, <const void **>p_args, r_ret)
+
+
+    cdef void call_special_virtual(self, SpecialMethod method) noexcept nogil:
         if method == _THREAD_ENTER:
             # Create PyThreadState for every Godot thread
             PythonRuntime.get_singleton().ensure_current_thread_state()
@@ -111,38 +188,25 @@ cdef class Extension(Object):
             # Called every frame, might be useful later
             pass
 
-    @staticmethod
-    cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
-                                     void *p_func, const GDExtensionConstTypePtr *p_args,
-                                     GDExtensionTypePtr r_ret) noexcept nogil:
-        Extension._call_virtual_with_data(p_instance, p_func, <const void **>p_args, <void *>r_ret)
 
-
-    @staticmethod
-    cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
-                                      void *r_ret) noexcept with gil:
-        cdef tuple func_and_info = <tuple>p_func_and_info
+    cdef int call_virtual_with_data(self, object func_and_info, const void **p_args, void *r_ret) except -1:
         cdef object func = func_and_info[0]
         cdef SpecialMethod _special_func
 
         if PyLong_Check(func):
             _special_func = <SpecialMethod>PyLong_AsSsize_t(func)
             with nogil:
-                Extension._call_special_virtual(_special_func)
-            return
+                self.call_special_virtual(_special_func)
+            return 0
 
-        cdef Extension self
         cdef PythonCallable method
+        cdef uint64_t key = <uint64_t><PyObject *>func
 
-        cdef uint32_t key = hash_murmur3_one_64(<uint64_t>p_self)
-        key = hash_murmur3_one_64(<uint64_t><PyObject *>func, key)
-
-        if key in _bound_method_cache:
-            self, method = _bound_method_cache[key]
+        if key in self._callable_cache:
+            method = self._callable_cache[key]
         else:
-            self = <object>p_self
             method = PythonCallable(self, func, func_and_info[1])
-            _bound_method_cache[key] = self, method
+            self._callable_cache[key] = method
 
         try:
             _make_python_ptrcall(method, r_ret, p_args, method.get_argument_count())
