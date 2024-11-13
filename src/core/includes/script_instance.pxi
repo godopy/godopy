@@ -6,7 +6,7 @@ cdef class ScriptInstance:
     """
     def __init__(self, Extension script, Object owner, object cls_dict):
         """
-        Creates a script instance with all callback functions (WIP).
+        Creates a script instance with all required callback functions.
 
         Derived classes can customize the behavior and must provide missing
         implementations.
