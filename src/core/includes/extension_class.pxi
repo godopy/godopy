@@ -1,6 +1,21 @@
 cdef dict _NODEDB = {}
 
 
+cdef class ExtensionClassBindings:
+    def __cinit__(self):
+        self.method = {}
+        self.pymethod = {}
+        self.gdvirtual = {}
+        self.ownvirtual = {}
+        self.intenum = {}
+        self.bitfield = {}
+        self.prop = {}
+        self.idxprop = {}
+        self.group = {}
+        self.subgroup = {}
+        self.signal = {}
+
+
 cdef class ExtensionClass(Class):
     """
     Defines all custom classes which extend the Godot Engine.
@@ -15,7 +30,7 @@ cdef class ExtensionClass(Class):
         `creation_info4.free_instance_func = &ExtensionClass.free_instance`
         `creation_info4.recreate_instance_func = &ExtensionClass.recreate_instance`
 
-    Stores information about all new methods and class registration state.
+    Stores information about all custom methods/properties/signals and class registration state.
     """
     def __init__(self, name, object inherits, **kwargs):
         if not isinstance(inherits, (Class, str)):
@@ -35,10 +50,7 @@ cdef class ExtensionClass(Class):
         self.is_exposed = kwargs.pop('is_exposed', True)
         self.is_runtime = kwargs.pop('is_runtime', False)
 
-        self.method_bindings = {}
-        self.python_method_bindings = {}
-        self.virtual_method_bindings = {}
-        self.virtual_method_implementation_bindings = {}
+        self._bind = ExtensionClassBindings()
 
         self._used_refs = []
 
@@ -51,7 +63,7 @@ cdef class ExtensionClass(Class):
 
 
     cdef tuple get_method_and_method_type_info(self, str name):
-        cdef object method = self.virtual_method_implementation_bindings[name]
+        cdef object method = self._bind.gdvirtual[name]
         cdef dict method_info = self.__inherits__.get_method_info(name)
         cdef tuple method_and_method_type_info = (method, method_info['type_info'])
 
@@ -76,62 +88,198 @@ cdef class ExtensionClass(Class):
         return <void *><PyObject *>info
 
 
-    def bind_method(self, method: typing.Callable, name: Optional[AnyStr] = None):
+    def bind_method(self, method: typing.Callable, name: Optional[Str] = None) -> typing.Callable:
         if not callable(method):
             raise ValueError("Callable is required, got %s" % type(method))
         name = name or method.__name__
-        self.method_bindings[name] = method
+        self._bind.method[name] = method
+
+        return method
+
+    cdef int register_method(self, func: typing.Callable, name: Str) except -1:
+        cdef ExtensionMethod method = ExtensionMethod(func, name)
+
+        return method.register(self)
+
+
+    def bind_python_method(self, method: typing.Callable, name: Optional[Str] = None) -> typing.Callable:
+        if not callable(method):
+            raise ValueError("Callable is required, got %s" % type(method))
+        name = name or method.__name__
+        self._bind.pymethod[name] = method
 
         return method
 
 
-    def bind_python_method(self, method: typing.Callable, name: Optional[AnyStr] = None):
+    def bind_virtual_method(self, method: typing.Callable, name: Optional[Str] = None) -> typing.Callable:
         if not callable(method):
             raise ValueError("Callable is required, got %s" % type(method))
         name = name or method.__name__
-        self.python_method_bindings[name] = method
+        self._bind.gdvirtual[name] = method
 
         return method
 
 
-    def bind_virtual_method(self, method: typing.Callable, name: Optional[AnyStr] = None):
+    def add_virtual_method(self, method: typing.Callable, name: Optional[Str] = None) -> typing.Callable:
         if not callable(method):
             raise ValueError("Callable is required, got %s" % type(method))
         name = name or method.__name__
-        self.virtual_method_implementation_bindings[name] = method
+        self._bind.ownvirtual[name] = method
 
         return method
 
 
-    def add_virtual_method(self, method: typing.Callable, name: Optional[AnyStr] = None):
-        if not callable(method):
-            raise ValueError("Callable is required, got %s" % type(method))
-        name = name or method.__name__
-        self.virtual_method_bindings[name] = method
+    cdef int register_virtual_method(self, func: typing.Callable, name: Str) except -1:
+        cdef ExtensionVirtualMethod method = ExtensionVirtualMethod(func, name)
 
-        return method
+        return method.register(self)
 
 
-    def bind_methods(self, *methods):
-        for method in methods:
-            self.bind_method(method)
+    def bind_int_enum(self, enum_obj: enum.IntEnum) -> enum.IntEnum:
+        self._bind.intenum[enum_obj.__name__] = enum_obj
+
+        return enum_obj
+
+    def bind_bitfield(self, enum_obj: enum.IntEnum) -> enum.IntEnum:
+        self._bind.bitfield[enum_obj.__name__] = enum_obj
+
+        return enum_obj
 
 
-    def bind_virtual_methods(self, *methods):
-        for method in methods:
-            self.bind_virtual_method(method)
+    cdef int register_enum(self, enum_obj: enum.IntEnum, bint is_bitfield=False) except -1:
+        cdef ExtensionEnum ext_enum = ExtensionEnum(enum_obj, is_bitfield=is_bitfield)
+
+        return ext_enum.register(self)
+
+
+    def add_property(self, info: PropertyInfo, setter: types.FunctionType | Str,
+                     getter: types.FunctionType | Str) -> None:
+        cdef object setter_name, getter_name
+
+        if not info.name:
+            raise ValueError("Empty 'info.name'")
+
+        if isinstance(setter, str):
+            setter_name = setter
+            try:
+                setter = self._bind.method[setter_name]
+            except KeyError:
+                raise ValueError("Setter %r was not found" % setter_name)
+        elif isinstance(setter, type.FunctionType):
+            setter_name = setter.__name__
+            if setter_name not in self._bind.method:
+                self._bind.method[setter_name] = setter
+        else:
+            raise ValueError("Invalid setter argument %r" % setter)
+
+        if isinstance(getter, str):
+            getter_name = getter
+            try:
+                getter = self._bind.method[getter_name]
+            except KeyError:
+                raise ValueError("Getter %r was not found" % getter_name)
+        elif isinstance(setter, type.FunctionType):
+            getter_name = getter.__name__
+            if getter_name not in self._bind.method:
+                self._bind.method[getter_name] = getter
+        else:
+            raise ValueError("Invalid getter argument %r" % getter)
+
+        self._bind.prop[info.name] = (info, setter_name, getter_name)
+
+
+    cdef int register_property(self, PropertyInfo info, setter_name: Str, getter_name: Str) except -1:
+        cdef ExtensionProperty prop = ExtensionProperty(info, setter_name, getter_name)
+
+        return prop.register(self)
+
+
+    def add_property_i(self, info: PropertyInfo, setter: types.FunctionType | Str,
+                     getter: types.FunctionType | Str, int64_t idx) -> None:
+        cdef object setter_name, getter_name
+
+        if not info.name:
+            raise ValueError("Empty 'info.name'")
+
+        if isinstance(setter, str):
+            setter_name = setter
+            try:
+                setter = self._bind.method[setter_name]
+            except KeyError:
+                raise ValueError("Setter %r was not found" % setter_name)
+        elif isinstance(setter, type.FunctionType):
+            setter_name = setter.__name__
+            if setter_name not in self._bind.method:
+                self._bind.method[setter_name] = setter
+        else:
+            raise ValueError("Invalid setter argument %r" % setter)
+
+        if isinstance(getter, str):
+            getter_name = getter
+            try:
+                getter = self._bind.method[getter_name]
+            except KeyError:
+                raise ValueError("Getter %r was not found" % getter_name)
+        elif isinstance(setter, type.FunctionType):
+            getter_name = getter.__name__
+            if getter_name not in self._bind.method:
+                self._bind.method[getter_name] = getter
+        else:
+            raise ValueError("Invalid getter argument %r" % getter)
+
+        self._bind.idxprop[info.name] = (info, setter_name, getter_name, idx)
+
+        return getter
+
+
+    cdef int register_property_indexed(self, PropertyInfo info, setter_name: Str, getter_name: Str,
+                                       int64_t index) except -1:
+        cdef ExtensionProperty prop = ExtensionProperty(info, setter_name, getter_name, index)
+
+        return prop.register(self)
+
+
+    def add_group(self, group_name: Str, prefix: Str = '') -> None:
+        self._bind.group[group_name] = (group_name, prefix)
+
+
+    cdef int register_property_group(self, group_name: Str, prefix: Str) except -1:
+        cdef ExtensionPropertyGroup grp = ExtensionPropertyGroup(group_name, prefix)
+
+        return grp.register(self)
+
+
+    def add_subgroup(self, subgroup_name: Str, prefix: Str = '') -> None:
+        self._bind.subgroup[subgroup_name] = (subgroup_name, prefix)
+
+
+    cdef int register_property_subgroup(self, subgroup_name: Str, prefix: Str) except -1:
+        cdef ExtensionPropertyGroup grp = ExtensionPropertyGroup(subgroup_name, prefix, is_subgroup=True)
+
+        return grp.register(self)
+
+
+    def add_signal(self, signal_name: Str, arguments: List[PropertyInfo] = None) -> None:
+        self._bind.signal[signal_name] = arguments or []
+
+
+    cdef int register_signal(self, signal_name: Str, arguments: List[PropertyInfo]) except -1:
+        cdef ExtensionSignal sig = ExtensionSignal(signal_name, arguments)
 
 
     cdef int set_registered(self) except -1:
         self.is_registered = True
         _CLASSDB[self.__name__] = self
 
+        cdef PyGDStringName class_name = PyGDStringName(self.__name__)
+        self._godot_class_tag = gdextension_interface_classdb_get_class_tag(class_name.ptr())
+
         return 0
 
 
-    def unregister(self) -> None:
+    cdef int unregister(self) except -1:
         if not self.is_registered:
-            return
+            return 0
 
         for reference in self._used_refs:
             # print(reference, Py_REFCNT(reference))
@@ -139,7 +287,7 @@ cdef class ExtensionClass(Class):
 
         self._used_refs = []
 
-        cdef PyStringName class_name = PyStringName(self.__name__)
+        cdef PyGDStringName class_name = PyGDStringName(self.__name__)
         gdextension_interface_classdb_unregister_extension_class(gdextension_library, class_name.ptr())
 
         # print(self, Py_REFCNT(self))
@@ -155,13 +303,13 @@ cdef class ExtensionClass(Class):
 
     def register(self, **kwargs):
         try:
-            return self._register(**kwargs)
+            return self._register(kwargs)
         except Exception as exc:
             print_traceback_and_die(exc)
 
+
     def register_abstract(self):
         return self.register(is_abstract=True)
-
 
 
     def register_internal(self):
@@ -236,7 +384,7 @@ cdef class ExtensionClass(Class):
         return NULL
 
 
-    def _register(self, **kwargs):
+    cdef int _register(self, object kwargs) except -1:
         if self.is_registered:
             raise RuntimeError("%r is already registered" % self)
 
@@ -278,34 +426,43 @@ cdef class ExtensionClass(Class):
         # if kwargs.pop('has_get_property_list', False):
         #     ci.get_property_list_func = <GDExtensionClassGetPropertyList>&_ext_get_property_list_bind
 
-        cdef StringName name = StringName(<const PyObject *>self.__name__)
+        cdef StringName class_name = StringName(<const PyObject *>self.__name__)
         cdef StringName inherits_name = StringName(<const PyObject *>self.__inherits__.__name__)
 
         gdextension_interface_classdb_register_extension_class4(
             gdextension_library,
-            name._native_ptr(),
+            class_name._native_ptr(),
             inherits_name._native_ptr(),
             &ci
         )
 
-        for method in self.method_bindings.values():
-            self.register_method(method)
+        for name, method in self._bind.method.items():
+            self.register_method(method, name)
 
-        for method in self.virtual_method_bindings.values():
-            self.register_virtual_method(method)
+        for name, method in self._bind.ownvirtual.items():
+            self.register_virtual_method(method, name)
+
+        for enum in self._bind.intenum.values():
+            self.register_enum(enum)
+
+        for enum in self._bind.bitfield.values():
+            self.register_enum(enum, True)
+
+        for info, setter_name, getter_name in self._bind.prop.values():
+            self.register_property(info, setter_name, getter_name)
+
+        for info, setter_name, getter_name, idx in self._bind.idxprop.values():
+            self.register_property_indexed(info, setter_name, getter_name, idx)
+
+        for name, prefix in self._bind.group.values():
+            self.register_property_group(name, prefix)
+
+        for name, prefix in self._bind.subgroup.values():
+            self.register_property_subgroup(name, prefix)
+
+        for name, arguments in self._bind.signal.items():
+            self.register_signal(name, arguments)
 
         self.set_registered()
 
         # print("%r is registered\n" % self)
-
-
-    cdef int register_method(self, func: types.FunctionType) except -1:
-        cdef ExtensionMethod method = ExtensionMethod(func)
-
-        return method.register(self)
-
-
-    cdef int register_virtual_method(self, func: types.FunctionType) except -1:
-        cdef ExtensionVirtualMethod method = ExtensionVirtualMethod(func)
-
-        return method.register(self)

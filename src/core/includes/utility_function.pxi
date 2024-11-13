@@ -8,7 +8,7 @@ cdef class UtilityFunction:
 
         self.type_info = info['type_info']
         make_optimized_type_info(self.type_info, self._type_info_opt)
-        cdef PyStringName name = PyStringName(function_name)
+        cdef PyGDStringName name = PyGDStringName(function_name)
         cdef uint64_t _hash = info['hash']
 
         self._godot_utility_function = gdextension_interface_variant_get_ptr_utility_function(name.ptr(), _hash)

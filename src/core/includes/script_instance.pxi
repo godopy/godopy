@@ -123,10 +123,10 @@ cdef class ScriptInstance:
 
             return True
 
-    def set(self, name: AnyStr, value: Any) -> None:
+    def set(self, name: Str, value: Any) -> None:
         setattr(self.__owner__, name, value)
 
-    def get(self, name: AnyStr) -> Any:
+    def get(self, name: Str) -> Any:
         return getattr(self.__owner__, name, self.__script_dict__.get(name))
 
 
@@ -238,7 +238,7 @@ cdef class ScriptInstance:
                 print_error_with_traceback(exc)
                 return False
 
-    def has_method(self, method_name: AnyStr) -> bool:
+    def has_method(self, method_name: Str) -> bool:
         method = self.__script_dict__.get(method_name, None)
 
         return method is not None and hasattr(method, '__code__')
@@ -259,7 +259,7 @@ cdef class ScriptInstance:
                 r_is_valid[0] = False
                 return 0
 
-    def get_method_argument_count(self, method_name: AnyStr) -> int:
+    def get_method_argument_count(self, method_name: Str) -> int:
         method = getattr(self.python_instance, method_name)
         if hasattr(method, '__code__'):
             arg_count  = method.__code__.co_argcount
@@ -291,7 +291,7 @@ cdef class ScriptInstance:
                     True
                 )
 
-    def get_method(self, method_name: AnyStr) -> Optional[typing.Callable]:
+    def get_method(self, method_name: Str) -> Optional[typing.Callable]:
         return self.__script_dict__.get(method_name, None)
 
     @staticmethod

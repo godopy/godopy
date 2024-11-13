@@ -19,24 +19,26 @@ cdef extern from "Python.h":
 from python_runtime cimport *
 cimport godot_types as type_funcs
 from godot_types cimport (
-    StringName as PyStringName,
     variant_to_pyobject_func_t, variant_from_pyobject_func_t
 )
 from _gdextension_internals cimport print_traceback_and_die
 
 import io
 import sys
+import enum
 import types
 import pickle
+import typing
 import inspect
 import builtins
 import traceback
-import typing
-from typing import Any, AnyStr, Dict, List, Optional, Set, Sequence, Tuple
+
+from typing import Any, Dict, List, Optional, Set, Sequence, Tuple
 from collections import namedtuple
 
 import numpy as np
 import godot_types as gdtypes
+
 
 include "api_data.pxi"
 
@@ -88,52 +90,49 @@ def get_extension_api_version() -> GodotVersion:
 
 
 # INTERFACE: Memory
-
 include "includes/memory.pxi"
 
 
 # INTERFACE: Godot Core
-
 include "includes/exceptions.pxi"
 
 
-# INTERFACE: Object/ClassDB/Other
-
-include "includes/class.pxi"
+# INTERFACE: Object
 include "includes/object.pxi"
-
 include "includes/engine_calls.pxi"
-include "includes/method_bind.pxi"
 include "includes/script_method.pxi"
-include "includes/builtin_method.pxi"
 
 
 # INTERFACE: Variant
-
 include "includes/variant_method.pxi"
 include "includes/variant_static_method.pxi"
+include "includes/builtin_method.pxi"
 include "includes/utility_function.pxi"
 
 
 # INTERFACE: Script Instance
-
 include "includes/method_info.pxi"
 include "includes/python_calls.pxi"
 include "includes/script_instance.pxi"
 
 
 # INTERFACE: Callable
-
 include "includes/callable.pxi"
 include "includes/python_callable.pxi"
 
 
-# INTERFACE: ClassDB Extension
+# INTERFACE: ClassDB
+include "includes/class.pxi"
+include "includes/method_bind.pxi"
 
+
+# INTERFACE: ClassDB Extension
 include "includes/extension_method_base.pxi"
 include "includes/extension_virtual_method.pxi"
 include "includes/extension_method.pxi"
-
+include "includes/extension_enum.pxi"
+include "includes/extension_property.pxi"
+include "includes/extension_signal.pxi"
 include "includes/extension_class.pxi"
 include "includes/extension.pxi"
 

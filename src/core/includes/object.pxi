@@ -66,8 +66,7 @@ cdef class Object:
     """
     Defines all Godot Engine's objects.
 
-    Combined with MethodBind/ScriptMethod classes, provides a full
-    implementation of GDExtension's Object interface.
+    Provides a full implementation of GDExtension's Object interface.
 
     Implements following GDExtension API calls:
         in `__init__(from_ptr=0)`:
@@ -84,6 +83,8 @@ cdef class Object:
         in `get_instance_id()`: `object_get_instance_id`
         in `has_script_method()`: `object_has_script_method`
         in `get_script_instance()`: `object_get_script_instance`
+        in `method_bind_call()`: `object_method_bind_call`/`object_method_bind_ptrcall`
+        in `script_method_call()`: `object_call_script_method`
 
     See MethodBind.__call__, MethodBind._varcall, MethodBind._ptrcall for
     `object_method_bind_call`/`object_method_bind_ptrcall` API implementation.
@@ -104,9 +105,9 @@ cdef class Object:
             raise TypeError("'godot_class' argument must be a Class instance or a string")
 
         self.__godot_class__ = godot_class if isinstance(godot_class, Class) else Class.get_class(godot_class)
-        cdef PyStringName class_name = PyStringName(self.__godot_class__.__name__)
+        cdef PyGDStringName class_name = PyGDStringName(self.__godot_class__.__name__)
 
-        if not ClassDB.get_singleton().class_exists(class_name._base):
+        if not ClassDBSingleton.get_singleton().class_exists(class_name._base):
             raise NameError('Class %r does not exist' % class_name)
 
         cdef void *self_ptr = <void *><PyObject *>self
@@ -170,7 +171,7 @@ cdef class Object:
             raise TypeError("%r can not be destroyed" % self)
 
 
-    def get_godot_class_name(self) -> PyStringName:
+    def get_godot_class_name(self) -> PyGDStringName:
         """
         Gets the class name of an Object from the Engine.
         """
@@ -203,10 +204,10 @@ cdef class Object:
         if godot_class_name != self.__godot_class__.__name__:
             gdextension_interface_object_cast_to(self._owner, self.__godot_class__.get_tag())
 
-        cdef PyStringName class_name = PyStringName(self.__godot_class__.__name__)
+        cdef PyGDStringName class_name = PyGDStringName(self.__godot_class__.__name__)
         cdef void *prev_owner
 
-        if not ClassDB.get_singleton().class_exists(class_name._base):
+        if not ClassDBSingleton.get_singleton().class_exists(class_name._base):
             raise NameError('Class %r does not exist' % class_name)
 
         if Engine.get_singleton().has_singleton(class_name._base):
@@ -238,7 +239,7 @@ cdef class Object:
         """
         Checks if this object has a script with the given method.
         """
-        cdef PyStringName method = PyStringName(method_name)
+        cdef PyGDStringName method = PyGDStringName(method_name)
 
         return gdextension_interface_object_has_script_method(self._owner, method.ptr())
 
@@ -278,3 +279,13 @@ cdef class Object:
         cdef void *base = gdextension_interface_object_get_script_instance(self._owner, language._owner)
 
         return _SCRIPTINSTANCEDB.get(<uint64_t>base, None)
+
+    def method_bind_call(self, func_name: Str, *args):
+        cdef MethodBind method_bind = MethodBind(self, func_name)
+
+        return method_bind(*args)
+
+    def script_method_call(self, func_name: Str, *args):
+        cdef ScriptMethod script_method = ScriptMethod(self, func_name)
+
+        return script_method(*args)

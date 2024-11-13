@@ -6,9 +6,9 @@ cdef class _ExtensionMethodBase:
         self.__name__ = ''
 
 
-    def __init__(self, object method: typing.Callable) -> None:
+    def __init__(self, object method: typing.Callable, name: Optiona[Str] = None) -> None:
         self.__func__ = method
-        self.__name__ = method.__name__
+        self.__name__ = name or method.__name__
 
 
     def __str__(self):

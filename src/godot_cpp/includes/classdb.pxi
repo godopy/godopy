@@ -1,7 +1,7 @@
 cdef extern from "godot_cpp/classes/class_db_singleton.hpp" namespace "godot" nogil:
-    cdef cppclass ClassDB "godot::ClassDBSingleton":
+    cdef cppclass ClassDBSingleton:
         @staticmethod
-        ClassDB *get_singleton()
+        ClassDBSingleton *get_singleton()
 
         bint class_exists(const StringName &p_class_name) const
         # bint is_parent_class(str p_class_name, str p_inherits) const

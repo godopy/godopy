@@ -12,6 +12,15 @@ cimport numpy
 from binding cimport *
 from godot_cpp cimport *
 
+from godot_types cimport (
+    String as PyGDString,
+    StringName as PyGDStringName,
+)
+
+from typing import List
+
+Str = str | PyGDString | PyGDStringName
+
 
 cdef int configure(object config) except -1
 
@@ -115,20 +124,6 @@ cdef class _Memory:
 
     cdef void *realloc(self, size_t p_bytes) except NULL nogil
     cdef void free(self) noexcept nogil
-
-
-cdef class Class:
-    cdef readonly dict __method_info__
-    cdef readonly str __name__
-    cdef readonly Class __inherits__
-
-    cdef int initialize_class(self) except -1
-    cpdef object get_method_info(self, method_name)
-
-    cdef void *get_tag(self) except NULL
-
-    @staticmethod
-    cdef Class get_class(object name)
 
 
 cdef public class Object [object GDPyObject, type GDPyObject_Type]:
@@ -358,67 +353,19 @@ cdef class ScriptInstance:
     cdef int free(self) except -1
 
 
-cdef enum SpecialMethod:
-    _THREAD_ENTER = 1
-    _THREAD_EXIT = 2
-    _FRAME = 3
+cdef class Class:
+    cdef readonly dict __method_info__
+    cdef readonly str __name__
+    cdef readonly Class __inherits__
+    cdef void *_godot_class_tag
 
+    cdef int initialize_class(self) except -1
+    cpdef object get_method_info(self, method_name)
 
-cdef class ExtensionClass(Class):
-    cdef readonly bint is_registered
-    cdef readonly bint is_virtual
-    cdef readonly bint is_abstract
-    cdef readonly bint is_exposed
-    cdef readonly bint is_runtime
-    cdef readonly dict method_bindings
-    cdef readonly dict python_method_bindings
-    cdef readonly dict virtual_method_bindings
-    cdef readonly dict virtual_method_implementation_bindings
-
-    cdef list _used_refs
-
-    cdef tuple get_method_and_method_type_info(self, str name)
-    cdef void *get_method_and_method_type_info_ptr(self, str name) except NULL
-    cdef void *get_special_method_info_ptr(self, SpecialMethod method) except NULL
-    cdef int set_registered(self) except -1
+    cdef void *get_tag(self) except NULL
 
     @staticmethod
-    cdef void free_instance(void *data, void *p_instance) noexcept nogil
-
-    @staticmethod
-    cdef int _free_instance(void *p_self, void *p_instance) except -1 with gil
-
-    @staticmethod
-    cdef GDExtensionObjectPtr create_instance(void *p_class_userdata, GDExtensionBool p_notify) noexcept nogil
-
-    @staticmethod
-    cdef GDExtensionObjectPtr _create_instance(void *p_self, bint p_notify) except? NULL with gil
-
-    @staticmethod
-    cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
-
-    cdef int register_method(self, func: types.FunctionType) except -1
-    cdef int register_virtual_method(self, func: types.FunctionType) except -1
-
-
-cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Type]:
-    @staticmethod
-    cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil
-
-    @staticmethod
-    cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil
-
-    @staticmethod
-    cdef void _call_special_virtual(SpecialMethod placeholder) noexcept nogil
-
-    @staticmethod
-    cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
-                                     void *p_func, const GDExtensionConstTypePtr *p_args,
-                                     GDExtensionTypePtr r_ret) noexcept nogil
-
-    @staticmethod
-    cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
-                                      void *r_ret) noexcept with gil
+    cdef Class get_class(object name)
 
 
 cdef class _ExtensionMethodBase:
@@ -457,3 +404,127 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
                                void *r_return) noexcept nogil
 
     cdef int ptrcall(self, object instance, const void **p_args, void *r_ret) except -1
+
+
+cdef class ExtensionEnum:
+    cdef readonly object __name__
+    cdef readonly object __enum__
+    cdef readonly bint is_registered
+    cdef readonly bint is_bitfield
+
+    cdef int register(self, ExtensionClass cls) except -1
+
+
+cdef class ExtensionProperty:
+    cdef readonly object __name__
+    cdef readonly object __setter_name__
+    cdef readonly object __getter_name__
+    cdef readonly int64_t __idx__
+    cdef readonly PropertyInfo __info__
+    cdef readonly bint is_registered
+    cdef readonly bint is_indexed
+
+    cdef int register(self, ExtensionClass cls) except -1
+
+
+cdef class ExtensionPropertyGroup:
+    cdef readonly object __name__
+    cdef readonly object __prefix__
+    cdef readonly bint is_registered
+    cdef readonly bint is_subgroup
+
+    cdef int register(self, ExtensionClass cls) except -1
+
+
+cdef class ExtensionSignal:
+    cdef readonly object __name__
+    cdef readonly object __arguments__
+    cdef readonly bint is_registered
+
+    cdef int register(self, ExtensionClass cls) except -1
+
+
+cdef class ExtensionClassBindings:
+    cdef readonly dict method
+    cdef readonly dict pymethod
+    cdef readonly dict ownvirtual
+    cdef readonly dict gdvirtual
+    cdef readonly dict intenum
+    cdef readonly dict bitfield
+    cdef readonly dict prop
+    cdef readonly dict idxprop
+    cdef readonly dict group
+    cdef readonly dict subgroup
+    cdef readonly dict signal
+
+
+cdef class ExtensionClass(Class):
+    cdef readonly bint is_registered
+    cdef readonly bint is_virtual
+    cdef readonly bint is_abstract
+    cdef readonly bint is_exposed
+    cdef readonly bint is_runtime
+
+    cdef readonly ExtensionClassBindings _bind
+
+    cdef list _used_refs
+
+    cdef tuple get_method_and_method_type_info(self, str name)
+    cdef void *get_method_and_method_type_info_ptr(self, str name) except NULL
+    cdef void *get_special_method_info_ptr(self, SpecialMethod method) except NULL
+
+    cdef int register_method(self, func: typing.Callable, name: Str) except -1
+    cdef int register_virtual_method(self, func: typing.Callable, name: Str) except -1
+    cdef int register_enum(self, enum_obj: enum.IntEnum, bint is_bitfield=*) except -1
+    cdef int register_property(self, PropertyInfo info, setter_name: Str, getter_name: Str) except -1
+    cdef int register_property_indexed(self, PropertyInfo info, setter_name: Str, getter_name: Str,
+                                       int64_t index) except -1
+    cdef int register_property_group(self, group_name: Str, prefix: Str) except -1
+    cdef int register_property_subgroup(self, subgroup_name: Str, prefix: Str) except -1
+    cdef int register_signal(self, signal_name: Str, arguments: List[PropertyInfo]) except -1
+
+    cdef int set_registered(self) except -1
+    cdef int unregister(self) except -1
+
+    @staticmethod
+    cdef void free_instance(void *data, void *p_instance) noexcept nogil
+
+    @staticmethod
+    cdef int _free_instance(void *p_self, void *p_instance) except -1 with gil
+
+    @staticmethod
+    cdef GDExtensionObjectPtr create_instance(void *p_class_userdata, GDExtensionBool p_notify) noexcept nogil
+
+    @staticmethod
+    cdef GDExtensionObjectPtr _create_instance(void *p_self, bint p_notify) except? NULL with gil
+
+    @staticmethod
+    cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil
+
+    cdef int _register(self, object kwargs) except -1
+
+
+cdef enum SpecialMethod:
+    _THREAD_ENTER = 1
+    _THREAD_EXIT = 2
+    _FRAME = 3
+
+
+cdef public class Extension(Object) [object GDPyExtension, type GDPyExtension_Type]:
+    @staticmethod
+    cdef void *get_virtual_call_data(void *p_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil
+
+    @staticmethod
+    cdef void *_get_virtual_call_data(void *p_cls, const StringName &p_name) noexcept with gil
+
+    @staticmethod
+    cdef void _call_special_virtual(SpecialMethod placeholder) noexcept nogil
+
+    @staticmethod
+    cdef void call_virtual_with_data(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name,
+                                     void *p_func, const GDExtensionConstTypePtr *p_args,
+                                     GDExtensionTypePtr r_ret) noexcept nogil
+
+    @staticmethod
+    cdef void _call_virtual_with_data(void *p_self, void *p_func_and_info, const void **p_args,
+                                      void *r_ret) noexcept with gil
