@@ -432,7 +432,12 @@ cdef class ExtensionClass(Class):
 
         ci.set_func = &Extension.set_callback
         ci.get_func = &Extension.get_callback
-        ci.get_property_list_func = &Extension.get_property_list_callback
+
+        if kwargs.pop('has_get_property_list', False):
+            ci.get_property_list_func = &Extension.get_property_list_callback
+        else:
+            ci.get_property_list_func = NULL
+
         ci.free_property_list_func = NULL
         ci.property_can_revert_func = NULL
         ci.property_get_revert_func = NULL

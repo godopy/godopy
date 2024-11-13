@@ -71,21 +71,21 @@ cdef class Extension(Object):
 
     @staticmethod
     cdef uint8_t set_callback(void *p_instance, const void *p_name, const void *p_value) noexcept nogil:
-        cdef Variant value = deref(<Variant *>p_value)
+        cdef Variant _value = deref(<Variant *>p_value)
+        cdef StringName _name = deref(<StringName *>p_name)
+        cdef GodotCppObject *obj
 
         with gil:
             self = <object>p_instance
-            try:
-                setattr(
-                    self,
-                    type_funcs.string_name_to_pyobject(deref(<StringName *>p_name)),
-                    type_funcs.variant_to_pyobject(value)
-                )
+            attr = type_funcs.string_name_to_pyobject(_name)
+            value = type_funcs.variant_to_pyobject(_value)
 
-                return True
-
-            except AttributeError:
+            if attr in self.__dict__:
+                setattr(self, attr, value)
+            else:
                 return False
+
+            return True
 
 
     @staticmethod
@@ -93,7 +93,9 @@ cdef class Extension(Object):
         with gil:
             self = <object>p_instance
             try:
-                ret = getattr(self, type_funcs.string_name_to_pyobject(deref(<StringName *>p_name)))
+                attr = type_funcs.string_name_to_pyobject(deref(<StringName *>p_name))
+                ret = getattr(self, attr)
+                # UtilityFunctions.print("Extension.get_callback %r %r %r" % (self, attr, ret))
                 type_funcs.variant_from_pyobject(ret, <Variant *>r_ret)
 
                 return True
@@ -122,26 +124,7 @@ cdef class Extension(Object):
 
 
     def get_property_list(self) -> List[PropertyInfo]:
-        cdef list propinfo_list = []
-        cdef VariantType vartype
-        cdef uint32_t hint = 0, usage = 0
-
-        if not hasattr(self, '__dict__'):
-            return propinfo_list
-
-        for key, value in self.__dict__.items():
-            if key.startswith('_') or callable(value):
-                continue
-
-            vartype = type_funcs.pytype_to_variant_type(type(value))
-            if hasattr(value, '__hint__'):
-                hint = value.__hint__
-            if hasattr(value, '__usage__'):
-                usage = usage
-
-            propinfo_list.append(PropertyInfo(vartype, key, self.__name__, hint=hint, usage=usage))
-
-        return propinfo_list
+        return []
 
 
     @staticmethod
