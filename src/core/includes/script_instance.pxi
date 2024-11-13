@@ -133,7 +133,7 @@ cdef class ScriptInstance:
     @staticmethod
     cdef const GDExtensionPropertyInfo *get_property_list_callback(void *p_instance, uint32_t *r_count) noexcept nogil:
         with gil:
-            UtilityFunctions.print("get_property_list_callback")
+            UtilityFunctions.print("ScriptInstance.get_property_list_callback")
             self = <object>p_instance
             try:
                 property_list = self.get_property_list()
@@ -297,10 +297,10 @@ cdef class ScriptInstance:
     @staticmethod
     cdef void notification_callback(void *p_instance, int32_t p_what, uint8_t p_reversed) noexcept nogil:
         with gil:
-            UtilityFunctions.print("notification_callback")
+            UtilityFunctions.print("ScriptInstance.notification_callback")
             self = <object>p_instance
             try:
-                UtilityFunctions.print("notification_callback %r" % p_what)
+                UtilityFunctions.print("ScriptInstance.notification_callback %r" % p_what)
                 self.notification(p_what, p_reversed)
             except Exception as exc:
                 print_error_with_traceback(exc)
@@ -311,10 +311,10 @@ cdef class ScriptInstance:
     @staticmethod
     cdef void to_string_callback(void *p_instance, uint8_t *r_is_valid, void *r_out) noexcept nogil:
         with gil:
-            UtilityFunctions.print("to_string_callback")
+            UtilityFunctions.print("ScriptInstance.to_string_callback")
             self = <object>p_instance
             try:
-                type_funcs.string_from_pyobject(str(self), <String *>r_out)
+                type_funcs.string_from_pyobject(repr(self), <String *>r_out)
                 type_funcs.bool_from_pyobject(True, r_is_valid)
             except Exception as exc:
                 print_error_with_traceback(exc)

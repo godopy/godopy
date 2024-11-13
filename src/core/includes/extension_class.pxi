@@ -25,10 +25,11 @@ cdef class ExtensionClass(Class):
         `classdb_register_extension_class4`
         `classdb_unregister_extension_class`
 
-    Implements instance management callbacks in the ClassCreationInfo4 structure:
+    Implements extension class callbacks in the ClassCreationInfo4 structure:
         `creation_info4.create_instance_func = &ExtensionClass.create_instance`
         `creation_info4.free_instance_func = &ExtensionClass.free_instance`
         `creation_info4.recreate_instance_func = &ExtensionClass.recreate_instance`
+        `creation_info4.get_virtual_call_data_func = &ExtensionClass.get_virtual_call_data_callback`
 
     Stores information about all custom methods/properties/signals and class registration state.
     """
@@ -62,7 +63,7 @@ cdef class ExtensionClass(Class):
         return Extension(self, self.__inherits__)
 
 
-    cdef tuple get_method_and_method_type_info(self, str name):
+    cdef object get_method_and_method_type_info(self, object name):
         cdef object method = self._bind.gdvirtual[name]
         cdef dict method_info = self.__inherits__.get_method_info(name)
         cdef tuple method_and_method_type_info = (method, method_info['type_info'])
@@ -70,7 +71,7 @@ cdef class ExtensionClass(Class):
         return method_and_method_type_info
 
 
-    cdef void *get_method_and_method_type_info_ptr(self, str name) except NULL:
+    cdef void *get_method_and_method_type_info_ptr(self, object name) except NULL:
         cdef tuple method_and_method_type_info = self.get_method_and_method_type_info(name)
 
         self._used_refs.append(method_and_method_type_info)
@@ -321,53 +322,47 @@ cdef class ExtensionClass(Class):
 
 
     @staticmethod
-    cdef GDExtensionObjectPtr create_instance(void *p_class_userdata,
-                                              GDExtensionBool p_notify_postinitialize) noexcept nogil:
-        return ExtensionClass._create_instance(p_class_userdata, p_notify_postinitialize)
+    cdef void *create_instance_callback(void *p_class_userdata, uint8_t p_notify_postinitialize) noexcept nogil:
+        with gil:
+            if p_class_userdata == NULL:
+                UtilityFunctions.push_error("ExtensionClass object pointer is uninitialized")
+            self = <object>p_class_userdata
+            return (<ExtensionClass>self).create_instance(p_notify_postinitialize)
 
 
-    @staticmethod
-    cdef GDExtensionObjectPtr _create_instance(void *p_self, bint p_notify_postinitialize) except? NULL with gil:
-        if p_self == NULL:
-            UtilityFunctions.push_error("ExtensionClass object pointer is uninitialized")
-            return NULL
-
+    cdef void *create_instance(self, bint p_notify_postinitialize) except? NULL:
         from entry_point import get_config
         config = get_config()
         godot_class_to_class = config.get('godot_class_to_class')
 
-        cdef ExtensionClass self = <ExtensionClass>p_self
         cls = godot_class_to_class(self)
+        cdef uint64_t self_id = <uint64_t><PyObject *>self
+        cdef Extension instance = cls(__godot_class__=self, from_callback=True, _internal_check=hex(self_id))
 
-        cdef Extension instance = cls(__godot_class__=self, from_callback=True, _internal_check=hex(<uint64_t>p_self))
+        if self.issubclass('Node'):
+            if self.__name__ in _NODEDB:
+                UtilityFunctions.push_warning(
+                    "%s instance already saved to _NODEDB: %r, but another instance %r was requested, rewriting"
+                    % (self.__name__, _NODEDB[self.__name__], instance)
+                )
 
-        if self.__name__ in _NODEDB:
-            UtilityFunctions.push_warning(
-                "%s instance already saved to _NODEDB: %r, but another instance %r was requested, rewriting"
-                % (self.__name__, _NODEDB[self.__name__], instance)
-            )
+                _NODEDB[self.__name__] = instance
+            else:
+                # print('Saved %r instance %r' % (self, instance))
 
-            _NODEDB[self.__name__] = instance
-        else:
-            # print('Saved %r instance %r' % (self, instance))
-
-            _NODEDB[self.__name__] = instance
+                _NODEDB[self.__name__] = instance
 
         return instance._owner
 
 
     @staticmethod
-    cdef void free_instance(void *data, void *p_instance) noexcept nogil:
-        ExtensionClass._free_instance(data, p_instance)
+    cdef void free_instance_callback(void *p_class_userdata, void *p_instance) noexcept nogil:
+        with gil:
+            self = <object>p_class_userdata
+            (<ExtensionClass>self).free_instance(<object>p_instance)
 
 
-    @staticmethod
-    cdef int _free_instance(void *p_self, void *p_instance) except -1 with gil:
-        cdef ExtensionClass self = <ExtensionClass>p_self
-        cdef Extension instance = <Extension>p_instance
-
-        # UtilityFunctions.print("Freeing %r" % instance)
-
+    cdef int free_instance(self, object instance) except -1:
         if self.__name__ in _NODEDB:
             del _NODEDB[self.__name__]
 
@@ -377,11 +372,44 @@ cdef class ExtensionClass(Class):
 
 
     @staticmethod
-    cdef GDExtensionObjectPtr recreate_instance(void *p_data, GDExtensionObjectPtr p_instance) noexcept nogil:
+    cdef void *recreate_instance_callback(void *p_class_userdata, void *p_instance) noexcept nogil:
         with gil:
             print('ExtensinoClass recreate callback called; classs ptr:%x instance ptr:%x'
-                  % (<uint64_t>p_data, <uint64_t>p_instance))
+                  % (<uint64_t>p_class_userdata, <uint64_t>p_instance))
         return NULL
+
+
+    @staticmethod
+    cdef void *get_virtual_call_data_callback(void *p_class_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil:
+        cdef StringName name = deref(<StringName *>p_name)
+
+        # Ensure that PyThreadState is created for the current Godot thread,
+        # otherwise calling a GIL function from uninitialized threads would create a deadlock
+        PythonRuntime.get_singleton().ensure_current_thread_state()
+
+        cdef void *ret
+
+        with gil:
+            self = <object>p_class_userdata
+            (<ExtensionClass>self).get_virtual_call_data(type_funcs.string_name_to_pyobject(name), &ret)
+
+            return ret
+
+
+    cdef int get_virtual_call_data(self, object name, void **r_ret) except -1:
+        cdef void* func_and_typeinfo_ptr
+
+        # Special case, some virtual methods of ScriptLanguageExtension
+        # which does not belong to Python ScriptLanguage implementations
+        if name in special_method_to_enum:
+            r_ret[0] = self.get_special_method_info_ptr(special_method_to_enum[name])
+            return 0
+
+        if name not in self._bind.gdvirtual:
+            r_ret[0] = NULL
+            return 0
+
+        r_ret[0] = self.get_method_and_method_type_info_ptr(name)
 
 
     cdef int _register(self, object kwargs) except -1:
@@ -396,29 +424,30 @@ cdef class ExtensionClass(Class):
         ci.is_exposed = kwargs.pop('is_exposed', self.is_exposed)
         ci.is_runtime = kwargs.pop('is_runtime', self.is_runtime)
 
+
         self.is_virtual = ci.is_virtual
         self.is_abstract = ci.is_abstract
         self.is_exposed = ci.is_exposed
         self.is_runtime = ci.is_runtime
 
-        ci.set_func = NULL # &_ext_set_bind
-        ci.get_func = NULL # &_ext_.get_bind
-        ci.get_property_list_func = NULL
-        ci.free_property_list_func = NULL # &_ext_free_property_list_bind
-        ci.property_can_revert_func = NULL # &_ext_property_can_revert_bind
-        ci.property_get_revert_func = NULL # &_ext_property_get_revert_bind
-        ci.validate_property_func = NULL # _ext_validate_property_bind
-        ci.notification_func = NULL # &_ext_notification_bind
-        ci.to_string_func = NULL # &_ext_to_string_bind
+        ci.set_func = &Extension.set_callback
+        ci.get_func = &Extension.get_callback
+        ci.get_property_list_func = &Extension.get_property_list_callback
+        ci.free_property_list_func = NULL
+        ci.property_can_revert_func = NULL
+        ci.property_get_revert_func = NULL
+        ci.validate_property_func = NULL
+        ci.notification_func = &Extension.notification_callback
+        ci.to_string_func = &Extension.to_string_callback
         ci.reference_func = NULL
         ci.unreference_func = NULL
-        ci.create_instance_func = &ExtensionClass.create_instance
-        ci.free_instance_func = &ExtensionClass.free_instance
-        ci.recreate_instance_func = &ExtensionClass.recreate_instance
+        ci.create_instance_func = &ExtensionClass.create_instance_callback
+        ci.free_instance_func = &ExtensionClass.free_instance_callback
+        ci.recreate_instance_func = &ExtensionClass.recreate_instance_callback
 
         ci.get_virtual_func = NULL
-        ci.get_virtual_call_data_func = &Extension.get_virtual_call_data
-        ci.call_virtual_with_data_func = &Extension.call_virtual_with_data
+        ci.get_virtual_call_data_func = &ExtensionClass.get_virtual_call_data_callback
+        ci.call_virtual_with_data_func = &Extension.call_virtual_with_data_callback
         ci.class_userdata = self_ptr
 
         ref.Py_INCREF(self) # DECREF in ExtensionClass.unregister()
