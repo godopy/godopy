@@ -16,7 +16,12 @@ cdef class Extension(Object):
             `classdb_construct_object2`
             `object_set_instance`
 
-    Implements virtual call callback in the ClassCreationInfo4 structure:
+    Implements extension instance callbacks in the ClassCreationInfo4 structure:
+        `creation_info4.set_func = &Extension.set_callback`
+        `creation_info4.get_func = &Extension.get_callback`
+        `creation_info4.get_property_list_func = &Extension.get_property_list_callback`
+        `creation_info4.notification_func = &Extension.notification_callback`
+        `creation_info4.to_string_func = &Extension.to_string_callback`
         `creation_info4.call_virtual_with_data_func = &Extension.call_virtual_with_data_callback`
     """
     def __init__(self, ExtensionClass cls=None, **kwargs):
