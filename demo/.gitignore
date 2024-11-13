@@ -1,7 +1,0 @@
-# Godot 4+ specific ignores
-.godot/
-/android/
-bin/*
-!bin/*.gdextension
-python/*
-!python/.gdignore
