@@ -1,5 +1,5 @@
 cdef class VariantMethod:
-    def __init__(self, object instance, str method_name):
+    def __init__(self, object instance, method_name: Str) -> None:
         type_funcs.variant_from_pyobject(instance, &self._self_variant)
 
         self.__name__ = method_name

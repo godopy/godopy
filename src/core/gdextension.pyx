@@ -113,6 +113,8 @@ include "includes/variant_static_method.pxi"
 include "includes/builtin_method.pxi"
 include "includes/utility_function.pxi"
 
+# See godot_types.Variant
+
 
 # INTERFACE: Script Instance
 
