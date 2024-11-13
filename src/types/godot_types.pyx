@@ -23,6 +23,7 @@ Extended types:
     Array -> godot_types.Array
     PackedStringArray -> godot_types.PackedStringArray, subclass of numpy.dnarray
 """
+cimport cython
 from cpython cimport (
     PyObject, ref,
     PyUnicode_AsWideCharString, PyUnicode_FromWideChar,
@@ -39,7 +40,9 @@ from libcpp.cast cimport *
 from cpython.bytearray cimport PyByteArray_Check
 from cython.view cimport array as cvarray
 from gdextension cimport (
-    BuiltinMethod, Extension, ScriptInstance,
+    BuiltinMethod, UtilityFunction,
+    Extension, ScriptInstance,
+    VariantMethod, VariantStaticMethod,
     object_to_pyobject, variant_object_to_pyobject,
     object_from_pyobject, cppobject_from_pyobject, variant_object_from_pyobject,
     variant_callable_to_pyobject, variant_callable_from_pyobject,
@@ -57,7 +60,7 @@ import pathlib
 
 import numpy as np
 
-from typing import Any, AnyStr, Dict, List, Mapping, Sequence, Tuple, TypeVar, Generic
+from typing import Any, AnyStr, Dict, List, Mapping, Sequence, Tuple
 
 
 __all__ = [
@@ -210,26 +213,139 @@ __all__ = [
 
 cdef extern from *:
     """
-    void _debug_print(PyObject *s) {
-        const wchar_t *wstr = PyUnicode_AsWideCharString(s, NULL);
-        godot::String ss;
-        godot::internal::gdextension_interface_string_new_with_wide_chars(&ss, wstr);
-        godot::UtilityFunctions::print(ss);
+    void _debug_print(PyObject *p_msg) {
+        const wchar_t *wstr = PyUnicode_AsWideCharString(p_msg, NULL);
+        godot::String msg;
+        godot::internal::gdextension_interface_string_new_with_wide_chars(&msg, wstr);
+        godot::UtilityFunctions::print(msg);
     }
     """
     cdef void _debug_print(object) noexcept
 
 
-T = TypeVar('T')
+Str = str | StringName | String
 
-class Variant(Generic[T]):
-    """
-    Annotates Variant arguments and return values.
 
-    Very simple wrapper of any other object.
+@cython.final
+cdef class Variant:
     """
-    def __init__(self, wrapped: T):
-        raise TypeError("'Variant' type can be used only to declare 'Variant' objects on the Godot Engine's side")
+    Implements selected Variant GDExtension API functions. Annotates Variant
+    arguments and return values.
+
+    Very simple wrapper of any other Python object.
+    """
+    cdef cpp.Variant _base
+    cdef readonly object _wrapped
+
+
+    def __cinit__(self, object obj=None):
+        variant_from_pyobject(obj, &self._base)
+        self._wrapped = obj
+
+
+    def callp(self, method_name: Str, *args) -> Any:
+        cdef VariantMethod method = VariantMethod(self._wrapped, method_name)
+
+        return method(*args)
+
+
+    @staticmethod
+    def call_static(variant_type: type | int, method_name: Str, *args) -> Any:
+        cdef VariantStaticMethod method = VariantStaticMethod(variant_type, method_name)
+
+        return method(*args)
+
+
+    def set(self, p_key: Any, p_value: Any) -> None:
+        cdef cpp.Variant key, value
+        cdef uint8_t valid
+        variant_from_pyobject(p_key, &key)
+        variant_from_pyobject(p_value, &value)
+
+        gdextension_interface_variant_set(self._base._native_ptr(), key._native_ptr(), value._native_ptr(), &valid)
+
+        if not valid:
+            raise KeyError("Could not set Variant key %r" % p_key)
+
+
+    def get(self, p_key: Any) -> Any:
+        cdef cpp.Variant key, ret
+        cdef uint8_t valid
+        variant_from_pyobject(p_key, &key)
+
+        gdextension_interface_variant_get(self._base._native_ptr(), key._native_ptr(), ret._native_ptr(), &valid)
+
+        if not valid:
+            raise KeyError("Could not get Variant key %r" % p_key)
+
+        return variant_to_pyobject(ret)
+
+
+    def get_type(self) -> int:
+        return <int>gdextension_interface_variant_get_type(self._base._native_ptr())
+
+
+    def has_method(self, p_method: Str) -> bool:
+        cdef cpp.StringName method
+        string_name_from_pyobject(p_method, &method)
+
+        return gdextension_interface_variant_has_method(self._base._native_ptr(), method._native_ptr())
+
+
+    @staticmethod
+    def has_member(p_type: type | int, p_member: Str) -> bool:
+        cdef cpp.StringName member
+        string_name_from_pyobject(p_member, &member)
+
+        cdef cpp.VariantType vartype
+
+        if isinstance(p_type, type):
+            vartype = pytype_to_variant_type(p_type)
+        elif isinstance(p_type, int):
+            vartype = <cpp.VariantType><int>p_type
+        else:
+            raise ValueError("Expected 'type', integer or integer enum, got %r" % p_type)
+
+        return gdextension_interface_variant_has_member(<GDExtensionVariantType><int>vartype, member._native_ptr())
+
+
+    def has_key(self, p_key: Any) -> bool:
+        cdef cpp.Variant key
+        cdef uint8_t valid
+        variant_from_pyobject(p_key, &key)
+
+        gdextension_interface_variant_has_key(self._base._native_ptr(), key._native_ptr(), &valid)
+
+        return valid
+
+
+    def get_object_instance_id(self) -> int:
+        """
+        Gets the object instance ID from a variant of type gdextension.VARIANT_TYPE_OBJECT.
+
+        If the variant isn't of type gdextension.VARIANT_TYPE_OBJECT, then zero will be returned.
+        The instance ID will be returned even if the object is no longer valid - use
+        `Object.get_instance_by_id()` to check if the object is still valid.
+        """
+        return gdextension_interface_variant_get_object_instance_id(self._base._native_ptr())
+
+
+    @staticmethod
+    def get_type_name(p_type: int) -> str:
+        cdef cpp.String ret
+        gdextension_interface_variant_get_type_name(<GDExtensionVariantType><int>p_type, ret._native_ptr())
+
+        return string_to_pyobject(ret)
+
+
+    @staticmethod
+    def get_builtin_method(p_type: int | type, method_name: Str) -> BuiltinMethod:
+        return BuiltinMethod(p_type)
+
+
+    @staticmethod
+    def get_utility_function(name: Str) -> UtilityFunction:
+        return UtilityFunction(name)
 
 
 cdef object PyArraySubType_NewFromBase(type subtype, numpy.ndarray base):
@@ -582,7 +698,12 @@ cdef ArgType pytype_to_argtype(object p_type) noexcept:
 
 
 cdef cpp.VariantType pyobject_to_variant_type(object p_obj) noexcept:
-    cdef int vartype = _pytype_to_vartype.get(type(p_obj), -1)
+    cdef type obj_type = type(p_obj)
+    if obj_type is Variant:
+        p_obj = (<Variant>p_obj)._wrapped
+        obj_type = type(p_obj)
+
+    cdef int vartype = _pytype_to_vartype.get(obj_type, -1)
     cdef numpy.ndarray arr
 
     if vartype < 0:

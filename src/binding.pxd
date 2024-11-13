@@ -52,6 +52,7 @@ cdef extern from "binding.h" namespace "godot::internal" nogil:
     cdef GDExtensionInterfaceVariantHasMethod gdextension_interface_variant_has_method
     cdef GDExtensionInterfaceVariantHasMember gdextension_interface_variant_has_member
     cdef GDExtensionInterfaceVariantHasKey gdextension_interface_variant_has_key
+    cdef GDExtensionInterfaceVariantGetObjectInstanceId gdextension_interface_variant_get_object_instance_id
     cdef GDExtensionInterfaceVariantGetTypeName gdextension_interface_variant_get_type_name
     cdef GDExtensionInterfaceVariantCanConvert gdextension_interface_variant_can_convert
     cdef GDExtensionInterfaceVariantCanConvertStrict gdextension_interface_variant_can_convert_strict
