@@ -190,7 +190,7 @@ cdef int make_optimized_type_info(object type_info, int8_t *opt_type_info) excep
         if arg_type.endswith('*'):
             arg_type_noptr = arg_type.rstrip('*').rstrip()
             if arg_type_noptr in _global_struct_info and not arg_type.endswith('*'):
-                raise GDExtensionArgumentError("Unexpected non-pointer structure argument %r" % arg_type)
+                raise ArgumentError("Unexpected non-pointer structure argument %r" % arg_type)
         arg_info = <int8_t>ARGTYPE_MAP_REVERSED.get(arg_type_noptr, -1)
         if arg_info >= 0:
             opt_type_info[i] = arg_info
@@ -206,6 +206,6 @@ cdef int make_optimized_type_info(object type_info, int8_t *opt_type_info) excep
         elif arg_type.endswith('*'):
             opt_type_info[i] = <int8_t>ARGTYPE_POINTER
         else:
-            raise GDExtensionArgumentError("Could not detect argument type %r" % arg_type)
+            raise ArgumentError("Could not detect argument type %r" % arg_type)
 
             # opt_type_info[i] = ARGTYPE_NO_ARGTYPE
