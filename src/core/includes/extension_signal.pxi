@@ -21,6 +21,7 @@ cdef class ExtensionSignal:
     cdef int register(self, ExtensionClass cls) except -1:
         cdef PyGDStringName class_name = PyGDStringName(cls.__name__)
         cdef PyGDStringName signal_name = PyGDStringName(self.__name__)
+        cdef _PropertyInfoDataArray data
 
         if not self.__arguments__:
             gdextension_interface_classdb_register_extension_class_signal(
@@ -31,16 +32,15 @@ cdef class ExtensionSignal:
                 0
             )
 
-            return 0
+        else:
+            data = _PropertyInfoDataArray(self.__arguments__)
 
-        cdef _PropertyInfoDataArray data = _PropertyInfoDataArray(self.__arguments__)
-
-        gdextension_interface_classdb_register_extension_class_signal(
-            gdextension_library,
-            class_name.ptr(),
-            signal_name.ptr(),
-            data.ptr(),
-            data.count
-        )
+            gdextension_interface_classdb_register_extension_class_signal(
+                gdextension_library,
+                class_name.ptr(),
+                signal_name.ptr(),
+                data.ptr(),
+                data.count
+            )
 
         self.is_registered = True
