@@ -8,7 +8,7 @@ from cython.operator cimport dereference as deref
 from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
 from cpython cimport (
-    PyObject, ref, pystate, PyLong_Check, PyLong_AsSsize_t,
+    PyObject, ref, pystate, PyLong_Check, PyLong_AsSsize_t, PyBytes_AsString,
     PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM
 )
 cdef extern from "Python.h":
@@ -61,7 +61,7 @@ include "includes/typeconv.pxi"
 include "includes/constants.pxi"
 
 
-# INTERFACE
+# INTERFACE: Version
 
 GodotVersion = namedtuple('GodotVersion', ['major', 'minor', 'pach', 'string'])
 
@@ -90,20 +90,24 @@ def get_extension_api_version() -> GodotVersion:
 
 
 # INTERFACE: Memory
+
 include "includes/memory.pxi"
 
 
-# INTERFACE: Godot Core
+# INTERFACE: Errors & Warnings (Godot Core)
+
 include "includes/exceptions.pxi"
 
 
 # INTERFACE: Object
+
 include "includes/object.pxi"
 include "includes/engine_calls.pxi"
 include "includes/script_method.pxi"
 
 
 # INTERFACE: Variant
+
 include "includes/variant_method.pxi"
 include "includes/variant_static_method.pxi"
 include "includes/builtin_method.pxi"
@@ -111,22 +115,26 @@ include "includes/utility_function.pxi"
 
 
 # INTERFACE: Script Instance
+
 include "includes/method_info.pxi"
 include "includes/python_calls.pxi"
 include "includes/script_instance.pxi"
 
 
 # INTERFACE: Callable
+
 include "includes/callable.pxi"
 include "includes/python_callable.pxi"
 
 
 # INTERFACE: ClassDB
+
 include "includes/class.pxi"
 include "includes/method_bind.pxi"
 
 
 # INTERFACE: ClassDB Extension
+
 include "includes/extension_method_base.pxi"
 include "includes/extension_virtual_method.pxi"
 include "includes/extension_method.pxi"
@@ -137,6 +145,64 @@ include "includes/extension_class.pxi"
 include "includes/extension.pxi"
 
 
+# INTEFACE: Path
+
+def get_library_path() -> str:
+    """
+    Gets the path to the current GDExtension library.
+    """
+    cdef String ret
+
+    gdextension_interface_get_library_path(gdextension_library, ret._native_ptr())
+
+    return type_funcs.string_to_pyobject(ret)
+
+
+# INTERFACE: Editor Plugins
+
+cdef class Editor:
+    @staticmethod
+    def add_plugin(p_class_name: Str) -> None:
+        """
+        Adds an editor plugin.
+        """
+        cdef PyGDStringName class_name = PyGDStringName(p_class_name)
+        gdextension_interface_editor_add_plugin(class_name.ptr())
+
+    @staticmethod
+    def remove_plugin(p_class_name: Str) -> None:
+        """
+        Removes an editor plugin.
+        """
+        cdef PyGDStringName class_name = PyGDStringName(p_class_name)
+        gdextension_interface_editor_remove_plugin(class_name.ptr())
+
+
+# INTERFACE: Editor Help
+
+cdef class EditorHelp:
+    @staticmethod
+    def load_xml(xml_data: Str | bytes) -> None:
+        """
+        Loads new XML-formatted documentation data in the editor.
+        """
+        cdef const char *c_str
+        cdef size_t size
+        cdef bytes data
+
+        if isinstance(xml_data, str):
+            data = xml_data.encode('utf-8')
+        elif isinstance(xml_data, bytes):
+            data = xml_data
+        else:
+            raise ValueError("Expected str or bytes, got %r" % type(xml_data))
+
+        c_str = PyBytes_AsString(data)
+        size = len(data)
+
+        gdextension_interface_editor_help_load_xml_from_utf8_chars_and_len(c_str, size)
+
+
 # Helpers
 
 def has_class(name) -> bool:
@@ -145,6 +211,7 @@ def has_class(name) -> bool:
     a custom GodoPy C++ GDExtension class.
     """
     return name in _global_inheritance_info
+
 
 def has_singleton(name) -> bool:
     """
@@ -159,17 +226,20 @@ def classdb_set() -> Set[str]:
     """
     return set(_global_inheritance_info.keys())
 
+
 def singletons_set() -> Set[str]:
     """
     Returns a set of all singleton class names in the Extension API.
     """
     return _global_singleton_info
 
+
 def utility_functions_set() -> Set[str]:
     """
     Returns a set of all utility function names in the Extension API.
     """
     return set(_global_utility_function_info)
+
 
 def global_enums_dict() -> Dict[str, List[Tuple[str, int]]]:
     """
