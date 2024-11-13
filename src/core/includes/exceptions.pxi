@@ -140,35 +140,47 @@ def print_script_error_with_traceback(exc, message=None, *, bint editor_notify=T
 
 cdef dict _ERROR_TO_STR = {
 	CALL_ERROR_INVALID_METHOD: "[CallError #%d] Invalid method",
-	CALL_ERROR_INVALID_ARGUMENT: "[CallError #%d] Invalid argument: expected a different variant type",
-	CALL_ERROR_TOO_MANY_ARGUMENTS: "[CallError #%d] Too many arguments: expected lower number of arguments",
-	CALL_ERROR_TOO_FEW_ARGUMENTS: "[CallError #%d] Too few arguments: expected higher number of arguments",
 	CALL_ERROR_INSTANCE_IS_NULL: "[CallError #%d] Instance is NULL",
     CALL_ERROR_METHOD_NOT_CONST: "CallError #%d (CALL_ERROR_METHOD_NOT_CONST)"
 }
 
+cdef dict _ARG_ERROR_TO_STR = {
+    CALL_ERROR_INVALID_ARGUMENT: "[CallError #%d] Invalid argument %d: expected a different variant type",
+}
 
-class GDExtensionError(Exception):
+cdef dict _ARG_COUNT_ERROR_TO_STR = {
+    CALL_ERROR_TOO_MANY_ARGUMENTS: "[CallError #%d] Too many arguments (%d): expected lower number of arguments (%d)",
+	CALL_ERROR_TOO_FEW_ARGUMENTS: "[CallError #%d] Too few arguments (%d): expected higher number of arguments (%d)",
+}
+
+
+class Error(Exception):
     pass
 
 
-class GDExtensionArgumentError(GDExtensionError):
+class ArgumentError(Error):
     pass
 
 
-class GDExtensionEngineCallError(GDExtensionError):
+class EngineCallError(Error):
     pass
 
-class GDExtensionngineVariantCallError(GDExtensionEngineCallError):
-    pass
 
-class GDExtensionCallException(GDExtensionngineVariantCallError):
-    def __init__(self, msg, error_code):
+class EngineVariantCallError(EngineCallError):
+    def __init__(self, msg: Str = '', error_code: int = 0, argument: int = 0, expected: int = 0) -> None:
         if not msg:
-            msg = _ERROR_TO_STR.get(error_code, '')
-            if not msg:
-                msg = "GDExtensionCallError %d occured during Variant Engine call"
-            msg = msg % error_code
+            msg = _ARG_COUNT_ERROR_TO_STR.get(error_code, '')
+            if msg:
+                msg = msg % (error_code, argument, expected)
+            else:
+                msg = _ARG_ERROR_TO_STR.get(error_code, '')
+                if msg:
+                    msg = msg % (error_code, argument)
+                else:
+                    msg = _ERROR_TO_STR.get(error_code, '')
+                    if not msg:
+                        msg = "GDExtensionCallError %d occured during Variant Engine call"
+                    msg = msg % error_code
 
         super().__init__(msg)
         self.error_code = error_code
@@ -177,9 +189,9 @@ class GDExtensionCallException(GDExtensionngineVariantCallError):
         return self.error_code
 
 
-class GDExtensionEnginePtrCallError(GDExtensionEngineCallError):
+class EnginePtrCallError(EngineCallError):
     pass
 
 
-class GDExtensionPythonPtrCallError(GDExtensionEngineCallError):
+class PythonPtrCallError(EngineCallError):
     pass

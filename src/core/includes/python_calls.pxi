@@ -6,7 +6,39 @@ cdef int _make_python_varcall(PythonCallable method, const Variant **p_args, siz
     cdef int i
     cdef object args = PyTuple_New(p_count), value
     cdef Variant arg
-    cdef bint success = True
+    cdef GDExtensionCallErrorType error = GDEXTENSION_CALL_OK
+    cdef int32_t expected_count = method.get_argument_count()
+
+    err_print = print_script_error if from_script else print_error
+
+    if expected_count > p_count:
+        if r_error:
+            r_error.error = GDEXTENSION_CALL_ERROR_TOO_FEW_ARGUMENTS
+            r_error.argument = p_count
+            r_error.expected = expected_count
+
+        err_print("Too few arguments, expected %d, got %d" % (expected_count, p_count))
+
+        return 0
+
+    elif expected_count < p_count:
+        if r_error:
+            r_error.error = GDEXTENSION_CALL_ERROR_TOO_MANY_ARGUMENTS
+            r_error.argument = p_count
+            r_error.expected = expected_count
+
+        err_print("Too many arguments, expected %d, got %d" % (expected_count, p_count))
+
+        return 0
+
+    elif method.__self__ is None:
+        if r_error:
+            r_error.error = GDEXTENSION_CALL_ERROR_INSTANCE_IS_NULL
+
+        err_print("Instance is None, expected bound callable")
+
+        return 0
+
 
     for i in range(p_count):
         arg = deref(<Variant *>p_args[i])
@@ -27,10 +59,14 @@ cdef int _make_python_varcall(PythonCallable method, const Variant **p_args, siz
             else:
                 print_error_with_traceback(exc)
             value = None
-            success = False
 
-    if r_error and success:
-        r_error[0].error = GDEXTENSION_CALL_OK
+            if isinstance(exc, ValueError):
+                error = GDEXTENSION_CALL_ERROR_INVALID_ARGUMENT
+            else:
+                error = GDEXTENSION_CALL_ERROR_INVALID_METHOD
+
+    if r_error:
+        r_error.error = error
 
     type_funcs.variant_from_pyobject(value, r_ret)
 
@@ -49,7 +85,9 @@ cdef int _make_python_ptrcall(PythonCallable method, void *r_ret, const void **p
                 expected_size, method.type_info[1:], method.type_info[0])
         )
         UtilityFunctions.printerr(msg)
-        raise GDExtensionPythonPtrCallError(msg)
+
+        raise PythonPtrCallError(msg)
+
 
     cdef object args = PyTuple_New(p_count)
     cdef object value = None
@@ -192,7 +230,7 @@ cdef int _make_python_ptrcall(PythonCallable method, void *r_ret, const void **p
         else:
             msg = "Could not convert argument '%s[#%d]' in %r" % (method.type_info[i], arg_type, method)
 
-            raise GDExtensionPythonPtrCallError(msg)
+            raise PythonPtrCallError(msg)
 
         ref.Py_INCREF(value)
         PyTuple_SET_ITEM(args, i, value)
@@ -218,7 +256,7 @@ cdef int _make_python_ptrcall(PythonCallable method, void *r_ret, const void **p
         ret_value_ptr = numpy.PyArray_GETPTR1(return_value, 0)
     else:
         if return_type != ARGTYPE_NIL:
-            raise GDExtensionPythonPtrCallError("Attempt to return a value of zero size")
+            raise PythonPtrCallError("Attempt to return a value of zero size")
 
     cdef bint return_as_pointer = False
 
@@ -397,7 +435,7 @@ cdef int _make_python_ptrcall(PythonCallable method, void *r_ret, const void **p
         msg = "Could not convert return value %r from %r in %r" % (method.type_info[0], value, method)
         UtilityFunctions.push_error(msg)
 
-        raise GDExtensionPythonPtrCallError(msg)
+        raise PythonPtrCallError(msg)
 
     if return_as_pointer:
         (<void **>r_ret)[0] = <void *>ret_value_ptr

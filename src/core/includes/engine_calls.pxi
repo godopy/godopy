@@ -57,7 +57,7 @@ cdef object _make_engine_varcall(varcallable_t method, _varcall_func varcall, ob
     if err.error != GDEXTENSION_CALL_OK:
         error_text = type_funcs.variant_to_pyobject(return_value)
 
-        raise GDExtensionCallException(error_text, <int>err.error)
+        raise EngineVariantCallError(error_text, <int>err.error, <int>err.argument, <int>err.expected)
 
     return type_funcs.variant_to_pyobject(return_value)
 
@@ -75,7 +75,7 @@ cdef object _make_engine_ptrcall(ptrcallable_t method, _ptrcall_func ptrcall, ob
                 % (method.__class__.__name__, method.__name__,  size, expected_size,
                     method.type_info[1:], method.type_info[0])
         )
-        raise GDExtensionEnginePtrCallError(msg)
+        raise EnginePtrCallError(msg)
 
     cdef _Memory args_mem = _Memory(size * cython.sizeof(GDExtensionConstTypePtr))
     cdef object value
@@ -249,7 +249,7 @@ cdef object _make_engine_ptrcall(ptrcallable_t method, _ptrcall_func ptrcall, ob
                   % (method.type_info[i + 1], arg_type, value, method)
             UtilityFunctions.printerr(msg)
 
-            raise GDExtensionEnginePtrCallError(msg)
+            raise EnginePtrCallError(msg)
 
         (<GDExtensionUninitializedTypePtr *>args_mem.ptr)[i] = arg_value_ptr
 
@@ -264,7 +264,7 @@ cdef object _make_engine_ptrcall(ptrcallable_t method, _ptrcall_func ptrcall, ob
         ptrcall(method, NULL, <const void **>args_mem.ptr, size)
     else:
         if max_size == 0:
-            raise GDExtensionEnginePtrCallError("Attempt to return a value of zero size")
+            raise EnginePtrCallError("Attempt to return a value of zero size")
 
         ptrcall(method, ret_value_ptr, <const void **>args_mem.ptr, size)
 
@@ -401,6 +401,6 @@ cdef object _make_engine_ptrcall(ptrcallable_t method, _ptrcall_func ptrcall, ob
         )
     else:
         msg = "Could not convert return value '%s[#%d]' in %r" % (method.type_info[0], return_type, method)
-        raise GDExtensionEnginePtrCallError(msg)
+        raise EnginePtrCallError(msg)
 
     return value
