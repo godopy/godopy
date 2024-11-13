@@ -25,8 +25,8 @@ Str = str | PyGDString | PyGDStringName
 cdef int configure(object config) except -1
 
 
-cpdef str variant_type_to_str(VariantType vartype)
-cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX
+cpdef object variant_type_to_str(VariantType vartype)
+cpdef VariantType str_to_variant_type(object vartype) except VARIANT_MAX
 
 
 cdef public object object_to_pyobject(void *p_godot_object)
@@ -137,7 +137,7 @@ cdef public class Object [object GDPyObject, type GDPyObject_Type]:
 
 
 cdef class VariantMethod:
-    cdef readonly str __name__
+    cdef readonly object __name__
     cdef object __self__
     cdef Variant _self_variant
     cdef StringName _method
@@ -147,7 +147,7 @@ cdef class VariantMethod:
 
 
 cdef class VariantStaticMethod:
-    cdef readonly str __name__
+    cdef readonly object __name__
     cdef readonly VariantType __self__
     cdef StringName _method
 
@@ -156,7 +156,7 @@ cdef class VariantStaticMethod:
 
 
 cdef class MethodBind:
-    cdef readonly str __name__
+    cdef readonly object __name__
     cdef readonly tuple type_info
     cdef int8_t[16] _type_info_opt
 
@@ -174,7 +174,7 @@ cdef class MethodBind:
 
 
 cdef class ScriptMethod:
-    cdef readonly str __name__
+    cdef readonly object __name__
     cdef readonly Object __self__
     cdef void *_self_owner
     cdef StringName _method
@@ -184,8 +184,8 @@ cdef class ScriptMethod:
 
 
 cdef class UtilityFunction:
-    cdef readonly str __name__
-    cdef readonly tuple type_info
+    cdef readonly object __name__
+    cdef readonly object type_info
     cdef int8_t[16] _type_info_opt
 
     cdef GDExtensionPtrUtilityFunction _godot_utility_function
@@ -194,8 +194,8 @@ cdef class UtilityFunction:
 
 
 cdef class BuiltinMethod:
-    cdef readonly str __name__
-    cdef readonly tuple type_info
+    cdef readonly object __name__
+    cdef readonly object type_info
     cdef int8_t[16] _type_info_opt
 
     cdef object __self__
@@ -355,7 +355,7 @@ cdef class ScriptInstance:
 
 cdef class Class:
     cdef readonly dict __method_info__
-    cdef readonly str __name__
+    cdef readonly object __name__
     cdef readonly Class __inherits__
     cdef void *_godot_class_tag
 
@@ -369,7 +369,7 @@ cdef class Class:
 
 
 cdef class _ExtensionMethodBase:
-    cdef readonly str __name__
+    cdef readonly object __name__
     cdef readonly object __func__
     cdef readonly bint is_registered
     cdef readonly tuple type_info

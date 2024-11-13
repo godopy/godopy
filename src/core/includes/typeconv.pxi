@@ -152,19 +152,19 @@ cdef dict TYPE_MAP_REVERSED = {v: i for i, v in enumerate(TYPE_LIST)}
 cdef dict ARGTYPE_MAP = {i: v for i, v in enumerate(ARGTYPE_LIST)}
 cdef dict ARGTYPE_MAP_REVERSED = {v: i for i, v in enumerate(ARGTYPE_LIST)}
 
-cpdef str variant_type_to_str(VariantType vartype):
+cpdef object variant_type_to_str(VariantType vartype):
     return TYPE_MAP[vartype]
 
 
-cpdef VariantType str_to_variant_type(str vartype) except VARIANT_MAX:
+cpdef VariantType str_to_variant_type(object vartype) except VARIANT_MAX:
     return TYPE_MAP_REVERSED[vartype]
 
 
-cpdef str arg_type_to_str(ArgType argtype):
+cpdef object arg_type_to_str(ArgType argtype):
     return ARGTYPE_MAP[argtype]
 
 
-cpdef ArgType str_to_arg_type(str argtype) except ARGTYPE_NO_ARGTYPE:
+cpdef ArgType str_to_arg_type(object argtype) except ARGTYPE_NO_ARGTYPE:
     return ARGTYPE_MAP_REVERSED[argtype]
 
 
@@ -179,7 +179,7 @@ cdef int get_max_arg_size(int8_t *opt_type_info, size_t arg_size) except -1:
 cdef int make_optimized_type_info(object type_info, int8_t *opt_type_info) except -1:
     cdef size_t size = len(type_info), i
     cdef int8_t arg_info = -1
-    cdef str arg_type, arg_type_noptr
+    cdef object arg_type, arg_type_noptr
 
     for i in range(size):
         arg_type = type_info[i]
