@@ -33,7 +33,7 @@ cdef class ExtensionClass(Class):
 
     Stores information about all custom methods/properties/signals and class registration state.
     """
-    def __init__(self, name, object inherits, **kwargs):
+    def __init__(self, name: Str, object inherits: Str | Class, **kwargs):
         if not isinstance(inherits, (Class, str)):
             raise TypeError("'inherits' argument must be a Class instance or a string")
 

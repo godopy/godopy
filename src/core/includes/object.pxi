@@ -100,7 +100,7 @@ cdef class Object:
         self._instance_set = False
         self._needs_cleanup = False
 
-    def __init__(self, godot_class: Class | str = 'Object', *, from_ptr: uint64_t = 0) -> None:
+    def __init__(self, godot_class: Class | Str = 'Object', *, from_ptr: uint64_t = 0) -> None:
         if not isinstance(godot_class, (Class, str)):
             raise TypeError("'godot_class' argument must be a Class instance or a string")
 

@@ -99,21 +99,20 @@ include "includes/memory.pxi"
 include "includes/exceptions.pxi"
 
 
-# INTERFACE: Object
-
-include "includes/object.pxi"
-include "includes/engine_calls.pxi"
-include "includes/script_method.pxi"
-
-
 # INTERFACE: Variant
+# Also see godot_types.Variant
 
 include "includes/variant_method.pxi"
 include "includes/variant_static_method.pxi"
 include "includes/builtin_method.pxi"
 include "includes/utility_function.pxi"
 
-# See godot_types.Variant
+
+# INTERFACE: Object
+
+include "includes/object.pxi"
+include "includes/engine_calls.pxi"
+include "includes/script_method.pxi"
 
 
 # INTERFACE: Script Instance
@@ -132,6 +131,10 @@ include "includes/python_callable.pxi"
 # INTERFACE: ClassDB
 
 include "includes/class.pxi"
+
+
+# INTERFACE: ClassDB, FileAccess Utilities, Image Utilities, WorkerThreadPool Utilities
+
 include "includes/method_bind.pxi"
 
 
@@ -145,6 +148,7 @@ include "includes/extension_property.pxi"
 include "includes/extension_signal.pxi"
 include "includes/extension_class.pxi"
 include "includes/extension.pxi"
+include "includes/classdb.pxi"
 
 
 # INTEFACE: Path
