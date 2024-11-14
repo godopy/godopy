@@ -457,9 +457,6 @@ cdef class ExtensionClass(Class):
 
         ref.Py_INCREF(self) # DECREF in ExtensionClass.unregister()
 
-        # if kwargs.pop('has_get_property_list', False):
-        #     ci.get_property_list_func = <GDExtensionClassGetPropertyList>&_ext_get_property_list_bind
-
         cdef StringName class_name = StringName(<const PyObject *>self.__name__)
         cdef StringName inherits_name = StringName(<const PyObject *>self.__inherits__.__name__)
 
