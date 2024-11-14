@@ -2,9 +2,8 @@
 Provides GodotClassBase metaclass and base classes for all Godot classes and objects.
 """
 import types
-from typing import Any, List, Mapping, Dict
+from typing import Any, Callable, List, Mapping
 
-import godot
 import gdextension
 
 
@@ -100,9 +99,16 @@ class GodotClassBase(type):
                 except AttributeError:
                     raise AttributeError(f"'{module}.{name}' has no attribute {attr!r}")
 
-            def add_property(self, info, *args):
+            def add_property(self, info: gdextension.PropertyInfo, *args) -> None:
                 all_attrs[info.name] = [info, *args]
 
+            def bind_method(self, func: Callable) -> Callable:
+                func._gdmethod = func.__name__
+                return func
+
+            def bind_virtual_method(self, func: Callable) -> Callable:
+                func._gdvirtualmethod = func.__name__
+                return func
 
         if _bind_methods_func is not None:
             _bind_methods_func(BindMethodsClassPlaceholder())
