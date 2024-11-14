@@ -62,7 +62,7 @@ class GodotClassBase(type):
         if inherits is None:
             raise TypeError("'inherits' keyword argument is required in Godot class definitions")
 
-        # If set reverses the meaning of single leading underscores
+        # If set, reverses the meaning of single leading underscores
         no_virtual_underscore = kwargs.pop('no_virtual_underscore', False)
         mixins = kwargs.pop('mixins', [])
 
@@ -85,6 +85,27 @@ class GodotClassBase(type):
         all_attrs.update(attrs)
 
         is_virtual = lambda info: info['is_virtual']
+
+        _bind_methods_func = all_attrs.pop('_bind_methods', None)
+        if hasattr(_bind_methods_func, '__func__'):
+            # Unbind if necessary
+            _bind_methods_func = _bind_methods_func.__func__
+
+        class BindMethodsClassPlaceholder:
+            def __getattr__(sef, attr):
+                if attr in all_attrs:
+                    return all_attrs[attr]
+                try:
+                    return getattr(godot_cls, attr)
+                except AttributeError:
+                    raise AttributeError(f"'{module}.{name}' has no attribute {attr!r}")
+
+            def add_property(self, info, *args):
+                all_attrs[info.name] = [info, *args]
+
+
+        if _bind_methods_func is not None:
+            _bind_methods_func(BindMethodsClassPlaceholder())
 
         for attr, value in all_attrs.items():
             inner_attr_name = attr
@@ -119,6 +140,8 @@ class GodotClassBase(type):
                 new_attrs[attr] = godot_cls.bind_method(value)
             elif getattr(value, '_gdvirtualmethod', False):
                 new_attrs[attr] = godot_cls.add_virtual_method(value)
+            elif isinstance(value, list) and isinstance(value[0], gdextension.PropertyInfo):
+                godot_cls.add_property(*value)
             elif isinstance(value, types.FunctionType):
                 new_attrs[attr] = godot_cls.bind_python_method(value)
             else:

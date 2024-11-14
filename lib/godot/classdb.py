@@ -32,6 +32,14 @@ def bind_virtual_method(func: Callable) -> Callable:
     return func
 
 
+_extensions = {
+    'ClassDB': {
+        'bind_method': staticmethod(bind_method),
+        'bind_virtual_method': staticmethod(bind_virtual_method)
+    }
+}
+
+
 def __getattr__(name) -> type:
     """
     Creates and returns a subclass of godot.EngineClass for all available classes in the Extension API.
@@ -39,7 +47,12 @@ def __getattr__(name) -> type:
     try:
         if gdextension.has_class(name):
             godot_class = gdextension.Class.get(name)
-            cls = godot.GodotClassBase(name, (godot.EngineClass,), {'__godot_class__': godot_class})
+            cls_attrs = {'__godot_class__': godot_class}
+
+            if name in _extensions:
+                cls_attrs.update(_extensions[name])
+
+            cls = godot.GodotClassBase(name, (godot.EngineClass,), cls_attrs)
 
             if gdextension.has_singleton(name):
                 singleton = cls()

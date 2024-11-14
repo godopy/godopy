@@ -1,6 +1,13 @@
 cdef class PropertyInfo:
-    def __cinit__(self, VariantType type, str name='', str class_name='', uint32_t hint=0, str hint_string='', uint32_t usage=0):
-        self.type = type
+    def __cinit__(self, variant_type: int | type, name: Str = '', uint32_t hint=0, hint_string: Str = '',
+                  uint32_t usage=0, class_name: Str = ''):
+        if isinstance(variant_type, type):
+            self.type = type_funcs.pytype_to_variant_type(variant_type)
+        elif isinstance(variant_type, int):
+            self.type = <VariantType><int>variant_type
+        else:
+            raise ValueError("Expected 'type', integer or integer enum, got %r" % variant_type)
+
         self.name = name
         self.class_name = class_name
         self.hint = hint
@@ -17,10 +24,10 @@ cdef class PropertyInfo:
         return {
             'name': self.name,
             'type': self.type,
-            # 'class_name': self.class_name,
-            # 'hint': self.hint,
-            # 'hint_string': self.hint_string,
-            # 'usage': self.usage
+            'class_name': self.class_name,
+            'hint': self.hint,
+            'hint_string': self.hint_string,
+            'usage': self.usage
         }
 
 
@@ -62,13 +69,13 @@ cdef class _PropertyInfoData:
     cdef _Memory memory
     cdef StringName name
     cdef StringName classname
-    cdef StringName hintstring
+    cdef String hintstring
 
     def __cinit__(self, PropertyInfo propinfo):
         self.memory = _Memory(cython.sizeof(GDExtensionPropertyInfo))
         self.name = StringName(<const PyObject *>propinfo.name)
         self.classname = StringName(<const PyObject *>propinfo.class_name)
-        self.hintstring = StringName(<const PyObject *>propinfo.hint_string)
+        self.hintstring = String(<const PyObject *>propinfo.hint_string)
 
         (<GDExtensionPropertyInfo *>self.memory.ptr).type = <GDExtensionVariantType>(<VariantType>propinfo.type)
         (<GDExtensionPropertyInfo *>self.memory.ptr).name = self.name._native_ptr()
@@ -84,6 +91,19 @@ cdef class _PropertyInfoData:
         return <GDExtensionPropertyInfo *>self.memory.ptr
 
 
+
+@cython.final
+cdef class _StringWrapper:
+    cdef String value
+
+    def __cinit__(self, pyvalue):
+        type_funcs.string_from_pyobject(pyvalue, &self.value)
+
+    cdef void *ptr(self) noexcept nogil:
+        return self.value._native_ptr()
+
+
+
 @cython.final
 cdef class _PropertyInfoDataArray:
     def __cinit__(self, object propinfo_list):
@@ -96,24 +116,23 @@ cdef class _PropertyInfoDataArray:
 
         self.names = [PyGDStringName(prop_info.name) for prop_info in propinfo_list]
         self.classnames = [PyGDStringName(prop_info.class_name) for prop_info in propinfo_list]
-        self.hintstrings = [PyGDStringName(prop_info.hint_string) for prop_info in propinfo_list]
+        self.hintstrings = [_StringWrapper(prop_info.hint_string) for prop_info in propinfo_list]
 
         cdef PropertyInfo propinfo
-
         for i in range(self.count):
             propinfo = propinfo_list[i]
             (<GDExtensionPropertyInfo *>self.memory.ptr)[i].type = <GDExtensionVariantType>(<VariantType>propinfo.type)
             (<GDExtensionPropertyInfo *>self.memory.ptr)[i].name = (<PyGDStringName>self.names[i]).ptr()
             (<GDExtensionPropertyInfo *>self.memory.ptr)[i].class_name = (<PyGDStringName>self.classnames[i]).ptr()
             (<GDExtensionPropertyInfo *>self.memory.ptr)[i].hint = propinfo.hint
-            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].hint_string = (<PyGDStringName>self.hintstrings[i]).ptr()
+            (<GDExtensionPropertyInfo *>self.memory.ptr)[i].hint_string = (<_StringWrapper>self.hintstrings[i]).ptr()
             (<GDExtensionPropertyInfo *>self.memory.ptr)[i].usage = propinfo.usage
 
     def free(self):
         self.memory.free()
         self.names = []
         self.classnames = []
-        self.hintstring = []
+        self.hintstrings = []
         self.count = 0
 
     def __dealloc__(self):

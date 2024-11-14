@@ -1,5 +1,5 @@
 cdef class VariantStaticMethod:
-    def __init__(self, object variant_type, str method_name):
+    def __init__(self, variant_type: int | type, method_name: Str):
         self.__name__ = method_name
 
         cdef VariantType vartype
