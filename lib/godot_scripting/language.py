@@ -205,6 +205,5 @@ class PythonLanguage(godot.Class, inherits=ScriptLanguageExtension, no_virtual_u
         print("get_global_class_name", path)
         return {}
 
-    def _handles_global_class_type(self, path):
-        print("handles_global_class_type", path)
-        return False
+    def _handles_global_class_type(self, res):
+        return res == 'Python'

@@ -18,6 +18,23 @@ cdef class ScriptInstance:
         self.__script_dict__ = {}
         self.__script_dict__.update(cls_dict)
 
+        class InnerSelf:
+            def __getattr__(this, attr):
+                if attr in self.__script_dict__:
+                    return self.__script_dict__[attr]
+                else:
+                    return getattr(owner, attr)
+
+            def __setattr__(this, attr, value):
+                if attr in self.__script_dict__:
+                    self.__script_dict__[attr] = value
+                else:
+                    setattr(owner, attr, value)
+
+        self.__self__ = InnerSelf()
+
+        # print('SCRIPT DICT:', self.__script_dict__)
+
         if hasattr(script, '_get_global_name'):
             self.__name__ = script._get_global_name()
         elif hasattr(script, 'get_global_name'):
@@ -87,7 +104,7 @@ cdef class ScriptInstance:
         _SCRIPTINSTANCEDB[<uint64_t>self._godot_script_instance] = self
 
 
-    def __dealloc__(self):
+    def __del__(self):
         self.free()
 
 
@@ -104,9 +121,6 @@ cdef class ScriptInstance:
                 print_error_with_traceback(exc)
                 return False
 
-        return True
-
-
     def set(self, name: Str, value: Any) -> bool:
         if name in self.__script_dict__:
             self.__script_dict__[name] = value
@@ -118,21 +132,23 @@ cdef class ScriptInstance:
     @staticmethod
     cdef uint8_t get_callback(void *p_instance, const void *p_name, void *r_ret) noexcept nogil:
         with gil:
-            UtilityFunctions.print("get_callback")
+            # UtilityFunctions.print("get_callback")
             self = <object>p_instance
             name = type_funcs.string_name_to_pyobject(deref(<StringName *>p_name))
             try:
                 ret = self.get(name)
                 type_funcs.variant_from_pyobject(ret, <Variant *>r_ret)
+            except (KeyError, AttributeError) as exc:
+                print_error_with_traceback(exc)
+                return False
             except Exception as exc:
                 print_error_with_traceback(exc)
                 return False
 
             return True
 
-
     def get(self, name: Str) -> Any:
-        return getattr(self.__owner__, name, self.__script_dict__.get(name))
+        return self.__script_dict__.get(name)
 
 
     @staticmethod
@@ -154,7 +170,6 @@ cdef class ScriptInstance:
                     r_count[0] = <uint32_t>0
                 return NULL
 
-
     def get_property_list(self) -> List[PropertyInfo]:
         cdef list propinfo_list = []
         cdef VariantType vartype
@@ -172,6 +187,8 @@ cdef class ScriptInstance:
 
             propinfo_list.append(PropertyInfo(vartype, key, self.__name__, hint=hint, usage=usage))
 
+        print('get_property_list:', propinfo_list)
+
         return propinfo_list
 
 
@@ -181,6 +198,7 @@ cdef class ScriptInstance:
             UtilityFunctions.print("get_owner_callback")
             self = <object>p_instance
             return (<ScriptInstance>self).__owner__._owner
+
 
     @staticmethod
     cdef const GDExtensionMethodInfo *get_method_list_callback(void *p_instance, uint32_t *r_count) noexcept nogil:
@@ -201,7 +219,7 @@ cdef class ScriptInstance:
                     r_count[0] = <uint32_t>0
                 return NULL
 
-    def method_list(self) -> List[MethodInfo]:
+    def get_method_list(self) -> List[MethodInfo]:
         cdef list methodinfo_list = []
         cdef VariantType argtype
         cdef int32_t id = 1
@@ -212,7 +230,7 @@ cdef class ScriptInstance:
 
             annotations = getattr(value, '__annotations__', {})
 
-            argnames = list(value.__code__.co_varnames)[1:]
+            argnames = list(value.__code__.co_varnames)[1:value.__code__.co_argcount]
             arguments = []
 
             for name in argnames:
@@ -228,13 +246,14 @@ cdef class ScriptInstance:
 
             id += 1
 
+        print('get_method_list:', methodinfo_list)
         return methodinfo_list
 
 
     @staticmethod
     cdef uint8_t has_method_callback(void *p_instance, const void *p_name) noexcept nogil:
         with gil:
-            UtilityFunctions.print("has_method_callback")
+            # UtilityFunctions.print("has_method_callback")
             self = <object>p_instance
             method_name = type_funcs.string_name_to_pyobject(deref(<StringName *>p_name))
             try:
@@ -247,6 +266,7 @@ cdef class ScriptInstance:
         method = self.__script_dict__.get(method_name, None)
 
         return method is not None and hasattr(method, '__code__')
+
 
     @staticmethod
     cdef int64_t get_method_argument_count_callback(void *p_instance, const void *p_name, uint8_t *r_is_valid) noexcept nogil:
@@ -281,9 +301,10 @@ cdef class ScriptInstance:
             self = <object>p_instance
             method_name = type_funcs.string_name_to_pyobject(deref(<StringName *>p_method))
             method = self.get_method(method_name)
+
             if method is not None:
                 try:
-                    bound_method = PythonCallable(self.__owner__, method)
+                    bound_method = PythonCallable(self.__self__, method)
                 except Exception as exc:
                     print_traceback_and_die(exc)
 
@@ -299,19 +320,21 @@ cdef class ScriptInstance:
     def get_method(self, method_name: Str) -> Optional[typing.Callable]:
         return self.__script_dict__.get(method_name, None)
 
+
     @staticmethod
     cdef void notification_callback(void *p_instance, int32_t p_what, uint8_t p_reversed) noexcept nogil:
         with gil:
-            UtilityFunctions.print("ScriptInstance.notification_callback")
+            # UtilityFunctions.print("ScriptInstance.notification_callback")
             self = <object>p_instance
             try:
-                UtilityFunctions.print("ScriptInstance.notification_callback %r" % p_what)
+                # UtilityFunctions.print("ScriptInstance.notification_callback %r" % p_what)
                 self.notification(p_what, p_reversed)
             except Exception as exc:
                 print_error_with_traceback(exc)
 
     def notification(self, what: int, reversed: bool) -> None:
         raise NotImplementedError()
+
 
     @staticmethod
     cdef void to_string_callback(void *p_instance, uint8_t *r_is_valid, void *r_out) noexcept nogil:
@@ -324,12 +347,14 @@ cdef class ScriptInstance:
             except Exception as exc:
                 print_error_with_traceback(exc)
 
+
     @staticmethod
     cdef void *get_script_callback(void *p_instance) noexcept nogil:
         with gil:
             UtilityFunctions.print("get_script_callback")
             self = <object>p_instance
             return (<ScriptInstance>self).__script__._owner
+
 
     @staticmethod
     cdef uint8_t is_placeholder_callback(void *p_instance) noexcept nogil:
@@ -346,6 +371,7 @@ cdef class ScriptInstance:
     def is_placeholder(self) -> bool:
         raise NotImplementedError()
 
+
     @staticmethod
     cdef void *get_language_callback(void *p_instance) noexcept nogil:
         with gil:
@@ -353,16 +379,20 @@ cdef class ScriptInstance:
             self = <object>p_instance
             return (<ScriptInstance>self).__language__._owner
 
+
     @staticmethod
     cdef void free_callback(void *p_instance) noexcept nogil:
         with gil:
-            (<ScriptInstance>p_instance).free()
+            self = <object>p_instance
+            self.free()
 
-    cdef int free(self) except -1:
-        self._info.free()
-        self.property_info_data.free()
-        self.method_info_data.free()
+    def free(self):
         if self._godot_script_instance != NULL:
+            self._info.free()
+            if self.property_info_data is not None:
+                self.property_info_data.free()
+            if self.method_info_data is not None:
+                self.method_info_data.free()
             ref.Py_DECREF(self)
             del _SCRIPTINSTANCEDB[<uint64_t>self._godot_script_instance]
             self._godot_script_instance = NULL

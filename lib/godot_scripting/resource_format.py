@@ -41,4 +41,4 @@ class ResourceFormatSaverPython(godot.Class, inherits=ResourceFormatSaver, no_vi
 
 
     def save(self, res, path, flags) -> godot.Error:
-        return res.save(path)
+        return res._save(path)

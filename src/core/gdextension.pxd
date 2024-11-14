@@ -302,6 +302,7 @@ cdef class ScriptInstance:
     cdef readonly Extension __language__
     cdef readonly Extension __script__
     cdef readonly Object __owner__
+    cdef readonly object __self__
     cdef readonly dict __script_dict__
 
     cdef _PropertyInfoDataArray property_info_data
@@ -349,8 +350,6 @@ cdef class ScriptInstance:
 
     @staticmethod
     cdef void free_callback(void *p_instance) noexcept nogil
-
-    cdef int free(self) except -1
 
 
 cdef class Class:

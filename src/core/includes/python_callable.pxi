@@ -10,7 +10,7 @@ cdef class PythonCallable(Callable):
         self.initialized = False
 
 
-    def __init__(self, instance: Optional[Object], func: typing.Callable | ExtensionMethod, type_info: Optional[Sequence] = None):
+    def __init__(self, instance: Optional[object], func: typing.Callable | ExtensionMethod, type_info: Optional[Sequence] = None):
         """
         On the side of the Godot Engine creates a custom Callable object with all required callbacks.
 
