@@ -314,8 +314,7 @@ cdef int _make_python_ptrcall(PythonCallable method, void *r_ret, const void **p
     elif return_type == ARGTYPE_RID:
         type_funcs.rid_from_pyobject(value, <_RID *>ret_value_ptr)
     elif return_type == ARGTYPE_OBJECT:
-        object_from_pyobject(value, &ret_value_ptr)
-        return_as_pointer = True
+        object_from_pyobject(value, <void **>ret_value_ptr)
     elif return_type == ARGTYPE_CALLABLE:
         callable_from_pyobject(value, <GodotCppCallable *>ret_value_ptr)
     elif return_type == ARGTYPE_SIGNAL:

@@ -38,7 +38,7 @@ cdef class PythonCallable(Callable):
         else:
             raise ValueError("Python callable is required")
 
-        if type_info is not None:
+        if self.type_info is not None:
             make_optimized_type_info(self.type_info, self._type_info_opt)
 
         self.error_count = 0

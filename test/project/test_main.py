@@ -14,7 +14,7 @@ import math
 import unittest
 
 import godot
-from godot.classdb import OS, Node
+from godot.classdb import Engine, Node, OS
 
 import tests
 from tests._base import BaseTestCase
@@ -93,6 +93,7 @@ class TestMain(godot.Class, inherits=Node):
         if '--verbose-tests' in OS.get_cmdline_args():
             verbosity = 2
 
-        stream = TestStream()
-        runner = unittest.TextTestRunner(stream, verbosity=verbosity)
-        runner.run(self.suite)
+        if not Engine.is_editor_hint():
+            stream = TestStream()
+            runner = unittest.TextTestRunner(stream, verbosity=verbosity)
+            runner.run(self.suite)

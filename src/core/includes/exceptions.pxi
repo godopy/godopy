@@ -4,18 +4,26 @@ def _exc_info_from_exc(exc) -> Tuple[bytes, bytes, int]:
     exc_text = f.getvalue()
     exc_lines = exc_text.splitlines()
 
-    info_line_str = exc_lines[-2]
+    if len(exc_lines) > 1:
+        info_line_str = exc_lines[-2]
 
-    if info_line_str.strip().startswith('^'):
-        info_line_str = exc_lines[-4]
-    elif not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
-        info_line_str = exc_lines[-3]
+        if info_line_str.lstrip().startswith('^'):
+            info_line_str = exc_lines[-4]
+        elif not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
+            info_line_str = exc_lines[-3]
 
-    info_line = [s.strip().strip(',') for s in info_line_str.split()]
+        info_line = [s.strip().strip(',') for s in info_line_str.split()]
 
-    filename = info_line[1].encode('utf-8')
-    function = info_line[-1].encode('utf-8')
-    lineno = int(info_line[3])
+        filename = info_line[1].encode('utf-8')
+        function = info_line[-1].encode('utf-8')
+        lineno = int(info_line[3])
+    else:
+        info_line_str = exc_lines[0]
+        info_line = [s.strip().strip(':') for s in info_line_str.split()]
+        path_line = info_line[1].rsplit(':', 1)
+        filename = path_line[0].encode('utf-8')
+        function = b''
+        lineno = int(path_line[1])
 
     return filename, function, lineno
 
@@ -31,7 +39,7 @@ def print_error(exc, message=None, *, bint editor_notify=True):
     try:
         frame = inspect.currentframe()
         try:
-            frameinfo = inspect.getframeinfo(frame.f_back)
+            frameinfo = inspect.getframeinfo(frame)
 
             filename = frameinfo.filename.encode('utf-8')
             function = frameinfo.function.encode('utf-8')
@@ -75,7 +83,7 @@ def print_warning(warning, message=None, *, bint editor_notify=True):
     try:
         frame = inspect.currentframe()
         try:
-            frameinfo = inspect.getframeinfo(frame.f_back)
+            frameinfo = inspect.getframeinfo(frame)
 
             filename = frameinfo.filename.encode('utf-8')
             function = frameinfo.function.encode('utf-8')
@@ -106,7 +114,7 @@ def print_script_error(exc, message=None, *, bint editor_notify=True):
     try:
         frame = inspect.currentframe()
         try:
-            frameinfo = inspect.getframeinfo(frame.f_back)
+            frameinfo = inspect.getframeinfo(frame)
 
             filename = frameinfo.filename.encode('utf-8')
             function = frameinfo.function.encode('utf-8')

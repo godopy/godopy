@@ -86,8 +86,6 @@ cdef class ScriptInstance:
 
         _SCRIPTINSTANCEDB[<uint64_t>self._godot_script_instance] = self
 
-        print('INSTANCE CREATED')
-
 
     def __dealloc__(self):
         self.free()
@@ -101,12 +99,21 @@ cdef class ScriptInstance:
             name = type_funcs.string_name_to_pyobject(deref(<StringName *>p_name))
             value = type_funcs.variant_to_pyobject(deref(<Variant *>p_value))
             try:
-                self.set(name, value)
+                return self.set(name, value)
             except Exception as exc:
                 print_error_with_traceback(exc)
                 return False
 
         return True
+
+
+    def set(self, name: Str, value: Any) -> bool:
+        if name in self.__script_dict__:
+            self.__script_dict__[name] = value
+            return True
+
+        return False
+
 
     @staticmethod
     cdef uint8_t get_callback(void *p_instance, const void *p_name, void *r_ret) noexcept nogil:
@@ -123,8 +130,6 @@ cdef class ScriptInstance:
 
             return True
 
-    def set(self, name: Str, value: Any) -> None:
-        setattr(self.__owner__, name, value)
 
     def get(self, name: Str) -> Any:
         return getattr(self.__owner__, name, self.__script_dict__.get(name))
