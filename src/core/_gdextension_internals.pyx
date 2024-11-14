@@ -18,20 +18,29 @@ cdef int print_traceback(object exc) except -1:
     cdef int32_t line
 
     try:
-        exc_lines = exc_text.splitlines()
-        info_line_str = exc_lines[-2]
-
-        if info_line_str.lstrip().startswith('^'):
-            info_line_str = exc_lines[-4]
-        elif not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
-            info_line_str = exc_lines[-3]
-
-        info_line = [s.strip().strip(',') for s in info_line_str.split()]
-
         descr = str(exc).encode('utf-8')
-        path = info_line[1].encode('utf-8')
-        func = info_line[-1].encode('utf-8')
-        line = int(info_line[3])
+
+        exc_lines = exc_text.splitlines()
+        if len(exc_lines) > 1:
+            info_line_str = exc_lines[-2]
+
+            if info_line_str.lstrip().startswith('^'):
+                info_line_str = exc_lines[-4]
+            elif not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
+                info_line_str = exc_lines[-3]
+
+            info_line = [s.strip().strip(',') for s in info_line_str.split()]
+
+            path = info_line[1].encode('utf-8')
+            func = info_line[-1].encode('utf-8')
+            line = int(info_line[3])
+        else:
+            info_line_str = exc_lines[0]
+            info_line = [s.strip().strip(':') for s in info_line_str.split()]
+            path_line = info_line[1].rsplit(':', 1)
+            path = path_line[0].encode('utf-8')
+            func = b''
+            line = int(path_line[1])
 
         UtilityFunctions.print_rich("[color=purple]%s[/color]" % exc_text)
         print_error(descr, path, func, line, False)

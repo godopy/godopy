@@ -2,7 +2,7 @@ import sys
 from code import InteractiveConsole
 
 import godot
-from godot.classdb import OS
+from godot.classdb import Engine, OS
 
 class GodotTerminalConsole(InteractiveConsole):
     def __init__(self):
@@ -64,15 +64,16 @@ class GodotTerminalConsole(InteractiveConsole):
         return OS.read_string_from_stdin()
 
 
-def interact(godot_version=None):
+def interact():
     console = GodotTerminalConsole()
 
     banner = [f'\n| Python version {sys.version}\n']
-    if godot_version is not None:
-        banner += [
-            '| Godot Engine version %(major)s.%(minor)s.%(status)s.%(build)s.' % godot_version,
-            f'{godot_version['hash'][:9]}\n',
-        ]
+    godot_version = Engine.get_version_info()
+
+    banner += [
+        '| Godot Engine version %(major)s.%(minor)s.%(status)s.%(build)s.' % godot_version,
+        f'{godot_version['hash'][:9]}\n',
+    ]
     banner += ['| Interactive Console']
 
     console.interact(banner=''.join(banner))

@@ -1,10 +1,11 @@
 import importlib
+from typing import Any
 
 import godot
-from godot import classdb
+from godot.classdb import Object, bind_method
 
 
-class PythonRuntime(godot.Class, inherits=classdb.Object):
-    @classdb.bind_method
-    def import_module(self, name: str) -> object:
+class PythonRuntime(godot.Class, inherits=Object):
+    @bind_method
+    def import_module(self, name: str) -> Any:
         return importlib.import_module(name)
