@@ -4,7 +4,7 @@ All classes in this module are loaded only when they are needed.
 """
 from typing import Callable, List
 
-import godot
+from godot.core import GodotClassBase, EngineClass
 import gdextension
 
 
@@ -52,7 +52,7 @@ def __getattr__(name) -> type:
             if name in _extensions:
                 cls_attrs.update(_extensions[name])
 
-            cls = godot.GodotClassBase(name, (godot.EngineClass,), cls_attrs)
+            cls = GodotClassBase(name, (EngineClass,), cls_attrs)
 
             if gdextension.has_singleton(name):
                 singleton = cls()
