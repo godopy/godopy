@@ -11,6 +11,8 @@ import gdextension
 __all__ = [
     'GodotClassBase',
     'Class',
+    'GDREGISTER_CLASS',
+    'GDCLASS',
     'EngineClass',
     'EngineObject',
     'Extension',
@@ -177,6 +179,35 @@ class Class(Extension, metaclass=GodotClassBase):
             raise TypeError(msg % (self.__godot_class__, list(kwargs.keys()).pop()))
 
         super().__init__(godot_cls, from_callback=from_callback)
+
+
+def GDREGISTER_CLASS(cls: GodotClassBase) -> None:
+    return cls.register()
+
+
+def GDCLASS(cls: GodotClassBase) -> GodotClassBase:
+    if not issubclass(cls, EngineClass):
+        raise TypeError("Expected 'EngineClass' as an argument of 'GDCLASS'")
+
+    def decorator(decorated_cls: type):
+        slots =  getattr(decorated_cls, '__slots__', [])
+
+        new_cls_dict = {
+            k: getattr(decorated_cls, k)
+            for k in decorated_cls.__dict__
+            if k not in ('__dict__', '__weakref__') and k not in slots
+        }
+
+        new_cls = GodotClassBase(
+            decorated_cls.__name__,
+            (Class,),
+            new_cls_dict,
+            inherits=cls
+        )
+
+        return new_cls
+
+    return decorator
 
 
 class EngineObject(gdextension.Object):
