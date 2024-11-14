@@ -21,8 +21,6 @@ cdef class ExtensionProperty:
         if not info.name:
             raise ValueError("Empty 'info.name'")
 
-        (<PropertyInfo>info).usage |= 4  # PROPERTY_USAGE_EDITOR
-
         self.__info__ = info
         self.__name__ = info.name
         self.__setter_name__ = setter_name

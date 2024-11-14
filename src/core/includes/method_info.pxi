@@ -1,6 +1,10 @@
+
+cdef uint32_t PROPERTY_USAGE_DEFAULT = 6
+
+
 cdef class PropertyInfo:
     def __cinit__(self, variant_type: int | type, name: Str = '', uint32_t hint=0, hint_string: Str = '',
-                  uint32_t usage=0, class_name: Str = ''):
+                  uint32_t usage=PROPERTY_USAGE_DEFAULT, class_name: Str = ''):
         if isinstance(variant_type, type):
             self.type = type_funcs.pytype_to_variant_type(variant_type)
         elif isinstance(variant_type, int):
