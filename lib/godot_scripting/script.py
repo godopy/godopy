@@ -18,7 +18,8 @@ class PythonScriptInstance(gdextension.ScriptInstance):
         return False
 
     def notification(self, what, reversed=False):
-        print("NOTIFICATION", what, reversed)
+        # print("NOTIFICATION", what, reversed)
+        pass
 
 
 class PythonPlaceholderScriptInstance(gdextension.ScriptInstance):
@@ -85,7 +86,7 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
     def instance_create(self, for_object: godot.Class) -> PythonScriptInstance:
         self.instance = PythonScriptInstance(self, for_object)
 
-        self._method_info_list = [m.as_dict() for m in self.instance.method_list()]
+        self._method_info_list = [m.as_dict() for m in self.instance.get_method_list()]
         self._method_info_dict = {}
         for m in self._method_info_list:
             self._method_info_dict[m['name']] = m
@@ -209,7 +210,7 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
 
         try:
             with open(abspath, 'w', encoding='utf-8') as f:
-                self.save_source(f)
+                self._save_source(f)
         except Exception as exc:
             gdextension.print_script_error_with_traceback(exc)
             self._set_error(exc)
