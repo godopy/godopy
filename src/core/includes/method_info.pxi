@@ -1,10 +1,6 @@
-
-cdef uint32_t PROPERTY_USAGE_DEFAULT = 6
-
-
 cdef class PropertyInfo:
-    def __cinit__(self, variant_type: int | type, name: Str = '', uint32_t hint=0, hint_string: Str = '',
-                  uint32_t usage=PROPERTY_USAGE_DEFAULT, class_name: Str = ''):
+    def __cinit__(self, variant_type: int | type, name: Str = '', uint32_t hint=PROPERTY_HINT_NONE,
+                  hint_string: Str = '', uint32_t usage=PROPERTY_USAGE_DEFAULT, class_name: Str = ''):
         if isinstance(variant_type, type):
             self.type = type_funcs.pytype_to_variant_type(variant_type)
         elif isinstance(variant_type, int):
@@ -13,7 +9,10 @@ cdef class PropertyInfo:
             raise ValueError("Expected 'type', integer or integer enum, got %r" % variant_type)
 
         self.name = name
-        self.class_name = class_name
+        if hint == PROPERTY_HINT_RESOURCE_TYPE:
+            self.class_name = hint_string
+        else:
+            self.class_name = class_name
         self.hint = hint
         self.hint_string = hint_string
         self.usage = usage
@@ -28,11 +27,22 @@ cdef class PropertyInfo:
         return {
             'name': self.name,
             'type': self.type,
-            'class_name': self.class_name,
             'hint': self.hint,
             'hint_string': self.hint_string,
-            'usage': self.usage
+            'usage': self.usage,
+            'class_name': self.class_name
         }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> PropertyInfo:
+        return cls(
+            d.get('type', NIL),
+            d.get('name', ''),
+            d.get('hint', PROPERTY_HINT_NONE),
+            d.get('hint_string', ''),
+            d.get('usage', PROPERTY_USAGE_DEFAULT),
+            d.get('class_name', '')
+        )
 
 
 cdef class MethodInfo:

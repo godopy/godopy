@@ -1,44 +1,19 @@
 import gdextension
+import godot.core
+import godot.enums
+import godot.global_functions
+
 from godot.core import *
 from godot.enums import *
+from godot.global_functions import *
+
 
 __all__ = [
     'MODULE_INITIALIZATION_LEVEL_CORE',
     'MODULE_INITIALIZATION_LEVEL_EDITOR',
     'MODULE_INITIALIZATION_LEVEL_SCENE',
     'MODULE_INITIALIZATION_LEVEL_SERVERS',
-
-    'GodotClassBase',
-    'Class',
-    'GDREGISTER_CLASS',
-    'GDCLASS',
-    'EngineClass',
-    'EngineObject',
-    'Extension',
-
-    'ClockDirection',
-    'Corner',
-    'Error',
-    'EulerOrder',
-    'HorizontalAlignment',
-    'InlineAlignment',
-    'JoyAxis',
-    'JoyButton',
-    'Key',
-    'KeyLocation',
-    'KeyModifierMask',
-    'MIDIMessage',
-    'MethodFlags',
-    'MouseButton',
-    'MouseButtonMask',
-    'Orientation',
-    'PropertyHint',
-    'PropertyUsageFlags',
-    'Side',
-    'VariantOperator',
-    'VariantType',
-    'VerticalAlignment'
-]
+] + godot.core.__all__ + godot.enums.__all__ + godot.global_functions.__all__
 
 
 MODULE_INITIALIZATION_LEVEL_CORE = gdextension.INITIALIZATION_CORE
