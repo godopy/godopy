@@ -36,31 +36,31 @@ projectdir = 'test/project'
 
 def build_opts(env):
     opts = Variables()
+    # opts.Add(
+    #     BoolVariable(
+    #         key='python_debug',
+    #         help='Use debug version of python',
+    #         default=False,
+    #     )
+    # )
     opts.Add(
         BoolVariable(
-            key='python_debug',
-            help='Use debug version of python',
-            default=False,
-        )
-    )
-    opts.Add(
-        BoolVariable(
-            key='clear_python_files',
+            key='clear_pythonlib',
             help='Delete all previously installed files before copying Python standard library. ' \
-                 'Always on with install_python_stdlib_files',
+                 'Always on with install_pythonlib',
             default=False,
         )
     )
     opts.Add(
         BoolVariable(
-            key='install_python_stdlib_files',
+            key='install_pythonlib',
             help='Installs Python standard library',
             default=True,
         )
     )
     opts.Add(
         BoolVariable(
-            key='compile_python_stdlib',
+            key='compile_pythonlib',
             help='Compile library Python files to byte-code .pyc files',
             default=True,
         )
@@ -125,9 +125,9 @@ def main_godopy_cpp_sources(env):
     sources = Glob('src/*.cpp') + Glob('src/python/*.cpp') + Glob('src/variant/*.cpp')
 
     if env['platform'] == 'windows':
-        env.Append(LIBPATH=[os.path.join('python', 'PCBuild', 'amd64')])
+        env.Append(LIBPATH=[os.path.join('extern', 'cpython', 'PCBuild', 'amd64')])
 
-        python_lib = 'python312_d' if env['python_debug'] else 'python312'
+        python_lib = 'python312'
         env.Append(packages=[python_lib])
         env.Append(CPPDEFINES=['WINDOWS_ENABLED'])
 
@@ -229,8 +229,8 @@ def install_extension_shared_lib(env, library):
 
     if env['platform'] == 'windows':
         # Extension DLL requires Python DLL
-        python_dll_file = 'python312_d.dll' if env['python_debug'] else 'python312.dll'
-        python_dll = os.path.join('python', 'PCBuild', 'amd64', python_dll_file)
+        python_dll_file = 'python312.dll'
+        python_dll = os.path.join('extern', 'cpython', 'PCBuild', 'amd64', python_dll_file)
         python_dll_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_dll_file)
         
         copy.append(env.InstallAs(python_dll_target, python_dll))
@@ -238,6 +238,7 @@ def install_extension_shared_lib(env, library):
     # TODO: Other platforms
 
     return copy
+
 
 class PythonInstaller:
     def __init__(self, env, sources, root_path):
@@ -254,7 +255,7 @@ class PythonInstaller:
                 folder, parent = os.path.split(folder)
                 pyfile = os.path.join(parent, pyfile)
 
-            if env['compile_python_stdlib'] and not force_install:
+            if env['compile_pythonlib'] and not force_install:
                 pyfile += 'c'
 
             target_lib = 'lib'
@@ -263,10 +264,11 @@ class PythonInstaller:
 
             dstfile = os.path.join(projectdir, 'python', 'windows', target_lib, pyfile)
 
-            if env['compile_python_stdlib'] and not force_install:
+            if env['compile_pythonlib'] and not force_install:
                 self.sources.append(env.CompilePyc(dstfile, srcfile))
             else:
                 self.sources.append(env.InstallAs(dstfile, srcfile))
+
 
 class PythonDylibInstaller:
     def __init__(self, env, sources):
@@ -289,10 +291,10 @@ def install_python_standard_library(env):
     projectdir = env['project_dir']
     packages = []
 
-    python_lib_files = Glob('python/Lib/*.py') + Glob('python/Lib/*/*.py')
-    python_dylib_files = Glob('python/PCBuild/amd64/*.pyd')
+    python_lib_files = Glob('extern/cpython/Lib/*.py') + Glob('extern/cpython/Lib/*/*.py')
+    python_dylib_files = Glob('extern/cpython/PCBuild/amd64/*.pyd')
 
-    installer = PythonInstaller(env, packages, os.path.join('python', 'lib'))
+    installer = PythonInstaller(env, packages, os.path.join('extern', 'cpython', 'lib'))
     dylib_installer = PythonDylibInstaller(env, packages)
 
     installer.install(python_lib_files)
@@ -369,14 +371,14 @@ numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
 env = Environment(tools=['default'], PLATFORM='')
 build_opts(env)
 
-if env['install_python_stdlib_files']:
-    env['clear_python_files'] = True
+if env['install_pythonlib']:
+    env['clear_pythonlib'] = True
 
 if not numpy_folder.is_relative_to(env.Dir('#').abspath):
     raise Exception("Virtual Env folder must be located inside the current folder")
 
 
-if env['clear_python_files']:
+if env['clear_pythonlib']:
     projectdir = env['project_dir']
     shutil.rmtree(os.path.join(projectdir, 'python'), ignore_errors=True)
 
@@ -413,7 +415,7 @@ default_args = [
 if not env.dev_build:
     default_args += install_godopy_python_packages(env)
 
-if env['install_python_stdlib_files']:
+if env['install_pythonlib']:
     default_args += install_python_standard_library(env)
     default_args += install_extra_python_packages(env)
 
