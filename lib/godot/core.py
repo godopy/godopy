@@ -1,11 +1,12 @@
 """
 Provides GodotClassBase metaclass and base classes for all Godot classes and objects.
 """
+import enum
 import types
 from typing import Any, Callable, List, Mapping
 
 import gdextension
-
+from gdextension import PropertyInfo as _PropertyInfo
 
 __all__ = [
     'GodotClassBase',
@@ -94,13 +95,10 @@ class GodotClassBase(type):
             def __getattr__(sef, attr):
                 if attr in all_attrs:
                     return all_attrs[attr]
-                try:
-                    return getattr(godot_cls, attr)
-                except AttributeError:
+                value = getattr(godot_cls, attr, None)
+                if value is None:
                     raise AttributeError(f"'{module}.{name}' has no attribute {attr!r}")
-
-            def add_property(self, info: gdextension.PropertyInfo, *args) -> None:
-                all_attrs[info.name] = [info, *args]
+                return value
 
             def bind_method(self, func: Callable) -> Callable:
                 func._gdmethod = func.__name__
@@ -109,6 +107,35 @@ class GodotClassBase(type):
             def bind_virtual_method(self, func: Callable) -> Callable:
                 func._gdvirtualmethod = func.__name__
                 return func
+
+            def bind_int_enum(self, enum_obj: enum.IntEnum) -> enum.IntEnum:
+                all_attrs[f"intenum${enum_obj.__name__}"] = enum_obj
+                return enum_obj
+
+            def bind_bitfield(self, enum_obj: enum.IntEnum) -> enum.IntEnum:
+                all_attrs[f"bitfield${enum_obj.__name__}"] = enum_obj
+                return enum_obj
+
+            def add_property(self, info: _PropertyInfo, *args) -> _PropertyInfo:
+                all_attrs[f"prop${info.name}"] = [info, *args]
+                return info
+
+            def add_property_i(self, info: _PropertyInfo, *args) -> _PropertyInfo:
+                all_attrs[f"idxprop${info.name}"] = [info, *args]
+                return info
+
+            def add_group(self, group_name: str, prefix: str = '') -> str:
+                all_attrs[f"group${group_name}"] = [group_name, prefix]
+                return group_name
+
+            def add_subgroup(self, subgroup_name: str, prefix: str = '') -> str:
+                all_attrs[f"group${subgroup_name}"] = [subgroup_name, prefix]
+                return subgroup_name
+
+            def add_signal(self, signal_name: str, *arguments: _PropertyInfo) -> str:
+                all_attrs[f"signal${signal_name}"] = [signal_name, arguments]
+                return signal_name
+
 
         if _bind_methods_func is not None:
             _bind_methods_func(BindMethodsClassPlaceholder())
@@ -146,8 +173,20 @@ class GodotClassBase(type):
                 new_attrs[attr] = godot_cls.bind_method(value)
             elif getattr(value, '_gdvirtualmethod', False):
                 new_attrs[attr] = godot_cls.add_virtual_method(value)
-            elif isinstance(value, list) and isinstance(value[0], gdextension.PropertyInfo):
+            elif attr.startswith('intenum$'):
+                godot_cls.bind_int_enum(value)
+            elif attr.startswith('bitfield$'):
+                godot_cls.bind_bitfield(value)
+            elif attr.startswith('prop$'):
                 godot_cls.add_property(*value)
+            elif attr.startswith('idxprop$'):
+                godot_cls.add_property_i(*value)
+            elif attr.startswith('group$'):
+                godot_cls.add_group(*value)
+            elif attr.startswith('subgroup$'):
+                godot_cls.add_subgroup(*value)
+            elif attr.startswith('signal$'):
+                godot_cls.add_signal(*value)
             elif isinstance(value, types.FunctionType):
                 new_attrs[attr] = godot_cls.bind_python_method(value)
             else:

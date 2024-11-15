@@ -260,12 +260,14 @@ cdef class ExtensionClass(Class):
         return grp.register(self)
 
 
-    def add_signal(self, signal_name: Str, arguments: List[PropertyInfo] = None) -> None:
+    def add_signal(self, signal_name: Str, arguments: Sequence[PropertyInfo] = None) -> None:
         self._bind.signal[signal_name] = arguments or []
 
 
-    cdef int register_signal(self, signal_name: Str, arguments: List[PropertyInfo]) except -1:
+    cdef int register_signal(self, signal_name: Str, arguments: Sequence[PropertyInfo]) except -1:
         cdef ExtensionSignal sig = ExtensionSignal(signal_name, arguments)
+
+        return sig.register(self)
 
 
     cdef int set_registered(self) except -1:
@@ -423,7 +425,6 @@ cdef class ExtensionClass(Class):
         ci.is_abstract = kwargs.pop('is_abstract', self.is_abstract)
         ci.is_exposed = kwargs.pop('is_exposed', self.is_exposed)
         ci.is_runtime = kwargs.pop('is_runtime', self.is_runtime)
-
 
         self.is_virtual = ci.is_virtual
         self.is_abstract = ci.is_abstract
