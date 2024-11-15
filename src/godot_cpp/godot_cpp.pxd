@@ -94,3 +94,4 @@ include "includes/utility_functions.pxi"
 include "includes/structs.pxi"
 
 include "includes/hashfuncs.pxi"
+include "includes/global_constants.pxi"
