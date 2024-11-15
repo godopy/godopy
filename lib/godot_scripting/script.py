@@ -103,7 +103,7 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
         return False
 
     def has_source_code(self) -> bool:
-        return bool(self.source)
+        return bool(self._source)
 
     def get_source_code(self):
         return self._source
@@ -118,7 +118,7 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
         f.write(self._source)
 
     def _import_module(self, path):
-        self._path = path
+        self._resource_path = path
 
         _, inner_path = path.split('://')
         components = inner_path.split('/')
@@ -126,8 +126,6 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
         name, _ = os.path.splitext(filename)
 
         self._import_path = '.'.join(components + [name])
-
-        # print("Importing %r" % self._import_path)
         self._module = importlib.import_module(self._import_path)
 
         self._script_dict.update(self._module.__dict__)
@@ -177,7 +175,6 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
         self._error = None
 
         abspath = ProjectSettings.globalize_path(path)
-        # print("abspath: %r" % abspath)
 
         try:
             with open(abspath, 'r', encoding='utf-8') as f:

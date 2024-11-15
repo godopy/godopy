@@ -60,4 +60,4 @@ cdef class _Memory:
         """
         cdef uint8_t [:] view = <uint8_t[:self.num_bytes]>self.ptr
 
-        return np.array(view, dtype=np.uint8_t, copy=False)
+        return np.array(view, dtype=np.uint8, copy=False)
