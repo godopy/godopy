@@ -12,10 +12,10 @@ cdef class ExtensionSignal:
         self.is_registered = False
 
 
-    def __init__(self, name: Str, arguments: List[PropertyInfo] = None) -> None:
+    def __init__(self, name: Str, arguments: Sequence[PropertyInfo] = None) -> None:
         self.__name__ = name
         if arguments is not None:
-            self.__arguments__ = arguments
+            self.__arguments__ = list(arguments)
 
 
     cdef int register(self, ExtensionClass cls) except -1:

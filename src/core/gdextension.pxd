@@ -480,7 +480,7 @@ cdef class ExtensionClass(Class):
                                        int64_t index) except -1
     cdef int register_property_group(self, group_name: Str, prefix: Str) except -1
     cdef int register_property_subgroup(self, subgroup_name: Str, prefix: Str) except -1
-    cdef int register_signal(self, signal_name: Str, arguments: List[PropertyInfo]) except -1
+    cdef int register_signal(self, signal_name: Str, arguments: Sequence[PropertyInfo]) except -1
 
     cdef int set_registered(self) except -1
     cdef int unregister(self) except -1
