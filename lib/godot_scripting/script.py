@@ -18,7 +18,6 @@ class PythonScriptInstance(gdextension.ScriptInstance):
         return False
 
     def notification(self, what, reversed=False):
-        # print("NOTIFICATION", what, reversed)
         pass
 
 
@@ -70,7 +69,6 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
         return self.base_script
 
     def get_global_name(self):
-        # print("get_gloabal_name", self.name)
         return self.name
 
     def inherits_script(self, script) -> bool:
@@ -93,8 +91,8 @@ class PythonScript(godot.Class, inherits=ScriptExtension, no_virtual_underscore=
 
         return self.instance
 
-    def placeholder_instance_create(self, for_object: godot.Class) -> PythonScriptInstance:
-        self.instance = PythonScriptInstance(self, for_object)
+    def placeholder_instance_create(self, for_object: godot.Class) -> PythonPlaceholderScriptInstance:
+        self.instance = PythonPlaceholderScriptInstance(self, for_object)
 
         return self.instance
 

@@ -145,7 +145,7 @@ cdef class PythonCallable(Callable):
             if af == bf:
                 return ai < bi
 
-            return af < bi
+            return af < bf
 
 
     @staticmethod
