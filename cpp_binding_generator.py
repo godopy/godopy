@@ -1000,15 +1000,6 @@ def generate_builtin_class_header(builtin_api, size, used_classes, fully_used_cl
             if f'set_{member["name"]}' not in method_list:
                 result.append(f'\tvoid set_{member["name"]}({type_for_parameter(member["type"])}value);')
 
-    result += [
-        "",
-        "\ttemplate<typename T>",
-        "\t_FORCE_INLINE_ T to_type() const {",
-        "\t\treturn operator T();",
-        "\t}",
-        ""
-    ]
-
     if "operators" in builtin_api:
         for operator in builtin_api["operators"]:
             if is_valid_cpp_operator(operator["name"]):

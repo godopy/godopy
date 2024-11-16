@@ -36,6 +36,4 @@ cdef extern from "godot_cpp/variant/string.hpp" namespace "godot" nogil:
 
         String get_base_dir() const
 
-        T to_type[T]() const
-
         void *_native_ptr()

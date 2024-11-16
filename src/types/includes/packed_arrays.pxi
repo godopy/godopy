@@ -610,35 +610,35 @@ cdef public object packed_vector4_array_to_pyobject(const cpp.PackedVector4Array
 
 
 cdef public object variant_packed_byte_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedByteArray arr = v.to_type[cpp.PackedByteArray]()
+    cdef cpp.PackedByteArray arr = <cpp.PackedByteArray>v
     cdef _PackedByteArrayData data = _PackedByteArrayData.from_cpp(arr)
 
     return data.arr
 
 
 cdef public object variant_packed_int32_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedInt32Array arr = v.to_type[cpp.PackedInt32Array]()
+    cdef cpp.PackedInt32Array arr = <cpp.PackedInt32Array>v
     cdef _PackedInt32ArrayData data = _PackedInt32ArrayData.from_cpp(arr)
 
     return data.arr
 
 
 cdef public object variant_packed_int64_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedInt64Array arr = v.to_type[cpp.PackedInt64Array]()
+    cdef cpp.PackedInt64Array arr = <cpp.PackedInt64Array>v
     cdef _PackedInt64ArrayData data = _PackedInt64ArrayData.from_cpp(arr)
 
     return data.arr
 
 
 cdef public object variant_packed_float32_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedFloat32Array arr = v.to_type[cpp.PackedFloat32Array]()
+    cdef cpp.PackedFloat32Array arr = <cpp.PackedFloat32Array>v
     cdef _PackedFloat32ArrayData data = _PackedFloat32ArrayData.from_cpp(arr)
 
     return data.arr
 
 
 cdef public object variant_packed_float64_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedFloat64Array arr = v.to_type[cpp.PackedFloat64Array]()
+    cdef cpp.PackedFloat64Array arr = <cpp.PackedFloat64Array>v
     cdef _PackedFloat64ArrayData data = _PackedFloat64ArrayData.from_cpp(arr)
 
     return data.arr
@@ -646,7 +646,7 @@ cdef public object variant_packed_float64_array_to_pyobject(const cpp.Variant &v
 
 # NOTE: PackedStringArrays are converted to lists by default
 cdef public object variant_packed_string_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedStringArray arr = v.to_type[cpp.PackedStringArray]()
+    cdef cpp.PackedStringArray arr = <cpp.PackedStringArray>v
     cdef int64_t size = arr.size(), i = 0
 
     cdef list pylist = PyList_New(size)
@@ -661,28 +661,28 @@ cdef public object variant_packed_string_array_to_pyobject(const cpp.Variant &v)
 
 
 cdef public object variant_packed_vector2_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedVector2Array arr = v.to_type[cpp.PackedVector2Array]()
+    cdef cpp.PackedVector2Array arr = <cpp.PackedVector2Array>v
     cdef _PackedVector2ArrayData data = _PackedVector2ArrayData.from_cpp(arr)
 
     return data.arr
 
 
 cdef public object variant_packed_vector3_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedVector3Array arr = v.to_type[cpp.PackedVector3Array]()
+    cdef cpp.PackedVector3Array arr = <cpp.PackedVector3Array>v
     cdef _PackedVector3ArrayData data = _PackedVector3ArrayData.from_cpp(arr)
 
     return data.arr
 
 
 cdef public object variant_packed_color_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedColorArray arr = v.to_type[cpp.PackedColorArray]()
+    cdef cpp.PackedColorArray arr = <cpp.PackedColorArray>v
     cdef _PackedColorArrayData data = _PackedColorArrayData.from_cpp(arr)
 
     return data.arr
 
 
 cdef public object variant_packed_vector4_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.PackedVector4Array arr = v.to_type[cpp.PackedVector4Array]()
+    cdef cpp.PackedVector4Array arr = <cpp.PackedVector4Array>v
     cdef _PackedVector4ArrayData data = _PackedVector4ArrayData.from_cpp(arr)
 
     return data.arr

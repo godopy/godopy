@@ -146,7 +146,7 @@ cdef public object vector3i_to_pyobject(const cpp.Vector3i &vec):
 
 
 cdef public object variant_vector3_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Vector3 vec = v.to_type[cpp.Vector3]()
+    cdef cpp.Vector3 vec = <cpp.Vector3>v
     cdef const float [:] vec_view = vec.coord
     cdef numpy.ndarray pyarr = as_vector3(vec_view, dtype=np.float32)
 
@@ -154,7 +154,7 @@ cdef public object variant_vector3_to_pyobject(const cpp.Variant &v):
 
 
 cdef public object variant_vector3i_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Vector3i vec = v.to_type[cpp.Vector3i]()
+    cdef cpp.Vector3i vec = <cpp.Vector3i>v
     cdef const int32_t [:] vec_view = vec.coord
     cdef numpy.ndarray pyarr = as_vector3i(vec_view, dtype=np.int32)
 

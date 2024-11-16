@@ -197,7 +197,7 @@ cdef public object rect2i_to_pyobject(const cpp.Rect2i &p_rect):
 
 
 cdef public object variant_rect2_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Rect2 rect = v.to_type[cpp.Rect2]()
+    cdef cpp.Rect2 rect = <cpp.Rect2>v
 
     cdef const float [:] position_view = rect.position.coord
     cdef const float [:] size_view = rect.size.coord
@@ -211,7 +211,7 @@ cdef public object variant_rect2_to_pyobject(const cpp.Variant &v):
 
 
 cdef public object variant_rect2i_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Rect2i rect = v.to_type[cpp.Rect2i]()
+    cdef cpp.Rect2i rect = <cpp.Rect2i>v
     cdef const int32_t [:] position_view = rect.position.coord
     cdef const int32_t [:] size_view = rect.size.coord
 

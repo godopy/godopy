@@ -21,7 +21,7 @@ cdef public object object_to_pyobject(void *p_godot_object):
 
 
 cdef public object variant_object_to_pyobject(const Variant &v):
-    cdef GodotCppObject *o = v.to_type[GodotCppObjectPtr]()
+    cdef GodotCppObject *o = <GodotCppObjectPtr>v
 
     return object_to_pyobject(o._owner)
 

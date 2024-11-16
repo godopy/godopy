@@ -87,8 +87,6 @@ cdef extern from "godot_cpp/variant/variant.hpp" namespace "godot" nogil:
         Variant(const PackedVector4Array &)
         Variant(const PyObject *)
 
-        T to_type[T]() const
-
         void *_native_ptr()
         object pythonize() const
         uint8_t booleanize() const
