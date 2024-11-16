@@ -25,7 +25,7 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
     cdef int call(self, object instance, const Variant **p_args, size_t p_count, Variant *r_ret,
                    GDExtensionCallError *r_error) except -1:
 
-        cdef PythonCallable method = PythonCallable(instance, self.__func__)
+        cdef PythonCallable method = PythonCallable(instance, self.func)
 
         try:
             _make_python_varcall(method, p_args, p_count, r_ret, r_error)
@@ -58,7 +58,7 @@ cdef class ExtensionMethod(_ExtensionMethodBase):
 
 
     def __call__(self, instance, *args, **kwargs):
-        return self.__func__(instance, *args, **kwargs)
+        return self.func(instance, *args, **kwargs)
 
 
     cdef int register(self, ExtensionClass cls) except -1:

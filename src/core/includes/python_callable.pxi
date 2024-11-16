@@ -5,7 +5,7 @@ cdef class PythonCallable(Callable):
     def __cinit__(self, *args, **kwargs):
         self.type_info = None
         self._type_info_opt = [0]*16
-        self.__func__ = None
+        self.func = None
         self.__name__ = ''
         self.initialized = False
 
@@ -28,11 +28,11 @@ cdef class PythonCallable(Callable):
         if isinstance(func, ExtensionMethod):
             method = func
             assert method.is_registered, "attempt to bind unregistered extension method"
-            self.__func__ = method.__func__
+            self.func = method.func
             self.type_info = method.type_info
 
         elif callable(func):
-            self.__func__ = func
+            self.func = func
             self.type_info = type_info
 
         else:
@@ -68,9 +68,9 @@ cdef class PythonCallable(Callable):
 
     def __call__(self, *args, **kwargs):
         if self.__self__ is not None:
-            return self.__func__(self.__self__, *args, **kwargs)
+            return self.func(self.__self__, *args, **kwargs)
         else:
-            return self.__func__(*args, **kwargs)
+            return self.func(*args, **kwargs)
 
 
     def __str__(self):
@@ -111,7 +111,7 @@ cdef class PythonCallable(Callable):
 
 
     cdef uint32_t hash(self) except -1:
-        _hash = hash_murmur3_one_64(<uint64_t><PyObject *>self.__func__)
+        _hash = hash_murmur3_one_64(<uint64_t><PyObject *>self.func)
         if self.__self__ is not None:
             _hash =  hash_murmur3_one_64(<uint64_t><PyObject *>self.__self__, _hash)
 
@@ -122,8 +122,8 @@ cdef class PythonCallable(Callable):
     cdef uint8_t equal_callback(void *callable_userdata_a, void *callable_userdata_b) noexcept nogil:
         cdef uint64_t af, bf, ai, di
         with gil:
-            af = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).__func__
-            bf = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).__func__
+            af = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).func
+            bf = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).func
             ai = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).__self__
             bi = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).__self__
 
@@ -137,8 +137,8 @@ cdef class PythonCallable(Callable):
     cdef uint8_t less_than_callback(void *callable_userdata_a, void *callable_userdata_b) noexcept nogil:
         cdef uint64_t af, bf, ai, di
         with gil:
-            af = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).__func__
-            bf = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).__func__
+            af = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).func
+            bf = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).func
             ai = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).__self__
             bi = <uint64_t><PyObject *>(<PythonCallable>callable_userdata_a).__self__
 
@@ -175,14 +175,14 @@ cdef class PythonCallable(Callable):
 
 
     cdef int64_t get_argument_count(self) except -1:
-        if self.__func__ is None:
+        if self.func is None:
             raise ValueError('%r function is not initialized' % self.__class__)
 
         # TODO: Support different Python callables
         if self.__self__ is not None:
-            return self.__func__.__code__.co_argcount - 1
+            return self.func.__code__.co_argcount - 1
         else:
-            return self.__func__.__code__.co_argcount
+            return self.func.__code__.co_argcount
 
 
     @staticmethod

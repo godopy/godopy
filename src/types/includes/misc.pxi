@@ -34,7 +34,7 @@ cdef public object string_name_to_pyobject(const cpp.StringName &p_val):
 
 
 cdef public object variant_string_name_to_pyobject(const cpp.Variant &v):
-    cdef cpp.String ret = v.to_type[cpp.String]()
+    cdef cpp.String ret = <cpp.String>v
     cdef cpp.CharWideString wstr
     cdef int64_t len = gdextension_interface_string_to_wide_chars(ret._native_ptr(), NULL, 0)
     wstr.resize(len + 1)
@@ -82,7 +82,7 @@ cdef public object node_path_to_pyobject(const cpp.NodePath &p_val):
 
 
 cdef public object variant_node_path_to_pyobject(const cpp.Variant &v):
-    cdef cpp.String ret = v.to_type[cpp.String]()
+    cdef cpp.String ret = <cpp.String>v
     cdef cpp.CharWideString wstr
     cdef int64_t len = gdextension_interface_string_to_wide_chars(ret._native_ptr(), NULL, 0)
     wstr.resize(len + 1)
@@ -160,7 +160,7 @@ cdef public object rid_to_pyobject(const cpp._RID &p_val):
 
 
 cdef public object variant_rid_to_pyobject(const cpp.Variant &v):
-    cdef cpp._RID rid = v.to_type[cpp._RID]()
+    cdef cpp._RID rid = <cpp._RID>v
 
     return RID.from_cpp_rid(rid)
 
@@ -208,7 +208,7 @@ cdef public object signal_to_pyobject(const cpp.GodotCppSignal &s):
 
 
 cdef public object variant_signal_to_pyobject(const cpp.Variant &v):
-    cdef cpp.GodotCppSignal s = v.to_type[cpp.GodotCppSignal]()
+    cdef cpp.GodotCppSignal s = <cpp.GodotCppSignal>v
 
     return Signal.from_cpp(s)
 
@@ -259,7 +259,7 @@ cdef public object dictionary_to_pyobject(const cpp.Dictionary &p_val):
 
 
 cdef public object variant_dictionary_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Dictionary ret = v.to_type[cpp.Dictionary]()
+    cdef cpp.Dictionary ret = <cpp.Dictionary>v
 
     return dictionary_to_pyobject(ret)
 
@@ -432,7 +432,7 @@ cdef public object array_to_pyobject(const cpp.Array &p_arr):
 
 
 cdef public object variant_array_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Array ret = v.to_type[cpp.Array]()
+    cdef cpp.Array ret = <cpp.Array>v
 
     return array_to_pyobject(ret)
 

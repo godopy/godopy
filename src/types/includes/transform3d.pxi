@@ -124,7 +124,7 @@ cdef public object transform3d_to_pyobject(const cpp.Transform3D &t):
 
 
 cdef public object variant_transform3d_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Transform3D t = v.to_type[cpp.Transform3D]()
+    cdef cpp.Transform3D t = <cpp.Transform3D>v
     cdef float [:, :] b_view = <float [:3, :3]><float *>t.basis.rows
     cdef float [:] o_view = <float [:]>t.origin.coord
     cdef numpy.ndarray pyarr = Transform3D(dtype=np.float32)

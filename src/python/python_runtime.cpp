@@ -6,6 +6,9 @@
 #include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/classes/engine.hpp>
 
+#ifdef LINUX_ENABLED
+#include <dlfcn.h>
+#endif
 
 PyMODINIT_FUNC PyInit__gdextension_internals(void);
 PyMODINIT_FUNC PyInit_entry_point(void);
@@ -69,6 +72,13 @@ int PythonRuntime::set_config_paths(PyConfig *config) {
 
 	UtilityFunctions::print_verbose("[Python] Python library name: " + exec_path);
 	UtilityFunctions::print_verbose("[Python] Detected project folder: " + res_path);
+
+#ifdef LINUX_ENABLED
+	// Make Python symbols available for core Python extension modules on Linux
+	// Idea from https://stackoverflow.com/questions/11842920/undefined-symbol-pyexc-importerror-when-embedding-python-in-c#11847653
+	// and https://stackoverflow.com/questions/67891197/ctypes-cpython-39-x86-64-linux-gnu-so-undefined-symbol-pyfloat-type-in-embedd/67894308#67894308
+	const void *___so_handle = dlopen(library_path.utf8().get_data(), RTLD_GLOBAL | RTLD_NOW);
+#endif
 
 	SET_PYCONFIG_STRING(&config->program_name, exec_path.wide_string());
 	SET_PYCONFIG_STRING(&config->base_exec_prefix, exec_prefix.wide_string());

@@ -105,7 +105,7 @@ cdef public object transform2d_to_pyobject(const cpp.Transform2D &t):
 
 
 cdef public object variant_transform2d_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Transform2D t = v.to_type[cpp.Transform2D]()
+    cdef cpp.Transform2D t = <cpp.Transform2D>v
     cdef float [:, :] t_view = <float [:3, :2]><float *>t.columns
     cdef numpy.ndarray pyarr = as_transform2d(t_view, dtype=np.float32)
 

@@ -145,7 +145,7 @@ cdef public object aabb_to_pyobject(const cpp._AABB &p_aabb):
 
 
 cdef public object variant_aabb_to_pyobject(const cpp.Variant &v):
-    cdef cpp._AABB aabb = v.to_type[cpp._AABB]()
+    cdef cpp._AABB aabb = <cpp._AABB>v
 
     cdef const float [:] position_view = aabb.position.coord
     cdef const float [:] size_view = aabb.size.coord

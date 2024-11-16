@@ -101,7 +101,7 @@ cdef public object quaternion_to_pyobject(const cpp.Quaternion &q):
 
 
 cdef public object variant_quaternion_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Quaternion q = v.to_type[cpp.Quaternion]()
+    cdef cpp.Quaternion q = <cpp.Quaternion>v
     cdef float [:] q_view = q.components
     cdef numpy.ndarray pyarr = Quaternion(q_view, dtype=np.float32, copy=True)
 

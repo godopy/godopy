@@ -120,7 +120,7 @@ cdef public object color_to_pyobject(const cpp.Color &p_color):
 
 
 cdef public object variant_color_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Color color = v.to_type[cpp.Color]()
+    cdef cpp.Color color = <cpp.Color>v
     cdef float [:] color_view = color.components
     cdef numpy.ndarray pyarr = as_color(color_view, dtype=np.float32)
 

@@ -5,8 +5,8 @@ of the GDExtension API.
 
 cimport cython
 from cython.operator cimport dereference as deref
-from libcpp.vector cimport vector
-from libcpp.unordered_map cimport unordered_map
+from libcpp_vector cimport vector
+# from libcpp.unordered_map cimport unordered_map
 from cpython cimport (
     PyObject, ref, pystate, PyLong_Check, PyLong_AsSsize_t, PyBytes_AsString,
     PyList_New, PyList_SET_ITEM, PyTuple_New, PyTuple_SET_ITEM

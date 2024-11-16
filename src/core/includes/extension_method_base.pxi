@@ -2,12 +2,12 @@ cdef class _ExtensionMethodBase:
     def __cinit__(self, *args):
         self.is_registered = False
         self.type_info = ()
-        self.__func__ = None
+        self.func = None
         self.__name__ = ''
 
 
     def __init__(self, object method: typing.Callable, name: Optiona[Str] = None) -> None:
-        self.__func__ = method
+        self.func = method
         self.__name__ = name or method.__name__
 
 
@@ -24,24 +24,24 @@ cdef class _ExtensionMethodBase:
 
 
     cdef list get_default_arguments(self):
-        if self.__func__.__defaults__ is None:
+        if self.func.__defaults__ is None:
             return []
-        return [arg for arg in self.__func__.__defaults__]
+        return [arg for arg in self.func.__defaults__]
 
 
     cdef PropertyInfo get_argument_info(self, int pos):
         cdef PropertyInfo pi = PropertyInfo(NIL)
 
         if pos >= 0:
-            pi.name = self.__func__.__code__.co_varnames[pos]
-            pi.type = type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get(pi.name, None))
+            pi.name = self.func.__code__.co_varnames[pos]
+            pi.type = type_funcs.pytype_to_variant_type(self.func.__annotations__.get(pi.name, None))
 
         return pi
 
 
     cdef PropertyInfo get_return_info(self):
         return PropertyInfo(
-            type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get('return', None)),
+            type_funcs.pytype_to_variant_type(self.func.__annotations__.get('return', None)),
         )
 
 
@@ -50,7 +50,7 @@ cdef class _ExtensionMethodBase:
 
 
     cdef int get_return_metadata(self) noexcept:
-        cdef VariantType t = type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get('return', None))
+        cdef VariantType t = type_funcs.pytype_to_variant_type(self.func.__annotations__.get('return', None))
 
         return self.metadata_from_type(t)
 
@@ -72,8 +72,8 @@ cdef class _ExtensionMethodBase:
         for i in range(self.get_argument_count()):
             metadata = <int>GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE
             if i > 0:
-                name = self.__func__.__code__.co_varnames[i]
-                t = type_funcs.pytype_to_variant_type(self.__func__.__annotations__.get(name, None))
+                name = self.func.__code__.co_varnames[i]
+                t = type_funcs.pytype_to_variant_type(self.func.__annotations__.get(name, None))
                 metadata = self.metadata_from_type(t)
             metadata_list.append(metadata)
 
@@ -81,9 +81,9 @@ cdef class _ExtensionMethodBase:
 
 
     cdef GDExtensionBool has_return(self) noexcept:
-        return <GDExtensionBool>bool(self.__func__.__annotations__.get('return'))
+        return <GDExtensionBool>bool(self.func.__annotations__.get('return'))
 
 
     cdef uint32_t get_argument_count(self) noexcept:
         # includes self
-        return <uint32_t>self.__func__.__code__.co_argcount
+        return <uint32_t>self.func.__code__.co_argcount

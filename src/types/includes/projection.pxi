@@ -102,7 +102,7 @@ cdef public object projection_to_pyobject(const cpp.Projection &p):
 
 
 cdef public object variant_projection_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Projection p = v.to_type[cpp.Projection]()
+    cdef cpp.Projection p = <cpp.Projection>v
     cdef float [:, :] p_view = <float [:4, :4]><float *>p.columns
     cdef numpy.ndarray pyarr = as_projection(p_view, dtype=np.float32)
 

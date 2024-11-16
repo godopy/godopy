@@ -236,7 +236,7 @@ cdef class Callable:
 
 cdef class PythonCallable(Callable):
     cdef readonly object __name__
-    cdef readonly object __func__
+    cdef readonly object func
     cdef readonly object __self__
 
     cdef readonly object type_info
@@ -369,7 +369,7 @@ cdef class Class:
 
 cdef class _ExtensionMethodBase:
     cdef readonly object __name__
-    cdef readonly object __func__
+    cdef readonly object func
     cdef readonly bint is_registered
     cdef readonly tuple type_info
 

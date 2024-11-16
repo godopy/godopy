@@ -40,7 +40,7 @@ cdef public object int_to_pyobject(const int64_t p_int):
 
 
 cdef public object variant_int_to_pyobject(const cpp.Variant &v):
-    cdef int64_t ret = v.to_type[int64_t]()
+    cdef int64_t ret = <int64_t>v
 
     return ret
 
@@ -65,7 +65,7 @@ cdef public object float_to_pyobject(const double p_float):
 
 
 cdef public object variant_float_to_pyobject(const cpp.Variant &v):
-    cdef double ret = v.to_type[double]()
+    cdef double ret = <double>v
 
     return ret
 

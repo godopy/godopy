@@ -101,7 +101,7 @@ cdef public object basis_to_pyobject(const cpp.Basis &b):
 
 
 cdef public object variant_basis_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Basis b = v.to_type[cpp.Basis]()
+    cdef cpp.Basis b = <cpp.Basis>v
     cdef float [:, :] b_view = <float [:3, :3]><float *>b.rows
     cdef numpy.ndarray pyarr = Basis(b_view, dtype=np.float32, copy=True)
 

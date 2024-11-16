@@ -55,7 +55,7 @@ cdef public object callable_to_pyobject(const GodotCppCallable &p_callable):
 
 
 cdef public object variant_callable_to_pyobject(const Variant &v):
-    cdef GodotCppCallable c = v.to_type[GodotCppCallable]()
+    cdef GodotCppCallable c = <GodotCppCallable>v
 
     return callable_to_pyobject(c)
 

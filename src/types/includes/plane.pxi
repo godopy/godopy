@@ -125,7 +125,7 @@ cdef public object plane_to_pyobject(const cpp.Plane &plane):
 
 
 cdef public object variant_plane_to_pyobject(const cpp.Variant &v):
-    cdef cpp.Plane plane = v.to_type[cpp.Plane]()
+    cdef cpp.Plane plane = <cpp.Plane>v
     cdef numpy.ndarray pyarr = Plane([*list(plane.normal.coord), plane.d], dtype=np.float32, copy=True)
 
     return pyarr

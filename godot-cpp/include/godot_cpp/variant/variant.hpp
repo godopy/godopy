@@ -231,12 +231,6 @@ public:
 
 	~Variant();
 
-	// Cython cannot work with operator <Type> methods, but can work with templates
-	template<typename T>
-	_FORCE_INLINE_ T to_type() const {
-		return operator T();
-	}
-
 	operator bool() const;
 	operator int64_t() const;
 	operator int32_t() const;
