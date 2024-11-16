@@ -2,7 +2,9 @@
 
 import os
 import re
+import sys
 import shutil
+import zipfile
 from pathlib import Path
 
 
@@ -34,15 +36,17 @@ libname = 'GodoPy'
 projectdir = 'test/project'
 
 
+pythonlib_exclude_default = [
+    'lib2to3',
+    'idlelib',
+    'test',
+    'tkinter',
+    'turtledemo'
+]
+
 def build_opts(env):
     opts = Variables()
-    # opts.Add(
-    #     BoolVariable(
-    #         key='python_debug',
-    #         help='Use debug version of python',
-    #         default=False,
-    #     )
-    # )
+
     opts.Add(
         BoolVariable(
             key='clear_pythonlib',
@@ -51,6 +55,7 @@ def build_opts(env):
             default=False,
         )
     )
+
     opts.Add(
         BoolVariable(
             key='install_pythonlib',
@@ -58,13 +63,7 @@ def build_opts(env):
             default=True,
         )
     )
-    opts.Add(
-        BoolVariable(
-            key='compile_pythonlib',
-            help='Compile library Python files to byte-code .pyc files',
-            default=True,
-        )
-    )
+
     opts.Add(
         PathVariable(
             key='project_dir',
@@ -73,9 +72,13 @@ def build_opts(env):
             validator=validate_parent_dir,
         )
     )
+
     opts.Update(env)
 
     Help(opts.GenerateHelpText(env))
+
+    # TODO: Allow customization
+    env['pythonlib_exclude'] = pythonlib_exclude_default
 
 
 def setup_builders(env):
@@ -100,8 +103,27 @@ def setup_builders(env):
         '$SOURCE'
     ])
 
-    def compile_to_bytecode(target, source, env):
-        py_compile.compile(str(source[0]), str(target[0]))
+    def writepy(target, source, env):
+        import importlib.machinery
+        import importlib._bootstrap_external
+
+        target_paths = env['python_target_paths']
+        with zipfile.ZipFile(str(target[0]), 'w') as pythonlib:
+            for srcfile, dstfile in zip(source, target_paths):
+                loader = importlib.machinery.SourceFileLoader('<py_compile>', str(srcfile))
+                source_bytes = loader.get_data(str(srcfile))
+                try:
+                    code = loader.source_to_code(source_bytes, str(srcfile))
+                except Exception as err:
+                    sys.stderr.write(f"Error during bytecode compilation of {str(dstfile)!r}: {err}\n")
+                    continue
+
+                source_stats = loader.path_stats(str(srcfile))
+                bytecode = importlib._bootstrap_external._code_to_timestamp_pyc(
+                    code, source_stats['mtime'], source_stats['size'])
+
+                # print(str(srcfile), str(dstfile))
+                pythonlib.writestr(str(dstfile), bytecode)
 
     env.Append(BUILDERS={
         'Cython': Builder(
@@ -110,12 +132,12 @@ def setup_builders(env):
             src_suffox='.pyx'
         ),
 
-        'GenerateBindings': Builder
-            (action=Action(scons_generate_bindings),
-             emitter=scons_emit_files
+        'GenerateBindings': Builder(
+            action=Action(scons_generate_bindings),
+            emitter=scons_emit_files
         ),
 
-        'CompilePyc': Builder(action=compile_to_bytecode)
+        'WritePy': Builder(action=writepy)
     })
 
 
@@ -160,11 +182,6 @@ def _generated_cython_sources(env):
 
 def cython_sources(env):
     generated = _generated_cython_sources(env)
-
-    # always required:
-    # 'encodings/__init__.py', 'encodings/aliases.py', 'encodings/utf_8.py', 'codecs.py',
-    # 'io.py', 'abc.py', 'types.py',
-    # 'encodings/latin_1.py',
 
     sources = [
         env.Cython('src/core/_gdextension_internals.pyx'),
@@ -246,8 +263,8 @@ class PythonInstaller:
         self.env = env
         self.sources = sources
 
-    def install(self, files, site_packages=False, force_install=False):
-        projectdir = self.env['project_dir']
+    def get_pairs(self, files):
+        pairs = []
 
         for srcfile in files:
             folder, pyfile = os.path.split(str(srcfile))
@@ -255,20 +272,11 @@ class PythonInstaller:
                 folder, parent = os.path.split(folder)
                 pyfile = os.path.join(parent, pyfile)
 
-            if env['compile_pythonlib'] and not force_install:
-                pyfile += 'c'
+            pyfile += 'c'
 
-            target_lib = 'lib'
-            if site_packages:
-                target_lib = os.path.join(target_lib, 'site-packages')
+            pairs.append((pyfile, srcfile))
 
-            dstfile = os.path.join(projectdir, 'python', 'windows', target_lib, pyfile)
-
-            if env['compile_pythonlib'] and not force_install:
-                self.sources.append(env.CompilePyc(dstfile, srcfile))
-            else:
-                self.sources.append(env.InstallAs(dstfile, srcfile))
-
+        return pairs
 
 class PythonDylibInstaller:
     def __init__(self, env, sources):
@@ -280,32 +288,43 @@ class PythonDylibInstaller:
 
         for srcfile in files:
             pyfile = os.path.basename(str(srcfile))
-            dstfolder = os.path.join(projectdir, 'python', 'windows', 'lib')
+
+            if pyfile.endswith('.pyd') and 'cp312' in pyfile:
+                # Strip extra ext
+                pyfile = os.path.splitext(os.path.splitext(pyfile)[0])[0] + '.pyd'
+
+            dstfolder = os.path.join(projectdir, 'bin', 'windows')
+
             if folder is not None:
                 dstfolder = os.path.join(dstfolder, folder)
+
             dstfile = os.path.join(dstfolder, pyfile)
             self.sources.append(env.InstallAs(dstfile, srcfile))
 
-
 def install_python_standard_library(env):
-    projectdir = env['project_dir']
     packages = []
 
     python_lib_files = Glob('extern/cpython/Lib/*.py') + Glob('extern/cpython/Lib/*/*.py')
-    python_dylib_files = Glob('extern/cpython/PCBuild/amd64/*.pyd')
+    python_dylib_files = [
+        f for f in Glob('extern/cpython/PCBuild/amd64/*.pyd')
+        if 'test' not in str(f) and 'tkinter' not in str(f) and 'xxlimited' not in str(f)
+    ]
+
+    files_filtered = []
+
+    for f in python_lib_files:
+        for path in env['pythonlib_exclude']:
+            if f.relpath[19:].startswith(path):
+                break
+        else:
+            files_filtered.append(f)
 
     installer = PythonInstaller(env, packages, os.path.join('extern', 'cpython', 'lib'))
     dylib_installer = PythonDylibInstaller(env, packages)
 
-    installer.install(python_lib_files)
     dylib_installer.install(python_dylib_files)
 
-    packages.append(env.InstallAs(
-        os.path.join(projectdir, 'python', '.gdignore'),
-        '.gdignore'
-    ))
-
-    return packages
+    return packages, installer.get_pairs(files_filtered)
 
 
 def install_extra_python_packages(env):
@@ -323,33 +342,33 @@ def install_extra_python_packages(env):
             *Glob(str(numpy_folder / '*' / '*' / '*.py')),
             *Glob(str(numpy_folder / '*' / '*' / '*' / '*.py')),
             *Glob(str(numpy_folder / '*' / '*' / '*' / '*' / '*.py'))
-        ]
+        ] if f'{os.sep}tests{os.sep}' not in str(f)
+             and f'{os.sep}testing{os.sep}' not in str(f)
+             and f'{os.sep}_examples{os.sep}' not in str(f)
+             and f'{os.sep}f2py{os.sep}' not in str(f)
     ]
 
-    dylib_files = [str(f).replace(str(build_path), '') for f in  [
+    dylib_files = [str(f).replace(str(build_path), '') for f in [
         *Glob(str(numpy_folder / '*' / '*.pyd')),
         *Glob(str(numpylibs_folder / '*.dll'))
-    ]]
+    ] if '_tests' not in str(f)]
 
     root = Path(str(files[0]).split('site-packages')[0]) / 'site-packages'
 
     installer = PythonInstaller(env, packages, root)
-    # dylib_installer = PythonDylibInstaller(env, packages)
+    dylib_installer = PythonDylibInstaller(env, packages)
 
-    installer.install(files, True)
-    installer.install(dylib_files, True, force_install=True)
+    dylib_installer.install(dylib_files)
 
-    return packages
+    return packages, installer.get_pairs(files)
 
 
 def install_godopy_python_packages(env):
-    packages = []
     files = Glob('lib/*/*.py') + Glob('lib/*/*/*.py') + Glob('lib/*/*/*/*.py')
 
     installer = PythonInstaller(env, packages, 'lib')
-    installer.install(files, True)
 
-    return packages
+    return installer.get_pairs(files)
 
 ###############################################################################
 
@@ -374,13 +393,15 @@ build_opts(env)
 if env['install_pythonlib']:
     env['clear_pythonlib'] = True
 
+
 if not numpy_folder.is_relative_to(env.Dir('#').abspath):
     raise Exception("Virtual Env folder must be located inside the current folder")
 
 
 if env['clear_pythonlib']:
     projectdir = env['project_dir']
-    shutil.rmtree(os.path.join(projectdir, 'python'), ignore_errors=True)
+    shutil.rmtree(os.path.join(projectdir, 'bin', 'windows'), ignore_errors=True)
+    shutil.rmtree(os.path.join(projectdir, 'bin', 'pythonlib.zip'), ignore_errors=True)
 
 
 # Build subdirs
@@ -412,12 +433,33 @@ default_args = [
     install_extension_shared_lib(env, library)
 ]
 
+
+pythonlib_files = []
+
 if not env.dev_build:
-    default_args += install_godopy_python_packages(env)
+    files = install_godopy_python_packages(env)
+    pythonlib_files += files
 
 if env['install_pythonlib']:
-    default_args += install_python_standard_library(env)
-    default_args += install_extra_python_packages(env)
+    dylib_install, files = install_python_standard_library(env)
+    default_args += dylib_install
+    pythonlib_files += files
+
+    dylib_install, files = install_extra_python_packages(env)
+    default_args += dylib_install
+    pythonlib_files += files
+
+if pythonlib_files:
+    pythonlib = Path(env['project_dir']) / 'bin' / 'pythonlib.zip'
+
+    files = []
+    targets = []
+    for dst, src in pythonlib_files:
+        files.append(src)
+        targets.append(dst)
+    env['python_target_paths'] = targets
+
+    default_args += [env.WritePy(pythonlib, files)]
 
 
 Default(*default_args)
