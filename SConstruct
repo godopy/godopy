@@ -95,7 +95,6 @@ def setup_builders(env):
         '-EWITH_THREAD=1',
         '-Isrc',
         '-Isrc/gdextension_interface',
-        '-Igen/gdextension_interface',
         '-Isrc/core',
         '-Isrc/types',
         '-Isrc/godot_cpp',
@@ -165,7 +164,7 @@ def _generated_cython_sources(env):
     extension_dir = normalize_path(env.get("gdextension_dir", env.Dir("gdextension").abspath), env)
     api_file = normalize_path(env.get("custom_api_file", env.File(extension_dir + "/extension_api.json").abspath), env)
 
-    bindings =  env.GenerateBindings(
+    bindings = env.GenerateBindings(
         env.Dir("."),
         [
             api_file,
@@ -179,7 +178,11 @@ def _generated_cython_sources(env):
         env.AlwaysBuild(bindings)
         env.NoCache(bindings)
 
-    return bindings
+    projectdir = Path(env['project_dir'])
+    src_file = Path(env.Dir("#").abspath) / 'gen' / 'gdextension_interface' / 'api_data.pickle'
+    target_file = projectdir / 'bin' / 'api_data.pickle'
+
+    return [bindings, env.InstallAs(target_file, src_file)]
 
 
 def cython_sources(env):
@@ -404,6 +407,7 @@ if env['clear_pythonlib']:
     projectdir = env['project_dir']
     shutil.rmtree(os.path.join(projectdir, 'bin', 'windows'), ignore_errors=True)
     shutil.rmtree(os.path.join(projectdir, 'bin', 'pythonlib.zip'), ignore_errors=True)
+    shutil.rmtree(os.path.join(projectdir, 'bin', 'api_data.pickle'), ignore_errors=True)
 
 
 # Build subdirs

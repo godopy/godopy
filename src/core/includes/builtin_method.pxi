@@ -1,14 +1,5 @@
-cdef dict _BUILTIN_METHODDB = {}
-
-
 def get_builtin_method_info(type_name):
-    cdef bytes mi_pickled
-
-    if type_name not in _BUILTIN_METHODDB:
-        mi_pickled = _global_builtin_method_info__pickles.get(type_name, None)
-        _BUILTIN_METHODDB[type_name] = pickle.loads(mi_pickled) if mi_pickled is not None else {}
-
-    return _BUILTIN_METHODDB[type_name]
+    return _global_builtin_method_info[type_name]
 
 
 cdef class BuiltinMethod:

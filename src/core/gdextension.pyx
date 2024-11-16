@@ -24,6 +24,7 @@ from godot_types cimport (
 from _gdextension_internals cimport print_traceback_and_die
 
 import io
+import os
 import sys
 import enum
 import types
@@ -32,6 +33,7 @@ import typing
 import inspect
 import builtins
 import traceback
+from pathlib import Path
 
 from typing import Any, Dict, List, Optional, Set, Sequence, Tuple
 from collections import namedtuple
@@ -40,13 +42,27 @@ import numpy as np
 import godot_types as gdtypes
 
 
-include "api_data.pxi"
+bin_path = Path(os.path.dirname(sys.exec_prefix))
+api_data_path = bin_path / 'api_data.pickle'
 
-cdef set _global_singleton_info = pickle.loads(_global_singleton_info__pickle)
-cdef dict _global_enum_info = pickle.loads(_global_enum_info__pickle)
-cdef set _global_struct_info = pickle.loads(_global_struct_info__pickle)
-cdef dict _global_inheritance_info = pickle.loads(_global_inheritance_info__pickle)
-cdef dict _global_utility_function_info = pickle.loads(_global_utility_function_info__pickle)
+_api_data = None
+
+with api_data_path.open('rb') as f:
+    _api_data = pickle.load(f)
+
+
+cdef dict _api_header = _api_data['api_header']
+cdef set _global_singleton_info = _api_data['global_singleton_info']
+cdef dict _global_enum_info = _api_data['global_enum_info']
+cdef set _global_struct_info = _api_data['global_struct_info']
+cdef dict _global_inheritance_info = _api_data['global_inheritance_info']
+cdef dict _global_utility_function_info = _api_data['global_utility_function_info']
+cdef dict _global_method_info = _api_data['global_method_info']
+cdef dict _global_builtin_method_info = _api_data['global_builtin_method_info']
+
+del _api_data
+del pickle
+
 
 # Custom class defined in C++
 _global_inheritance_info['PythonObject'] = 'RefCounted'
