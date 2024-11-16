@@ -7,3 +7,4 @@ compatibility_minimum = "4.4"
 
 windows.debug.x86_64 = "res://bin/windows/libGodoPy.windows.template_debug.dev.x86_64.dll"
 windows.release.x86_64 = "res://bin/windows/libGodoPy.windows.template_release.x86_64.dll"
+linux.debug.x86_64 = "res://bin/linux/libGodoPy.linux.template_debug.dev.x86_64.so"

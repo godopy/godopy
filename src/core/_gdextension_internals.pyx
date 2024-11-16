@@ -42,6 +42,15 @@ import io, os, sys, traceback
 from types import ModuleType
 
 
+if sys.platform == 'linux':
+    # Help numpy find libscipy_openblas*.so library
+    import glob
+    paths = glob.glob(f"{sys.exec_prefix}/libscipy_openblas*")
+    if paths:
+        import ctypes
+        cdll = ctypes.CDLL(paths[0])
+
+
 # Allow numpy dynamic libraries to exist separately from pure Python code.
 # This requires some acrobatics to get right.
 try:

@@ -153,12 +153,12 @@ def main_godopy_cpp_sources(env):
         python_lib = 'python312'
         env.Append(packages=[python_lib])
 
-
     else:
-        print(env['platform'])
         env.Append(LIBPATH=[os.path.join('extern', 'cpython')])
-        python_lib = 'libpython3.12'
-        env.Append(packages=[python_lib])
+        # env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
+        python_lib = 'python3.12'
+
+        env.Append(LIBS=[python_lib])
 
     return sources
 
@@ -301,7 +301,7 @@ class PythonDylibInstaller:
                 # Strip extra ext
                 pyfile = os.path.splitext(os.path.splitext(pyfile)[0])[0] + '.pyd'
 
-            dstfolder = os.path.join(projectdir, 'bin', 'windows')
+            dstfolder = os.path.join(projectdir, 'bin', env['platform'])
 
             if folder is not None:
                 dstfolder = os.path.join(dstfolder, folder)
@@ -375,7 +375,8 @@ def install_extra_python_packages(env):
     else:
         dylib_files = [str(f).replace(str(build_path), '') for f in [
             *Glob(str(numpy_folder / '*' / '*.so')),
-            *Glob(str(numpylibs_folder / '*.so'))
+            *Glob(str(numpylibs_folder / '*.so')),
+            *Glob(str(numpylibs_folder / '*.so.?.?.?'))
         ] if '_tests' not in str(f)]
 
     root = Path(str(files[0]).split('site-packages')[0]) / 'site-packages'
@@ -423,16 +424,17 @@ if not numpy_folder.is_relative_to(env.Dir('#').abspath):
     raise Exception("Virtual Env folder must be located inside the current folder")
 
 
-if env['clear_pythonlib']:
-    projectdir = env['project_dir']
-    shutil.rmtree(os.path.join(projectdir, 'bin', 'windows'), ignore_errors=True)
-    shutil.rmtree(os.path.join(projectdir, 'bin', 'pythonlib.zip'), ignore_errors=True)
-    shutil.rmtree(os.path.join(projectdir, 'bin', 'api_data.pickle'), ignore_errors=True)
-
-
 # Build subdirs
 Export("env")
 SConscript('godot-cpp/SCsub')
+
+
+if env['clear_pythonlib']:
+    projectdir = env['project_dir']
+    shutil.rmtree(os.path.join(projectdir, 'bin', env['platform']), ignore_errors=True)
+    shutil.rmtree(os.path.join(projectdir, 'bin', 'pythonlib.zip'), ignore_errors=True)
+    shutil.rmtree(os.path.join(projectdir, 'bin', 'api_data.pickle'), ignore_errors=True)
+
 
 setup_builders(env)
 
