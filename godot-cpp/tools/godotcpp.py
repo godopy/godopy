@@ -552,6 +552,8 @@ def _godot_cpp(env):
     env.AppendUnique(CPPPATH=[env.Dir(numpy.get_include())])
     if env['platform'] == 'windows':
         env.AppendUnique(CPPPATH=[env.Dir(os.path.join("..", "extern", "cpython", "PC"))])
+    else:
+        env.AppendUnique(CPPPATH=[env.Dir(os.path.join("..", "extern", "cpython"))])
 
     library = None
     library_name = "libgodot-cpp" + env["suffix"] + env["LIBSUFFIX"]
