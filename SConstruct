@@ -41,7 +41,9 @@ pythonlib_exclude_default = [
     'idlelib',
     'test',
     'tkinter',
-    'turtledemo'
+    'turtledemo',
+    'turtle',
+    'pydoc_data'
 ]
 
 def build_opts(env):
