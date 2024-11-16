@@ -28,7 +28,7 @@ def get_file_list(output_dir):
 
     cython_gen_folder = Path(output_dir) / "gen" / "gdextension_interface"
 
-    files.append(str((cython_gen_folder / "api_data.pxi").as_posix()))
+    files.append(str((cython_gen_folder / "api_data.pickle").as_posix()))
 
     return files
 
@@ -53,7 +53,7 @@ def generate_api_data(api, output_dir):
     gen_folder = Path(output_dir) / "gdextension_interface"
     gen_folder.mkdir(parents=True, exist_ok=True)
 
-    filename = gen_folder / "api_data.pxi"   
+    filename = gen_folder / "api_data.pickle"
     ref_filename = gen_folder / "api_data_reference.py"
 
     api_data, reference = generate_api_data_file(
@@ -68,11 +68,12 @@ def generate_api_data(api, output_dir):
 
     print('Writing', filename)
 
-    with filename.open("w+", encoding="utf-8") as file:
+    with filename.open("wb") as file:
         file.write(api_data)
 
-    with ref_filename.open("w+", encoding="utf-8") as file:
+    with ref_filename.open("w", encoding="utf-8") as file:
         file.write(reference)
+
 
 BUILTIN_TYPE_LIST = [
     'Nil',
@@ -128,17 +129,13 @@ def generate_api_data_file(header, classes, builtin_classes, singletons, utility
     singleton_data = set()
     inheritance_data = {}
     api_type_data = {}
-    api_type_data_pickled = {}
 
     builtin_class_method_data = {}
-    builtin_class_method_data_pickled = {}
 
     class_method_data = {}
-    class_method_data_pickled = {}
     class_enum_data = {}
     class_enum_data_pickled = {}
     class_constant_data = {}
-    class_constant_data_pickled = {}
 
     utilfunc_data = {}
     enum_data = {}
@@ -149,8 +146,6 @@ def generate_api_data_file(header, classes, builtin_classes, singletons, utility
     for singleton in singletons:
          singleton_data.add(singleton['name'])
 
-    singleton_data_pickled = pickle.dumps(singleton_data)    
-
     for enum in enums:
         enum_data[enum['name']] = []
         for value in enum['values']:
@@ -158,14 +153,10 @@ def generate_api_data_file(header, classes, builtin_classes, singletons, utility
 
     all_enums = set()
 
-    enum_data_pickled = pickle.dumps(enum_data)
-
     all_enums |= set(enum_data.keys())
 
     for struct in structs:
         struct_data.add(struct['name'])
-
-    struct_data_pickled = pickle.dumps(struct_data)
 
     for class_api in builtin_classes:
         class_name = class_api['name']
@@ -191,7 +182,6 @@ def generate_api_data_file(header, classes, builtin_classes, singletons, utility
                 method_info['arguments'] = arguments
                 method_info['type_info'] = tuple(type_info)
                 builtin_class_method_data[class_name][method_name] = method_info
-            builtin_class_method_data_pickled[class_name] = pickle.dumps(builtin_class_method_data[class_name])
 
     for class_api in classes:
         class_name = class_api['name']
@@ -203,8 +193,6 @@ def generate_api_data_file(header, classes, builtin_classes, singletons, utility
 
             for constant in class_api['constants']:
                 class_constant_data[class_name][constant['name']] = constant['value']
-            
-            class_constant_data_pickled[class_name] = pickle.dumps(class_constant_data[class_name])
 
         if 'enums' in class_api:
             class_enum_data[class_name] = {}
@@ -246,8 +234,6 @@ def generate_api_data_file(header, classes, builtin_classes, singletons, utility
                     max_types = len(type_info)
                     longest_method_info = method_name, method_info
                 class_method_data[class_name][method_name] = method_info
-        
-            class_method_data_pickled[class_name] = pickle.dumps(class_method_data[class_name])
 
     for method in utility_functions:
         method_name = method['name']
@@ -269,38 +255,22 @@ def generate_api_data_file(header, classes, builtin_classes, singletons, utility
         method_info['type_info'] = tuple(type_info)
         utilfunc_data[method_name] = method_info
 
-    utilfunc_data_pickled = pickle.dumps(utilfunc_data)
-    inheritance_data_pickled = pickle.dumps(inheritance_data)
 
-    result = [
-        'cdef dict _api_header = %r' % header,
-        'cdef bytes _global_singleton_info__pickle = \\\n%s' % pprint.pformat(singleton_data_pickled, width=120),
-        'cdef bytes _global_enum_info__pickle = \\\n%s' % pprint.pformat(enum_data_pickled, width=120),
-        'cdef bytes _global_struct_info__pickle = \\\n%s' % pprint.pformat(struct_data_pickled, width=120),
-        'cdef bytes _global_inheritance_info__pickle = \\\n%s' % pprint.pformat(inheritance_data_pickled, width=120),
-        'cdef bytes _global_utility_function_info__pickle = \\\n%s' % pprint.pformat(utilfunc_data_pickled, width=120),
+    data = {
+        'api_header': header,
+        'global_singleton_info': singleton_data,
+        'global_enum_info': enum_data,
+        'global_struct_info': struct_data,
+        'global_inheritance_info': inheritance_data,
+        'global_utility_function_info': utilfunc_data,
+        'global_method_info': class_method_data,
+        'global_class_enum_info': class_enum_data,
+        'global_class_constant_info': class_constant_data,
+        'global_builtin_method_info': builtin_class_method_data
+    }
 
-        'cdef dict _global_method_info__pickles = \\\n%s' % pprint.pformat(class_method_data_pickled, width=120),
-        'cdef dict _global_class_enum_info__pickles = \\\n%s' % pprint.pformat(class_enum_data_pickled, width=120),
-        'cdef dict _global_class_constant_info__pickles = \\\n%s' % pprint.pformat(class_constant_data_pickled, width=120),
+    result = pickle.dumps(data)
 
-        'cdef dict _global_builtin_method_info__pickles = \\\n%s' % pprint.pformat(builtin_class_method_data_pickled, width=120),
-    ]
+    result2 = 'api_data_pickle = %s\n' % pprint.pformat(data, width=120)
 
-    result2 = [
-        '_global_singleton_info = \\\n%s' % pprint.pformat(singleton_data, width=120),
-        '_global_enum_info = \\\n%s' % pprint.pformat(enum_data, width=120),
-        '_global_inheritance_info = \\\n%s' % pprint.pformat(inheritance_data, width=120),
-
-        '_global_utility_function_info = \\\n%s' % pprint.pformat(utilfunc_data, width=120),
-
-        '_global_struct_info = \\\n%s' % pprint.pformat(struct_data, width=120),
-
-        '_global_method_info = \\\n%s' % pprint.pformat(class_method_data, width=120),
-        '_global_class_enum_info = \\\n%s' % pprint.pformat(class_enum_data, width=120),
-        '_global_class_constant_info = \\\n%s' % pprint.pformat(class_constant_data, width=120),
-
-        '_global_builtin_method_info = \\\n%s' % pprint.pformat(builtin_class_method_data, width=120),
-    ]
-
-    return '\n\n'.join(result) + '\n', '\n\n'.join(result2) + '\n'
+    return result, result2

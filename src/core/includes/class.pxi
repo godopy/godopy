@@ -1,15 +1,8 @@
-cdef dict _METHODDB = {}
 cdef dict _CLASSDB = {}
 
 
 def get_method_info(class_name):
-    cdef bytes mi_pickled
-
-    if class_name not in _METHODDB:
-        mi_pickled = _global_method_info__pickles.get(class_name, None)
-        _METHODDB[class_name] = pickle.loads(mi_pickled) if mi_pickled is not None else {}
-
-    return _METHODDB[class_name] 
+    return _global_method_info.get(class_name, {})
 
 
 cdef class Class:
