@@ -77,12 +77,13 @@ int PythonRuntime::set_config_paths(PyConfig *config) {
 	SET_PYCONFIG_STRING(&config->executable, exec_path.wide_string());
 	SET_PYCONFIG_STRING(&config->prefix, res_path.wide_string());
 
-	String python_lib_path = res_path.path_join("python").path_join("windows").path_join("lib");
+	String python_lib_path = res_path.path_join("bin").path_join("pythonlib.zip");
 
 	APPEND_PYTHON_PATH(res_path.wide_string());
 	APPEND_PYTHON_PATH(res_path.path_join("lib").wide_string());
 	APPEND_PYTHON_PATH(python_lib_path.wide_string());
-	APPEND_PYTHON_PATH(python_lib_path.path_join("site-packages").wide_string());
+	// APPEND_PYTHON_PATH(python_lib_path.path_join("site-packages").wide_string());
+	APPEND_PYTHON_PATH(exec_prefix.wide_string());
 
 #ifdef GODOPY_LIB_PATH
 	String godopy_lib_path = STR(GODOPY_LIB_PATH);
@@ -116,6 +117,7 @@ void PythonRuntime::initialize() {
 	config.site_import = 0;
 	config.install_signal_handlers = 0;
 	config.module_search_paths_set = 1;
+	config.dump_refs = 1;
 
 	status = PyConfig_Read(&config);
 	ERR_FAIL_PYSTATUS(status, fail);

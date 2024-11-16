@@ -3,5 +3,3 @@
 /android/
 bin/*
 !bin/*.gdextension
-python/*
-!python/.gdignore
