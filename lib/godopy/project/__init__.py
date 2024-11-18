@@ -7,7 +7,7 @@ from godot.classdb import (
 )
 
 
-def make_input_setting(*, keys: Optional[List[int]] = None,
+def make_input_setting(*, keys: Optional[List[int | Tuple[int, str]]] = None,
                           joypad_buttons: Optional[List[int]] = None,
                           joypad_motions: Optional[List[Tuple[int, float]]] = None,
                           deadzone: float = 0.2):
@@ -16,7 +16,16 @@ def make_input_setting(*, keys: Optional[List[int]] = None,
     if keys is not None:
         for key in keys:
             input_event_key = InputEventKey()
-            input_event_key.set_physical_keycode(key)
+            if isinstance(key, int):
+                input_event_key.set_physical_keycode(key)
+            elif hasattr(key, '__len__') and len(key) == 2:
+                _key, s = key
+                if len(s) != 1:
+                    raise ValueError('Unicode value for InputEventKey must be a single character')
+                input_event_key.set_physical_keycode(_key)
+                input_event_key.set_unicode(ord(s))
+            else:
+                raise ValueError(f"Incorrect 'InputEventKey' setting: {key!r}")
             events.append(input_event_key)
     if joypad_buttons is not None:
         for button in joypad_buttons:
@@ -64,11 +73,21 @@ _aliases = {
 
 
 class Project:
-    def __init__(self, config: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(
+        self,
+        config: Optional[Mapping[str, Any]] = None,
+        input_map: Optional[Mapping[str, Any]] = None
+    ) -> None:
         if config is None:
             config = {}
+        if input_map is None:
+            input_map = {}
 
         self.name = Project.get_setting('application/config/name') or '[Untitled]'
+
+        # TODO: Sync settings only inside Editor or with some command line argument
+
+        updated = False
 
         for key, value in config.items():
             setting = _aliases.get(key, key)
@@ -80,11 +99,28 @@ class Project:
 
             if existing != value:
                 ProjectSettings.set_setting(setting, value)
+                updated = True
 
             if setting == 'application/config/name':
                 self.name = value
 
-        ProjectSettings.save()
+        for key, value in input_map.items():
+            setting = f'input/{key}'
+
+            if not ProjectSettings.has_setting(setting):
+                raise AttributeError(f"Setting {setting!r} does not exist")
+
+            existing = Project.get_setting(setting)
+
+            if existing != value:
+                ProjectSettings.set_setting(setting, value)
+                updated = True
+
+        # TODO: Store created settings somewhere to be able to reset them automatically
+        #       when they are gone from Python settings
+
+        if updated:
+            ProjectSettings.save()
 
     def __repr__(self):
         return f"<GodoPy project {self.name!r}>"
@@ -110,5 +146,4 @@ class Project:
             result = ProjectSettings.save()
 
         if result != godot.Error.OK:
-            err = godot.Error.from_bytes([result])
-            raise RuntimeError(f"Could not save Project settings, the error was: {err}")
+            raise RuntimeError(f"Could not save Project settings, the error was: {godot.Error(result)}")
