@@ -6,8 +6,15 @@ from typing import Any, Dict, List
 import godot
 import gdextension
 from godot import types
-from godot.classdb import Engine, ProjectSettings, ScriptExtension
+from godot.classdb import Engine, ProjectSettings, Resource, ScriptExtension
 
+
+class PythonProjectSettings(godot.Class, inherits=Resource):
+    pass
+
+
+class PythonExtension(godot.Class, inherits=Resource):
+    pass
 
 class PythonScriptInstance(gdextension.ScriptInstance):
     def __init__(self, script: ScriptExtension, for_object: gdextension.Object) -> None:

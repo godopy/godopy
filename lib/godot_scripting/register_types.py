@@ -1,7 +1,7 @@
 import godot
 from godot.classdb import Engine, ResourceLoader, ResourceSaver
 
-from .script import PythonScript
+from .script import PythonScript, PythonProjectSettings, PythonExtension
 from .language import PythonLanguage
 from .resource_format import ResourceFormatLoaderPython, ResourceFormatSaverPython
 
@@ -23,6 +23,9 @@ def initialize(level: int) -> None:
             raise RuntimeError("Could not register Python language, error: %r" % godot.Error(result))
 
         PythonScript.register()
+        PythonProjectSettings.register()
+        PythonExtension.register()
+
         ResourceFormatLoaderPython.register()
         ResourceFormatSaverPython.register()
 

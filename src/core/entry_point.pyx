@@ -134,12 +134,12 @@ cdef public int python_deinitialize_level(ModuleInitializationLevel p_level) noe
             _python_deinitialize_level(p_level)
         except Exception as exc:
             print_traceback_and_die(exc)
-    
+
     return 0
 
 
 cdef int initialize_first_level() except -1:
-    global initialize_funcs, uninitialize_funcs, configure_funcs, _condig
+    global initialize_funcs, uninitialize_funcs, configure_funcs, _config
 
     redirect_python_stdio()
 
@@ -163,10 +163,6 @@ cdef int initialize_first_level() except -1:
         UtilityFunctions.print("GodoPy version %s" % '0.1dev')
         UtilityFunctions.print("Python version %s\n" % sys.version)
 
-    venv_path = os.environ.get('VIRTUAL_ENV')
-    if venv_path and Engine.get_singleton().is_editor_hint():
-        sys.path.append(os.path.join(venv_path, 'Lib', 'site-packages'))
-
     try:
         import register_types
 
@@ -183,7 +179,6 @@ cdef int initialize_first_level() except -1:
         if configure_func is not None:
             configure_funcs.append(configure_func)
 
-
     except ImportError as exc:
         f = io.StringIO()
         traceback.print_exception(exc, file=f)
@@ -197,6 +192,27 @@ cdef int initialize_first_level() except -1:
 
     for configure in configure_funcs:
         configure(_config)
+
+    sys_path_backup = sys.path
+    try:
+        # Keep only project's root in sys.path during 'project' import
+        sys.path = [sys.path[0]]
+
+        # If 'project.py' exist in the project root, just import it
+        import project
+
+        if project.project:
+            UtilityFunctions.print_rich("[color=green]Found GodoPy project %r[/color]" % project.project)
+    except ImportError as exc:
+        f = io.StringIO()
+        traceback.print_exception(exc, file=f)
+        exc_text = f.getvalue()
+        if isinstance(exc, ModuleNotFoundError) and "'project'" in exc_text:
+            pass
+        else:
+            raise exc
+    finally:
+        sys.path = sys_path_backup
 
 
 cdef int deinitialize_first_level() except -1:
