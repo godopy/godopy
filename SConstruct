@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import pickle
 import shutil
 import zipfile
 from pathlib import Path
@@ -52,8 +53,7 @@ def build_opts(env):
     opts.Add(
         BoolVariable(
             key='clear_pythonlib',
-            help='Delete all previously installed files before copying Python standard library. ' \
-                 'Always on with install_pythonlib',
+            help='Delete all previously installed files before copying Python standard library. ',
             default=False,
         )
     )
@@ -129,9 +129,15 @@ def setup_builders(env):
     def from_jinja_template(target, source, env):
         import jinja2
 
+        api_data_src_file = Path(env.Dir("#").abspath) / 'gen' / 'gdextension_interface' / 'api_data.pickle'
+
+        api_data = None
+        with api_data_src_file.open('rb') as f:
+            api_data = pickle.load(f)
+
         with Path(str(source[0])).open(encoding='utf-8') as src:
             tmpl = jinja2.Template(src.read())
-            rendered = tmpl.render(env=env)
+            rendered = tmpl.render(env=env, libname=libname, api_header=api_data['api_header'])
 
             with open(str(target[0]), 'w', encoding='utf-8') as f:
                 f.write(rendered)
@@ -429,9 +435,6 @@ numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
 
 env = Environment(tools=['default'], PLATFORM='')
 build_opts(env)
-
-if env['install_pythonlib']:
-    env['clear_pythonlib'] = True
 
 
 if not numpy_folder.is_relative_to(env.Dir('#').abspath):

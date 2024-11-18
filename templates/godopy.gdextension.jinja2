@@ -1,10 +1,15 @@
 [configuration]
 
 entry_symbol = "godopy_library_init"
-compatibility_minimum = "4.4"
+compatibility_minimum = "{{ api_header['version_major'] }}.{{ api_header['version_minor'] }}"
 
 [libraries]
-
-windows.debug.x86_64 = "res://bin/windows/godopy.windows.template_debug.dev.x86_64.dll"
-windows.release.x86_64 = "res://bin/windows/godopy.windows.template_release.x86_64.dll"
-linux.debug.x86_64 = "res://bin/linux/godopy.linux.template_debug.dev.x86_64.so"
+{% if env['dev_build'] %}
+{# Single dev library for development and debugging #}
+{{ env['platform'] }}.debug.x86_64 = "res://bin/{{ env['platform'] }}/{{ libname }}{{ env['suffix'] }}{{ env['SHLIBSUFFIX'] }}"
+{% else %}
+{% for platform, dllsufix in [('windows', 'dll'), ('linux', 'so')]%}
+{{ platform }}.debug.x86_64 = "res://bin/{{ platform }}/{{ libname }}.{{ platform }}.template_debug.x86_64.{{ dllsufix }}"
+{{ platform }}.release.x86_64 = "res://bin/{{ platform }}/{{ libname }}.{{ platform }}.template_release.x86_64.{{ dllsufix }}"
+{% endfor %}
+{% endif %}
