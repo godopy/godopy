@@ -32,8 +32,8 @@ def disable_warnings(env):
         env.AppendUnique(CCFLAGS=["-w"])
 
 
-libname = 'GodoPy'
-projectdir = 'test/project'
+libname = 'godopy'
+projectdir = 'test'
 
 
 pythonlib_exclude_default = [
@@ -126,6 +126,17 @@ def setup_builders(env):
                 # print(str(srcfile), str(dstfile))
                 pythonlib.writestr(str(dstfile), bytecode)
 
+    def from_jinja_template(target, source, env):
+        import jinja2
+
+        with Path(str(source[0])).open(encoding='utf-8') as src:
+            tmpl = jinja2.Template(src.read())
+            rendered = tmpl.render(env=env)
+
+            with open(str(target[0]), 'w', encoding='utf-8') as f:
+                f.write(rendered)
+
+
     env.Append(BUILDERS={
         'Cython': Builder(
             action='cython %s' % cython_opts,
@@ -138,7 +149,9 @@ def setup_builders(env):
             emitter=scons_emit_files
         ),
 
-        'WritePy': Builder(action=writepy)
+        'WritePy': Builder(action=writepy),
+
+        'FromTemplate': Builder(action=Action(from_jinja_template))
     })
 
 
@@ -225,18 +238,18 @@ def docdata_sources(env):
 
 
 def library_file(env):
-    file = '{}{}{}'.format(libname, env['suffix'], env['SHLIBSUFFIX'])
+    file = f'{libname}{env['suffix']}{env['SHLIBSUFFIX']}'
 
     if env['platform'] == 'macos' or env['platform'] == 'ios':
-        platlibname = '{}.{}.{}'.format(libname, env['platform'], env['target'])
-        file = '{}.framework/{}'.format(env['platform'], platlibname, platlibname)
+        platlibname = f'{libname}.{env['platform']}.{env['target']}'
+        file = f'{env['platform']}.framework/{platlibname}'
 
     return file
 
 
 def build_extension_shared_lib(env, sources):
     return env.SharedLibrary(
-        'bin/{}/{}'.format(env['platform'], library_file(env)),
+        f'bin/{env['platform']}/{library_file(env)}',
         source=sources,
     )
 
@@ -247,20 +260,21 @@ def install_extension_shared_lib(env, library):
 
     copy = [
         env.InstallAs(
-            '{}/bin/{}/lib{}'.format(projectdir, env['platform'], file),
+            f'{projectdir}/bin/{env['platform']}/{file}',
             library
         ),
     ]
 
     if env['platform'] == 'windows':
-        # Extension DLL requires Python DLL
+        # Extension DLL requires Python DLL on Windows
         python_dll_file = 'python312.dll'
         python_dll = os.path.join('extern', 'cpython', 'PCBuild', 'amd64', python_dll_file)
-        python_dll_target = '{}/bin/{}/{}'.format(projectdir, env['platform'], python_dll_file)
-        
+        python_dll_target = f'{projectdir}/bin/{env['platform']}/{python_dll_file}'
+
         copy.append(env.InstallAs(python_dll_target, python_dll))
 
-    # TODO: Other platforms
+    copy.append(env.FromTemplate(f'bin/{libname}.gdextension', f'templates/{libname}.gdextension.jinja2'))
+    copy.append(env.InstallAs(f'{projectdir}/bin/{libname}.gdextension', f'bin/{libname}.gdextension'))
 
     return copy
 
