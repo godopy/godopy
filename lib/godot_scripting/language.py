@@ -31,7 +31,7 @@ class PythonLanguage(godot.Class, inherits=ScriptLanguageExtension, no_virtual_u
         return 'Python'
 
     def get_type(self):
-        return 'Python'
+        return 'PythonScript'
 
     def get_extension(self):
         return 'py'

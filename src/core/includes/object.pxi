@@ -119,11 +119,11 @@ cdef class Object:
             self.is_singleton = True
         else:
             self._owner = gdextension_interface_classdb_construct_object2(class_name.ptr())
-            gdextension_interface_object_set_instance(self._owner, class_name.ptr(), self_ptr)
+            # gdextension_interface_object_set_instance(self._owner, class_name.ptr(), self_ptr)
 
-            ref.Py_INCREF(self)
-            self._instance_set = True
-            self._needs_cleanup = True
+            # ref.Py_INCREF(self)
+            # self._instance_set = True
+            # self._needs_cleanup = True
 
             notification = MethodBind(self, 'notification')
             notification(0, False) # NOTIFICATION_POSTINITIALIZE
