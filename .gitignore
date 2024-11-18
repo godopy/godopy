@@ -2,10 +2,8 @@
 .godot/
 *.uid
 
-# Ignore library files but not the gdextension file
-bin/*/*
-!bin/*/.gitkeep
-!bin/*.gdextension
+# Ignore generated library files
+bin/
 
 .sconsign*.dblite
 
