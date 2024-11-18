@@ -5,6 +5,8 @@
 # Ignore library files but not the gdextension file
 bin/*/*
 !bin/*/.gitkeep
+!bin/*.gdextension
+
 .sconsign*.dblite
 
 
