@@ -1,10 +1,13 @@
+import sys
 from typing import Any, List, Mapping, Optional, Tuple
 
 import godot
 from godot.classdb import (
-    ProjectSettings,
+    Engine, ProjectSettings,
     InputEventKey, InputEventJoypadMotion, InputEventJoypadButton
 )
+
+from ..scene import Scene
 
 
 def make_input_setting(*, keys: Optional[List[int | Tuple[int, str]]] = None,
@@ -46,9 +49,10 @@ def make_input_setting(*, keys: Optional[List[int | Tuple[int, str]]] = None,
 _aliases = {
     'name': 'application/config/name',
     'application/name': 'application/config/name',
-    'scene': 'application/run/main_scene',
+
     'main_scene': 'application/run/main_scene',
     'application/main_scene': 'application/run/main_scene',
+
     'icon': 'application/config/icon',
     'application/icon': 'application/config/icon',
 
@@ -56,25 +60,33 @@ _aliases = {
     'height': 'display/window/size/viewport_height',
     'display/width': 'display/window/size/viewport_width',
     'display/height': 'display/window/size/viewport_width',
+
     'width_override': 'display/window/size/window_width_override',
     'height_override': 'display/window/size/window_height_override',
     'display/width_override': 'display/window/size/window_width_override',
     'display/height_override': 'display/window/size/window_height_override',
+
     'type': 'rendering/renderer/rendering_method',
     'rendering/rendering_method': 'rendering/renderer/rendering_method',
+
     'stretch_mode': 'display/window/stretch/mode',
     'display/stretch_mode': 'display/window/stretch/mode',
 
     'snap_2d_transforms_to_pixel': 'rendering/2d/snap/snap_2d_transforms_to_pixel',
-    'snap_2d_vertices_to_pixel': 'rendering/2d/snap/snap_2d_vertices_to_pixel',
     'rendering/snap_2d_transforms_to_pixel': 'rendering/2d/snap/snap_2d_transforms_to_pixel',
+
+    'snap_2d_vertices_to_pixel': 'rendering/2d/snap/snap_2d_vertices_to_pixel',
     'rendering/snap_2d_vertices_to_pixel': 'rendering/2d/snap/snap_2d_vertices_to_pixel',
 }
 
 
+UNTITLED = '[Untitled]'
+
 class Project:
     def __init__(
         self,
+        name: str = UNTITLED,
+        main_scene: Optional[Scene] = None,
         config: Optional[Mapping[str, Any]] = None,
         input_map: Optional[Mapping[str, Any]] = None
     ) -> None:
@@ -83,38 +95,55 @@ class Project:
         if input_map is None:
             input_map = {}
 
-        self.name = Project.get_setting('application/config/name') or '[Untitled]'
+        existing_name = Project.get_setting('application/config/name')
+        self.name = name
+        if self.name == UNTITLED and existing_name:
+            self.name = existing_name
 
-        # TODO: Sync settings only inside Editor or with some command line argument
+        existing_main_scene_path = Project.get_setting('application/run/main_scene')
+
+        self.main_scene = main_scene
+        if self.main_scene is None and existing_main_scene_path:
+            self.main_scene = Scene.from_path(existing_main_scene_path)
 
         updated = False
 
-        for key, value in config.items():
-            setting = _aliases.get(key, key)
+        if Engine.is_editor_hint():
+            # Sync settings only when the Editor is active
+            if name != UNTITLED and existing_name != name:
+                Project.set_setting('name', name)
 
-            if not ProjectSettings.has_setting(setting):
-                raise AttributeError(f"Setting {setting!r} does not exist")
+            if main_scene is not None:
+                main_scene_path = main_scene.get_path()
+                if main_scene_path != existing_main_scene_path:
+                    Project.set_setting('main_scene', main_scene_path)
 
-            existing = Project.get_setting(setting)
+            for setting, value in config.items():
+                setting = _aliases.get(setting, setting)
 
-            if existing != value:
-                ProjectSettings.set_setting(setting, value)
-                updated = True
+                if isinstance(value, Scene):
+                    value = value.get_path()
 
-            if setting == 'application/config/name':
-                self.name = value
+                existing = Project.get_setting(setting)
 
-        for key, value in input_map.items():
-            setting = f'input/{key}'
+                if existing != value:
+                    Project.set_setting(setting, value)
+                    updated = True
 
-            if not ProjectSettings.has_setting(setting):
-                raise AttributeError(f"Setting {setting!r} does not exist")
+                if setting == 'application/config/name':
+                    self.name = value
 
-            existing = Project.get_setting(setting)
+            for key, value in input_map.items():
+                setting = f'input/{key}'
 
-            if existing != value:
-                ProjectSettings.set_setting(setting, value)
-                updated = True
+                if not ProjectSettings.has_setting(setting):
+                    raise AttributeError(f"Setting {setting!r} does not exist")
+
+                existing = Project.get_setting(setting)
+
+                if existing != value:
+                    ProjectSettings.set_setting(setting, value)
+                    updated = True
 
         # TODO: Store created settings somewhere to be able to reset them automatically
         #       when they are gone from Python settings
@@ -127,15 +156,31 @@ class Project:
 
 
     @staticmethod
-    def get_setting(setting: str, default: Optional[str] = None, *, with_override: bool = False):
+    def get_setting(setting: str, default: Optional[str] = None, *,
+                    with_override: bool = False, instantiate_scenes=False):
         setting = _aliases.get(setting, setting)
 
         if not ProjectSettings.has_setting(setting):
             raise AttributeError(f"Setting {setting!r} does not exist")
 
         if with_override:
-            return ProjectSettings.get_setting_with_override(setting, default)
-        return ProjectSettings.get_setting(setting, default)
+            value = ProjectSettings.get_setting_with_override(setting, default)
+        else:
+            value = ProjectSettings.get_setting(setting, default)
+
+        if instantiate_scenes and setting.endswith('scene') and value.startswith('res://'):
+            value = Scene.from_path(value)
+
+        return value
+
+    @staticmethod
+    def set_setting(setting: str, value: Any) -> None:
+        setting = _aliases.get(setting, setting)
+
+        if not ProjectSettings.has_setting(setting):
+            raise AttributeError(f"Setting {setting!r} does not exist")
+
+        ProjectSettings.set_setting(setting, value)
 
 
     @staticmethod

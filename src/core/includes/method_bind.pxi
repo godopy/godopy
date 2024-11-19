@@ -1,18 +1,30 @@
 
 def _engine_register_singleton(MethodBind self, class_name, Object singleton_obj) -> None:
     singleton_obj.is_singleton = True
-
     _make_engine_ptrcall[MethodBind](self, self._ptrcall, (class_name, singleton_obj))
-
 _engine_register_singleton.makes_ptrcall = True
 
 
 def _engine_register_script_language(MethodBind self, Object language_obj) -> int:
     language_obj.is_singleton = True
-
     return _make_engine_ptrcall[MethodBind](self, self._ptrcall, (language_obj,))
-
 _engine_register_script_language.makes_ptrcall = True
+
+
+def _packed_scene_instantiate(MethodBind self, int64_t gen=0) -> Object:
+    cdef Object node = _make_engine_ptrcall[MethodBind](self, self._ptrcall, (gen,))
+    # Instantiated scenes should be freed after use
+    node._needs_cleanup = True
+    return node
+_packed_scene_instantiate.makes_ptrcall = True
+
+
+def _resource_loader_load(MethodBind self, path: Str, hint: Str = '', cache_mode: int64_t = 0):
+    cdef Object res = _make_engine_ptrcall[MethodBind](self, self._ptrcall, (path, hint, cache_mode))
+    # Loaded resources should be freed after use
+    res._needs_cleanup = True
+    return res
+_resource_loader_load.makes_ptrcall = True
 
 
 def _xml_parser_open_buffer(MethodBind self, type_funcs.Buffer buffer) -> int:
@@ -90,6 +102,8 @@ def _worker_thread_pool_add_task(MethodBind self, func, userdata, bint high_prio
 cdef dict special_method_calls = {
     'Engine::register_singleton': _engine_register_singleton,
     'Engine::register_script_language': _engine_register_script_language,
+    'PackedScene::instantiate': _packed_scene_instantiate,
+    'ResourceLoader::load': _resource_loader_load,
     'XMLParser::open_buffer': _xml_parser_open_buffer,
     'FileAccess::store_buffer': _file_access_store_buffer,
     'FileAccess::get_buffer': _file_access_get_buffer,
@@ -117,7 +131,7 @@ cdef class MethodBind:
             if info is None:
                 msg = 'Method %r not found in class %r' % (method_name, instance.__godot_class__.__name__)
                 raise AttributeError(msg)
-            
+
             self.type_info = info['type_info']
             make_optimized_type_info(self.type_info, self._type_info_opt)
             self.is_vararg = info['is_vararg']
@@ -152,13 +166,15 @@ cdef class MethodBind:
             return "<%s.%s at 0x%016X[0x%016X]>" % (self.__class__.__module__, class_name, self_addr, mb_addr)
 
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
         """
         Calls a method on an Object.
         """
         try:
             if self.func is not None:
-                return self.func(self, *args)
+                return self.func(self, *args, **kwargs)
+            elif kwargs:
+                raise TypeError("__call__ got an unexpected keyword argument %r" % list(kwargs).pop())
             elif self.is_vararg:
                 return _make_engine_varcall[MethodBind](self, self._varcall, args)
             else:

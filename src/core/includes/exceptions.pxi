@@ -1,4 +1,6 @@
 def _exc_info_from_exc(exc) -> Tuple[bytes, bytes, int]:
+    # Cython exceptions could not be inspected by inspect.getframeinfo().
+    # Try to parse the exception text to get filename, function and lineno information.
     f = io.StringIO()
     traceback.print_exception(exc, file=f)
     exc_text = f.getvalue()
@@ -7,16 +9,19 @@ def _exc_info_from_exc(exc) -> Tuple[bytes, bytes, int]:
     if len(exc_lines) > 1:
         info_line_str = exc_lines[-2]
 
-        if info_line_str.lstrip().startswith('^'):
+        if len(exc_lines) > 3 and info_line_str.lstrip().startswith('^'):
             info_line_str = exc_lines[-4]
-        elif not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
+        elif len(exc_lines) > 2 and not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
             info_line_str = exc_lines[-3]
 
         info_line = [s.strip().strip(',') for s in info_line_str.split()]
 
         filename = info_line[1].encode('utf-8')
         function = info_line[-1].encode('utf-8')
-        lineno = int(info_line[3])
+        if len(info_line) > 3:
+            lineno = int(info_line[3])
+        else:
+            lineno = -1
     else:
         info_line_str = exc_lines[0]
         info_line = [s.strip().strip(':') for s in info_line_str.split()]
@@ -38,6 +43,7 @@ def print_error(exc, message=None, *, bint editor_notify=True):
 
     try:
         frame = inspect.currentframe()
+        # Python code: retrieve filename, function and lineno from frameinfo
         try:
             frameinfo = inspect.getframeinfo(frame)
 
@@ -47,7 +53,7 @@ def print_error(exc, message=None, *, bint editor_notify=True):
         finally:
             del frame
     except ValueError:
-        # Cython code, no call stack to inspect
+        # Cython code: no call stack to inspect
         # Read values from the traceback text if an Exception object was passed
         if isinstance(exc, Exception):
             filename, function, lineno = _exc_info_from_exc(exc)

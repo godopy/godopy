@@ -51,8 +51,11 @@ if sys.platform == 'linux':
         cdll = ctypes.CDLL(paths[0])
 
 
-# Allow numpy dynamic libraries to exist separately from pure Python code.
-# This requires some acrobatics to get right.
+# Allow numpy dynamic libraries to exist separately from pure Python code,
+# because all pure Python code here is compiled and packed into a single cross-platform res://bin/pythonlib.zip
+# and native shared libraries are in res://bin/<platform>/
+
+# This requires some sys.modules/module.__path__ acrobatics to get right.
 try:
     _numpy = ModuleType('numpy')
     _core = ModuleType('numpy._core')
@@ -154,20 +157,25 @@ cdef int print_traceback(object exc) except -1:
     try:
         descr = str(exc).encode('utf-8')
 
+        # Cython exceptions could not be inspected by inspect.getframeinfo().
+        # Try to parse the exception text to get filename, function and lineno information.
         exc_lines = exc_text.splitlines()
         if len(exc_lines) > 1:
             info_line_str = exc_lines[-2]
 
-            if info_line_str.lstrip().startswith('^'):
+            if len(exc_lines) > 3 and info_line_str.lstrip().startswith('^'):
                 info_line_str = exc_lines[-4]
-            elif not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
+            elif len(exc_lines) > 2 and not (info_line_str.lstrip().startswith('File') and 'line' in info_line_str):
                 info_line_str = exc_lines[-3]
 
             info_line = [s.strip().strip(',') for s in info_line_str.split()]
 
             path = info_line[1].encode('utf-8')
             func = info_line[-1].encode('utf-8')
-            line = int(info_line[3])
+            if len(info_line) > 3:
+                line = int(info_line[3])
+            else:
+                line = -1
         else:
             info_line_str = exc_lines[0]
             info_line = [s.strip().strip(':') for s in info_line_str.split()]
@@ -180,8 +188,10 @@ cdef int print_traceback(object exc) except -1:
         print_error(descr, path, func, line, False)
 
     except Exception as exc2:
-        __print_rich("[color=red]Exception parser raised an exception: %s[/color]" % exc2)
+        # Error during exception parsing
+        __print_rich("[color=orange]WARNING: Exception parser raised an exception: %s[/color]" % exc2)
 
+        # Fallback to simple printing without any additional information (filename, function, lineno)
         __print_rich("[color=purple]%s[/color]" % exc_text)
         __push_error(str(exc))
 
