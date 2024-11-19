@@ -128,7 +128,7 @@ cdef public void variant_node_path_from_pyobject(object p_obj, cpp.Variant *r_re
 cdef class RID:
     @staticmethod
     cdef RID from_cpp_rid(const cpp._RID &p_val):
-        
+
         cdef RID self = RID.__new__(RID)
         self._base = p_val
 
@@ -312,7 +312,7 @@ def as_array(data, dtype=None, itemshape=None, copy=None):
             if data.dtype != dtype:
                 if nocopy_requested:
                     cpp.UtilityFunctions.push_warning("Copy of %r will be made because data types do not match" % data)
-                copy = True 
+                copy = True
         else:
             if nocopy_requested:
                 cpp.UtilityFunctions.push_warning("Copy of %r will be made because data types do not match" % data)
@@ -326,7 +326,7 @@ class Array(numpy.ndarray):
         cdef numpy.ndarray base
 
         dtype = kwargs.pop('dtype', np.object_)
-        
+
         copy = kwargs.pop('copy', True)
         can_cast = kwargs.pop('can_cast', False)
         itemshape = kwargs.pop('itemshape', ())
@@ -397,7 +397,7 @@ cdef tuple _vartype_to_dtype_itemshape = (
 
 
 # NOTE: By default untyped Godot's Array conversions are to the ordinary
-#       Python list. Typed Array conversions are always to `Array`.
+#       Python list. [MotImplemented] Typed Array conversions are always to `Array`.
 
 # TODO: Convert typed numpy arrays to typed Godot arrays
 
@@ -419,14 +419,14 @@ cdef public object array_to_pyobject(const cpp.Array &p_arr):
     dtype = np.object_
     itemshape = ()
 
-    if p_arr.is_typed():
-        vartype = p_arr.get_typed_builtin()
-        if vartype > 0 and vartype < len(_vartype_to_dtype_itemshape):
-            dtype, itemshape = _vartype_to_dtype_itemshape[vartype]
-            cpp.UtilityFunctions.print("Detected %s typedarray %r" % (variant_type_to_str(<cpp.VariantType>vartype), dtype))
+    # if p_arr.is_typed():
+    #     vartype = p_arr.get_typed_builtin()
+    #     if vartype > 0 and vartype < len(_vartype_to_dtype_itemshape):
+    #         dtype, itemshape = _vartype_to_dtype_itemshape[vartype]
+    #         cpp.UtilityFunctions.print("Detected %s typedarray %r" % (variant_type_to_str(<cpp.VariantType>vartype), dtype))
 
-        # Array data has to be copied because it contains Variants that must be converted for Python
-        return as_array(ret, dtype=dtype, itemshape=itemshape, copy=True)
+    #     # Array data has to be copied because it contains Variants that must be converted for Python
+    #     return as_array(ret, dtype=dtype, itemshape=itemshape, copy=True)
 
     return ret
 

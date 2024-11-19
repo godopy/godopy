@@ -48,9 +48,7 @@ cdef class Extension(Object):
 
         # INCREF because we lend a references of 'self' to the Godot Engine
         ref.Py_INCREF(self) # for set_instance, DECREF in ExtensionClass._free_instance
-
         cdef void *self_ptr = <void *><PyObject *>self
-
         gdextension_interface_object_set_instance(self._owner, class_name.ptr(), self_ptr)
 
         cdef object inner_init = self.__godot_class__._bind.pymethod.get('__inner_init__')
@@ -65,8 +63,6 @@ cdef class Extension(Object):
         gdtypes.add_object_type(self.__class__)
 
         self._callable_cache = {}
-
-        # print("%r initialized, from callback: %r" % (self, from_callback))
 
 
     @staticmethod

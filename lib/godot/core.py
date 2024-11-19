@@ -232,21 +232,30 @@ class Class(Extension, metaclass=GodotClassBase):
     Base class for all custom GDExtension classes.
     """
     def __init__(self, **kwargs) -> None:
-        has_kwargs = list(kwargs.keys())
+        internal_kwarg = kwargs.get('__godot_class__', kwargs.get('from_callback', None))
 
         godot_cls = kwargs.pop('__godot_class__', self.__class__.__godot_class__)
         from_callback = kwargs.pop('from_callback', False)
         _internal_check = kwargs.pop('_internal_check', '')
 
-        # kwargs are for internal use only, add some protection
+        # Add some protection for internal keyword arguments
         msg = "%s.__init__() got an unexpected keyword argument %r"
-        if has_kwargs and _internal_check != hex(id(godot_cls)):
-            raise TypeError(msg % (self.__godot_class__, has_kwargs.pop()))
-
-        if kwargs:
-            raise TypeError(msg % (self.__godot_class__, list(kwargs.keys()).pop()))
+        if internal_kwarg is not None and _internal_check != hex(id(godot_cls)):
+            raise TypeError(msg % (self.__godot_class__, internal_kwarg))
 
         super().__init__(godot_cls, from_callback=from_callback)
+
+        if kwargs:
+            props = {p['name'] for p in self.get_property_list()}
+
+            for key, value in kwargs.items():
+                if key not in props:
+                    msg = f"{self.__class__.__name__}.__init__() got an unexpected keyword argument {key!r}"
+                    raise TypeError(msg)
+
+                if value is not None:
+                    # print('set', self.__class__, key, value)
+                    self.set(key, value)
 
 
 def GDREGISTER_CLASS(cls: GodotClassBase) -> None:
@@ -309,6 +318,18 @@ class EngineClass(EngineObject, metaclass=GodotClassBase):
     """
     Base class for all Engine classes.
     """
-    def __init__(self, from_ptr : int = 0) -> None:
+    def __init__(self, from_ptr : int = 0, **kwargs) -> None:
         godot_cls = self.__class__.__godot_class__
+
         super().__init__(godot_cls, from_ptr=from_ptr)
+
+        if kwargs:
+            props = {p['name'] for p in self.get_property_list()}
+
+            for key, value in kwargs.items():
+                if key not in props:
+                    msg = f"{self.__class__.__name__}.__init__() got an unexpected keyword argument {key!r}"
+                    raise TypeError(msg)
+                if value is not None:
+                    # print('set', self.__class__, key, value)
+                    self.set(key, value)

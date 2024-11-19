@@ -114,16 +114,16 @@ cdef class Object:
 
         if from_ptr:
             self._owner = <void *>from_ptr
+            # UtilityFunctions.print("created FROM PTR obj %r" % self)
         elif Engine.get_singleton().has_singleton(class_name._base):
             self._owner = gdextension_interface_global_get_singleton(class_name.ptr())
             self.is_singleton = True
+            # UtilityFunctions.print("created SINGLETON obj %r" % self)
         else:
             self._owner = gdextension_interface_classdb_construct_object2(class_name.ptr())
-            # gdextension_interface_object_set_instance(self._owner, class_name.ptr(), self_ptr)
+            self._needs_cleanup = True
 
-            # ref.Py_INCREF(self)
-            # self._instance_set = True
-            # self._needs_cleanup = True
+            # UtilityFunctions.print("created obj %r" % self)
 
             notification = MethodBind(self, 'notification')
             notification(0, False) # NOTIFICATION_POSTINITIALIZE
@@ -146,17 +146,21 @@ cdef class Object:
             self.__class__.__module__, class_name, <uint64_t><PyObject *>self, <uint64_t>self._owner)
 
 
-    def __dealloc__(self) -> None:
+    def __del__(self) -> None:
         self.destroy(_internal_call=True)
 
 
-    def destroy(self, *, _internal_call=False, force=False) -> None:
+    def destroy(self, *, force=False, _internal_call=False) -> None:
         """
         Destroys an Object.
         """
-        if self._owner != NULL and (self._needs_cleanup or force):
-            # Will call ExtensionClass._free_instance for Extension objects
-            gdextension_interface_object_destroy(self._owner)
+        if self._owner != NULL:
+            if self._needs_cleanup or force:
+                if force:
+                    print_warning("FORCED %r object cleanup" % self)
+                # Will call ExtensionClass._free_instance for Extension objects
+                gdextension_interface_object_destroy(self._owner)
+                self._needs_cleanup = False
 
             if <uint64_t>self._owner in _OBJECTDB:
                 del _OBJECTDB[<uint64_t>self._owner]
@@ -166,9 +170,6 @@ cdef class Object:
             if self._instance_set:
                 ref.Py_DECREF(self)
                 self._instance_set = False
-
-        elif not _internal_call and not force:
-            raise TypeError("%r can not be destroyed" % self)
 
 
     def isinstance(self,  p_class: Class | Str) -> bool:
@@ -191,6 +192,7 @@ cdef class Object:
         """
         if isinstance(cls, Class) or hasattr(cls, '__godot_class__') and isinstance(cls.__godot_class__, Class):
             self.__class__ = cls
+            # UtilityFunctions.print("updated obj class %r" % self)
         else:
             raise TypeError("Expected a Godot class, got %r" % cls)
 
