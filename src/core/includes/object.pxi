@@ -159,6 +159,7 @@ cdef class Object:
                 if force:
                     print_warning("FORCED %r object cleanup" % self)
                 # Will call ExtensionClass._free_instance for Extension objects
+                UtilityFunctions.print_verbose('Destroying GDExtendion object %r' % self)
                 gdextension_interface_object_destroy(self._owner)
                 self._needs_cleanup = False
 

@@ -1,4 +1,4 @@
-from typing import Any, Mapping, Sequence, Optional
+from typing import Any, List, Mapping, Optional, Sequence, Tuple
 
 import gdextension
 
@@ -156,6 +156,7 @@ class SceneMeta(type):
 
 
 _deferred_initializers = []
+_deferred_node_cleanup = []
 
 class Scene(metaclass=SceneMeta):
     __root_class__ = _Node
@@ -199,7 +200,7 @@ class Scene(metaclass=SceneMeta):
             # Create scenes only when the Editor is active
             self.packed = PackedScene()
             self.root = self.__root_class__(name=name, **properties)
-
+            self.packed.reference()
         else:
             self.packed = None
             self.root = None
@@ -209,8 +210,7 @@ class Scene(metaclass=SceneMeta):
 
             self._res = {}
 
-            # Record resources that should not be freed manually (subresources)
-            _res_keep = set()
+            _added_nodes = []
 
             # Resource loading function for the 'load' method
             def load_resource(key: Any, path_or_class: str | godot.GodotClassBase, *args, **properties) -> Resource:
@@ -219,7 +219,6 @@ class Scene(metaclass=SceneMeta):
                     props = self.get_properties(properties)
                     resource = resource_class(**props)
                     resource.reference()
-                    _res_keep.add(key)
                 else:
                     path = path_or_class
                     if len(args) == 2:
@@ -254,7 +253,6 @@ class Scene(metaclass=SceneMeta):
                 resource = sub_resource.resource_class(**props)
                 resource.reference()
                 self._res[sub_resource.key] = resource
-                _res_keep.add(sub_resource.key)
 
             # add nodes defined in the 'create' function
             if hasattr(self, 'create') and callable(self.load):
@@ -267,10 +265,13 @@ class Scene(metaclass=SceneMeta):
                 elif isinstance(node, NodeGroup):
                     group_node = Node(_Node, children=node.nodes)
                     group_node.name = node.name
-                    self._add(group_node)
+                    child, granchildren = self._add(group_node)
+                    _added_nodes.append(child)
+                    _added_nodes.extend(granchildren)
                 else:
-                    self._add(node)
-
+                    child, granchildren = self._add(node)
+                    _added_nodes.append(child)
+                    _added_nodes.extend(granchildren)
 
             result = self.packed.pack(self.root)
             if result != godot.Error.OK:
@@ -284,14 +285,8 @@ class Scene(metaclass=SceneMeta):
 
                 raise RuntimeError(msg)
 
-            for key, value in self._res.items():
-                if key not in _res_keep:
-                    del value
-
-            del self._res
-
-        del self.packed
-        del self.root
+            _deferred_node_cleanup.extend(_added_nodes)
+            del _added_nodes
 
         self._res = None
         self.packed = None
@@ -314,7 +309,6 @@ class Scene(metaclass=SceneMeta):
                         existing = existing_node.get_material()
                     else:
                         existing = existing_node.get(name)
-                    existing.reference()
                 else:
                     existing = None
                 if existing:
@@ -383,7 +377,7 @@ class Scene(metaclass=SceneMeta):
 
         raise AttributeError(f"{self.__class__!r} object has no attribute {attr!r}")
 
-    def _add(self, node: Node, to_parent=None, existing_node=None) -> None:
+    def _add(self, node: Node, to_parent=None, existing_node=None) -> Tuple[_Node, List[_Node]]:
         owner = self.root
         root = owner if to_parent is None else to_parent
 
@@ -405,12 +399,22 @@ class Scene(metaclass=SceneMeta):
             root.add_child(child, False, 0)
             child.set_owner(owner)
 
+        _added_nodes = []
+
         if node.children is not None:
             existing = child.get_children(True)
             existing_dict = {node.get_name(): node for node in existing}
             # print('found existing', existing_dict)
-            for grandchild in node.children:
-                self._add(grandchild, to_parent=child, existing_node=existing_dict.get(grandchild.name, None))
+            for childnode in node.children:
+                grandchild, grandgrandchildren = self._add(
+                    childnode,
+                    to_parent=child,
+                    existing_node=existing_dict.get(childnode.name, None)
+                )
+                _added_nodes.append(grandchild)
+                _added_nodes.extend(grandgrandchildren)
+
+        return child, _added_nodes
 
     def _add_scene(self, scene: 'Scene'):
         root = self.root
@@ -433,4 +437,12 @@ class PythonScenePlugin(godot.Class, inherits=EditorPlugin):
         del _deferred_initializers
 
     def _exit_tree(self):
-        pass
+        global _scene_cache, _deferred_node_cleanup
+        del _scene_cache
+
+        _deferred_node_cleanup.reverse()
+
+        for node in _deferred_node_cleanup:
+            node.destroy()
+
+        del _deferred_node_cleanup
