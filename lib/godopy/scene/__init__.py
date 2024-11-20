@@ -98,13 +98,39 @@ class NodeGroup:
 class SceneMeta(type):
     def __new__(metacls, name: str, bases: tuple, attrs: Mapping[str, Any]) -> type:
         class_name = name
-        root = attrs.pop('__root_class__', _Node)
+        root_class = attrs.pop('__root_class__', _Node)
         path = attrs.pop('__path__', None)
+
+        module = attrs.pop('__module__')
+
+        new_attrs = {'__module__': module}
+        extension_attrs = {'__module__': module}
+
+        extension_method_count = 0
+
+        to_delete = set()
+        for attr, value in attrs.items():
+            for method_name in (attr, f'_{attr}'):
+                method_info = root_class.get_method_info(method_name)
+                if method_info and method_info['is_virtual']:
+                    extension_attrs[method_name] = value
+                    to_delete.add(attr)
+                    extension_method_count += 1
+                    break
+
+        for attr in to_delete:
+            del attrs[attr]
+
+        if extension_method_count > 0:
+            new_root_class = type(f'{class_name}Extension', (godot.Class,), extension_attrs, inherits=root_class)
+            print('REGISTER', new_root_class)
+            new_root_class.register()
+        else:
+            new_root_class = root_class
 
         if path is None:
             path = 'res://' + String(name).to_snake_case().replace('_scene', '') + '.tscn'
 
-        new_attrs = {}
         node_list = []
         ext_resource_list = []
         sub_resource_list = []
@@ -142,7 +168,7 @@ class SceneMeta(type):
             else:
                 new_attrs[name] = attr
 
-        new_attrs['__root_class__'] = root
+        new_attrs['__root_class__'] = new_root_class
         new_attrs['__path__'] = path
         new_attrs['__node_list__'] = node_list
         new_attrs['__ext_resource_list__'] = ext_resource_list
