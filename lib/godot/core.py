@@ -326,6 +326,7 @@ class EngineClass(EngineObject, metaclass=GodotClassBase):
         if kwargs:
             props = {p['name'] for p in self.get_property_list()}
 
+            _meta = kwargs.pop('_meta', {})
             for key, value in kwargs.items():
                 if key not in props:
                     msg = f"{self.__class__.__name__}.__init__() got an unexpected keyword argument {key!r}"
@@ -333,3 +334,5 @@ class EngineClass(EngineObject, metaclass=GodotClassBase):
                 if value is not None:
                     # print('set', self.__class__, key, value)
                     self.set(key, value)
+            for key, value in _meta.items():
+                self.set_meta(key, value)

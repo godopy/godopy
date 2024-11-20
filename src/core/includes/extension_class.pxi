@@ -458,8 +458,9 @@ cdef class ExtensionClass(Class):
 
         ref.Py_INCREF(self) # DECREF in ExtensionClass.unregister()
 
-        cdef StringName class_name = StringName(<const PyObject *>self.__name__)
-        cdef StringName inherits_name = StringName(<const PyObject *>self.__inherits__.__name__)
+        cdef StringName class_name, inherits_name
+        type_funcs.string_name_from_pyobject(self.__name__, &class_name)
+        type_funcs.string_name_from_pyobject(self.__inherits__.__name__, &inherits_name)
 
         gdextension_interface_classdb_register_extension_class4(
             gdextension_library,
