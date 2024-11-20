@@ -10,18 +10,19 @@ Default types:
     StringName -> godot_types.StringName, subclass of str, wraps C++ StringName
     NodePath -> godot_types.NodePath, subclass of pathlib.PurePosixPath
     RID -> godot_types.RID, custom class, wraps C++ RID
-    Callable -> godot_types.Callable, custom class, wraps C++ Callable
+    Object -> gdextension.Object, custom class, wraps GDExtention Object pointer
+    Callable -> gdextension.Callable, custom class, wraps C++ Callable
     Signal -> godot_types.Signal, custom class, wraps C++ Signal
     Dictionary -> dict
     Array -> list
-    TypedArray -> godot_types.Array, subclass of numpy.ndarray
-    PackedStringArray -> list
+    [NotImplemented] TypedArray -> godot_types.Array, subclass of numpy.ndarray
+    PackedStringArray -> list[str]
     <AnyOtherType> -> godot_types.<AnyOtherType>, subclass of numpy.ndarray
 
 Extended types:
     String -> godot_types.String, subclass of str
     Array -> godot_types.Array
-    PackedStringArray -> godot_types.PackedStringArray, subclass of numpy.dnarray
+    PackedStringArray -> godot_types.PackedStringArray, subclass of numpy.ndarray
 """
 cimport cython
 from cpython cimport (
@@ -422,6 +423,8 @@ cdef dict _pytype_to_vartype = {
     complex: cpp.VECTOR2,
     Vector2: cpp.VECTOR2,
     Vector2i: cpp.VECTOR2I,
+    Size2: cpp.VECTOR2,
+    Size2i: cpp.VECTOR2I,
     Rect2: cpp.RECT2,
     Rect2i: cpp.RECT2I,
     Vector3: cpp.VECTOR3,
@@ -639,7 +642,7 @@ cdef int array_to_vartype(object arr) except -2:
                 vartype = <int>cpp.PACKED_VECTOR3_ARRAY
             elif ndim2_size == 4:
                 vartype = <int>cpp.PACKED_VECTOR4_ARRAY
-    
+
     if vartype < 0:
         cpp.UtilityFunctions.push_warning("Unknown array %r" % arr)
 
@@ -730,7 +733,7 @@ cdef cpp.VariantType pyobject_to_variant_type(object p_obj) noexcept:
         elif PyMapping_Check(p_obj):
             vartype = <int>cpp.DICTIONARY
         else:
-            vartype = <int>cpp.OBJECT        
+            vartype = <int>cpp.OBJECT
 
     return <cpp.VariantType>vartype
 
