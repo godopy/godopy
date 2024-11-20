@@ -246,7 +246,11 @@ class Class(Extension, metaclass=GodotClassBase):
         super().__init__(godot_cls, from_callback=from_callback)
 
         if kwargs:
-            props = {p['name'] for p in self.get_property_list()}
+            get_property_list = gdextension.MethodBind(self, 'get_property_list')
+            props = {p['name'] for p in get_property_list()}
+            props |= {p['name'] for p in self.get_property_list()}
+
+            _meta = kwargs.pop('_meta', {})
 
             for key, value in kwargs.items():
                 if key not in props:
@@ -256,6 +260,9 @@ class Class(Extension, metaclass=GodotClassBase):
                 if value is not None:
                     # print('set', self.__class__, key, value)
                     self.set(key, value)
+
+            for key, value in _meta.items():
+                self.set_meta(key, value)
 
 
 def GDREGISTER_CLASS(cls: GodotClassBase) -> None:
