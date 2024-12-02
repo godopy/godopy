@@ -412,7 +412,7 @@ def install_extra_python_packages(env):
 def install_godopy_python_packages(env):
     files = Glob('lib/*/*.py') + Glob('lib/*/*/*.py') + Glob('lib/*/*/*/*.py')
 
-    installer = PythonInstaller(env, packages, 'lib')
+    installer = PythonInstaller(env, None, 'lib')
 
     return installer.get_pairs(files)
 
