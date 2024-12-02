@@ -136,9 +136,6 @@ class Project:
             for key, value in input_map.items():
                 setting = f'input/{key}'
 
-                if not ProjectSettings.has_setting(setting):
-                    raise AttributeError(f"Setting {setting!r} does not exist")
-
                 existing = Project.get_setting(setting)
 
                 if existing != value:
@@ -157,11 +154,11 @@ class Project:
 
     @staticmethod
     def get_setting(setting: str, default: Optional[str] = None, *,
-                    with_override: bool = False, instantiate_scenes=False):
+                    with_override: bool = False, instantiate_scenes=False) -> Any:
         setting = _aliases.get(setting, setting)
 
         if not ProjectSettings.has_setting(setting):
-            raise AttributeError(f"Setting {setting!r} does not exist")
+            return default
 
         if with_override:
             value = ProjectSettings.get_setting_with_override(setting, default)
@@ -182,6 +179,11 @@ class Project:
 
         ProjectSettings.set_setting(setting, value)
 
+    @staticmethod
+    def has_setting(setting: str, value: Any) -> bool:
+        setting = _aliases.get(setting, setting)
+
+        return ProjectSettings.has_setting(setting)
 
     @staticmethod
     def save(custom_file=None) -> None:
