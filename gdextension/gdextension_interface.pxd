@@ -145,6 +145,8 @@ cdef extern from "gdextension_interface.h" nogil:
 
     ctypedef void (*GDExtensionTypeFromVariantConstructorFunc)(GDExtensionUninitializedTypePtr, GDExtensionVariantPtr)
 
+    ctypedef void* (*GDExtensionVariantGetInternalPtrFunc)(GDExtensionVariantPtr)
+
     ctypedef void (*GDExtensionPtrOperatorEvaluator)(GDExtensionConstTypePtr p_left, GDExtensionConstTypePtr p_right, GDExtensionTypePtr r_result)
 
     ctypedef void (*GDExtensionPtrBuiltInMethod)(GDExtensionTypePtr p_base, GDExtensionConstTypePtr* p_args, GDExtensionTypePtr r_return, int p_argument_count)
@@ -331,6 +333,7 @@ cdef extern from "gdextension_interface.h" nogil:
         GDExtensionBool is_abstract
         GDExtensionBool is_exposed
         GDExtensionBool is_runtime
+        GDExtensionConstStringPtr icon_path
         GDExtensionClassSet set_func
         GDExtensionClassGet get_func
         GDExtensionClassGetPropertyList get_property_list_func
@@ -731,6 +734,8 @@ cdef extern from "gdextension_interface.h" nogil:
     ctypedef GDExtensionVariantFromTypeConstructorFunc (*GDExtensionInterfaceGetVariantFromTypeConstructor)(GDExtensionVariantType p_type)
 
     ctypedef GDExtensionTypeFromVariantConstructorFunc (*GDExtensionInterfaceGetVariantToTypeConstructor)(GDExtensionVariantType p_type)
+
+    ctypedef GDExtensionVariantGetInternalPtrFunc (*GDExtensionInterfaceGetVariantGetInternalPtrFunc)(GDExtensionVariantType p_type)
 
     ctypedef GDExtensionPtrOperatorEvaluator (*GDExtensionInterfaceVariantGetPtrOperatorEvaluator)(GDExtensionVariantOperator p_operator, GDExtensionVariantType p_type_a, GDExtensionVariantType p_type_b)
 
