@@ -195,8 +195,8 @@ cdef int initialize_first_level() except -1:
 
     sys_path_backup = sys.path
     try:
-        # Keep only project's root in sys.path during 'project' import
-        sys.path = [sys.path[0]]
+        # Keep only project's root and /lib in sys.path during 'project' import
+        sys.path = sys.path[:2]
 
         # If 'project.py' exist in the project root, just import it
         import project
