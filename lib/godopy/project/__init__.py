@@ -174,9 +174,6 @@ class Project:
     def set_setting(setting: str, value: Any) -> None:
         setting = _aliases.get(setting, setting)
 
-        if not ProjectSettings.has_setting(setting):
-            raise AttributeError(f"Setting {setting!r} does not exist")
-
         ProjectSettings.set_setting(setting, value)
 
     @staticmethod
