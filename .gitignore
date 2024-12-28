@@ -1,6 +1,5 @@
 # Godot 4+ specific ignores
 .godot/
-*.uid
 
 # Ignore generated library files
 bin/
