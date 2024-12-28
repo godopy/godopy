@@ -242,7 +242,6 @@ void PythonRuntime::ensure_current_thread_state(bool setdefault) {
 void PythonRuntime::finalize() {
 	if (is_initialized()) {
 		if (Py_IsInitialized()) {
-			PyGILState_STATE gil_state = PyGILState_Ensure();
 			for (auto it: thread_states) {
 				if (it.first != main_thread_id) {
 					PyThreadState_Clear(it.second);
@@ -250,7 +249,6 @@ void PythonRuntime::finalize() {
 					thread_states[it.first] = nullptr;
 				}
 			}
-			PyGILState_Release(gil_state);
 			PyEval_RestoreThread(main_thread_state);
 
 			main_thread_state = nullptr;

@@ -201,8 +201,6 @@ cdef int initialize_first_level() except -1:
         # If 'project.py' exist in the project root, just import it
         import project
 
-        print('Imported project', project)
-
         if hasattr(project, 'project'):
             UtilityFunctions.print_rich("[color=green]Found GodoPy project %r[/color]" % project.project)
 
