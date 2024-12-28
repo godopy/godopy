@@ -141,12 +141,17 @@ cdef class Extension(Object):
 
     @staticmethod
     cdef void to_string_callback(void *p_instance, uint8_t *r_is_valid, void *r_out) noexcept nogil:
+        if r_out == NULL:
+            return
         with gil:
-            UtilityFunctions.print("Extension.to_string_callback")
+            UtilityFunctions.print("Extension.to_string_callback %x %x %x" % (<uint64_t>p_instance, <uint64_t>r_is_valid, <uint64_t>r_out))
             self = <object>p_instance
             try:
-                type_funcs.string_from_pyobject(repr(self), <String *>r_out)
-                type_funcs.bool_from_pyobject(True, r_is_valid)
+                s = repr(self)
+                UtilityFunctions.print("Extension.to_string_callback %s %s" % (self, s))
+                type_funcs.string_from_pyobject(s, <String *>r_out)
+                if r_is_valid != NULL:
+                    type_funcs.bool_from_pyobject(True, r_is_valid)
             except Exception as exc:
                 print_error_with_traceback(exc)
 
