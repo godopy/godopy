@@ -453,7 +453,7 @@ cdef class ExtensionClass(Class):
         ci.unreference_func = NULL
         ci.create_instance_func = &ExtensionClass.create_instance_callback
         ci.free_instance_func = &ExtensionClass.free_instance_callback
-        ci.recreate_instance_func = &ExtensionClass.recreate_instance_callback
+        ci.recreate_instance_func = NULL  # &ExtensionClass.recreate_instance_callback
 
         ci.get_virtual_func = NULL
         ci.get_virtual_call_data_func = &ExtensionClass.get_virtual_call_data_callback
