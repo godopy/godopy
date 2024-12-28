@@ -431,6 +431,10 @@ cdef class ExtensionClass(Class):
         self.is_exposed = ci.is_exposed
         self.is_runtime = ci.is_runtime
 
+        cdef String icon_path
+        type_funcs.string_from_pyobject("", &icon_path)
+        ci.icon_path = &icon_path
+
         ci.set_func = &Extension.set_callback
         ci.get_func = &Extension.get_callback
 
