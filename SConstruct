@@ -22,7 +22,7 @@ def validate_parent_dir(key, val, env):
 
 
 def disable_warnings(env):
-    if env['platform'] == 'windows':
+    if env['platform'] == 'windows' and not env['use_mingw']:
         # We have to remove existing warning level defines before appending /w,
         # otherwise we get: "warning D9025 : overriding '/W3' with '/w'"
         env["CCFLAGS"] = [x for x in env["CCFLAGS"] if not (x.startswith("/W") or x.startswith("/w"))]
@@ -53,7 +53,7 @@ def build_opts(env):
     opts.Add(
         BoolVariable(
             key='clear_pythonlib',
-            help='Delete all previously installed files before copying Python standard library. ',
+            help='Delete all previously installed files before copying Python standard library.',
             default=False,
         )
     )
@@ -73,6 +73,13 @@ def build_opts(env):
             default=projectdir,
             validator=validate_parent_dir,
         )
+    )
+
+    opts.Add(
+        PathVariable(
+            key='msys2_dir',
+            help='Path to the MSYS2 root directory, required for MinGW Windows builds',
+            default='c:\\msys64'        )
     )
 
     opts.Update(env)
@@ -167,10 +174,14 @@ def main_godopy_cpp_sources(env):
     sources = Glob('src/*.cpp') + Glob('src/python/*.cpp') + Glob('src/variant/*.cpp')
 
     if env['platform'] == 'windows':
-        env.Append(LIBPATH=[os.path.join('extern', 'cpython', 'PCBuild', 'amd64')])
+        if env['use_mingw']:
+            env.Append(LIBPATH=[os.path.join(env['msys2_dir'], 'mingw64', 'lib')])
+            python_lib = 'libpython3.12.dll'
+        else:
+            env.Append(LIBPATH=[os.path.join('extern', 'cpython', 'PCBuild', 'amd64')])
+            python_lib = 'python312'
 
-        python_lib = 'python312'
-        env.Append(packages=[python_lib])
+        env.Append(LIBS=[python_lib])
 
     else:
         env.Append(LIBPATH=[os.path.join('extern', 'cpython')])
@@ -273,13 +284,20 @@ def install_extension_shared_lib(env, library):
 
     if env['platform'] == 'windows':
         # Extension DLL requires Python DLL on Windows
-        python_dll_file = 'python312.dll'
-        python_dll = os.path.join('extern', 'cpython', 'PCBuild', 'amd64', python_dll_file)
-        python_dll_target = f'{projectdir}/bin/{env['platform']}/{python_dll_file}'
+        if env['use_mingw']:
+            python_dll_file = 'libpython3.12.dll'
+            python_dll = os.path.join(env['msys2_dir'], 'mingw64', 'bin', python_dll_file)
+            python_dll_target = f'{projectdir}/bin/{env['platform']}/{python_dll_file}'
+        else:
+            python_dll_file = 'python312.dll'
+            python_dll = os.path.join('extern', 'cpython', 'PCBuild', 'amd64', python_dll_file)
+            python_dll_target = f'{projectdir}/bin/{env['platform']}/{python_dll_file}'
 
         copy.append(env.InstallAs(python_dll_target, python_dll))
 
     copy.append(env.FromTemplate(f'bin/{libname}.gdextension', f'templates/{libname}.gdextension.jinja2'))
+    env.AlwaysBuild(f'bin/{libname}.gdextension')
+    env.NoCache(f'bin/{libname}.gdextension')
     copy.append(env.InstallAs(f'{projectdir}/bin/{libname}.gdextension', f'bin/{libname}.gdextension'))
 
     return copy
@@ -334,10 +352,16 @@ def install_python_standard_library(env):
 
     python_lib_files = Glob('extern/cpython/Lib/*.py') + Glob('extern/cpython/Lib/*/*.py')
     if env['platform'] == 'windows':
-        python_dylib_files = [
-            f for f in Glob('extern/cpython/PCBuild/amd64/*.pyd')
-            if 'test' not in str(f) and 'tkinter' not in str(f) and 'xxlimited' not in str(f)
-        ]
+        if env['use_mingw']:
+            python_dylib_files = [
+                f for f in Glob(os.path.join(env['msys2_dir'], 'mingw64\\lib\\python3.12\\lib-dynload\\*.pyd'))
+                if 'test' not in str(f) and 'tkinter' not in str(f) and 'xxlimited' not in str(f)
+            ]
+        else:
+            python_dylib_files = [
+                f for f in Glob('extern/cpython/PCBuild/amd64/*.pyd')
+                if 'test' not in str(f) and 'tkinter' not in str(f) and 'xxlimited' not in str(f)
+            ]
     else:
         print(env['platform'])
         python_dylib_files = [
@@ -364,8 +388,12 @@ def install_python_standard_library(env):
 
 def install_extra_python_packages(env):
     if env['platform'] == 'windows':
-        numpy_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy'
-        numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
+        if env['use_mingw']:
+            numpy_folder = Path(env['msys2_dir']) / 'mingw64' / 'lib' / 'python3.12' / 'site-packages' / 'numpy'
+            # numpylibs_folder = Path(env['msys2_dir']) / 'mingw64' / 'lib' / 'python3.12' / 'site-packages' / 'numpy.libs'
+        else:
+            numpy_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy'
+            numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
     else:
         numpy_folder = Path(venv_folder) / 'lib' / 'python3.12' / 'site-packages' / 'numpy'
         numpylibs_folder = Path(venv_folder) / 'lib' / 'python3.12' / 'site-packages' / 'numpy.libs'
@@ -388,10 +416,16 @@ def install_extra_python_packages(env):
     ]
 
     if env['platform'] == 'windows':
-        dylib_files = [str(f).replace(str(build_path), '') for f in [
-            *Glob(str(numpy_folder / '*' / '*.pyd')),
-            *Glob(str(numpylibs_folder / '*.dll'))
-        ] if '_tests' not in str(f)]
+        if env['use_mingw']:
+            dylib_files = [str(f).replace(str(build_path), '') for f in [
+                *Glob(str(numpy_folder / '*' / '*.pyd')),
+                # *Glob(str(numpy_folder / '*' / '*.dll.a'))
+            ] if '_tests' not in str(f)]
+        else:
+            dylib_files = [str(f).replace(str(build_path), '') for f in [
+                *Glob(str(numpy_folder / '*' / '*.pyd')),
+                *Glob(str(numpylibs_folder / '*.dll'))
+            ] if '_tests' not in str(f)]
     else:
         dylib_files = [str(f).replace(str(build_path), '') for f in [
             *Glob(str(numpy_folder / '*' / '*.so')),
@@ -429,15 +463,15 @@ if venv_path.startswith('/cygdrive/c'):
     venv_path = re.sub(r"^/cygdrive/(\w)/", lambda m: f"{m.group(1).upper()}:/", venv_path)
 
 venv_folder = os.path.abspath(venv_path)
-numpy_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy'
-numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
+# numpy_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy'
+# numpylibs_folder = Path(venv_folder) / 'Lib' / 'site-packages' / 'numpy.libs'
 
 
 env = Environment(tools=['default'], PLATFORM='')
 build_opts(env)
 
 
-if not numpy_folder.is_relative_to(env.Dir('#').abspath):
+if not Path(venv_folder).is_relative_to(env.Dir('#').abspath):
     raise Exception("Virtual Env folder must be located inside the current folder")
 
 
