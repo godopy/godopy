@@ -250,7 +250,11 @@ cdef extern from "gdextension_interface.h" nogil:
 
     ctypedef GDExtensionClassCallVirtual (*GDExtensionClassGetVirtual)(void* p_class_userdata, GDExtensionConstStringNamePtr p_name)
 
+    ctypedef GDExtensionClassCallVirtual (*GDExtensionClassGetVirtual2)(void* p_class_userdata, GDExtensionConstStringNamePtr p_name, uint32_t p_hash)
+
     ctypedef void* (*GDExtensionClassGetVirtualCallData)(void* p_class_userdata, GDExtensionConstStringNamePtr p_name)
+
+    ctypedef void* (*GDExtensionClassGetVirtualCallData2)(void* p_class_userdata, GDExtensionConstStringNamePtr p_name, uint32_t p_hash)
 
     ctypedef void (*GDExtensionClassCallVirtualWithData)(GDExtensionClassInstancePtr p_instance, GDExtensionConstStringNamePtr p_name, void* p_virtual_call_userdata, GDExtensionConstTypePtr* p_args, GDExtensionTypePtr r_ret)
 
@@ -348,8 +352,8 @@ cdef extern from "gdextension_interface.h" nogil:
         GDExtensionClassCreateInstance2 create_instance_func
         GDExtensionClassFreeInstance free_instance_func
         GDExtensionClassRecreateInstance recreate_instance_func
-        GDExtensionClassGetVirtual get_virtual_func
-        GDExtensionClassGetVirtualCallData get_virtual_call_data_func
+        GDExtensionClassGetVirtual2 get_virtual_func
+        GDExtensionClassGetVirtualCallData2 get_virtual_call_data_func
         GDExtensionClassCallVirtualWithData call_virtual_with_data_func
         void* class_userdata
 

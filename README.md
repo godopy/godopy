@@ -2,11 +2,19 @@
 
 This repository contains the [Python](https://www.python.org) bindings for the [Godot Engine](http://godotengine.org)'s GDExtensions API. Please note that this project is under **active and rapidly changing development**—expect significant changes and improvements as we work toward a stable version!
 
+> [!WARNING]
+>
+> This repository's `main` branch is only usable with
+> [GDExtension](https://godotengine.org/article/introducing-gd-extensions)
+> from Godot's `4.4` branch.
+>
+> Godot's `master` branch is not supported yet.
+
 ---
 
 ## 🚧 Current Status
 
-> **⚠️ NOTE**  
+> **⚠️ NOTE**
 > GodoPy is actively evolving, and while many features are working, there will be ongoing changes to the API, features, and functionality. This repository is suited for early adopters, developers, and contributors.
 
 ---

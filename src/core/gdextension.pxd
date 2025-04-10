@@ -495,7 +495,7 @@ cdef class ExtensionClass(Class):
     cdef void *recreate_instance_callback(void *p_data, void *p_instance) noexcept nogil
 
     @staticmethod
-    cdef void *get_virtual_call_data_callback(void *p_userdata, void *p_name) noexcept nogil
+    cdef void *get_virtual_call_data_callback(void *p_userdata, void *p_name, uint32_t p_hash) noexcept nogil
 
     cdef int free_instance(self, object instance) except -1
     cdef void *create_instance(self, bint p_notify) except? NULL
