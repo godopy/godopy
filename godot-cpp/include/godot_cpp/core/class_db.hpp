@@ -37,6 +37,7 @@
 #include <godot_cpp/core/error_macros.hpp>
 #include <godot_cpp/core/method_bind.hpp>
 #include <godot_cpp/core/object.hpp>
+#include <godot_cpp/core/print_string.hpp>
 
 #include <godot_cpp/classes/class_db_singleton.hpp>
 
@@ -87,12 +88,17 @@ class ClassDB {
 
 public:
 	struct ClassInfo {
+		struct VirtualMethod {
+			GDExtensionClassCallVirtual func;
+			uint32_t hash;
+		};
+
 		StringName name;
 		StringName parent_name;
 		GDExtensionInitializationLevel level = GDEXTENSION_INITIALIZATION_SCENE;
 		std::unordered_map<StringName, MethodBind *> method_map;
 		std::set<StringName> signal_names;
-		std::unordered_map<StringName, GDExtensionClassCallVirtual> virtual_methods;
+		std::unordered_map<StringName, VirtualMethod> virtual_methods;
 		std::set<StringName> property_names;
 		std::set<StringName> constant_names;
 		// Pointer to the parent custom class, if any. Will be null if the parent class is a Godot class.
@@ -116,9 +122,13 @@ private:
 	static void _register_class(bool p_virtual = false, bool p_exposed = true, bool p_runtime = false);
 
 	template <typename T>
-	static GDExtensionObjectPtr _create_instance_func(void *data) {
+	static GDExtensionObjectPtr _create_instance_func(void *data, GDExtensionBool p_notify_postinitialize) {
 		if constexpr (!std::is_abstract_v<T>) {
-			T *new_object = memnew(T);
+			Wrapped::_set_construct_info<T>();
+			T *new_object = new ("", "") T;
+			if (p_notify_postinitialize) {
+				new_object->_postinitialize();
+			}
 			return new_object->_owner;
 		} else {
 			return nullptr;
@@ -129,6 +139,9 @@ private:
 	static GDExtensionClassInstancePtr _recreate_instance_func(void *data, GDExtensionObjectPtr obj) {
 		if constexpr (!std::is_abstract_v<T>) {
 #ifdef HOT_RELOAD_ENABLED
+#ifdef _GODOT_CPP_AVOID_THREAD_LOCAL
+			std::lock_guard<std::recursive_mutex> lk(Wrapped::_constructing_mutex);
+#endif
 			Wrapped::_constructing_recreate_owner = obj;
 			T *new_instance = (T *)memalloc(sizeof(T));
 			memnew_placement(new_instance, T);
@@ -185,13 +198,13 @@ public:
 	static void add_signal(const StringName &p_class, const MethodInfo &p_signal);
 	static void bind_integer_constant(const StringName &p_class_name, const StringName &p_enum_name, const StringName &p_constant_name, GDExtensionInt p_constant_value, bool p_is_bitfield = false);
 	// Binds an implementation of a virtual method defined in Godot.
-	static void bind_virtual_method(const StringName &p_class, const StringName &p_method, GDExtensionClassCallVirtual p_call);
+	static void bind_virtual_method(const StringName &p_class, const StringName &p_method, GDExtensionClassCallVirtual p_call, uint32_t p_hash);
 	// Add a new virtual method that can be implemented by scripts.
 	static void add_virtual_method(const StringName &p_class, const MethodInfo &p_method, const Vector<StringName> &p_arg_names = Vector<StringName>());
 
 	static MethodBind *get_method(const StringName &p_class, const StringName &p_method);
 
-	static GDExtensionClassCallVirtual get_virtual_func(void *p_userdata, GDExtensionConstStringNamePtr p_name);
+	static GDExtensionClassCallVirtual get_virtual_func(void *p_userdata, GDExtensionConstStringNamePtr p_name, uint32_t p_hash);
 	static const GDExtensionInstanceBindingCallbacks *get_instance_binding_callbacks(const StringName &p_class);
 
 	static void initialize(GDExtensionInitializationLevel p_level);
@@ -209,12 +222,12 @@ public:
 #define BIND_BITFIELD_FLAG(m_constant) \
 	::godot::ClassDB::bind_integer_constant(get_class_static(), ::godot::_gde_constant_get_bitfield_name(m_constant, #m_constant), #m_constant, m_constant, true);
 
-#define BIND_VIRTUAL_METHOD(m_class, m_method)                                                                                                \
+#define BIND_VIRTUAL_METHOD(m_class, m_method, m_hash)                                                                                        \
 	{                                                                                                                                         \
 		auto _call##m_method = [](GDExtensionObjectPtr p_instance, const GDExtensionConstTypePtr *p_args, GDExtensionTypePtr p_ret) -> void { \
 			call_with_ptr_args(reinterpret_cast<m_class *>(p_instance), &m_class::m_method, p_args, p_ret);                                   \
 		};                                                                                                                                    \
-		::godot::ClassDB::bind_virtual_method(m_class::get_class_static(), #m_method, _call##m_method);                                       \
+		::godot::ClassDB::bind_virtual_method(m_class::get_class_static(), #m_method, _call##m_method, m_hash);                               \
 	}
 
 template <typename T, bool is_abstract>
@@ -238,11 +251,12 @@ void ClassDB::_register_class(bool p_virtual, bool p_exposed, bool p_runtime) {
 	class_register_order.push_back(cl.name);
 
 	// Register this class with Godot
-	GDExtensionClassCreationInfo3 class_info = {
+	GDExtensionClassCreationInfo4 class_info = {
 		p_virtual, // GDExtensionBool is_virtual;
 		is_abstract, // GDExtensionBool is_abstract;
 		p_exposed, // GDExtensionBool is_exposed;
 		p_runtime, // GDExtensionBool is_runtime;
+		nullptr, // GDExtensionConstStringPtr icon_path;
 		T::set_bind, // GDExtensionClassSet set_func;
 		T::get_bind, // GDExtensionClassGet get_func;
 		T::has_get_property_list() ? T::get_property_list_bind : nullptr, // GDExtensionClassGetPropertyList get_property_list_func;
@@ -260,11 +274,10 @@ void ClassDB::_register_class(bool p_virtual, bool p_exposed, bool p_runtime) {
 		&ClassDB::get_virtual_func, // GDExtensionClassGetVirtual get_virtual_func;
 		nullptr, // GDExtensionClassGetVirtualCallData get_virtual_call_data_func;
 		nullptr, // GDExtensionClassCallVirtualWithData call_virtual_func;
-		nullptr, // GDExtensionClassGetRID get_rid;
 		(void *)&T::get_class_static(), // void *class_userdata;
 	};
 
-	internal::gdextension_interface_classdb_register_extension_class3(internal::library, cl.name._native_ptr(), cl.parent_name._native_ptr(), &class_info);
+	internal::gdextension_interface_classdb_register_extension_class4(internal::library, cl.name._native_ptr(), cl.parent_name._native_ptr(), &class_info);
 
 	// call bind_methods etc. to register all members of the class
 	T::initialize_class();

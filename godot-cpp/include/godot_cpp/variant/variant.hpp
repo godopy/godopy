@@ -57,6 +57,7 @@ class Variant {
 
 	friend class GDExtensionBinding;
 	friend class MethodBind;
+	friend class VariantInternal;
 
 	static void init_bindings();
 
@@ -343,8 +344,6 @@ public:
 	_FORCE_INLINE_ PyObject *pythonize() const { return variant_to_pyobject(*this); }
 	String stringify() const;
 	Variant duplicate(bool deep = false) const;
-	static void blend(const Variant &a, const Variant &b, float c, Variant &r_dst);
-	static void interpolate(const Variant &a, const Variant &b, float c, Variant &r_dst);
 
 	static String get_type_name(Variant::Type type);
 	static bool can_convert(Variant::Type from, Variant::Type to);

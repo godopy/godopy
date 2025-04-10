@@ -2,12 +2,12 @@
 GodoPy testing framework
 
 Run with::
- 
-    <godot-executable> --path test/project --headless --quit
+
+    <godot-executable> --path test --headless --quit
 
 or::
 
-    <godot-executable> --path test/project --headless --verbose-tests --quit
+    <godot-executable> --path test --headless --verbose-tests --quit
 """
 import numpy as np
 import math
@@ -41,7 +41,7 @@ class TestCaseSceneExtension(BaseTestCase):
 
         with self.assertRaises(TypeError) as ctx:
             example.__class__(kwarg=1)
-        
+
         self.assertTrue("unexpected keyword argument 'kwarg'" in str(ctx.exception))
 
         with self.assertRaises(TypeError) as ctx:

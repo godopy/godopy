@@ -382,7 +382,7 @@ cdef class ExtensionClass(Class):
 
 
     @staticmethod
-    cdef void *get_virtual_call_data_callback(void *p_class_userdata, GDExtensionConstStringNamePtr p_name) noexcept nogil:
+    cdef void *get_virtual_call_data_callback(void *p_class_userdata, GDExtensionConstStringNamePtr p_name, uint32_t p_hash) noexcept nogil:
         cdef StringName name = deref(<StringName *>p_name)
 
         # Ensure that PyThreadState is created for the current Godot thread,

@@ -12,13 +12,15 @@ from SCons.Tool import Tool
 from SCons.Variables import BoolVariable, EnumVariable, PathVariable
 from SCons.Variables.BoolVariable import _text2bool
 
-from cpp_binding_generator import scons_emit_files, scons_generate_bindings
+from cpp_binding_generator import _generate_bindings, _get_file_list, get_file_list
+from cpp_build_profile import generate_trimmed_api
 
 
 def add_sources(sources, dir, extension):
     for f in os.listdir(dir):
         if f.endswith("." + extension):
             sources.append(dir + "/" + f)
+
 
 
 def get_cmdline_bool(option, default):
@@ -129,6 +131,39 @@ def no_verbose(env):
     env.Append(JAVACCOMSTR=[java_compile_source_message])
     env.Append(RCCOMSTR=[compiled_resource_message])
     env.Append(GENCOMSTR=[generated_file_message])
+
+
+def scons_emit_files(target, source, env):
+    profile_filepath = env.get("build_profile", "")
+    if profile_filepath:
+        profile_filepath = normalize_path(profile_filepath, env)
+
+    # Always clean all files
+    env.Clean(target, [env.File(f) for f in get_file_list(str(source[0]), target[0].abspath, True, True)])
+
+    api = generate_trimmed_api(str(source[0]), profile_filepath)
+    files = [env.File(f) for f in _get_file_list(api, target[0].abspath, True, True)]
+    env["godot_cpp_gen_dir"] = target[0].abspath
+    return files, source
+
+
+
+def scons_generate_bindings(target, source, env):
+    profile_filepath = env.get("build_profile", "")
+    if profile_filepath:
+        profile_filepath = normalize_path(profile_filepath, env)
+
+    api = generate_trimmed_api(str(source[0]), profile_filepath)
+
+    _generate_bindings(
+        api,
+        str(source[0]),
+        env["generate_template_get_node"],
+        "32" if "32" in env["arch"] else "64",
+        env["precision"],
+        env["godot_cpp_gen_dir"],
+    )
+    return None
 
 
 platforms = ["linux", "macos", "windows", "android", "ios", "web"]
@@ -326,6 +361,14 @@ def options(opts, env):
             "The desired optimization flags",
             "speed_trace",
             ("none", "custom", "debug", "speed", "speed_trace", "size"),
+        )
+    )
+    opts.Add(
+        EnumVariable(
+            "lto",
+            "Link-time optimization",
+            "none",
+            ("none", "auto", "thin", "full"),
         )
     )
     opts.Add(BoolVariable("debug_symbols", "Build with debugging symbols", True))
