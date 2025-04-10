@@ -4,7 +4,10 @@ colorama==0.4.6
 Cython==3.0.11
 Jinja2==3.1.5
 MarkupSafe==3.0.2
-# numpy==2.1.3
+# Note: on windows with MinGW numpy and scipy should be install inside MSYS2
+# and the venv sould be installed with --system-site-packages
+numpy==2.2.4
+scipy=1.15.2
 pycparser==2.22
 SCons==4.8.1
 six==1.16.0
