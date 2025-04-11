@@ -8,22 +8,37 @@ from godot.classdb import Engine, OS
 BUFFER_SIZE = 2048
 
 
-class ExitException(Exception):
-    pass
-
-
 rl = None
 
 
-class GodotTerminalConsole(InteractiveConsole):
+def exit():
+    raise EOFError()
 
+
+class GodotTerminalConsole(InteractiveConsole):
     def __init__(self):
         super().__init__(
-            {
-                "__name__": "__console__",
-                "__doc__": None,
-            }
+            {"__name__": "__console__", "__doc__": None, "exit": exit, "quit": exit}
         )
+
+    def runcode(self, code):
+        """Execute a code object.
+
+        When an exception occurs, self.showtraceback() is called to
+        display a traceback.  All exceptions are caught except
+        SystemExit, which is reraised.
+
+        A note about KeyboardInterrupt: this exception may occur
+        elsewhere in this code, and may not always be caught.  The
+        caller should be prepared to deal with it.
+
+        """
+        try:
+            exec(code, self.locals)
+        except (SystemExit, EOFError):
+            raise
+        except:
+            self.showtraceback()
 
     def interact(self, banner):
         global rl
@@ -69,16 +84,20 @@ class GodotTerminalConsole(InteractiveConsole):
 
                 if rl is not None:
                     line = rl.readline(prompt)
+                    if line.strip() in ["exit", "quit"]:
+                        raise EOFError()
+
                     more = self.push(line)
+
                 else:
                     line = self.raw_input(prompt)
 
                     if line.strip() in [b"exit", b"quit"]:
-                        raise ExitException()
+                        raise EOFError()
                     else:
                         more = self.push(line.decode("utf-8", errors="replace"))
 
-            except (ExitException, EOFError):
+            except EOFError:
                 return
 
             except KeyboardInterrupt:
@@ -96,7 +115,7 @@ class GodotTerminalConsole(InteractiveConsole):
         first_byte = buffer[0]
 
         if first_byte in (4, 45):
-            raise ExitException()
+            raise EOFError()
 
         return buffer.tobytes().split(b"\n", 1)[0].rstrip(b"\r")
 
