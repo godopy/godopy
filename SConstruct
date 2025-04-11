@@ -350,7 +350,7 @@ class PythonDylibInstaller:
 def install_python_standard_library(env):
     packages = []
 
-    python_lib_files = Glob('extern/cpython/Lib/*.py') + Glob('extern/cpython/Lib/*/*.py')
+    python_lib_files = Glob('extern/cpython/Lib/*.py') + Glob('extern/cpython/Lib/*/*.py') + Glob('extern/cpython/Lib/*/*/*.py')
     if env['platform'] == 'windows':
         if env['use_mingw']:
             python_dylib_files = [

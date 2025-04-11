@@ -1,17 +1,32 @@
+import os
 import sys
 from code import InteractiveConsole
 
 import godot
 from godot.classdb import Engine, OS
 
+BUFFER_SIZE = 2048
+
+
+class ExitException(Exception):
+    pass
+
+
+rl = None
+
+
 class GodotTerminalConsole(InteractiveConsole):
+
     def __init__(self):
-        super().__init__({
-            "__name__": "__console__",
-            "__doc__": None,
-        })
+        super().__init__(
+            {
+                "__name__": "__console__",
+                "__doc__": None,
+            }
+        )
 
     def interact(self, banner):
+        global rl
         try:
             sys.ps1
         except AttributeError:
@@ -21,10 +36,16 @@ class GodotTerminalConsole(InteractiveConsole):
         except AttributeError:
             sys.ps2 = "... "
 
+        venv_path = os.environ.get("VIRTUAL_ENV")
+        if venv_path:
+            sys.path.append(
+                os.path.join(venv_path, "lib", "python3.12", "site-packages")
+            )
         try:
             import readline
             import rlcompleter
             import atexit
+
             readline.parse_and_bind("tab: complete")
             readline.set_completer(rlcompleter.Completer().complete)
 
@@ -32,6 +53,8 @@ class GodotTerminalConsole(InteractiveConsole):
             # contents are quasi-immortal, and the completer function holds a
             # reference to globals).
             atexit.register(lambda: readline.set_completer(None))
+
+            rl = readline.rl
         except ImportError:
             pass
 
@@ -44,12 +67,20 @@ class GodotTerminalConsole(InteractiveConsole):
                 else:
                     prompt = sys.ps1
 
-                line = self.raw_input(prompt)
-
-                if line.strip() in ['exit', 'quit', chr(4)]:
-                    return
-                else:
+                if rl is not None:
+                    line = rl.readline(prompt)
                     more = self.push(line)
+                else:
+                    line = self.raw_input(prompt)
+
+                    if line.strip() in [b"exit", b"quit"]:
+                        raise ExitException()
+                    else:
+                        more = self.push(line.decode("utf-8", errors="replace"))
+
+            except (ExitException, EOFError):
+                return
+
             except KeyboardInterrupt:
                 self.resetbuffer()
                 more = 0
@@ -61,19 +92,26 @@ class GodotTerminalConsole(InteractiveConsole):
         if prompt:
             godot.printraw(prompt)
 
-        return OS.read_string_from_stdin()
+        buffer = OS.read_buffer_from_stdin(BUFFER_SIZE)
+        first_byte = buffer[0]
+
+        if first_byte in (4, 45):
+            raise ExitException()
+
+        return buffer.tobytes().split(b"\n", 1)[0].rstrip(b"\r")
 
 
 def interact():
     console = GodotTerminalConsole()
 
-    banner = [f'\n| Python version {sys.version}\n']
+    banner = [f"\n| Python version {sys.version}\n"]
     godot_version = Engine.get_version_info()
 
     banner += [
-        '| Godot Engine version %(major)s.%(minor)s.%(status)s.%(build)s.' % godot_version,
-        f'{godot_version['hash'][:9]}\n',
+        "| Godot Engine version %(major)s.%(minor)s.%(status)s.%(build)s."
+        % godot_version,
+        f"{godot_version['hash'][:9]}\n",
     ]
-    banner += ['| Interactive Console']
+    banner += ["| Interactive Console"]
 
-    console.interact(banner=''.join(banner))
+    console.interact(banner="".join(banner))
