@@ -2,12 +2,7 @@
 
 import os
 
-try:
-    Import("env")
-except Exception:
-    # Default tools with no platform defaults to gnu toolchain.
-    # We apply platform specific toolchains via our custom tools.
-    env = Environment(tools=["default"], PLATFORM="")
+Import("env")
 
 env.PrependENVPath("PATH", os.getenv("PATH"))
 

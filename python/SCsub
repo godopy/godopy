@@ -1,1 +1,21 @@
 #!/usr/bin/env python
+
+Import("env")
+
+env_python = env.Clone()
+
+# TODO: Build CPython as part of GDExtension
+
+cpython_dir = "#extern/cpython/"
+
+env_python_core = env_python.Clone()
+python_core_obj = []
+
+python_core_sources = [
+    'Programs/python.c',
+    'Parser/token.c',
+    'Parser/pegen.c',
+    'Parser/pegen_errors.c',
+    'Parser/action_helpers.c',
+    ''
+]
