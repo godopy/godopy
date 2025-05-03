@@ -79,7 +79,7 @@ def build_opts(env):
         PathVariable(
             key='msys2_dir',
             help='Path to the MSYS2 root directory, required for MinGW Windows builds',
-            default='c:\\msys64'        )
+            default='C:/msys64'        )
     )
 
     opts.Update(env)
@@ -175,7 +175,9 @@ def main_godopy_cpp_sources(env):
 
     if env['platform'] == 'windows':
         if env['use_mingw']:
-            env.Append(LIBPATH=[os.path.join(env['msys2_dir'], 'mingw64', 'lib')])
+            # Only forward slashes work here
+            root_dir = env['msys2_dir'].replace('\\', '/')
+            env.Append(LIBPATH=[os.path.join(root_dir, 'mingw64', 'lib')])
             python_lib = 'libpython3.12.dll'
         else:
             env.Append(LIBPATH=[os.path.join('extern', 'cpython', 'PCBuild', 'amd64')])
@@ -185,7 +187,6 @@ def main_godopy_cpp_sources(env):
 
     else:
         env.Append(LIBPATH=[os.path.join('extern', 'cpython')])
-        # env.Append(LINKFLAGS=["-Wl,-R,'$$ORIGIN'"])
         python_lib = 'python3.12'
 
         env.Append(LIBS=[python_lib])
@@ -433,6 +434,8 @@ def install_extra_python_packages(env):
             *Glob(str(numpylibs_folder / '*.so.?.?.?'))
         ] if '_tests' not in str(f)]
 
+    if not files:
+        raise RuntimeError('numpy is not install in the expected location')
     root = Path(str(files[0]).split('site-packages')[0]) / 'site-packages'
 
     installer = PythonInstaller(env, packages, root)
